@@ -2300,6 +2300,7 @@ Pi.init({
 version:"2.0",
 sandbox:false
 });
+piSdkReady=true;
 
 }catch(e){
 
@@ -2433,9 +2434,29 @@ logoutPi(false);
 ============================================================ */
 
 /* ========== Pi Ads (Rewarded + Interstitial) ========== */
+let piSdkReady=false;
+function ensurePiInit(){
+  if(!window.Pi)return false;
+  if(piSdkReady)return true;
+  try{
+    Pi.init({version:"2.0",sandbox:false});
+    piSdkReady=true;
+  }catch(e){
+    try{
+      Pi.init({version:"2.0"});
+      piSdkReady=true;
+    }catch(e2){
+      console.warn("Pi.init:",e2);
+      return false;
+    }
+  }
+  return true;
+}
+
 async function preloadPiAds(){
   try{
     if(!window.Pi||!Pi.Ads)return;
+    if(!ensurePiInit())return;
     await Pi.Ads.requestAd("rewarded").catch(()=>{});
     await Pi.Ads.requestAd("interstitial").catch(()=>{});
   }catch(e){
@@ -2449,6 +2470,10 @@ async function watchRewardedAd(){
       showToast("Pi Ads only works inside Pi Browser.",true);
       return;
     }
+    if(!ensurePiInit()){
+      showToast("Pi SDK init failed. Open in Pi Browser.",true);
+      return;
+    }
     showToast("Loading ad…");
     let ready=await Pi.Ads.isAdReady("rewarded");
     if(!(ready&&(ready.ready===true||ready===true))){
@@ -2460,7 +2485,6 @@ async function watchRewardedAd(){
     }
     const res=await Pi.Ads.showAd("rewarded");
     if(res&&(res.result==="AD_REWARDED"||res.result==="AD_CLOSED")){
-      // Full production: verify res.adId on backend via Pi Platform API (mediator_ack_status === granted)
       showToast("Thanks for watching! Bonus unlocks when Pi Ad Network is approved.");
       preloadPiAds();
     }else{
@@ -2475,6 +2499,7 @@ async function watchRewardedAd(){
 async function maybeShowInterstitial(){
   try{
     if(!window.Pi||!Pi.Ads)return;
+    if(!ensurePiInit())return;
     let ready=await Pi.Ads.isAdReady("interstitial");
     if(!(ready&&(ready.ready===true||ready===true))){
       const req=await Pi.Ads.requestAd("interstitial");
