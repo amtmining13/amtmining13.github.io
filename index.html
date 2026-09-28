@@ -1351,6 +1351,11 @@ CLAIM DAILY REWARD
 💰 CLAIM MINING REWARD
 </button>
 
+<button id="watchAdBtn" class="secondary" style="margin-top:10px" onclick="watchRewardedAd()">
+📺 WATCH AD FOR BONUS
+</button>
+<div class="muted" style="font-size:11px;margin-top:6px;text-align:center">Optional · Pi Ads · Rewarded video</div>
+
 <div class="progress"><span id="miningProgress"></span></div>
 
 <div class="row">
@@ -2427,6 +2432,61 @@ logoutPi(false);
    ENTER APP
 ============================================================ */
 
+/* ========== Pi Ads (Rewarded + Interstitial) ========== */
+async function preloadPiAds(){
+  try{
+    if(!window.Pi||!Pi.Ads)return;
+    await Pi.Ads.requestAd("rewarded").catch(()=>{});
+    await Pi.Ads.requestAd("interstitial").catch(()=>{});
+  }catch(e){
+    console.warn("Pi Ads preload:",e);
+  }
+}
+
+async function watchRewardedAd(){
+  try{
+    if(!window.Pi||!Pi.Ads){
+      showToast("Pi Ads only works inside Pi Browser.",true);
+      return;
+    }
+    showToast("Loading ad…");
+    let ready=await Pi.Ads.isAdReady("rewarded");
+    if(!(ready&&(ready.ready===true||ready===true))){
+      const req=await Pi.Ads.requestAd("rewarded");
+      if(req&&req.result&&req.result!=="AD_LOADED"){
+        showToast("Ad not available right now. Try again later.",true);
+        return;
+      }
+    }
+    const res=await Pi.Ads.showAd("rewarded");
+    if(res&&(res.result==="AD_REWARDED"||res.result==="AD_CLOSED")){
+      // Full production: verify res.adId on backend via Pi Platform API (mediator_ack_status === granted)
+      showToast("Thanks for watching! Bonus unlocks when Pi Ad Network is approved.");
+      preloadPiAds();
+    }else{
+      showToast("Ad finished or unavailable.",true);
+    }
+  }catch(e){
+    console.warn(e);
+    showToast(e.message||"Could not show ad.",true);
+  }
+}
+
+async function maybeShowInterstitial(){
+  try{
+    if(!window.Pi||!Pi.Ads)return;
+    let ready=await Pi.Ads.isAdReady("interstitial");
+    if(!(ready&&(ready.ready===true||ready===true))){
+      const req=await Pi.Ads.requestAd("interstitial");
+      if(req&&req.result&&req.result!=="AD_LOADED")return;
+    }
+    await Pi.Ads.showAd("interstitial");
+    preloadPiAds();
+  }catch(e){
+    console.warn("Interstitial:",e);
+  }
+}
+
 function enterApp(){
 
 $("loginSection").classList.remove("active");
@@ -2436,6 +2496,7 @@ $("bottomNav").classList.remove("hidden");
 showSection("miningSection");
 
 loadAll();
+preloadPiAds();
 }
 
 /* ============================================================
