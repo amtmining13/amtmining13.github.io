@@ -1,0 +1,5537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#090711">
+<title>Alberto Marketplace Token • AMT Testnet</title>
+<script src="https://sdk.minepi.com/pi-sdk.js"></script>
+
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{margin:0;min-height:100vh;font-family:Arial,Helvetica,sans-serif;color:#fff;background:radial-gradient(circle at 20% 0%,rgba(125,55,255,.22),transparent 35%),radial-gradient(circle at 100% 20%,rgba(255,174,0,.12),transparent 30%),linear-gradient(145deg,#05040b,#10091c 48%,#05040b)}
+button,input,select{font:inherit}button{cursor:pointer}.hidden{display:none!important}
+.app{width:100%;max-width:720px;margin:auto;padding-bottom:105px}
+header{position:sticky;top:0;z-index:50;padding:14px 15px;background:rgba(7,5,14,.88);backdrop-filter:blur(18px);border-bottom:1px solid rgba(255,255,255,.07)}
+.header-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{display:flex;align-items:center;gap:10px}.brand-logo{width:48px;height:48px;border-radius:15px;display:grid;place-items:center;font-size:20px;font-weight:900;color:#ffd95a;background:radial-gradient(circle,#4b1d79,#160b27 65%);border:1px solid rgba(255,215,80,.5);box-shadow:0 0 22px rgba(166,74,255,.4)}
+.brand-title{font-size:16px;font-weight:900;letter-spacing:.8px}.brand-sub{margin-top:3px;font-size:10px;color:#aaa0bb}
+.testnet{flex-shrink:0;padding:7px 10px;border-radius:999px;color:#8cffb3;border:1px solid rgba(80,255,145,.45);background:rgba(20,120,55,.12);font-size:10px;font-weight:800}
+main{padding:16px}.section{display:none;animation:fade .25s ease}.section.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+.hero{position:relative;overflow:hidden;padding:22px;border-radius:27px;margin-bottom:15px;background:radial-gradient(circle at 90% 10%,rgba(255,199,52,.17),transparent 28%),linear-gradient(135deg,rgba(97,30,160,.35),rgba(12,8,24,.96));border:1px solid rgba(184,91,255,.28);box-shadow:0 15px 50px rgba(0,0,0,.3)}
+.hero h1{margin:0;font-size:27px;line-height:1.05}.hero h1 span{color:#ffd34e}.hero p{margin:9px 0 0;color:#aaa2b9;font-size:13px}
+.notice{margin-top:15px;padding:12px;border-radius:15px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.07);color:#c5bdd1;font-size:11px;line-height:1.5}
+.card{padding:18px;margin-bottom:15px;border-radius:23px;background:linear-gradient(145deg,rgba(28,18,45,.95),rgba(10,8,17,.96));border:1px solid rgba(255,255,255,.075);box-shadow:0 12px 35px rgba(0,0,0,.22)}
+.card-title{margin:0 0 13px;font-size:14px;color:#c18cff;letter-spacing:.7px;font-weight:900}
+.big-balance{font-size:34px;font-weight:900;letter-spacing:-1px}.balance-symbol{font-size:13px;color:#ffd452;margin-left:5px}.muted{color:#958ba3;font-size:12px}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:11px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.stat{padding:14px 10px;border-radius:17px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06)}.stat-label{font-size:10px;color:#938a9e}.stat-value{margin-top:5px;font-size:15px;font-weight:800}
+.primary{width:100%;border:0;padding:14px 16px;border-radius:16px;color:#100817;font-weight:900;background:linear-gradient(110deg,#ffd54a,#b65cff);box-shadow:0 7px 24px rgba(181,84,255,.25)}
+.secondary{width:100%;border:1px solid rgba(180,99,255,.35);padding:13px 16px;border-radius:16px;color:#fff;font-weight:800;background:rgba(126,53,185,.12)}
+.danger{width:100%;border:1px solid rgba(255,80,100,.3);padding:13px 16px;border-radius:16px;color:#ff7f91;font-weight:800;background:rgba(255,40,70,.08)}
+button:disabled{opacity:.45;cursor:not-allowed}.row{display:flex;align-items:center;justify-content:space-between;gap:10px}.row+.row{margin-top:12px}
+.mining-ring{width:205px;height:205px;margin:18px auto;border-radius:50%;display:grid;place-items:center;position:relative;background:radial-gradient(circle,#160c25 52%,transparent 53%),conic-gradient(from 0deg,#ffdb4d,#a34dff,#45a5ff,#ffdb4d);box-shadow:0 0 30px rgba(169,72,255,.35),inset 0 0 25px rgba(0,0,0,.8);animation:spin 7s linear infinite}
+.mining-ring:before{content:"";position:absolute;inset:8px;border-radius:50%;border:1px solid rgba(255,255,255,.13)}
+.mining-inner{width:180px;height:180px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-direction:column;background:#0b0813;z-index:2}
+@keyframes spin{to{transform:rotate(360deg)}}.mining-time{font-size:25px;font-weight:900}.mining-rate{color:#ffd452;margin-top:6px;font-size:11px}
+.status-pill{display:block;text-align:center;padding:11px;border-radius:999px;margin-bottom:12px;color:#120b17;font-weight:900;background:linear-gradient(100deg,#ffd94d,#b75dff)}
+.progress{height:8px;border-radius:99px;overflow:hidden;background:rgba(255,255,255,.07);margin:14px 0}.progress span{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,#ffd84c,#9c55ff);transition:width .4s}
+.input{width:100%;padding:13px 14px;border-radius:14px;color:#fff;outline:none;border:1px solid rgba(255,255,255,.1);background:#0a0711}.input:focus{border-color:#a95cff}
+label{display:block;margin:0 0 7px;font-size:11px;color:#aaa1b5}.form-group{margin-bottom:12px}.action-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.pool{padding:15px;border-radius:18px;margin-bottom:10px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.075)}.pool.active{border-color:rgba(190,90,255,.65);box-shadow:0 0 20px rgba(160,70,255,.12)}
+.pool-name{font-weight:900;font-size:15px}.pool-rate{color:#ffd450;font-size:22px;font-weight:900;margin:6px 0}.pool small{color:#968ca1}
+.stake-item{padding:14px;margin-top:10px;border-radius:17px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06)}
+.avatar-wrap{text-align:center;margin-bottom:15px}.avatar{width:105px;height:105px;border-radius:50%;object-fit:cover;display:block;margin:auto;border:3px solid #a959ff;background:#160d23;box-shadow:0 0 30px rgba(175,70,255,.35)}.avatar-placeholder{display:grid;place-items:center;font-size:38px;color:#91889e}
+.profile-name{margin-top:11px;font-size:21px;font-weight:900}
+.nav{position:fixed;left:50%;bottom:0;transform:translateX(-50%);width:min(720px,100%);z-index:100;padding:8px 8px calc(8px + env(safe-area-inset-bottom));background:rgba(8,6,14,.94);backdrop-filter:blur(20px);border-top:1px solid rgba(255,255,255,.08)}
+.nav-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}.nav-btn{min-width:0;border:0;padding:9px 3px;border-radius:13px;color:#82798c;background:transparent;font-size:10px;font-weight:800}.nav-btn .icon{display:block;font-size:19px;margin-bottom:3px}.nav-btn.active{color:#ffd64e;background:rgba(170,79,255,.13)}
+.toast{position:fixed;left:50%;bottom:95px;transform:translate(-50%,20px);width:calc(100% - 32px);max-width:650px;padding:13px 15px;border-radius:15px;background:#17101f;border:1px solid rgba(255,255,255,.1);box-shadow:0 12px 35px rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:.25s;z-index:200;font-size:12px}.toast.show{opacity:1;transform:translate(-50%,0)}.toast.success{border-color:rgba(65,255,135,.35)}.toast.error{border-color:rgba(255,70,95,.35)}
+.wallet-address{word-break:break-all;font-family:monospace;color:#caa2ff;font-size:11px}
+.market-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+@media (max-width:420px){
+.market-grid{grid-template-columns:1fr 1fr;gap:12px}
+}
+.market-item{padding:0;border-radius:18px;background:linear-gradient(160deg,rgba(30,18,48,.98),rgba(10,7,18,.98));border:1px solid rgba(255,255,255,.08);overflow:hidden;transition:transform .15s,box-shadow .15s}
+.market-item:active{transform:scale(.98)}
+.market-art{height:130px;border-radius:14px;display:grid;place-items:center;margin-bottom:10px;font-size:48px;background:radial-gradient(circle at 50% 30%,rgba(179,80,255,.4),transparent 50%),#10091a}
+.market-name{font-weight:900;font-size:14px}.market-price{color:#ffd34f;margin:5px 0 9px;font-size:13px}.small-btn{border:1px solid rgba(170,80,255,.3);border-radius:10px;padding:10px;width:100%;color:#fff;background:rgba(170,80,255,.1);font-size:12px;font-weight:800}
+.empty{padding:25px 12px;text-align:center;color:#807688;font-size:12px}hr{border:0;border-top:1px solid rgba(255,255,255,.06);margin:15px 0}
+/* Daily reward + pro wallet */
+.daily-card{border:1px solid rgba(255,212,82,.22);background:linear-gradient(165deg,rgba(40,28,12,.55),rgba(12,8,20,.95))}
+.streak-badge{background:rgba(255,140,40,.18);border:1px solid rgba(255,180,60,.35);color:#ffd452;font-weight:900;font-size:14px;padding:8px 12px;border-radius:999px;white-space:nowrap}
+.daily-amount-row{display:flex;justify-content:space-between;align-items:flex-end;margin:14px 0 12px}
+.daily-amount{font-size:28px;font-weight:900;color:#ffd452;letter-spacing:-.5px}
+.daily-schedule{margin-top:10px;font-size:11px;text-align:center}
+.wallet-hero-card{border:1px solid rgba(170,80,255,.25);background:linear-gradient(165deg,rgba(40,20,70,.4),rgba(10,7,18,.98))}
+.balance-stack{display:flex;flex-direction:column;gap:10px}
+.balance-row{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06)}
+.balance-row-label{font-size:12px;color:#958ba3;font-weight:700}
+.balance-row-value{font-size:15px;font-weight:900;color:#fff}
+/* Referral pro */
+.referral-hero-card{border:1px solid rgba(255,212,82,.2);background:linear-gradient(165deg,rgba(40,28,12,.4),rgba(12,8,20,.98))}
+.qr-wrap{display:flex;justify-content:center;margin:14px 0 4px}
+.qr-img{width:200px;height:200px;border-radius:16px;background:#fff;padding:10px;box-shadow:0 8px 28px rgba(0,0,0,.35);object-fit:contain}
+.referral-code-box{text-align:center;margin:14px 0 8px;padding:12px;border-radius:14px;background:rgba(255,212,82,.08);border:1px solid rgba(255,212,82,.2)}
+.referral-code-big{font-size:22px;font-weight:900;color:#ffd54f;letter-spacing:1px;word-break:break-all}
+.referral-link-text{font-size:11px;font-weight:700;color:#caa2ff;word-break:break-all;line-height:1.4;text-align:center;padding:0 4px;opacity:.85}
+.referral-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+/* Breed + incubator */
+.breed-card{border:1px solid rgba(255,120,180,.22);background:linear-gradient(165deg,rgba(50,18,40,.4),rgba(12,8,20,.98))}
+.breed-pick-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.breed-slot{flex:1;text-align:center;padding:12px 8px;border-radius:16px;background:rgba(255,255,255,.04);border:1.5px dashed rgba(255,255,255,.15);cursor:pointer;min-height:110px}
+.breed-slot.filled{border-style:solid;border-color:rgba(255,180,220,.35);background:rgba(255,100,160,.08)}
+.breed-slot-label{font-size:10px;font-weight:800;color:#958ba3;letter-spacing:.5px;text-transform:uppercase}
+.breed-slot-art{font-size:36px;margin:8px 0;line-height:1;min-height:40px;display:flex;align-items:center;justify-content:center}
+.breed-slot-art img{width:48px;height:48px;object-fit:contain;border-radius:10px}
+.breed-slot-name{font-size:12px;font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.breed-plus{font-size:20px;flex-shrink:0}
+.egg-card{margin-bottom:12px;border:1px solid rgba(255,212,82,.15);background:linear-gradient(160deg,rgba(30,22,10,.5),rgba(12,8,18,.98))}
+.egg-card.ready{border-color:rgba(80,255,140,.35)}
+.egg-card.hatched{opacity:.65}
+.egg-timer{font-size:20px;font-weight:900;color:#ffd452;letter-spacing:1px;text-align:center;margin:8px 0}
+.egg-progress{height:8px;border-radius:99px;overflow:hidden;background:rgba(255,255,255,.07);margin:8px 0}
+.egg-progress span{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#ffd84c,#ff6bcb);transition:width .4s}
+.egg-emoji{font-size:42px;text-align:center;line-height:1}
+/* PiPet-style Baby Room — full cards */
+.baby-room-title{font-size:15px;font-weight:900;letter-spacing:.6px;margin:0 0 10px;color:#e8d4ff}
+.baby-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.baby-card{position:relative;padding:12px 10px 12px;border-radius:18px;background:linear-gradient(165deg,rgba(36,24,58,.98),rgba(12,8,22,.99));border:1px solid rgba(180,100,255,.22);text-align:center;min-height:248px;display:flex;flex-direction:column;align-items:center}
+.baby-card.ready{border-color:rgba(80,255,160,.45);box-shadow:0 0 20px rgba(60,220,120,.15)}
+.baby-card.listed{border-color:rgba(255,200,60,.4)}
+.baby-card.hatched{opacity:.55}
+.baby-gen{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:800;padding:3px 9px;border-radius:999px;background:rgba(140,80,255,.25);border:1px solid rgba(180,120,255,.4);color:#d4b8ff;margin:0 0 6px}
+.baby-name-row{display:flex;align-items:center;justify-content:center;gap:5px;flex-wrap:wrap;margin-bottom:4px;width:100%}
+.baby-lv{font-size:9px;font-weight:900;background:#5b3cff;color:#fff;padding:2px 6px;border-radius:6px;flex-shrink:0}
+.baby-name{font-size:11px;font-weight:800;color:#fff;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.baby-egg-wrap{width:100px;height:100px;margin:4px auto 8px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 50% 40%,rgba(255,255,255,.12),transparent 55%),rgba(8,6,18,.9);border:1px solid rgba(255,255,255,.08)}
+.baby-egg-wrap.ready-glow{animation:eggPulse 1.6s ease-in-out infinite}
+@keyframes eggPulse{0%,100%{box-shadow:0 0 12px rgba(80,255,160,.25)}50%{box-shadow:0 0 24px rgba(80,255,160,.55)}}
+.pipet-egg{width:52px;height:64px;border-radius:50% 50% 48% 48%/58% 58% 42% 42%;position:relative;box-shadow:inset -6px -8px 14px rgba(0,0,0,.25),inset 4px 6px 10px rgba(255,255,255,.35),0 6px 14px rgba(0,0,0,.35)}
+.pipet-egg:before,.pipet-egg:after{content:"";position:absolute;border-radius:50%;background:rgba(0,0,0,.22)}
+.pipet-egg:before{width:12px;height:10px;top:28%;left:18%}
+.pipet-egg:after{width:9px;height:8px;top:48%;right:16%}
+.pipet-egg.earth{background:linear-gradient(145deg,#c4b8a8,#8a7a68)}
+.pipet-egg.water{background:linear-gradient(145deg,#9ad4ff,#3a8fd4)}
+.pipet-egg.nature{background:linear-gradient(145deg,#b8f0a0,#4caf50)}
+.pipet-egg.ice{background:linear-gradient(145deg,#e8f6ff,#7ec8e8)}
+.pipet-egg.fire{background:linear-gradient(145deg,#ffb080,#e85d3a)}
+.pipet-egg.wind{background:linear-gradient(145deg,#e8e0ff,#9b8ad4)}
+.pipet-egg.thunder{background:linear-gradient(145deg,#fff3a0,#f0c020)}
+.pipet-egg.default{background:linear-gradient(145deg,#f5e6c8,#d4b896)}
+.pipet-egg.fire:before,.pipet-egg.fire:after{background:rgba(120,20,10,.35)}
+.pipet-egg.water:before,.pipet-egg.water:after{background:rgba(10,40,100,.3)}
+.pipet-egg.thunder:before,.pipet-egg.thunder:after{background:rgba(100,60,0,.3)}
+.baby-timer-pill{display:inline-block;font-size:11px;font-weight:900;padding:5px 11px;border-radius:999px;background:rgba(180,40,60,.4);border:1px solid rgba(255,100,120,.4);color:#ffb0ba;margin-bottom:8px;font-variant-numeric:tabular-nums;letter-spacing:.3px}
+.baby-timer-pill.ready{background:rgba(30,140,70,.4);border-color:rgba(80,255,140,.5);color:#7dffb0}
+.baby-deliver{width:100%;border:0;padding:10px;border-radius:999px;font-weight:900;font-size:12px;color:#0a1a10;background:linear-gradient(100deg,#5dff9a,#b8ff6a);box-shadow:0 4px 14px rgba(80,255,140,.25);margin-top:auto}
+.baby-deliver:disabled{opacity:.45;cursor:not-allowed;background:rgba(60,55,70,.9);color:#9a94a8;box-shadow:none}
+.baby-sell-row{display:flex;gap:6px;margin-top:8px;align-items:center;width:100%}
+.baby-sell-row input{flex:1;min-width:0;padding:8px;font-size:11px;border-radius:10px}
+.baby-sell-btn{width:auto;padding:8px 10px;font-size:10px;white-space:nowrap;flex-shrink:0}
+/* Virtual AMT Visa card */
+/* ===== PREMIUM AMT VIRTUAL CARD ===== */
+.amt-card-scene{perspective:1200px;max-width:380px;margin:0 auto 12px;cursor:default;filter:drop-shadow(0 16px 36px rgba(0,0,0,.55))}
+.amt-card{width:100%;aspect-ratio:1.586;position:relative;transform-style:preserve-3d;transition:transform .7s cubic-bezier(.22,1,.36,1)}
+.amt-card.flipped{transform:rotateY(180deg)}
+.amt-card-face{position:absolute;inset:0;border-radius:18px;backface-visibility:hidden;-webkit-backface-visibility:hidden;padding:20px 22px;overflow:hidden;border:1px solid rgba(255,255,255,.14)}
+.amt-card-front{background:linear-gradient(160deg,#050505 0%,#141414 40%,#0c0c0c 75%,#000 100%);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 0 0 1px rgba(0,0,0,.6)}
+.amt-card-front:before{content:"";position:absolute;inset:0;background:
+  radial-gradient(ellipse 90% 70% at 88% 0%,rgba(255,255,255,.08),transparent 48%),
+  radial-gradient(ellipse 55% 40% at 8% 100%,rgba(200,200,200,.04),transparent 50%),
+  linear-gradient(115deg,transparent 38%,rgba(255,255,255,.03) 48%,rgba(255,255,255,.08) 50%,rgba(255,255,255,.03) 52%,transparent 62%);
+  background-size:100% 100%,100% 100%,220% 100%;animation:amtShine 6s ease-in-out infinite;pointer-events:none}
+.amt-card-front:after{content:"";position:absolute;inset:0;border-radius:18px;box-shadow:inset 0 0 50px rgba(0,0,0,.45);pointer-events:none}
+@keyframes amtShine{0%,100%{background-position:0 0,0 0,0 0}50%{background-position:0 0,0 0,100% 0}}
+.amt-card-back{background:linear-gradient(160deg,#000,#121212 50%,#080808);transform:rotateY(180deg);color:#fff;display:flex;flex-direction:column;box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
+.amt-card-top{display:flex;justify-content:space-between;align-items:flex-start;position:relative;z-index:2}
+.amt-card-brand{display:flex;align-items:center;gap:8px}
+.amt-card-logo-badge{width:36px;height:36px;border-radius:10px;background:linear-gradient(145deg,#2a2a2a,#0a0a0a);border:1px solid rgba(255,255,255,.25);display:grid;place-items:center;font-size:10px;font-weight:900;color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.12)}
+.amt-card-logo{font-size:15px;font-weight:900;letter-spacing:2px;color:#fff}
+.amt-card-sub{display:block;font-size:8px;font-weight:800;color:rgba(255,255,255,.4);letter-spacing:1.5px;margin-top:2px}
+.amt-card-network{font-size:8px;font-weight:900;padding:5px 10px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.8);letter-spacing:.8px}
+.amt-card-chip-row{display:flex;align-items:center;gap:14px;margin:16px 0 14px;position:relative;z-index:2}
+.amt-card-chip{width:48px;height:36px;border-radius:7px;background:linear-gradient(145deg,#f5e6a8,#c4a03a 35%,#e8d078 60%,#a88420);box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 2px 6px rgba(0,0,0,.3);position:relative;overflow:hidden}
+.amt-card-chip:before{content:"";position:absolute;left:0;right:0;top:33%;height:1px;background:rgba(0,0,0,.18)}
+.amt-card-chip:after{content:"";position:absolute;left:0;right:0;top:66%;height:1px;background:rgba(0,0,0,.18);box-shadow:22px -12px 0 0 rgba(0,0,0,.12),22px 12px 0 0 rgba(0,0,0,.12)}
+.amt-card-contactless{width:28px;height:28px;opacity:.7}
+.amt-card-contactless svg{width:100%;height:100%}
+.amt-card-number{font-family:"SF Mono",ui-monospace,monospace;font-size:18px;font-weight:600;letter-spacing:2.5px;position:relative;z-index:2;margin-bottom:12px;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.4)}
+.amt-card-balance-label{font-size:8px;font-weight:800;letter-spacing:1.5px;color:rgba(255,255,255,.45);position:relative;z-index:2}
+.amt-card-balance{font-size:28px;font-weight:900;color:#fff;letter-spacing:-.5px;position:relative;z-index:2;margin-bottom:14px;text-shadow:0 0 20px rgba(255,255,255,.15)}
+.amt-card-face{border-color:rgba(255,255,255,.12)!important}
+.amt-flip-btn{margin-top:12px;width:100%}
+.amt-sign-pad-wrap{min-height:110px!important}
+#amtSignCanvas{height:110px!important}
+.amt-card-bottom{display:flex;align-items:flex-end;justify-content:space-between;gap:8px;position:relative;z-index:2}
+.amt-card-label{font-size:7px;font-weight:800;letter-spacing:1.2px;color:rgba(255,255,255,.4);margin-bottom:3px}
+.amt-card-holder{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1px;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.amt-visa-mark{font-size:20px;font-weight:900;font-style:italic;letter-spacing:1px;background:linear-gradient(180deg,#fff 30%,#c8c0d8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;filter:drop-shadow(0 1px 1px rgba(0,0,0,.3))}
+.amt-card-hint{position:absolute;bottom:8px;right:16px;font-size:8px;color:rgba(255,255,255,.3);z-index:2;letter-spacing:.3px}
+.amt-card-stripe{height:44px;background:linear-gradient(180deg,#111,#0a0a0a 40%,#1a1a1a);margin:14px -22px 12px;box-shadow:inset 0 3px 6px rgba(0,0,0,.6)}
+.amt-card-cvv-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;padding:0 2px}
+.amt-card-cvv-box{flex:1;height:28px;background:repeating-linear-gradient(-45deg,#eee,#eee 4px,#f8f8f8 4px,#f8f8f8 8px);border-radius:4px}
+.amt-card-cvv{font-family:monospace;font-size:12px;font-weight:800;background:#fff;color:#111;padding:4px 10px;border-radius:4px;letter-spacing:2px}
+.amt-card-back-info{flex:1;padding:0 2px;position:relative;z-index:1;display:flex;flex-direction:column}
+.amt-sign-pad-wrap{background:linear-gradient(180deg,#faf6ee,#f0e8d8);border-radius:8px;margin-top:4px;overflow:hidden;border:1px solid rgba(255,255,255,.2);box-shadow:inset 0 1px 3px rgba(0,0,0,.1);flex:1;min-height:110px}
+#amtSignCanvas{display:block;width:100%;height:110px;touch-action:none;cursor:crosshair}
+.amt-sign-actions{display:flex;gap:8px;margin-top:8px;justify-content:flex-end}
+
+/* ===== PRO PET CARDS (Shop · My Pets · Sell) ===== */
+.pet-card{
+position:relative;
+border-radius:20px;
+overflow:hidden;
+background:linear-gradient(165deg,#1c1230 0%,#0a0712 100%);
+border:1.5px solid rgba(255,255,255,.12);
+box-shadow:0 12px 36px rgba(0,0,0,.42);
+cursor:pointer;
+transition:transform .18s ease,box-shadow .18s ease;
+min-height:300px;
+display:flex;
+flex-direction:column;
+}
+.pet-card:active{transform:scale(.97)}
+.pet-card-top{
+position:relative;
+height:168px;
+flex-shrink:0;
+display:flex;
+align-items:center;
+justify-content:center;
+overflow:hidden;
+background:radial-gradient(circle at 50% 60%,rgba(255,255,255,.04),transparent 70%);
+}
+.pet-card-top::before{
+content:"";
+position:absolute;
+inset:0;
+opacity:.6;
+background:radial-gradient(circle at 50% 40%,var(--pet-glow,rgba(170,80,255,.5)),transparent 65%);
+}
+.pet-card-emoji{
+position:relative;
+z-index:2;
+font-size:72px;
+filter:drop-shadow(0 4px 12px rgba(0,0,0,.45));
+line-height:1;
+}
+.pet-card-img{
+width:140px!important;
+height:140px!important;
+object-fit:contain;
+border-radius:14px;
+position:relative;
+z-index:2;
+filter:drop-shadow(0 10px 20px rgba(0,0,0,.55));
+}
+.pet-card-badge{
+position:absolute;
+top:10px;
+right:10px;
+z-index:3;
+padding:4px 9px;
+border-radius:999px;
+font-size:9px;
+font-weight:900;
+letter-spacing:.4px;
+text-transform:uppercase;
+background:rgba(0,0,0,.6);
+border:1px solid rgba(255,255,255,.18);
+color:#ffd95a;
+}
+.pet-card-badge.r-common{color:#c8c0d0;border-color:rgba(200,200,210,.25)}
+.pet-card-badge.r-uncommon{color:#5dff9a;border-color:rgba(80,255,140,.35)}
+.pet-card-badge.r-rare{color:#5eb0ff;border-color:rgba(80,160,255,.4)}
+.pet-card-badge.r-epic{color:#d4a0ff;border-color:rgba(180,100,255,.45)}
+.pet-card-badge.r-legendary{color:#ffd452;border-color:rgba(255,200,60,.5);box-shadow:0 0 10px rgba(255,200,60,.25)}
+.pet-card-badge.r-mythic{color:#ff6bcb;border-color:rgba(255,100,200,.5);box-shadow:0 0 12px rgba(255,100,200,.3)}
+.pet-card-element{
+position:absolute;
+top:10px;
+left:10px;
+z-index:3;
+padding:4px 9px;
+border-radius:999px;
+font-size:9px;
+font-weight:800;
+letter-spacing:.3px;
+background:rgba(0,0,0,.55);
+border:1px solid var(--pet-border,rgba(170,80,255,.4));
+color:#fff;
+}
+.pet-card-body{padding:12px 12px 14px;flex:1;display:flex;flex-direction:column}
+.pet-card-name{
+font-size:15px;
+font-weight:900;
+letter-spacing:.2px;
+color:#fff;
+white-space:nowrap;
+overflow:hidden;
+text-overflow:ellipsis;
+}
+.pet-card-price{
+margin-top:4px;
+font-size:13px;
+font-weight:800;
+color:#ffd452;
+}
+.pet-card-sub{
+margin-top:3px;
+font-size:10px;
+color:#958ba3;
+font-weight:700;
+}
+.pet-card-stats{
+display:grid;
+grid-template-columns:repeat(4,1fr);
+gap:4px;
+margin-top:8px;
+}
+.pet-stat{
+text-align:center;
+padding:5px 2px;
+border-radius:9px;
+background:rgba(255,255,255,.04);
+border:1px solid rgba(255,255,255,.06);
+}
+.pet-stat b{
+display:block;
+font-size:11px;
+font-weight:900;
+color:#e8dff5;
+}
+.pet-stat span{
+font-size:8px;
+color:#8a8098;
+font-weight:700;
+text-transform:uppercase;
+}
+.pet-card-footer{
+margin-top:auto;
+padding-top:8px;
+}
+.pet-card-footer .small-btn{
+background:linear-gradient(105deg,rgba(255,213,80,.15),rgba(170,80,255,.2));
+border-color:rgba(190,100,255,.35);
+font-weight:900;
+letter-spacing:.4px;
+}
+
+/* Element themes */
+.pet-earth{--pet-glow:rgba(180,140,60,.55);--pet-border:rgba(200,160,70,.5);border-color:rgba(200,160,70,.28)}
+.pet-water{--pet-glow:rgba(50,140,255,.5);--pet-border:rgba(70,160,255,.5);border-color:rgba(70,160,255,.28)}
+.pet-nature{--pet-glow:rgba(60,200,100,.5);--pet-border:rgba(80,220,120,.5);border-color:rgba(80,220,120,.28)}
+.pet-ice{--pet-glow:rgba(140,210,255,.5);--pet-border:rgba(160,220,255,.5);border-color:rgba(160,220,255,.28)}
+.pet-fire{--pet-glow:rgba(255,100,40,.55);--pet-border:rgba(255,120,50,.5);border-color:rgba(255,120,50,.28)}
+.pet-wind{--pet-glow:rgba(160,255,220,.45);--pet-border:rgba(140,240,200,.5);border-color:rgba(140,240,200,.28)}
+.pet-thunder{--pet-glow:rgba(255,220,50,.55);--pet-border:rgba(255,230,80,.55);border-color:rgba(255,230,80,.3)}
+
+/* Modal pet card big */
+.pet-modal-card{
+border-radius:22px;
+overflow:hidden;
+border:1.5px solid rgba(190,100,255,.3);
+background:linear-gradient(165deg,#1c1230,#0b0815);
+margin-bottom:12px;
+}
+.pet-modal-art{
+height:160px;
+display:flex;
+align-items:center;
+justify-content:center;
+position:relative;
+background:radial-gradient(circle at 50% 40%,var(--pet-glow,rgba(170,80,255,.4)),transparent 70%),#0e0a18;
+}
+.pet-modal-art .pet-card-emoji{font-size:72px}
+.pet-modal-stats{
+display:grid;
+grid-template-columns:repeat(4,1fr);
+gap:8px;
+padding:12px;
+}
+.pet-modal-stats .pet-stat{padding:10px 4px;border-radius:12px}
+.pet-modal-stats .pet-stat b{font-size:16px}
+.pet-modal-stats .pet-stat span{font-size:9px}
+
+/* ============================================================
+   CINEMATIC AMT LOGIN SCREEN
+   FRONTEND ONLY — NO BACKEND / API CHANGES
+============================================================ */
+
+.login-cinematic{
+position:relative;
+min-height:calc(100vh - 96px);
+min-height:calc(100svh - 96px);
+margin:-2px -2px 0;
+padding:28px 8px 38px;
+display:flex;
+align-items:center;
+justify-content:center;
+overflow:hidden;
+border-radius:32px;
+background:
+radial-gradient(circle at 50% 34%,rgba(171,78,255,.20),transparent 22%),
+radial-gradient(circle at 50% 52%,rgba(255,211,76,.075),transparent 34%),
+radial-gradient(circle at 10% 90%,rgba(86,47,255,.13),transparent 28%),
+linear-gradient(150deg,#03020a 0%,#0b0615 48%,#04030a 100%);
+border:1px solid rgba(190,105,255,.18);
+box-shadow:0 20px 70px rgba(0,0,0,.38),inset 0 0 80px rgba(140,55,255,.06);
+}
+
+.login-cinematic::before{
+content:"";
+position:absolute;
+inset:0;
+background:
+linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px),
+linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px);
+background-size:38px 38px;
+mask-image:radial-gradient(circle at center,#000,transparent 78%);
+opacity:.45;
+pointer-events:none;
+}
+
+.login-grid{
+position:absolute;
+inset:-30%;
+background:
+linear-gradient(rgba(183,91,255,.035) 1px,transparent 1px),
+linear-gradient(90deg,rgba(183,91,255,.035) 1px,transparent 1px);
+background-size:70px 70px;
+transform:perspective(500px) rotateX(62deg) translateY(20%);
+transform-origin:center;
+animation:loginGridMove 9s linear infinite;
+opacity:.55;
+pointer-events:none;
+}
+
+@keyframes loginGridMove{
+0%{transform:perspective(500px) rotateX(62deg) translateY(20%)}
+100%{transform:perspective(500px) rotateX(62deg) translateY(0%)}
+}
+
+.login-stage{
+position:relative;
+z-index:5;
+width:min(100%,590px);
+text-align:center;
+padding:10px 14px;
+}
+
+.login-top-badge{
+display:inline-flex;
+align-items:center;
+gap:8px;
+padding:7px 12px;
+margin-bottom:16px;
+border-radius:999px;
+font-size:9px;
+font-weight:900;
+letter-spacing:2px;
+color:#bcaeca;
+background:rgba(255,255,255,.035);
+border:1px solid rgba(186,102,255,.22);
+box-shadow:0 0 22px rgba(167,73,255,.08);
+}
+
+.login-top-badge span{
+width:6px;
+height:6px;
+border-radius:50%;
+background:#63ff9b;
+box-shadow:0 0 12px #63ff9b;
+animation:loginPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes loginPulse{
+0%,100%{opacity:.45;transform:scale(.8)}
+50%{opacity:1;transform:scale(1.2)}
+}
+
+.login-core{
+position:relative;
+width:245px;
+height:245px;
+margin:0 auto 13px;
+display:grid;
+place-items:center;
+}
+
+.login-core-ring{
+position:absolute;
+left:50%;
+top:50%;
+border-radius:50%;
+transform:translate(-50%,-50%);
+pointer-events:none;
+}
+
+.login-core-ring-a{
+width:215px;
+height:215px;
+border:1px solid rgba(255,215,75,.22);
+box-shadow:0 0 35px rgba(255,205,70,.06),inset 0 0 25px rgba(165,75,255,.08);
+animation:loginRingA 8s linear infinite;
+}
+
+.login-core-ring-b{
+width:185px;
+height:185px;
+border:1px dashed rgba(176,83,255,.45);
+animation:loginRingB 11s linear infinite reverse;
+}
+
+.login-core-ring-c{
+width:150px;
+height:150px;
+border:1px solid rgba(255,255,255,.08);
+box-shadow:0 0 30px rgba(177,82,255,.16);
+animation:loginRingC 4s ease-in-out infinite;
+}
+
+@keyframes loginRingA{
+to{transform:translate(-50%,-50%) rotate(360deg)}
+}
+
+@keyframes loginRingB{
+to{transform:translate(-50%,-50%) rotate(360deg)}
+}
+
+@keyframes loginRingC{
+0%,100%{transform:translate(-50%,-50%) scale(.96);opacity:.6}
+50%{transform:translate(-50%,-50%) scale(1.05);opacity:1}
+}
+
+.login-core-orbit{
+position:absolute;
+left:50%;
+top:50%;
+width:8px;
+height:8px;
+margin:-4px;
+border-radius:50%;
+z-index:4;
+}
+
+.login-core-orbit-a{
+background:#ffd957;
+box-shadow:0 0 12px #ffd957,0 0 30px rgba(255,215,87,.65);
+animation:loginOrbitA 4.5s linear infinite;
+}
+
+.login-core-orbit-b{
+width:6px;
+height:6px;
+margin:-3px;
+background:#a95cff;
+box-shadow:0 0 12px #a95cff,0 0 28px rgba(169,92,255,.7);
+animation:loginOrbitB 6s linear infinite reverse;
+}
+
+.login-core-orbit-c{
+width:5px;
+height:5px;
+margin:-2.5px;
+background:#63e0ff;
+box-shadow:0 0 10px #63e0ff,0 0 22px rgba(99,224,255,.6);
+animation:loginOrbitC 5.2s linear infinite;
+}
+
+.login-core-orbit-d{
+width:4px;
+height:4px;
+margin:-2px;
+background:#ff7ab8;
+box-shadow:0 0 10px #ff7ab8,0 0 20px rgba(255,122,184,.55);
+animation:loginOrbitD 7s linear infinite reverse;
+}
+
+@keyframes loginOrbitA{
+0%{transform:rotate(0deg) translateX(108px)}
+100%{transform:rotate(360deg) translateX(108px)}
+}
+
+@keyframes loginOrbitB{
+0%{transform:rotate(0deg) translateX(91px)}
+100%{transform:rotate(360deg) translateX(91px)}
+}
+
+@keyframes loginOrbitC{
+0%{transform:rotate(0deg) translateX(100px)}
+100%{transform:rotate(360deg) translateX(100px)}
+}
+
+@keyframes loginOrbitD{
+0%{transform:rotate(0deg) translateX(78px)}
+100%{transform:rotate(360deg) translateX(78px)}
+}
+
+.login-core-logo{
+position:relative;
+z-index:6;
+width:112px;
+height:112px;
+display:flex;
+align-items:center;
+justify-content:center;
+flex-direction:column;
+border-radius:32px;
+color:#ffd958;
+background:
+radial-gradient(circle at 50% 25%,rgba(129,45,185,.9),rgba(31,13,49,.98) 62%),
+#12091e;
+border:1px solid rgba(255,218,92,.72);
+box-shadow:
+0 0 22px rgba(174,79,255,.58),
+0 0 65px rgba(174,79,255,.22),
+inset 0 0 30px rgba(0,0,0,.65);
+animation:loginLogo 2.3s ease-in-out infinite;
+}
+
+.login-core-logo::before{
+content:"";
+position:absolute;
+inset:8px;
+border-radius:25px;
+border:1px solid rgba(255,255,255,.07);
+}
+
+.login-core-logo span{
+position:relative;
+font-size:32px;
+font-weight:1000;
+letter-spacing:3px;
+text-shadow:0 0 18px rgba(255,216,82,.35);
+}
+
+.login-core-logo small{
+position:relative;
+margin-top:3px;
+font-size:7px;
+font-weight:900;
+letter-spacing:4px;
+color:#bbaacb;
+}
+
+@keyframes loginLogo{
+0%,100%{transform:scale(.96);box-shadow:0 0 22px rgba(174,79,255,.58),0 0 65px rgba(174,79,255,.22),inset 0 0 30px rgba(0,0,0,.65)}
+50%{transform:scale(1.035);box-shadow:0 0 30px rgba(255,210,72,.48),0 0 85px rgba(174,79,255,.34),inset 0 0 30px rgba(0,0,0,.65)}
+}
+
+.login-brand{
+margin-top:-4px;
+}
+
+.login-kicker{
+font-size:10px;
+font-weight:900;
+letter-spacing:4px;
+color:#a992bd;
+}
+
+.login-brand h1{
+margin:7px 0 0;
+font-size:clamp(31px,9vw,48px);
+line-height:.98;
+font-weight:1000;
+letter-spacing:3px;
+background:linear-gradient(90deg,#fff,#e9d9ff 42%,#ffd858 85%);
+-webkit-background-clip:text;
+background-clip:text;
+color:transparent;
+text-shadow:0 0 25px rgba(176,80,255,.15);
+}
+
+.login-line{
+width:170px;
+height:2px;
+margin:13px auto 10px;
+border-radius:99px;
+background:linear-gradient(90deg,transparent,#ffd653,#ad59ff,transparent);
+box-shadow:0 0 15px rgba(178,86,255,.35);
+}
+
+.login-brand p{
+margin:0;
+font-size:9px;
+font-weight:900;
+letter-spacing:5px;
+color:#796d86;
+}
+
+.login-copy{
+max-width:410px;
+margin:24px auto 16px;
+display:flex;
+flex-direction:column;
+gap:7px;
+}
+
+.login-copy strong{
+font-size:13px;
+letter-spacing:1px;
+color:#eee7f4;
+}
+
+.login-copy span{
+font-size:11px;
+line-height:1.55;
+color:#8f849b;
+}
+
+.login-pi-button{
+position:relative;
+width:min(100%,390px);
+min-height:68px;
+margin:0 auto;
+display:flex;
+align-items:center;
+gap:13px;
+padding:10px 14px;
+border:1px solid rgba(255,215,83,.62);
+border-radius:19px;
+color:#160b20;
+background:linear-gradient(105deg,#ffd955 0%,#ffca42 36%,#b35cff 100%);
+box-shadow:
+0 10px 35px rgba(168,77,255,.28),
+0 0 0 1px rgba(255,255,255,.06) inset,
+0 0 30px rgba(255,207,69,.09);
+transition:transform .2s ease,box-shadow .2s ease,filter .2s ease;
+overflow:hidden;
+}
+
+.login-pi-button::before{
+content:"";
+position:absolute;
+top:0;
+left:-100%;
+width:65%;
+height:100%;
+background:linear-gradient(90deg,transparent,rgba(255,255,255,.38),transparent);
+transform:skewX(-18deg);
+animation:loginButtonShine 3.5s ease-in-out infinite;
+}
+
+@keyframes loginButtonShine{
+0%,45%{left:-100%}
+70%,100%{left:150%}
+}
+
+.login-pi-button:hover{
+transform:translateY(-2px);
+box-shadow:0 14px 42px rgba(168,77,255,.38),0 0 35px rgba(255,207,69,.13);
+filter:saturate(1.08);
+}
+
+.login-pi-button:active{
+transform:translateY(1px) scale(.99);
+}
+
+.login-pi-icon{
+position:relative;
+z-index:2;
+width:45px;
+height:45px;
+flex-shrink:0;
+display:grid;
+place-items:center;
+border-radius:14px;
+font-family:Georgia,serif;
+font-size:28px;
+font-weight:900;
+color:#fff;
+background:rgba(61,24,89,.72);
+border:1px solid rgba(255,255,255,.22);
+box-shadow:0 5px 18px rgba(30,10,50,.25);
+}
+
+.login-pi-button>span:nth-child(2){
+position:relative;
+z-index:2;
+flex:1;
+display:flex;
+flex-direction:column;
+align-items:flex-start;
+text-align:left;
+}
+
+.login-pi-button b{
+font-size:13px;
+letter-spacing:1px;
+}
+
+.login-pi-button small{
+margin-top:3px;
+font-size:7px;
+font-weight:900;
+letter-spacing:1.5px;
+opacity:.65;
+}
+
+.login-pi-arrow{
+position:relative;
+z-index:2;
+font-size:30px;
+font-weight:300;
+line-height:1;
+opacity:.72;
+}
+
+.login-testnet-note{
+margin-top:15px;
+display:flex;
+align-items:center;
+justify-content:center;
+gap:7px;
+font-size:8px;
+font-weight:900;
+letter-spacing:2px;
+color:#74687f;
+}
+
+.login-testnet-note span{
+color:#63ff9b;
+font-size:11px;
+text-shadow:0 0 10px #63ff9b;
+}
+
+.login-notice{
+width:min(100%,430px);
+margin:14px auto 0;
+padding:11px 13px;
+display:flex;
+flex-direction:column;
+gap:4px;
+border-radius:15px;
+background:rgba(255,255,255,.025);
+border:1px solid rgba(255,255,255,.055);
+color:#777080;
+font-size:9px;
+line-height:1.45;
+}
+
+.login-notice b{
+color:#aa9cb6;
+font-size:9px;
+letter-spacing:1px;
+}
+
+.login-wave{
+position:absolute;
+left:50%;
+top:42%;
+width:70px;
+height:70px;
+border:1px solid rgba(174,83,255,.48);
+border-radius:50%;
+transform:translate(-50%,-50%) scale(.2);
+opacity:0;
+pointer-events:none;
+animation:loginWave 4.5s ease-out infinite;
+}
+
+.login-wave-2{animation-delay:1.5s}
+.login-wave-3{animation-delay:3s}
+
+@keyframes loginWave{
+0%{transform:translate(-50%,-50%) scale(.2);opacity:.55}
+65%{opacity:.14}
+100%{transform:translate(-50%,-50%) scale(6);opacity:0}
+}
+
+@media(max-width:420px){
+main{padding:12px}
+.hero{padding:18px}
+.grid3{grid-template-columns:1fr 1fr}
+.grid3 .stat:last-child{grid-column:1/-1}
+.big-balance{font-size:29px}
+
+.login-cinematic{
+min-height:calc(100svh - 82px);
+padding:20px 5px 30px;
+border-radius:25px;
+}
+
+.login-stage{padding:6px 8px}
+
+.login-core{
+width:205px;
+height:205px;
+margin-bottom:6px;
+}
+
+.login-core-ring-a{width:180px;height:180px}
+.login-core-ring-b{width:155px;height:155px}
+.login-core-ring-c{width:125px;height:125px}
+
+.login-core-logo{
+width:91px;
+height:91px;
+border-radius:27px;
+}
+
+.login-core-logo span{font-size:26px}
+.login-core-logo small{font-size:6px}
+
+@keyframes loginOrbitA{
+0%{transform:rotate(0deg) translateX(91px)}
+100%{transform:rotate(360deg) translateX(91px)}
+}
+
+@keyframes loginOrbitB{
+0%{transform:rotate(0deg) translateX(77px)}
+100%{transform:rotate(360deg) translateX(77px)}
+}
+
+.login-kicker{font-size:8px;letter-spacing:3px}
+.login-brand h1{font-size:32px;letter-spacing:2px}
+.login-brand p{font-size:7px;letter-spacing:4px}
+.login-copy{margin-top:19px}
+.login-copy strong{font-size:12px}
+.login-copy span{font-size:10px}
+.login-pi-button{min-height:64px}
+.login-testnet-note{font-size:7px;letter-spacing:1.5px}
+.login-notice{font-size:8px}
+}
+
+/* ============================================================
+   ALBERTO MARKETPLACE ECOSYSTEM LOGIN TRANSITION
+============================================================ */
+
+/* ============================================================
+   PRO MINING CORE FAN — shown on Login with Pi
+============================================================ */
+.ecosystem-loading{
+position:fixed;
+inset:0;
+z-index:9999;
+display:flex;
+align-items:center;
+justify-content:center;
+overflow:hidden;
+background:
+radial-gradient(circle at 50% 45%,rgba(157,69,255,.28),transparent 28%),
+radial-gradient(circle at 50% 50%,rgba(255,203,65,.12),transparent 48%),
+linear-gradient(145deg,#02010a,#0c0618 48%,#010106);
+opacity:1;
+visibility:visible;
+transition:opacity .7s ease,visibility .7s ease;
+}
+.ecosystem-loading.hidden{
+display:flex!important;
+opacity:0;
+visibility:hidden;
+pointer-events:none;
+}
+.ecosystem-loading::before{
+content:"";
+position:absolute;
+inset:-40%;
+background:
+radial-gradient(ellipse at center,transparent 20%,rgba(161,76,255,.1) 42%,transparent 68%);
+animation:ecosystemBackground 5s ease-in-out infinite;
+}
+@keyframes ecosystemBackground{
+0%,100%{transform:scale(.85) rotate(0deg);opacity:.4}
+50%{transform:scale(1.2) rotate(12deg);opacity:1}
+}
+
+/* Big spinning fan / turbine */
+.mc-fan-wrap{
+position:absolute;
+left:50%;
+top:42%;
+width:min(88vw,420px);
+height:min(88vw,420px);
+transform:translate(-50%,-50%);
+z-index:2;
+pointer-events:none;
+}
+.mc-fan{
+position:absolute;
+inset:0;
+border-radius:50%;
+animation:mcFanSpin 8s linear infinite;
+}
+.mc-fan-blade{
+position:absolute;
+left:50%;
+top:50%;
+width:42%;
+height:14%;
+margin-left:-21%;
+margin-top:-7%;
+border-radius:50% 8% 50% 8%;
+background:linear-gradient(90deg,
+transparent 0%,
+rgba(255,215,80,.15) 15%,
+rgba(180,90,255,.55) 45%,
+rgba(255,215,80,.75) 70%,
+rgba(255,255,255,.35) 100%);
+box-shadow:0 0 18px rgba(170,80,255,.35);
+transform-origin:center center;
+}
+.mc-fan-blade:nth-child(1){transform:rotate(0deg)}
+.mc-fan-blade:nth-child(2){transform:rotate(45deg)}
+.mc-fan-blade:nth-child(3){transform:rotate(90deg)}
+.mc-fan-blade:nth-child(4){transform:rotate(135deg)}
+.mc-fan-blade:nth-child(5){transform:rotate(180deg)}
+.mc-fan-blade:nth-child(6){transform:rotate(225deg)}
+.mc-fan-blade:nth-child(7){transform:rotate(270deg)}
+.mc-fan-blade:nth-child(8){transform:rotate(315deg)}
+@keyframes mcFanSpin{
+to{transform:rotate(360deg)}
+}
+.mc-fan-ring{
+position:absolute;
+left:50%;
+top:50%;
+border-radius:50%;
+transform:translate(-50%,-50%);
+border:1px solid rgba(255,215,90,.25);
+box-shadow:0 0 40px rgba(170,80,255,.2),inset 0 0 30px rgba(170,80,255,.12);
+}
+.mc-fan-ring-1{width:100%;height:100%;animation:mcRingPulse 2.5s ease-in-out infinite}
+.mc-fan-ring-2{width:78%;height:78%;border-style:dashed;border-color:rgba(180,90,255,.4);animation:mcRingSpin 12s linear infinite reverse}
+.mc-fan-ring-3{width:58%;height:58%;border-color:rgba(255,215,90,.35);animation:mcRingPulse 2s ease-in-out infinite .4s}
+@keyframes mcRingSpin{to{transform:translate(-50%,-50%) rotate(360deg)}}
+@keyframes mcRingPulse{
+0%,100%{opacity:.55;box-shadow:0 0 25px rgba(170,80,255,.15)}
+50%{opacity:1;box-shadow:0 0 50px rgba(255,210,80,.3)}
+}
+.mc-fan-hub{
+position:absolute;
+left:50%;
+top:50%;
+width:72px;
+height:72px;
+margin:-36px;
+border-radius:50%;
+z-index:4;
+display:grid;
+place-items:center;
+font-size:18px;
+font-weight:1000;
+letter-spacing:1px;
+color:#ffd95a;
+background:radial-gradient(circle at 50% 30%,#7a35b0,#12091f 70%);
+border:2px solid rgba(255,216,90,.8);
+box-shadow:0 0 25px rgba(170,80,255,.6),0 0 60px rgba(255,200,60,.25),inset 0 0 20px rgba(0,0,0,.6);
+animation:ecosystemLogo 1.6s ease-in-out infinite;
+}
+
+.ecosystem-core{
+position:relative;
+z-index:5;
+width:min(92vw,560px);
+text-align:center;
+padding:30px 18px;
+margin-top:min(42vw,210px);
+}
+.ecosystem-orbit{display:none}
+.ecosystem-logo{display:none}
+
+.ecosystem-title{
+margin:0;
+font-size:clamp(22px,6vw,34px);
+font-weight:1000;
+letter-spacing:2px;
+line-height:1.1;
+color:#fff;
+text-shadow:0 0 18px rgba(178,91,255,.55);
+animation:ecosystemTitle 1.5s ease both;
+}
+.ecosystem-title .gold{color:#ffd653}
+.ecosystem-subtitle{
+margin-top:10px;
+font-size:clamp(10px,3vw,13px);
+font-weight:800;
+letter-spacing:4px;
+color:#a99eb8;
+text-transform:uppercase;
+animation:ecosystemSubtitle 1.8s ease both;
+}
+@keyframes ecosystemTitle{
+0%{opacity:0;transform:translateY(18px);letter-spacing:7px}
+100%{opacity:1;transform:translateY(0);letter-spacing:2px}
+}
+@keyframes ecosystemSubtitle{
+0%{opacity:0;transform:translateY(10px)}
+100%{opacity:1;transform:translateY(0)}
+}
+.ecosystem-wave{
+position:absolute;
+left:50%;
+top:42%;
+width:80px;
+height:80px;
+border-radius:50%;
+border:1px solid rgba(178,89,255,.7);
+transform:translate(-50%,-50%) scale(.3);
+opacity:0;
+animation:ecosystemWave 3.2s ease-out infinite;
+}
+.ecosystem-wave:nth-child(2){animation-delay:.7s}
+.ecosystem-wave:nth-child(3){animation-delay:1.4s}
+.ecosystem-wave:nth-child(4){animation-delay:2.1s}
+@keyframes ecosystemWave{
+0%{transform:translate(-50%,-50%) scale(.3);opacity:.75}
+75%{opacity:.15}
+100%{transform:translate(-50%,-50%) scale(6);opacity:0}
+}
+.ecosystem-line{
+position:relative;
+width:min(310px,72vw);
+height:3px;
+margin:22px auto 0;
+overflow:hidden;
+border-radius:99px;
+background:rgba(255,255,255,.07);
+box-shadow:0 0 15px rgba(165,76,255,.15);
+}
+.ecosystem-line::after{
+content:"";
+position:absolute;
+top:0;
+left:-35%;
+width:35%;
+height:100%;
+border-radius:99px;
+background:linear-gradient(90deg,transparent,#ffd653,#b45cff,transparent);
+animation:ecosystemProgress 1.4s ease-in-out infinite;
+}
+@keyframes ecosystemProgress{
+0%{left:-35%}
+100%{left:100%}
+}
+.ecosystem-enter{
+margin-top:12px;
+font-size:9px;
+font-weight:800;
+letter-spacing:3px;
+color:#766b82;
+text-transform:uppercase;
+animation:ecosystemBlink 1s ease-in-out infinite;
+}
+@keyframes ecosystemBlink{
+0%,100%{opacity:.35}
+50%{opacity:1}
+}
+@keyframes ecosystemLogo{
+0%,100%{transform:scale(.94);box-shadow:0 0 25px rgba(170,80,255,.6),0 0 60px rgba(255,200,60,.25),inset 0 0 20px rgba(0,0,0,.6)}
+50%{transform:scale(1.06);box-shadow:0 0 35px rgba(255,210,80,.55),0 0 90px rgba(170,80,255,.4),inset 0 0 20px rgba(0,0,0,.6)}
+}
+</style>
+</head>
+
+<body>
+
+<div id="ecosystemLoading" class="ecosystem-loading hidden" aria-hidden="true">
+<div class="ecosystem-wave"></div>
+<div class="ecosystem-wave"></div>
+<div class="ecosystem-wave"></div>
+<div class="ecosystem-wave"></div>
+
+<!-- Large Mining Core Fan -->
+<div class="mc-fan-wrap">
+  <div class="mc-fan-ring mc-fan-ring-1"></div>
+  <div class="mc-fan-ring mc-fan-ring-2"></div>
+  <div class="mc-fan-ring mc-fan-ring-3"></div>
+  <div class="mc-fan">
+    <div class="mc-fan-blade"></div>
+    <div class="mc-fan-blade"></div>
+    <div class="mc-fan-blade"></div>
+    <div class="mc-fan-blade"></div>
+    <div class="mc-fan-blade"></div>
+    <div class="mc-fan-blade"></div>
+    <div class="mc-fan-blade"></div>
+    <div class="mc-fan-blade"></div>
+  </div>
+  <div class="mc-fan-hub">AMT</div>
+</div>
+
+<div class="ecosystem-core">
+<h1 class="ecosystem-title">ALBERTO <span class="gold">MARKETPLACE</span></h1>
+<div class="ecosystem-subtitle">MINING CORE ONLINE</div>
+<div class="ecosystem-line"></div>
+<div class="ecosystem-enter">ENTERING AMT ECOSYSTEM</div>
+</div>
+</div>
+
+<div class="app">
+
+<header>
+<div class="header-row">
+<div class="brand">
+<div class="brand-logo">AMT</div>
+<div>
+<div class="brand-title">ALBERTO MARKETPLACE</div>
+<div class="brand-sub">TOKEN • TESTNET ECOSYSTEM</div>
+</div>
+</div>
+<div class="testnet">● PI TESTNET</div>
+</div>
+</header>
+
+<main>
+
+<!-- ============================================================
+     NEW CINEMATIC LOGIN SCREEN
+============================================================ -->
+
+<section id="loginSection" class="section active">
+
+<div class="login-cinematic">
+
+<div class="login-grid"></div>
+
+<div class="login-wave login-wave-1"></div>
+<div class="login-wave login-wave-2"></div>
+<div class="login-wave login-wave-3"></div>
+
+<div class="login-stage">
+
+<div class="login-top-badge">
+<span></span>
+PI TESTNET • AMT CORE
+</div>
+
+<div class="login-core">
+
+<div class="login-core-ring login-core-ring-a"></div>
+<div class="login-core-ring login-core-ring-b"></div>
+<div class="login-core-ring login-core-ring-c"></div>
+
+<div class="login-core-orbit login-core-orbit-a"></div>
+<div class="login-core-orbit login-core-orbit-b"></div>
+<div class="login-core-orbit login-core-orbit-c"></div>
+<div class="login-core-orbit login-core-orbit-d"></div>
+
+<div class="login-core-logo">
+<span>AMT</span>
+<small>CORE</small>
+</div>
+
+</div>
+
+<div class="login-brand">
+
+<div class="login-kicker">
+ALBERTO MARKETPLACE
+</div>
+
+<h1>
+ECOSYSTEM
+</h1>
+
+<div class="login-line"></div>
+
+<p>
+TESTNET MINING CORE
+</p>
+
+</div>
+
+<div class="login-copy">
+
+<strong>
+ENTER THE AMT ECOSYSTEM
+</strong>
+
+<span>
+Connect your Pi account to access mining, wallet,
+rewards and the Alberto Marketplace.
+</span>
+
+</div>
+
+<button
+class="login-pi-button"
+onclick="loginWithPi()"
+>
+
+<span class="login-pi-icon">
+π
+</span>
+
+<span>
+<b>LOGIN WITH PI</b>
+<small>SECURE PI AUTHENTICATION</small>
+</span>
+
+<span class="login-pi-arrow">
+›
+</span>
+
+</button>
+
+<div class="login-testnet-note">
+<span>●</span>
+PI TESTNET ONLY • AMT HAS NO MAINNET VALUE
+</div>
+
+<div class="login-notice">
+
+<b>
+TESTNET DEVELOPMENT
+</b>
+
+<span>
+This application is for testing and development.
+AMT shown here has no Mainnet value.
+</span>
+
+</div>
+
+</div>
+
+</div>
+
+</section>
+
+<section id="miningSection" class="section">
+<div class="hero">
+<h1><span>AMT</span> MINING</h1>
+<p>Mine · Daily reward · Build your balance</p>
+<div class="notice">
+Pi KYC is <b>not required</b> for AMT Testnet mining.
+KYC may be required for applicable Mainnet functions.
+</div>
+</div>
+
+<!-- DAILY REWARD -->
+<div class="card daily-card">
+<div class="row" style="align-items:flex-start">
+<div>
+<div class="card-title" style="margin:0">🎁 DAILY REWARD</div>
+<div class="muted" style="margin-top:4px">1 claim per day · Streak bonus up to Day 7</div>
+</div>
+<div class="streak-badge" id="dailyStreakBadge">🔥 0</div>
+</div>
+<div class="daily-amount-row">
+<div>
+<div class="muted" style="font-size:11px">Today's reward</div>
+<div class="daily-amount" id="dailyNextAmount">— AMT</div>
+</div>
+<div style="text-align:right">
+<div class="muted" style="font-size:11px" id="dailyStatusLabel">Checking…</div>
+<div class="muted" style="font-size:11px;margin-top:4px" id="dailyResetTimer"></div>
+</div>
+</div>
+<button id="dailyClaimBtn" class="primary" onclick="claimDailyReward()" disabled>
+CLAIM DAILY REWARD
+</button>
+<div class="daily-schedule muted" id="dailyScheduleHint">Day 1: 2 · Day 7: 12 AMT</div>
+</div>
+
+<!-- MINING SESSION -->
+<div class="card">
+<div class="card-title">MINING SESSION</div>
+<div class="muted" style="margin-bottom:8px">24h session · 0.5 AMT/hr · Claim when timer ends</div>
+
+<div class="mining-ring">
+<div class="mining-inner">
+<div id="miningTimer" class="mining-time">24:00:00</div>
+<div class="mining-rate">0.5 AMT / HOUR</div>
+</div>
+</div>
+
+<div id="miningStatus" class="status-pill">MINING READY</div>
+
+<button id="startMiningBtn" class="primary" onclick="startMining()">
+⛏️ START MINING
+</button>
+
+<button id="claimMiningBtn" class="secondary hidden" style="margin-top:10px" onclick="claimMining()">
+💰 CLAIM MINING REWARD
+</button>
+
+<div class="progress"><span id="miningProgress"></span></div>
+
+<div class="row">
+<span class="muted">Current Earned</span>
+<b id="currentEarned">0.00000000 AMT</b>
+</div>
+</div>
+
+<div class="grid3">
+<div class="stat">
+<div class="stat-label">Mining Rate</div>
+<div class="stat-value">0.5 AMT/hr</div>
+</div>
+<div class="stat">
+<div class="stat-label">Status</div>
+<div id="miniMiningStatus" class="stat-value">Ready</div>
+</div>
+<div class="stat">
+<div class="stat-label">Network</div>
+<div class="stat-value">Pi Testnet</div>
+</div>
+</div>
+</section>
+
+<section id="walletSection" class="section">
+<div class="hero">
+<h1>AMT <span>WALLET</span></h1>
+<p>Your balances · transparent & private</p>
+</div>
+
+<div class="card wallet-hero-card">
+<div class="card-title">IN-APP AMT</div>
+<div class="big-balance">
+<span id="walletBalance">0.00000000</span>
+<span class="balance-symbol">AMT</span>
+</div>
+<div class="muted" style="margin-top:6px">Mining · Daily · Pets · Staking ledger</div>
+<div class="grid" style="margin-top:15px">
+<div class="stat">
+<div class="stat-label">Available</div>
+<div id="availableBalance" class="stat-value">0 AMT</div>
+</div>
+<div class="stat">
+<div class="stat-label">Staked</div>
+<div id="stakedBalance" class="stat-value">0 AMT</div>
+</div>
+</div>
+</div>
+
+<!-- PREMIUM VIRTUAL AMT CARD (on-chain only) -->
+<div class="card" style="background:transparent;border:none;padding:0;box-shadow:none">
+<div class="card-title" style="margin-bottom:6px">AMT VIRTUAL CARD</div>
+<div class="muted" style="margin-bottom:14px;font-size:11px">On-chain AMT only · Tap to flip · Sign on back · Virtual (not a real bank card)</div>
+
+<div class="amt-card-scene" id="amtCardScene">
+  <div class="amt-card" id="amtCard">
+    <!-- FRONT — Black Visa -->
+    <div class="amt-card-face amt-card-front">
+      <div class="amt-card-top">
+        <div class="amt-card-brand">
+          <div class="amt-card-logo-badge">AMT</div>
+          <div>
+            <div class="amt-card-logo">AMT BLACK</div>
+            <span class="amt-card-sub">ON-CHAIN · VIRTUAL</span>
+          </div>
+        </div>
+        <div class="amt-card-network">PI TESTNET</div>
+      </div>
+      <div class="amt-card-chip-row">
+        <div class="amt-card-chip" aria-hidden="true"></div>
+        <div class="amt-card-contactless" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="1.6">
+            <path d="M8.5 8.5c2.2-2.2 5.8-2.2 8 0" stroke-linecap="round"/>
+            <path d="M6 6c3.5-3.5 9.5-3.5 13 0" stroke-linecap="round"/>
+            <path d="M11 11c1.1-1.1 2.9-1.1 4 0" stroke-linecap="round"/>
+            <circle cx="13.5" cy="13.5" r="1.2" fill="rgba(255,255,255,.75)" stroke="none"/>
+          </svg>
+        </div>
+      </div>
+      <div class="amt-card-number" id="amtCardNumber">•••• •••• •••• 0000</div>
+      <div class="amt-card-balance-label">ON-CHAIN BALANCE</div>
+      <div class="amt-card-balance" id="amtCardBalance">— AMT</div>
+      <div class="amt-card-bottom">
+        <div>
+          <div class="amt-card-label">CARDHOLDER</div>
+          <div class="amt-card-holder" id="amtCardHolder">PIONEER</div>
+        </div>
+        <div>
+          <div class="amt-card-label">VALID</div>
+          <div class="amt-card-holder" id="amtCardValid">∞ / ∞</div>
+        </div>
+        <div class="amt-visa-mark">VISA</div>
+      </div>
+    </div>
+  </div>
+</div>
+<button type="button" class="secondary amt-flip-btn" id="amtSignOpenBtn" onclick="openAmtSignModal()">✍️ SIGN FIRST &amp; LAST NAME</button>
+<div class="muted" style="text-align:center;font-size:10px;margin-top:6px">Card stays fixed · Sign opens in a stable pad · Virtual only</div>
+</div>
+
+<!-- Fixed signature modal — card does not move -->
+<div id="amtSignModal" class="hidden" style="position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;padding:16px;touch-action:none">
+  <div class="card" style="max-width:400px;width:100%;margin:0;max-height:90vh;overflow:auto" onclick="event.stopPropagation()">
+    <div class="row">
+      <div class="card-title" style="margin:0">Sign your name</div>
+      <button class="small-btn" style="width:auto;padding:6px 12px" onclick="closeAmtSignModal()">✕</button>
+    </div>
+    <div class="muted" style="font-size:11px;margin:8px 0 10px">Write first name + last name · pad does not scroll the page</div>
+    <div class="amt-sign-pad-wrap" style="min-height:160px;touch-action:none">
+      <canvas id="amtSignCanvas" width="340" height="160" style="height:160px;touch-action:none"></canvas>
+    </div>
+    <div class="amt-sign-actions" style="margin-top:12px">
+      <button type="button" class="secondary" style="width:auto;padding:10px 14px" onclick="clearAmtSignature()">Clear</button>
+      <button type="button" class="primary" style="width:auto;padding:10px 14px" onclick="saveAmtSignature();closeAmtSignModal()">Save sign</button>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+<div class="card-title">ALL BALANCES</div>
+<div class="notice" style="margin-bottom:12px">
+<b>In-app</b> = app ledger · <b>On-chain AMT</b> = Pi Testnet token · <b>Test-Pi</b> = native Pi. Only your wallet is shown.
+</div>
+<div class="balance-stack">
+<div class="balance-row">
+<span class="balance-row-label">In-app AMT</span>
+<span class="balance-row-value" id="balInApp">0</span>
+</div>
+<div class="balance-row">
+<span class="balance-row-label">On-chain AMT</span>
+<span class="balance-row-value" id="balOnchainAmt">—</span>
+</div>
+<div class="balance-row">
+<span class="balance-row-label">Test-Pi</span>
+<span class="balance-row-value" id="balTestPi">—</span>
+</div>
+</div>
+<div class="muted" id="onchainStatus" style="margin-top:12px;font-size:11px"></div>
+</div>
+
+<!-- Deposit-to-treasury disabled: single Pioneer wallet only (no shared treasury) -->
+<div class="card hidden" id="onchainDepositCard">
+<div class="card-title">ON-CHAIN AMT → APP (UTILITY)</div>
+<div class="notice" id="depositInstructions">Disabled — no shared treasury wallet.</div>
+</div>
+
+<div class="card">
+<div class="card-title">WALLET ADDRESSES</div>
+
+<div class="notice">
+Your wallets only. Other Pioneers cannot see or use your addresses.
+<br><br>
+• <b>Pi Wallet</b> — your Testnet G... address (link manually if Pi does not sync it)
+<br>
+• <b>AMT Ledger</b> — app wallet for mining, pets, staking, transfers
+</div>
+
+<div style="margin-top:14px">
+<div class="muted">Pi Wallet Address (yours only)</div>
+<div id="piWalletAddress" class="wallet-address" style="color:#8cffb3">Not linked</div>
+</div>
+
+<div style="margin-top:14px">
+<div class="muted">AMT Ledger Address (yours only)</div>
+<div id="amtWalletAddress" class="wallet-address">Not connected</div>
+</div>
+
+<hr>
+
+<div class="form-group">
+<label>Link your Pi Testnet wallet (G... address)</label>
+<input id="linkPiWalletInput" class="input" placeholder="GXXXXXXXX...">
+</div>
+<button class="primary" onclick="linkPiWallet()">
+🔗 LINK MY PI WALLET
+</button>
+<button class="secondary" style="margin-top:8px" onclick="unlinkPiWallet()">
+Unlink Pi Wallet
+</button>
+
+<hr>
+
+<button class="secondary" onclick="refreshWallet()">
+🔄 REFRESH WALLET
+</button>
+</div>
+
+<div class="card">
+<div class="card-title">SEND AMT</div>
+
+<div class="form-group">
+<label>Recipient AMT App Wallet Address</label>
+<input id="sendTo" class="input" placeholder="AMT wallet address">
+</div>
+
+<div class="form-group">
+<label>Amount</label>
+<input id="sendAmount" class="input" type="number" min="0" step="0.00000001" placeholder="0.00">
+</div>
+
+<button class="primary" onclick="sendAMT()">SEND AMT</button>
+</div>
+</section>
+
+<section id="airdropSection" class="section">
+<div class="hero">
+<h1>AMT <span>AIRDROP</span></h1>
+<p>One-time Testnet community reward</p>
+</div>
+
+<div class="card">
+<div class="card-title">AIRDROP STATUS</div>
+
+<div class="grid">
+<div class="stat">
+<div class="stat-label">Reward</div>
+<div class="stat-value">AMT Testnet</div>
+</div>
+
+<div class="stat">
+<div class="stat-label">Claim</div>
+<div id="airdropStatus" class="stat-value">Checking...</div>
+</div>
+</div>
+
+<button id="airdropBtn" class="primary" style="margin-top:15px" onclick="claimAirdrop()">
+🎁 CLAIM AIRDROP
+</button>
+
+<div class="notice">
+One eligible claim per account. Testnet only.
+</div>
+</div>
+</section>
+
+<section id="referralSection" class="section">
+<div class="hero">
+<h1>AMT <span>REFERRAL</span></h1>
+<p>Invite Pioneers · Earn AMT · Climb tiers</p>
+</div>
+
+<!-- QR + LINK -->
+<div class="card referral-hero-card">
+<div class="card-title">YOUR INVITE QR</div>
+<div class="qr-wrap">
+  <img id="referralQr" class="qr-img" alt="Referral QR" width="200" height="200"
+    src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%231a1028' width='200' height='200'/%3E%3Ctext x='50%25' y='50%25' fill='%23958ba3' text-anchor='middle' dy='.3em' font-size='12'%3ELogin for QR%3C/text%3E%3C/svg%3E">
+</div>
+<div class="muted" style="text-align:center;margin-top:10px;font-size:11px">Scan to open app with your code</div>
+
+<div class="referral-code-box">
+  <div class="muted" style="font-size:10px;margin-bottom:4px">YOUR CODE</div>
+  <div id="referralCodeOnly" class="referral-code-big">------</div>
+</div>
+
+<div id="referralCode" class="referral-link-text">------</div>
+
+<div class="referral-actions">
+  <button class="secondary" onclick="copyReferral()">📋 COPY LINK</button>
+  <button class="secondary" onclick="copyReferralCode()">📋 COPY CODE</button>
+</div>
+<button class="primary" style="margin-top:10px" id="shareReferralBtn" onclick="shareReferral()">
+📤 SHARE INVITE
+</button>
+</div>
+
+<div class="grid">
+<div class="stat">
+<div class="stat-label">Referrals</div>
+<div id="referralCount" class="stat-value">0</div>
+</div>
+<div class="stat">
+<div class="stat-label">Active Miners</div>
+<div id="activeMiners" class="stat-value">0</div>
+</div>
+</div>
+
+<!-- TIER -->
+<div class="card" style="margin-top:15px">
+<div class="card-title">YOUR TIER</div>
+<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px">
+  <div>
+    <div id="tierName" style="font-size:22px;font-weight:900;color:#ffd54f">Bronze</div>
+    <div class="muted" style="margin-top:4px;font-size:11px">
+      <span id="tierReward">0.5</span> AMT per successful referral
+    </div>
+  </div>
+  <div style="text-align:right">
+    <div class="muted" style="font-size:10px">Next milestone</div>
+    <div id="nextMilestone" style="font-size:13px;font-weight:800;color:#caa2ff">5 refs</div>
+  </div>
+</div>
+<div class="progress" style="margin:10px 0 6px">
+  <span id="tierProgress" style="width:0%"></span>
+</div>
+<div class="muted" style="font-size:10px" id="tierProgressText">0 / 5 to next tier</div>
+</div>
+
+<!-- JOIN -->
+<div class="card" style="margin-top:15px">
+<div class="card-title">HAVE A CODE?</div>
+<input id="referralInput" class="input" placeholder="Enter pioneer referral code">
+<button class="primary" style="margin-top:10px" onclick="applyReferral()">
+JOIN WITH CODE
+</button>
+<div class="notice">
+Bronze 1–5 (+0.5) · Silver 6–15 (+1.0) · Gold 16–50 (+1.5) · Legend 51+ (+2.0)<br>
+Milestones: 5→+2 · 15→+5 · 50→+15 AMT
+</div>
+</div>
+</section>
+
+<section id="circleSection" class="section">
+<div class="hero">
+<h1>SECURITY <span>CIRCLE</span></h1>
+<p>Manage your Pi security circle</p>
+</div>
+
+<div class="card">
+<div class="card-title">SECURITY CIRCLE STATUS</div>
+
+<div class="grid">
+<div class="stat">
+<div class="stat-label">Members</div>
+<div id="circleCount" class="stat-value">0</div>
+</div>
+
+<div class="stat">
+<div class="stat-label">Status</div>
+<div id="circleStatus" class="stat-value">Not loaded</div>
+</div>
+</div>
+
+<button class="secondary" style="margin-top:14px" onclick="loadSecurityCircle()">
+🛡️ REFRESH SECURITY CIRCLE
+</button>
+
+<div id="circleList" style="margin-top:12px"></div>
+
+<div class="notice">
+Security Circle information is read from the Pi-authenticated account when available.
+This app does not invent Pi members.
+</div>
+</div>
+</section>
+
+<section id="profileSection" class="section">
+<div class="hero">
+<h1>MY <span>PROFILE</span></h1>
+<p>Manage your AMT account</p>
+</div>
+
+<div class="card">
+<div class="avatar-wrap">
+
+<div id="avatarBox" class="avatar avatar-placeholder">
+👤
+</div>
+
+<div class="profile-name" id="profileUsername">
+Pioneer
+</div>
+
+<div class="muted" id="profileUid">
+Pi UID: —
+</div>
+</div>
+
+<label>Update Profile Picture</label>
+
+<input id="profileImageInput" class="input" type="file" accept="image/png,image/jpeg,image/webp">
+
+<button class="primary" style="margin-top:10px" onclick="uploadProfileImage()">
+📸 UPLOAD PROFILE PICTURE
+</button>
+
+<button id="deletePhotoBtn" class="danger" style="margin-top:10px" onclick="deleteProfileImage()">
+🗑️ REMOVE PROFILE PICTURE
+</button>
+</div>
+
+<div class="card">
+<div class="card-title">ACCOUNT INFORMATION</div>
+
+<div class="row">
+<span class="muted">Username</span>
+<b id="infoUsername">—</b>
+</div>
+
+<div class="row">
+<span class="muted">Pi UID</span>
+<span id="infoUid" class="wallet-address">—</span>
+</div>
+
+<div class="row">
+<span class="muted">KYC</span>
+<b id="infoKyc">UNVERIFIED</b>
+</div>
+
+<div class="row">
+<span class="muted">Network</span>
+<b>Pi Testnet</b>
+</div>
+</div>
+
+<div class="card">
+<div class="card-title">SESSION</div>
+<button class="danger" onclick="logoutPi()">🚪 LOGOUT</button>
+</div>
+</section>
+
+<section id="stakingSection" class="section">
+<div class="hero">
+<h1>AMT <span>STAKING</span></h1>
+<p>Fixed-term Testnet staking</p>
+
+<div class="notice">
+<b>TESTNET ONLY</b><br>
+Staking is controlled by the AMT backend ledger.
+Rewards shown here have no Mainnet value.
+</div>
+</div>
+
+<div class="card">
+<div class="card-title">YOUR STAKING SUMMARY</div>
+
+<div class="grid3">
+<div class="stat">
+<div class="stat-label">Available</div>
+<div id="stakeAvailable" class="stat-value">0 AMT</div>
+</div>
+
+<div class="stat">
+<div class="stat-label">Staked</div>
+<div id="stakePrincipal" class="stat-value">0 AMT</div>
+</div>
+
+<div class="stat">
+<div class="stat-label">Pending Rewards</div>
+<div id="stakeRewards" class="stat-value">0 AMT</div>
+</div>
+</div>
+</div>
+
+<div class="card">
+<div class="card-title">CHOOSE STAKING POOL</div>
+
+<div id="stakingPools">
+
+<div class="pool">
+<div class="pool-name">STARTER • 30 DAYS</div>
+<div class="pool-rate">5%</div>
+<small>Fixed-term reward</small>
+<button class="secondary" style="margin-top:10px" onclick="selectPool('30D')">
+SELECT 30D
+</button>
+</div>
+
+<div class="pool">
+<div class="pool-name">GROWTH • 90 DAYS</div>
+<div class="pool-rate">10%</div>
+<small>Fixed-term reward</small>
+<button class="secondary" style="margin-top:10px" onclick="selectPool('90D')">
+SELECT 90D
+</button>
+</div>
+
+<div class="pool">
+<div class="pool-name">DIAMOND • 180 DAYS</div>
+<div class="pool-rate">15%</div>
+<small>Fixed-term reward</small>
+<button class="secondary" style="margin-top:10px" onclick="selectPool('180D')">
+SELECT 180D
+</button>
+</div>
+
+</div>
+
+<hr>
+
+<label>Selected Pool</label>
+<input id="selectedPool" class="input" value="30D" readonly>
+
+<label style="margin-top:12px">Amount to Stake</label>
+<input id="stakeAmount" class="input" type="number" min="1" step="0.00000001" placeholder="Minimum 1 AMT">
+
+<button class="primary" style="margin-top:12px" onclick="createStake()">
+🔒 STAKE AMT
+</button>
+</div>
+
+<div class="card">
+<div class="card-title">MY ACTIVE STAKES</div>
+<div id="activeStakes">
+<div class="empty">Loading stakes...</div>
+</div>
+</div>
+
+<div class="card">
+<div class="card-title">STAKING HISTORY</div>
+<div id="stakingHistory">
+<div class="empty">No history loaded.</div>
+</div>
+</div>
+</section>
+
+<section id="marketSection" class="section">
+<div class="hero">
+<h1>AMT <span>PETS</span></h1>
+<p>Collect • Care • Train • Breed • Battle • Sell</p>
+</div>
+
+<!-- Sub tabs -->
+<div class="card" style="margin-bottom:12px;padding:10px">
+<div style="display:flex;flex-wrap:wrap;gap:6px">
+<button class="small-btn" style="width:auto;padding:8px 12px" onclick="petTab('shop')">🛒 Shop</button>
+<button class="small-btn" style="width:auto;padding:8px 12px" onclick="petTab('owned')">🐾 My Pets</button>
+<button class="small-btn" style="width:auto;padding:8px 12px" onclick="petTab('eggs')">🥚 Eggs</button>
+<button class="small-btn" style="width:auto;padding:8px 12px" onclick="petTab('listings')">🏪 Public Sell</button>
+</div>
+</div>
+
+<!-- SHOP -->
+<div id="petShopPanel">
+<div class="card" id="starterPetCard" style="margin-bottom:12px;border:1px solid rgba(255,212,82,.25)">
+<div class="card-title">🎁 STARTER PET</div>
+<div class="muted" style="font-size:12px;margin-bottom:10px">Free Common pet · once per pioneer · onboarding for the ecosystem</div>
+<button class="primary" id="claimStarterBtn" onclick="claimStarterPet()">CLAIM FREE TERRA</button>
+<div class="muted" id="starterPetHint" style="margin-top:8px;font-size:11px;text-align:center"></div>
+</div>
+<div class="card" style="margin-bottom:12px;padding:12px">
+<div style="display:flex;flex-wrap:wrap;gap:6px" id="elementFilters">
+<button class="small-btn" style="width:auto;padding:8px 12px" onclick="filterPets('')">All</button>
+<button class="small-btn" style="width:auto;padding:8px 12px" onclick="filterPets('Earth')">Earth</button>
+<button class="small-btn" style="width:auto;padding:8px 12px" onclick="filterPets('Water')">Water</button>
+<button class="small-btn" style="width:auto;padding:8px 12px" onclick="filterPets('Nature')">Nature</button>
+<button class="small-btn" style="width:auto;padding:8px 12px" onclick="filterPets('Ice')">Ice</button>
+<button class="small-btn" style="width:auto;padding:8px 12px" onclick="filterPets('Fire')">Fire</button>
+<button class="small-btn" style="width:auto;padding:8px 12px" onclick="filterPets('Wind')">Wind</button>
+<button class="small-btn" style="width:auto;padding:8px 12px" onclick="filterPets('Thunder')">Thunder</button>
+</div>
+</div>
+<div id="petGrid" class="market-grid"><div class="empty">Loading pets...</div></div>
+</div>
+
+<!-- MY PETS -->
+<div id="petOwnedPanel" class="hidden">
+<div class="notice" style="margin-bottom:10px;font-size:11px">
+  Level milestones: <b>Lv10 → +2 AMT</b> · <b>Lv20 → +5</b> · <b>Lv50 Mythic → +15</b> (once per pet)
+</div>
+<div id="ownedPetGrid" class="market-grid"><div class="empty">No pets yet. Claim starter or buy from Shop.</div></div>
+</div>
+
+<!-- EGGS / BREED / INCUBATOR -->
+<div id="petEggsPanel" class="hidden">
+<div class="card breed-card" style="margin-bottom:14px">
+<div class="card-title">🧬 BREED PETS</div>
+<div class="muted" style="margin-bottom:12px;font-size:11px">Select 2 of your pets · Cost 1 AMT · Egg incubates <b>24 hours</b></div>
+<div class="breed-pick-row">
+  <div class="breed-slot" id="breedSlot1" onclick="openBreedPicker(1)">
+    <div class="breed-slot-label">Parent 1</div>
+    <div class="breed-slot-art" id="breedArt1">➕</div>
+    <div class="breed-slot-name" id="breedName1">Tap to select</div>
+  </div>
+  <div class="breed-plus">❤️</div>
+  <div class="breed-slot" id="breedSlot2" onclick="openBreedPicker(2)">
+    <div class="breed-slot-label">Parent 2</div>
+    <div class="breed-slot-art" id="breedArt2">➕</div>
+    <div class="breed-slot-name" id="breedName2">Tap to select</div>
+  </div>
+</div>
+<input type="hidden" id="breedPet1" value="">
+<input type="hidden" id="breedPet2" value="">
+<button class="primary" style="margin-top:14px" id="breedBtn" onclick="breedPets()">🥚 BREED (1 AMT)</button>
+<div class="notice">Same element = same-type egg · Mixed = random parent element</div>
+</div>
+
+<div class="card" style="margin-bottom:10px;padding:12px 14px">
+<div class="baby-room-title">🍼 BABY ROOM · INCUBATOR</div>
+<div class="muted" style="font-size:11px">24h hatch · <b>Deliver baby</b> when ready · Sell eggs on Public Sell</div>
+</div>
+<div id="eggsList" class="baby-grid"></div>
+</div>
+
+<!-- Breed pet picker modal -->
+<div id="breedPickerModal" class="hidden" style="position:fixed;inset:0;z-index:320;background:rgba(0,0,0,.8);display:flex;align-items:flex-end;justify-content:center;padding:0">
+<div class="card" style="max-width:480px;width:100%;max-height:70vh;overflow:auto;margin:0;border-radius:20px 20px 0 0">
+<div class="row">
+<div class="card-title" style="margin:0" id="breedPickerTitle">Select parent</div>
+<button class="small-btn" style="width:auto;padding:6px 12px" onclick="closeBreedPicker()">✕</button>
+</div>
+<div id="breedPickerList" class="market-grid" style="margin-top:12px"></div>
+</div>
+</div>
+
+<!-- PUBLIC SELL — pets + eggs -->
+<div id="petListingsPanel" class="hidden">
+<div class="notice" style="margin-bottom:12px">
+  <b>Pets:</b> My Pets → VIEW → PUBLIC SELL ·
+  <b>Eggs:</b> Eggs tab → set price → SELL EGG ·
+  Pay with <b>in-app AMT</b>
+</div>
+<div id="listingsGrid" class="market-grid"><div class="empty">Loading listings...</div></div>
+</div>
+
+<!-- Pet Detail Modal (Shop buy) -->
+<div id="petModal" class="hidden" style="position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;padding:16px">
+<div class="card" style="max-width:400px;width:100%;max-height:90vh;overflow:auto;margin:0">
+<div class="row">
+<div class="card-title" style="margin:0" id="modalPetName">Pet</div>
+<button class="small-btn" style="width:auto;padding:6px 12px" onclick="closePetModal()">✕</button>
+</div>
+<div id="modalPetArt" style="text-align:center;margin:12px 0"></div>
+<div class="grid" style="margin-bottom:12px">
+<div class="stat"><div class="stat-label">Element</div><div class="stat-value" id="modalElement">—</div></div>
+<div class="stat"><div class="stat-label">Rarity</div><div class="stat-value" id="modalRarity">—</div></div>
+<div class="stat"><div class="stat-label">HP</div><div class="stat-value" id="modalHp">—</div></div>
+<div class="stat"><div class="stat-label">ATK</div><div class="stat-value" id="modalAtk">—</div></div>
+<div class="stat"><div class="stat-label">DEF</div><div class="stat-value" id="modalDef">—</div></div>
+<div class="stat"><div class="stat-label">SPD</div><div class="stat-value" id="modalSpd">—</div></div>
+</div>
+<div class="notice" style="margin-bottom:12px"><b>Ability:</b> <span id="modalAbility">—</span></div>
+<div style="font-size:18px;font-weight:900;color:#ffd54f;margin-bottom:12px" id="modalPrice">0 AMT</div>
+<button class="primary" id="buyPetBtn" onclick="buySelectedPet()">BUY WITH AMT</button>
+</div>
+</div>
+
+<!-- BATTLE ARENA (visual rounds) -->
+<div id="battleArena" class="hidden" style="position:fixed;inset:0;z-index:400;background:linear-gradient(180deg,#0a1628 0%,#122038 40%,#1a2840 100%);display:flex;flex-direction:column;align-items:stretch">
+  <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px">
+    <button class="small-btn" style="width:auto;padding:8px 14px;background:rgba(255,60,60,.25);border-color:rgba(255,80,80,.4)" onclick="closeBattleArena()">Exit</button>
+    <div id="battleRoundLabel" style="font-weight:900;font-size:13px;color:#c8d8f0">Round 1</div>
+    <div style="width:60px"></div>
+  </div>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:space-around;padding:8px 16px 20px;position:relative">
+    <!-- Enemy -->
+    <div style="text-align:center">
+      <div id="battleEnemyName" style="font-size:12px;font-weight:800;color:#ffb0b0;margin-bottom:6px">Enemy</div>
+      <div style="height:10px;background:rgba(0,0,0,.45);border-radius:999px;overflow:hidden;max-width:220px;margin:0 auto 8px;border:1px solid rgba(255,100,100,.3)">
+        <div id="battleEnemyHpBar" style="height:100%;width:100%;background:linear-gradient(90deg,#ff4455,#ff7788);transition:width .4s"></div>
+      </div>
+      <div id="battleEnemyArt" style="font-size:64px;line-height:1;filter:drop-shadow(0 8px 16px rgba(0,0,0,.5))">🌑</div>
+      <div id="battleEnemyHpText" style="font-size:11px;color:#ffc0c0;margin-top:4px">HP</div>
+    </div>
+    <!-- Log -->
+    <div id="battleLog" style="text-align:center;min-height:40px;font-size:13px;font-weight:800;color:#e8f0ff;text-shadow:0 2px 8px rgba(0,0,0,.6)">Get ready...</div>
+    <!-- You -->
+    <div style="text-align:center">
+      <div id="battleMyArt" style="font-size:56px;line-height:1;margin-bottom:6px">🐾</div>
+      <div id="battleMyName" style="font-size:12px;font-weight:800;color:#b0ffd0;margin-bottom:6px">Your Pet</div>
+      <div style="height:10px;background:rgba(0,0,0,.45);border-radius:999px;overflow:hidden;max-width:220px;margin:0 auto 4px;border:1px solid rgba(80,255,140,.3)">
+        <div id="battleMyHpBar" style="height:100%;width:100%;background:linear-gradient(90deg,#22c55e,#4ade80);transition:width .4s"></div>
+      </div>
+      <div id="battleMyHpText" style="font-size:11px;color:#b8ffd0">HP</div>
+    </div>
+  </div>
+  <!-- Result overlay -->
+  <div id="battleResultPanel" class="hidden" style="position:absolute;inset:0;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;padding:20px">
+    <div style="text-align:center;max-width:300px">
+      <div id="battleResultBadge" style="font-size:72px;margin-bottom:8px">🏆</div>
+      <div id="battleResultTitle" style="font-size:28px;font-weight:900;color:#ffd54f;margin-bottom:8px">Victory</div>
+      <div id="battleResultReward" style="font-size:16px;font-weight:800;color:#a0f0c0;margin-bottom:18px">+0.3 AMT</div>
+      <button class="primary" onclick="closeBattleArena()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Owned Pet Actions Modal -->
+<div id="ownedModal" class="hidden" style="position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;padding:16px">
+<div class="card" style="max-width:400px;width:100%;max-height:90vh;overflow:auto;margin:0">
+<div class="row">
+<div class="card-title" style="margin:0" id="ownedModalName">My Pet</div>
+<button class="small-btn" style="width:auto;padding:6px 12px" onclick="closeOwnedModal()">✕</button>
+</div>
+<div id="ownedModalArt" style="text-align:center;margin:12px 0"></div>
+<div class="grid" style="margin-bottom:10px">
+<div class="stat"><div class="stat-label">Lv</div><div class="stat-value" id="ownedLv">1</div></div>
+<div class="stat"><div class="stat-label">Energy</div><div class="stat-value" id="ownedEnergy">100</div></div>
+<div class="stat"><div class="stat-label">Happy</div><div class="stat-value" id="ownedHappy">100</div></div>
+<div class="stat"><div class="stat-label">ID</div><div class="stat-value" id="ownedId" style="font-size:11px">—</div></div>
+</div>
+<div class="grid" style="margin-bottom:12px">
+<div class="stat"><div class="stat-label">HP</div><div class="stat-value" id="ownedHp">—</div></div>
+<div class="stat"><div class="stat-label">ATK</div><div class="stat-value" id="ownedAtk">—</div></div>
+<div class="stat"><div class="stat-label">DEF</div><div class="stat-value" id="ownedDef">—</div></div>
+<div class="stat"><div class="stat-label">SPD</div><div class="stat-value" id="ownedSpd">—</div></div>
+</div>
+<button class="secondary" style="margin-bottom:8px" onclick="carePet('feed')">🍖 FEED (0.2 AMT)</button>
+<button class="secondary" style="margin-bottom:8px" onclick="carePet('play')">🎾 PLAY (0.1 AMT)</button>
+<button class="secondary" style="margin-bottom:8px" onclick="buyEnergyPack('energy')">⚡ ENERGY PACK (1 AMT)</button>
+<button class="secondary" style="margin-bottom:8px" onclick="buyEnergyPack('full')">💖 FULL PACK (3 AMT)</button>
+<button class="secondary" style="margin-bottom:8px" onclick="trainPet('atk')">⚔️ TRAIN ATK (0.5)</button>
+<button class="secondary" style="margin-bottom:8px" onclick="trainPet('hp')">❤️ TRAIN HP (0.5)</button>
+<button class="primary" style="margin-bottom:8px" onclick="battlePet()">⚔️ BATTLE</button>
+<div class="muted" style="font-size:10px;margin:6px 0 10px;text-align:center">Milestones: Lv10 +2 · Lv20 +5 · Lv50 +15 AMT</div>
+<div class="form-group" style="margin-top:10px">
+<label>Sell Price (AMT)</label>
+<input id="sellPrice" class="input" type="number" min="0.1" step="0.1" placeholder="1.0">
+</div>
+<button class="secondary" onclick="listPetForSale()">🏪 PUBLIC SELL</button>
+</div>
+</div>
+</section>
+
+<section id="swapSection" class="section">
+<div class="hero">
+<h1>AMT <span>SWAP</span></h1>
+<p>Pi Testnet swap interface</p>
+</div>
+
+<div class="card">
+<div class="card-title">AMT / PI TESTNET</div>
+
+<div class="notice">
+Swap functionality depends on the currently available Pi Testnet liquidity and platform integration.
+</div>
+
+<button class="secondary" style="margin-top:14px" onclick="showToast('Swap interface is available for Testnet integration.',false)">
+🔄 OPEN SWAP
+</button>
+</div>
+</section>
+
+</main>
+
+<nav id="bottomNav" class="nav hidden">
+
+<div class="nav-grid">
+
+<button class="nav-btn active" data-section="miningSection" onclick="showSection('miningSection',this)">
+<span class="icon">⛏️</span>Mining
+</button>
+
+<button class="nav-btn" data-section="walletSection" onclick="showSection('walletSection',this)">
+<span class="icon">👛</span>Wallet
+</button>
+
+<button class="nav-btn" data-section="profileSection" onclick="showSection('profileSection',this)">
+<span class="icon">👤</span>Profile
+</button>
+
+<button class="nav-btn" data-section="stakingSection" onclick="showSection('stakingSection',this)">
+<span class="icon">🔒</span>Staking
+</button>
+
+<button class="nav-btn" data-section="marketSection" onclick="showSection('marketSection',this)">
+<span class="icon">🛒</span>Market
+</button>
+
+</div>
+
+<div class="nav-grid" style="margin-top:4px">
+
+<button class="nav-btn" data-section="airdropSection" onclick="showSection('airdropSection',this)">
+<span class="icon">🎁</span>Airdrop
+</button>
+
+<button class="nav-btn" data-section="referralSection" onclick="showSection('referralSection',this)">
+<span class="icon">👥</span>Referral
+</button>
+
+<button class="nav-btn" data-section="circleSection" onclick="showSection('circleSection',this)">
+<span class="icon">🛡️</span>Circle
+</button>
+
+<button class="nav-btn" data-section="swapSection" onclick="showSection('swapSection',this)">
+<span class="icon">🔄</span>Swap
+</button>
+
+<button class="nav-btn" onclick="showSection('profileSection',this)">
+<span class="icon">⚙️</span>Account
+</button>
+
+</div>
+</nav>
+
+<div id="toast" class="toast"></div>
+
+<script>
+"use strict";
+
+const API_BASE="https://alberto-amt-testnet.onrender.com";
+
+let accessToken=null;
+let currentUser=null;
+let miningInterval=null;
+let selectedStakePool="30D";
+
+function $(id){return document.getElementById(id)}
+
+function esc(value){
+return String(value??"")
+.replace(/&/g,"&amp;")
+.replace(/</g,"&lt;")
+.replace(/>/g,"&gt;")
+.replace(/"/g,"&quot;")
+.replace(/'/g,"&#39;");
+}
+
+function num(value){
+const n=Number(value);
+return Number.isFinite(n)?n:0;
+}
+
+function fmt(value){
+return num(value).toFixed(8);
+}
+
+function showToast(message,error=false){
+const el=$("toast");
+el.textContent=message;
+el.className="toast show "+(error?"error":"success");
+clearTimeout(showToast.timer);
+showToast.timer=setTimeout(()=>{
+el.className="toast";
+},3500);
+}
+
+/* ============================================================
+   CINEMATIC ECOSYSTEM LOGIN TRANSITION
+============================================================ */
+
+function showEcosystemLoading(){
+const el=$("ecosystemLoading");
+
+if(!el){
+return Promise.resolve();
+}
+
+el.classList.remove("hidden");
+el.setAttribute("aria-hidden","false");
+
+return new Promise(resolve=>{
+setTimeout(resolve,3200);
+});
+}
+
+function hideEcosystemLoading(){
+const el=$("ecosystemLoading");
+
+if(!el)return;
+
+el.classList.add("hidden");
+el.setAttribute("aria-hidden","true");
+}
+
+/* ============================================================
+   API
+============================================================ */
+
+async function api(path,options={}){
+const headers={
+...(options.body instanceof FormData?{}:{"Content-Type":"application/json"}),
+...(options.headers||{})
+};
+
+if(accessToken){
+headers.Authorization="Bearer "+accessToken;
+}
+
+const response=await fetch(API_BASE+path,{
+...options,
+headers
+});
+
+let data=null;
+
+try{
+data=await response.json();
+}catch(e){
+data={};
+}
+
+if(!response.ok){
+throw new Error(
+data.message||
+data.error||
+("Request failed: "+response.status)
+);
+}
+
+return data;
+}
+
+/* ============================================================
+   NAVIGATION
+============================================================ */
+
+function showSection(id,button=null){
+
+document.querySelectorAll(".section")
+.forEach(s=>s.classList.remove("active"));
+
+const section=$(id);
+
+if(section){
+section.classList.add("active");
+}
+
+document.querySelectorAll(".nav-btn").forEach(btn=>{
+btn.classList.remove("active");
+
+if(btn.dataset.section===id){
+btn.classList.add("active");
+}
+});
+
+window.scrollTo({
+top:0,
+behavior:"smooth"
+});
+
+if(id==="walletSection")refreshWallet();
+if(id==="airdropSection")loadAirdrop();
+if(id==="referralSection")loadReferral();
+if(id==="circleSection")loadSecurityCircle();
+if(id==="profileSection")loadProfile();
+if(id==="stakingSection")loadStaking();
+if(id==="miningSection"){loadMiningStatus();loadDailyStatus();}
+if(id==="marketSection")petTab(currentPetTab || "shop");
+}
+
+/* ============================================================
+   PI LOGIN
+============================================================ */
+
+async function loginWithPi(){
+
+try{
+
+if(!window.Pi){
+throw new Error(
+"Pi SDK is not available. Please open this app inside Pi Browser."
+);
+}
+
+showToast("Connecting to Pi...");
+
+try{
+
+Pi.init({
+version:"2.0",
+sandbox:true
+});
+
+}catch(e){
+
+console.warn(
+"Pi sandbox initialization failed:",
+e
+);
+
+Pi.init({
+version:"2.0"
+});
+
+}
+
+const authResult=await Pi.authenticate(
+["username","payments"],
+payment=>console.log(
+"Incomplete payment:",
+payment
+)
+);
+
+if(
+!authResult||
+!authResult.accessToken||
+!authResult.user
+){
+throw new Error(
+"Pi authentication did not return a valid session."
+);
+}
+
+accessToken=authResult.accessToken;
+currentUser=authResult.user;
+
+await api("/api/users",{
+method:"POST",
+body:JSON.stringify({
+username:currentUser.username,
+uid:currentUser.uid
+})
+});
+
+localStorage.setItem(
+"amt_pi_access_token",
+accessToken
+);
+
+localStorage.setItem(
+"amt_pi_username",
+currentUser.username||""
+);
+
+localStorage.setItem(
+"amt_pi_uid",
+currentUser.uid||""
+);
+
+await showEcosystemLoading();
+
+enterApp();
+
+// Apply referral from link (?ref=username) if present
+await tryApplyPendingReferral();
+
+setTimeout(()=>{
+hideEcosystemLoading();
+},250);
+
+showToast(
+"Welcome, "+(currentUser.username||"Pioneer")+"!"
+);
+
+}catch(error){
+
+console.error(error);
+
+showToast(
+error.message||"Pi login failed.",
+true
+);
+
+hideEcosystemLoading();
+}
+}
+
+/* ============================================================
+   RESTORE SESSION
+============================================================ */
+
+async function restoreSession(){
+
+const savedToken=
+localStorage.getItem("amt_pi_access_token");
+
+if(!savedToken)return;
+
+accessToken=savedToken;
+
+currentUser={
+username:
+localStorage.getItem("amt_pi_username")||
+"Pioneer",
+
+uid:
+localStorage.getItem("amt_pi_uid")||
+""
+};
+
+try{
+
+await api("/api/balance");
+
+enterApp();
+
+// Apply referral from link if present
+await tryApplyPendingReferral();
+
+}catch(error){
+
+console.log(
+"Saved AMT session expired."
+);
+
+logoutPi(false);
+}
+}
+
+/* ============================================================
+   ENTER APP
+============================================================ */
+
+function enterApp(){
+
+$("loginSection").classList.remove("active");
+
+$("bottomNav").classList.remove("hidden");
+
+showSection("miningSection");
+
+loadAll();
+}
+
+/* ============================================================
+   LOGOUT
+============================================================ */
+
+function logoutPi(showMessage=true){
+
+accessToken=null;
+currentUser=null;
+
+localStorage.removeItem(
+"amt_pi_access_token"
+);
+
+localStorage.removeItem(
+"amt_pi_username"
+);
+
+localStorage.removeItem(
+"amt_pi_uid"
+);
+
+// Virtual card signature + session UI (privacy on logout)
+try{ localStorage.removeItem("amt_card_signature"); }catch(e){}
+_amtSignPadReady = false;
+_amtSignDrawing = false;
+try{
+  const canvas = $("amtSignCanvas");
+  if(canvas){
+    const ctx = canvas.getContext("2d");
+    if(ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+  const card = $("amtCard");
+  if(card) card.classList.remove("flipped");
+  if($("amtCardBalance")) $("amtCardBalance").textContent = "— AMT";
+  if($("amtCardNumber")) $("amtCardNumber").textContent = "•••• •••• •••• 0000";
+  if($("amtCardHolder")) $("amtCardHolder").textContent = "PIONEER";
+}catch(e){}
+
+if(miningInterval){
+clearInterval(miningInterval);
+miningInterval=null;
+}
+
+document.querySelectorAll(".section")
+.forEach(s=>s.classList.remove("active"));
+
+$("loginSection").classList.add("active");
+
+$("bottomNav").classList.add("hidden");
+
+if(showMessage){
+showToast("Logged out.");
+}
+}
+
+/* ============================================================
+   LOAD ALL
+============================================================ */
+
+async function loadAll(){
+
+await Promise.allSettled([
+refreshWallet(),
+loadMiningStatus(),
+loadDailyStatus(),
+loadAirdrop(),
+loadReferral(),
+loadSecurityCircle(),
+loadProfile(),
+loadStaking()
+]);
+
+}
+
+/* ============================================================
+   WALLET
+============================================================ */
+
+async function refreshWallet(){
+
+try{
+
+// Prefer full wallet endpoint, fallback to balance
+let data;
+try{
+  data = await api("/api/wallet");
+}catch(e){
+  data = await api("/api/balance");
+}
+
+const balance=num(
+data.balance??
+data.availableBalance??
+data.amount??
+0
+);
+
+const available=num(
+data.availableBalance??
+balance
+);
+
+const staked=num(
+data.stakedPrincipal??
+data.stakedBalance??
+data.staked??
+0
+);
+
+$("walletBalance").textContent=
+fmt(balance);
+
+$("availableBalance").textContent=
+fmt(available)+" AMT";
+
+$("stakedBalance").textContent=
+fmt(staked)+" AMT";
+
+if($("balInApp")){
+  $("balInApp").textContent = fmt(available) + " AMT";
+}
+
+// AMT Ledger Address
+const amtAddr =
+  data.ledgerWalletAddress ||
+  data.walletAddress ||
+  data.wallet?.walletAddress ||
+  null;
+
+if(amtAddr){
+  $("amtWalletAddress").textContent = amtAddr;
+}else{
+  $("amtWalletAddress").textContent = "Not connected";
+}
+
+// Pi Wallet Address (verified from Pi API)
+const piAddr =
+  data.piWalletAddress ||
+  data.piUser?.walletAddress ||
+  null;
+
+if($("piWalletAddress")){
+  if(piAddr){
+    $("piWalletAddress").textContent = piAddr;
+  }else{
+    $("piWalletAddress").textContent = "Not linked — paste your G... address below";
+  }
+}
+
+// On-chain balances (own linked wallet only)
+await refreshOnchainBalances();
+
+}catch(error){
+
+console.log(error);
+
+if(
+error.message.includes("401")||
+error.message.toLowerCase().includes("unauthorized")
+){
+logoutPi(false);
+}
+
+}
+}
+
+async function linkPiWallet(){
+  const input = $("linkPiWalletInput");
+  const address = (input && input.value ? input.value : "").trim();
+
+  if(!address){
+    return showToast("Paste your Pi Testnet wallet address (starts with G).", true);
+  }
+
+  if(!/^G[A-Z2-7]{55}$/i.test(address)){
+    return showToast("Invalid address. Use your G... wallet from Pi Testnet.", true);
+  }
+
+  try{
+    const data = await api("/api/wallet/link-pi", {
+      method: "POST",
+      body: JSON.stringify({ piWalletAddress: address })
+    });
+
+    if($("piWalletAddress")){
+      $("piWalletAddress").textContent = data.piWalletAddress || address.toUpperCase();
+    }
+    if(input) input.value = "";
+
+    showToast("Pi wallet linked to your account only.");
+    await refreshWallet();
+  }catch(error){
+    showToast(error.message || "Failed to link wallet.", true);
+  }
+}
+
+async function unlinkPiWallet(){
+  if(!confirm("Unlink your Pi wallet from this account?")) return;
+
+  try{
+    await api("/api/wallet/link-pi", { method: "DELETE" });
+    if($("piWalletAddress")){
+      $("piWalletAddress").textContent = "Not linked — paste your G... address below";
+    }
+    if($("balOnchainAmt")) $("balOnchainAmt").textContent = "—";
+    if($("balTestPi")) $("balTestPi").textContent = "—";
+    if($("onchainStatus")) $("onchainStatus").textContent = "Link wallet to see on-chain balances.";
+    showToast("Pi wallet unlinked.");
+  }catch(error){
+    showToast(error.message || "Failed to unlink.", true);
+  }
+}
+
+function updateAmtVisaCard(onchainAmt, linked, walletAddr){
+  const balEl = $("amtCardBalance");
+  const numEl = $("amtCardNumber");
+  const holderEl = $("amtCardHolder");
+  const cvvEl = $("amtCardCvv");
+  if(balEl){
+    if(linked && onchainAmt != null && !isNaN(Number(onchainAmt))){
+      balEl.textContent = Number(onchainAmt).toFixed(4) + " AMT";
+    }else{
+      balEl.textContent = "— AMT";
+    }
+  }
+  if(numEl){
+    let last4 = "0000";
+    if(walletAddr && String(walletAddr).length >= 4){
+      last4 = String(walletAddr).replace(/[^A-Za-z0-9]/g,"").slice(-4).toUpperCase();
+    }
+    numEl.textContent = "•••• •••• •••• " + last4;
+  }
+  if(holderEl){
+    const name = (currentUser && currentUser.username) ||
+      localStorage.getItem("amt_pi_username") ||
+      "PIONEER";
+    holderEl.textContent = String(name).toUpperCase().slice(0, 18);
+  }
+  if(cvvEl){
+    // Cosmetic only — not a real CVV
+    if(walletAddr && String(walletAddr).length >= 3){
+      let n = 0;
+      const s = String(walletAddr);
+      for(let i = 0; i < s.length; i++) n = (n + s.charCodeAt(i) * (i + 1)) % 1000;
+      cvvEl.textContent = String(n).padStart(3, "0");
+    }else{
+      cvvEl.textContent = "•••";
+    }
+  }
+}
+
+let _amtSignDrawing = false;
+let _amtSignPadReady = false;
+
+function openAmtSignModal(){
+  const modal = $("amtSignModal");
+  if(!modal) return;
+  modal.classList.remove("hidden");
+  modal.style.display = "flex";
+  document.body.style.overflow = "hidden";
+  _amtSignPadReady = false;
+  setTimeout(initAmtSignPad, 60);
+}
+
+function closeAmtSignModal(){
+  const modal = $("amtSignModal");
+  if(modal){
+    modal.classList.add("hidden");
+    modal.style.display = "none";
+  }
+  document.body.style.overflow = "";
+}
+
+function initAmtSignPad(){
+  const canvas = $("amtSignCanvas");
+  if(!canvas) return;
+  const ctx = canvas.getContext("2d");
+  if(!ctx) return;
+
+  const rect = canvas.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  const w = Math.max(300, Math.floor(rect.width * dpr));
+  const h = Math.max(140, Math.floor(rect.height * dpr));
+  canvas.width = w;
+  canvas.height = h;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.scale(dpr, dpr);
+  ctx.strokeStyle = "#111";
+  ctx.lineWidth = 2.4;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+
+  try{
+    const saved = localStorage.getItem("amt_card_signature");
+    if(saved){
+      const img = new Image();
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0, rect.width, rect.height);
+      };
+      img.src = saved;
+    }
+  }catch(e){}
+
+  if(_amtSignPadReady) return;
+
+  function pos(ev){
+    const r = canvas.getBoundingClientRect();
+    const t = (ev.touches && ev.touches[0]) || (ev.changedTouches && ev.changedTouches[0]) || ev;
+    return { x: t.clientX - r.left, y: t.clientY - r.top };
+  }
+  function start(ev){
+    ev.preventDefault();
+    ev.stopPropagation();
+    _amtSignDrawing = true;
+    const p = pos(ev);
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y);
+  }
+  function move(ev){
+    if(!_amtSignDrawing) return;
+    ev.preventDefault();
+    ev.stopPropagation();
+    const p = pos(ev);
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+  }
+  function end(ev){
+    if(ev){ ev.preventDefault(); ev.stopPropagation(); }
+    _amtSignDrawing = false;
+  }
+
+  canvas.addEventListener("mousedown", start);
+  canvas.addEventListener("mousemove", move);
+  canvas.addEventListener("mouseup", end);
+  canvas.addEventListener("mouseleave", end);
+  canvas.addEventListener("touchstart", start, { passive: false });
+  canvas.addEventListener("touchmove", move, { passive: false });
+  canvas.addEventListener("touchend", end, { passive: false });
+  _amtSignPadReady = true;
+}
+
+function clearAmtSignature(){
+  const canvas = $("amtSignCanvas");
+  if(!canvas) return;
+  const ctx = canvas.getContext("2d");
+  if(!ctx) return;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  try{ localStorage.removeItem("amt_card_signature"); }catch(e){}
+  showToast("Signature cleared");
+}
+
+function saveAmtSignature(){
+  const canvas = $("amtSignCanvas");
+  if(!canvas) return;
+  try{
+    const data = canvas.toDataURL("image/png");
+    localStorage.setItem("amt_card_signature", data);
+    showToast("Signature saved on this device");
+  }catch(e){
+    showToast("Could not save signature", true);
+  }
+}
+
+async function refreshOnchainBalances(){
+  try{
+    const data = await api("/api/wallet/onchain");
+
+    if($("balOnchainAmt")){
+      if(data.linked && data.onchainAmtBalance != null){
+        $("balOnchainAmt").textContent = Number(data.onchainAmtBalance).toFixed(4) + " AMT";
+      }else{
+        $("balOnchainAmt").textContent = "—";
+      }
+    }
+
+    if($("balTestPi")){
+      if(data.linked && data.testPiBalance != null){
+        $("balTestPi").textContent = Number(data.testPiBalance).toFixed(4) + " Test-π";
+      }else{
+        $("balTestPi").textContent = "—";
+      }
+    }
+
+    // Virtual Visa card — on-chain AMT only
+    updateAmtVisaCard(
+      data.onchainAmtBalance,
+      data.linked,
+      data.walletAddress || data.piWallet || (typeof piWalletAddress !== "undefined" ? null : null)
+    );
+    // Prefer linked address from DOM if API doesn't return it
+    const addrEl = $("piWalletAddress");
+    const addrText = addrEl ? addrEl.textContent.trim() : "";
+    if(addrText && addrText !== "Not linked" && !addrText.startsWith("Not")){
+      updateAmtVisaCard(data.onchainAmtBalance, data.linked, addrText);
+    }
+
+    if($("onchainStatus")){
+      if(!data.linked){
+        $("onchainStatus").textContent = "Link your Pi wallet to load on-chain balances.";
+      }else if(data.accountExists === false){
+        $("onchainStatus").textContent = data.message || "Wallet not found on Pi Testnet yet.";
+      }else{
+        $("onchainStatus").textContent = "On-chain data from Pi Testnet · your wallet only";
+      }
+    }
+  }catch(e){
+    console.log("On-chain balances:", e);
+    if($("onchainStatus")){
+      $("onchainStatus").textContent = "Could not load on-chain balances.";
+    }
+    updateAmtVisaCard(null, false, null);
+  }
+
+  await loadDepositInfo();
+}
+
+async function loadDepositInfo(){
+  try{
+    const data = await api("/api/onchain/deposit-info");
+    if($("depositTreasury")){
+      $("depositTreasury").textContent =
+        data.treasuryAddress || "Set AMT_ONCHAIN_TREASURY on server";
+    }
+  }catch(e){
+    console.log("Deposit info:", e);
+  }
+}
+
+async function claimOnchainDeposit(){
+  const input = $("depositTxHash");
+  const txHash = (input && input.value ? input.value : "").trim();
+
+  if(!txHash){
+    return showToast("Paste the transaction hash after sending on-chain AMT.", true);
+  }
+
+  try{
+    showToast("Verifying on-chain payment...");
+    const data = await api("/api/onchain/deposit-claim", {
+      method: "POST",
+      body: JSON.stringify({ txHash })
+    });
+
+    if(input) input.value = "";
+    showToast(data.message || ("Credited " + data.credited + " AMT"));
+    await refreshWallet();
+  }catch(error){
+    showToast(error.message || "Deposit claim failed.", true);
+  }
+}
+
+/* ============================================================
+   SEND AMT
+============================================================ */
+
+async function sendAMT(){
+
+const recipient=
+$("sendTo").value.trim();
+
+const amount=
+num($("sendAmount").value);
+
+if(!recipient){
+return showToast(
+"Enter the recipient wallet address.",
+true
+);
+}
+
+if(amount<=0){
+return showToast(
+"Enter a valid AMT amount.",
+true
+);
+}
+
+try{
+
+await api("/api/ledger/send",{
+method:"POST",
+body:JSON.stringify({
+recipient,
+amount
+})
+});
+
+$("sendTo").value="";
+$("sendAmount").value="";
+
+showToast("AMT sent successfully.");
+
+await refreshWallet();
+
+}catch(error){
+
+showToast(
+error.message,
+true
+);
+
+}
+}
+
+/* ============================================================
+   MINING
+============================================================ */
+
+let dailyResetInterval=null;
+
+async function loadDailyStatus(){
+  try{
+    if(!accessToken){
+      if($("dailyStatusLabel")) $("dailyStatusLabel").textContent="Login to claim";
+      if($("dailyClaimBtn")) $("dailyClaimBtn").disabled=true;
+      return;
+    }
+    const data=await api("/api/daily/status");
+    const streak=Number(data.streak||0);
+    const nextStreak=Number(data.nextStreak||1);
+    const nextAmt=Number(data.nextAmount||1);
+    const canClaim=Boolean(data.canClaim);
+    if($("dailyStreakBadge")) $("dailyStreakBadge").textContent="🔥 "+(data.claimedToday?streak:Math.max(0,streak));
+    if($("dailyNextAmount")) $("dailyNextAmount").textContent=fmt(nextAmt)+" AMT";
+    if($("dailyScheduleHint")&&Array.isArray(data.schedule)){
+      $("dailyScheduleHint").textContent=
+        "Streak: "+data.schedule.map((a,i)=>"D"+(i+1)+":"+a).join(" · ");
+    }
+    const btn=$("dailyClaimBtn");
+    if(btn){
+      btn.disabled=!canClaim;
+      btn.textContent=canClaim
+        ?("🎁 CLAIM "+fmt(nextAmt)+" AMT")
+        :"✅ CLAIMED TODAY";
+    }
+    if($("dailyStatusLabel")){
+      $("dailyStatusLabel").textContent=canClaim
+        ?("Ready · Streak → "+nextStreak+"/"+ (data.maxStreak||7))
+        :("Claimed · Streak "+streak+"/"+(data.maxStreak||7));
+    }
+    if(dailyResetInterval){clearInterval(dailyResetInterval);dailyResetInterval=null;}
+    if(!canClaim && data.secondsUntilReset>0){
+      let left=Number(data.secondsUntilReset);
+      const tick=()=>{
+        if(left<=0){
+          if($("dailyResetTimer")) $("dailyResetTimer").textContent="Refresh for next claim";
+          loadDailyStatus();
+          return;
+        }
+        const h=Math.floor(left/3600);
+        const m=Math.floor((left%3600)/60);
+        const s=Math.floor(left%60);
+        if($("dailyResetTimer"))
+          $("dailyResetTimer").textContent=
+            "Next in "+String(h).padStart(2,"0")+":"+String(m).padStart(2,"0")+":"+String(s).padStart(2,"0")+" UTC";
+        left--;
+      };
+      tick();
+      dailyResetInterval=setInterval(tick,1000);
+    }else if($("dailyResetTimer")){
+      $("dailyResetTimer").textContent=canClaim?"":"";
+    }
+  }catch(e){
+    console.log("Daily status:",e);
+    if($("dailyStatusLabel")) $("dailyStatusLabel").textContent=e.message||"Unavailable";
+  }
+}
+
+async function claimDailyReward(){
+  const btn=$("dailyClaimBtn");
+  try{
+    if(btn){btn.disabled=true;btn.textContent="CLAIMING…";}
+    const data=await api("/api/daily/claim",{method:"POST",body:JSON.stringify({})});
+    showToast(data.message||("Daily +"+fmt(data.amount||0)+" AMT"));
+    await loadDailyStatus();
+    await refreshWallet();
+  }catch(e){
+    showToast(e.message||"Daily claim failed",true);
+    await loadDailyStatus();
+  }
+}
+
+async function loadMiningStatus(){
+
+try{
+
+const data=
+await api("/api/mining/status");
+
+const active=Boolean(
+data.active??
+data.isMining??
+data.session
+);
+
+const completed=Boolean(
+data.completed??
+data.claimable??
+data.rewardReady
+);
+
+const earned=num(
+data.earned??
+data.currentEarned??
+0
+);
+
+$("currentEarned").textContent=
+fmt(earned)+" AMT";
+
+if(active&&completed){
+
+$("miningStatus").textContent=
+"REWARD READY";
+
+$("miniMiningStatus").textContent=
+"Reward Ready";
+
+$("startMiningBtn").disabled=true;
+
+$("claimMiningBtn")
+.classList.remove("hidden");
+
+$("miningTimer").textContent=
+"00:00:00";
+
+$("miningProgress").style.width=
+"100%";
+
+if(miningInterval){
+
+clearInterval(miningInterval);
+miningInterval=null;
+
+}
+
+return;
+}
+
+if(active){
+
+$("miningStatus").textContent=
+"⛏️ MINING ACTIVE";
+
+$("miniMiningStatus").textContent=
+"Active";
+
+$("startMiningBtn").disabled=true;
+
+$("claimMiningBtn")
+.classList.add("hidden");
+
+startMiningClock(data);
+
+return;
+}
+
+$("miningStatus").textContent=
+"MINING READY";
+
+$("miniMiningStatus").textContent=
+"Ready";
+
+$("startMiningBtn").disabled=false;
+
+$("claimMiningBtn")
+.classList.add("hidden");
+
+$("miningTimer").textContent=
+"24:00:00";
+
+$("miningProgress").style.width=
+"0%";
+
+if(miningInterval){
+
+clearInterval(miningInterval);
+miningInterval=null;
+
+}
+
+}catch(error){
+
+console.log(
+"Mining status:",
+error
+);
+
+}
+}
+
+/* ============================================================
+   MINING CLOCK
+============================================================ */
+
+function startMiningClock(data){
+
+if(miningInterval){
+
+clearInterval(miningInterval);
+miningInterval=null;
+
+}
+
+let remaining=num(
+data.remainingSeconds??
+data.secondsRemaining??
+86400
+);
+
+const total=86400;
+
+function tick(){
+
+remaining=Math.max(
+0,
+remaining
+);
+
+const h=Math.floor(
+remaining/3600
+);
+
+const m=Math.floor(
+(remaining%3600)/60
+);
+
+const s=Math.floor(
+remaining%60
+);
+
+$("miningTimer").textContent=
+String(h).padStart(2,"0")+
+":"+
+String(m).padStart(2,"0")+
+":"+
+String(s).padStart(2,"0");
+
+$("miningProgress").style.width=
+Math.max(
+0,
+Math.min(
+100,
+((total-remaining)/total)*100
+)
+)+"%";
+
+if(remaining<=0){
+
+$("miningStatus").textContent=
+"REWARD READY";
+
+$("miniMiningStatus").textContent=
+"Reward Ready";
+
+$("startMiningBtn").disabled=true;
+
+$("claimMiningBtn")
+.classList.remove("hidden");
+
+clearInterval(miningInterval);
+
+miningInterval=null;
+
+return;
+}
+
+remaining--;
+
+}
+
+tick();
+
+miningInterval=
+setInterval(tick,1000);
+
+}
+
+/* ============================================================
+   START MINING
+============================================================ */
+
+async function startMining(){
+
+const button=
+$("startMiningBtn");
+
+try{
+
+button.disabled=true;
+
+await api("/api/mining/start",{
+method:"POST",
+body:JSON.stringify({})
+});
+
+showToast(
+"AMT mining started."
+);
+
+await loadMiningStatus();
+
+}catch(error){
+
+button.disabled=false;
+
+showToast(
+error.message,
+true
+);
+
+}
+}
+
+/* ============================================================
+   CLAIM MINING
+============================================================ */
+
+async function claimMining(){
+
+const button=
+$("claimMiningBtn");
+
+try{
+
+button.disabled=true;
+
+const data=
+await api("/api/mining/claim",{
+method:"POST",
+body:JSON.stringify({})
+});
+
+const reward=num(
+data.reward??
+data.amount??
+data.claimedAmount??
+0
+);
+
+showToast(
+"Mining reward claimed: "+
+fmt(reward)+
+" AMT"
+);
+
+await loadMiningStatus();
+await refreshWallet();
+
+}catch(error){
+
+console.error(
+"Mining claim:",
+error
+);
+
+showToast(
+error.message||
+"Unable to claim AMT reward.",
+true
+);
+
+}finally{
+
+button.disabled=false;
+
+}
+}
+
+/* ============================================================
+   AIRDROP
+============================================================ */
+
+async function loadAirdrop(){
+
+try{
+
+const data=
+await api("/api/airdrop/status");
+
+const claimed=Boolean(
+data.claimed??
+data.alreadyClaimed
+);
+
+$("airdropStatus").textContent=
+claimed?
+"CLAIMED":
+"AVAILABLE";
+
+$("airdropBtn").disabled=
+claimed;
+
+$("airdropBtn").textContent=
+claimed?
+"✅ AIRDROP CLAIMED":
+"🎁 CLAIM AIRDROP";
+
+}catch(error){
+
+console.log(
+"Airdrop status:",
+error
+);
+
+}
+}
+
+async function claimAirdrop(){
+
+try{
+
+const data=
+await api("/api/airdrop/claim",{
+method:"POST",
+body:JSON.stringify({})
+});
+
+showToast(
+"Airdrop claimed: "+
+fmt(
+data.amount??
+data.reward??
+0
+)+
+" AMT"
+);
+
+await loadAirdrop();
+await refreshWallet();
+
+}catch(error){
+
+showToast(
+error.message,
+true
+);
+
+}
+}
+
+/* ============================================================
+   REFERRAL
+============================================================ */
+
+const APP_BASE_URL = "https://bonene28.github.io";
+
+function getPendingReferralCode(){
+  try{
+    const params = new URLSearchParams(window.location.search);
+    const fromUrl = (params.get("ref") || params.get("referral") || "").trim();
+    if(fromUrl){
+      localStorage.setItem("amt_pending_referral", fromUrl);
+      return fromUrl;
+    }
+    return (localStorage.getItem("amt_pending_referral") || "").trim();
+  }catch(e){
+    return "";
+  }
+}
+
+function clearPendingReferralCode(){
+  try{
+    localStorage.removeItem("amt_pending_referral");
+  }catch(e){}
+}
+
+function buildReferralLink(code){
+  return APP_BASE_URL + "/?ref=" + encodeURIComponent(code);
+}
+
+function updateReferralQr(link){
+  const img = $("referralQr");
+  if(!img) return;
+  if(!link || link === "------"){
+    img.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%231a1028' width='200' height='200'/%3E%3Ctext x='50%25' y='50%25' fill='%23958ba3' text-anchor='middle' dy='.3em' font-size='12'%3ELogin for QR%3C/text%3E%3C/svg%3E";
+    return;
+  }
+  // Client-side QR via public API (no extra JS dependency)
+  img.src =
+    "https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=8&ecc=M&data=" +
+    encodeURIComponent(link);
+  img.onerror = function(){
+    img.alt = "QR unavailable — use copy link";
+  };
+}
+
+async function loadReferral(){
+try{
+const data = await api("/api/referrals");
+const code = (data.referralCode || data.code || data.username || "").trim();
+
+if(code && code !== "------"){
+  const fullLink = buildReferralLink(code);
+  if($("referralCode")) $("referralCode").textContent = fullLink;
+  if($("referralCodeOnly")) $("referralCodeOnly").textContent = code;
+  updateReferralQr(fullLink);
+  window._referralLink = fullLink;
+  window._referralCode = code;
+}else{
+  if($("referralCode")) $("referralCode").textContent = "------";
+  if($("referralCodeOnly")) $("referralCodeOnly").textContent = "------";
+  updateReferralQr(null);
+  window._referralLink = "";
+  window._referralCode = "";
+}
+
+const count = Number(data.referralCount ?? data.count ?? 0);
+if($("referralCount")) $("referralCount").textContent = count;
+if($("activeMiners")) $("activeMiners").textContent = data.activeMiners ?? 0;
+
+const tier = data.tier || {};
+if($("tierName")) $("tierName").textContent = tier.name || "Bronze";
+if($("tierReward")) $("tierReward").textContent = tier.rewardPerReferral ?? 0.5;
+
+const milestones = [5, 15, 50];
+let nextMile = null;
+for(const m of milestones){
+  if(count < m){ nextMile = m; break; }
+}
+if($("nextMilestone")) $("nextMilestone").textContent = nextMile ? (nextMile + " refs") : "Max reached";
+
+const tiers = [
+  {name:"Bronze", min:0, max:5},
+  {name:"Silver", min:6, max:15},
+  {name:"Gold", min:16, max:50},
+  {name:"Legend", min:51, max:999999}
+];
+let current = tiers.find(t => count >= t.min && count <= t.max) || tiers[0];
+let nextTier = tiers.find(t => t.min > count);
+let progressPct = 0;
+let progressText = "";
+if(nextTier){
+  const range = Math.max(1, nextTier.min - (current.min || 0));
+  const done = Math.max(0, count - (current.min || 0));
+  progressPct = Math.min(100, Math.round((done / range) * 100));
+  progressText = count + " / " + nextTier.min + " to " + nextTier.name;
+}else{
+  progressPct = 100;
+  progressText = count + " referrals · Legend tier";
+}
+if($("tierProgress")) $("tierProgress").style.width = progressPct + "%";
+if($("tierProgressText")) $("tierProgressText").textContent = progressText;
+}catch(error){
+  console.log("Referral:", error);
+}
+}
+
+function copyReferral(){
+  const link = (window._referralLink || ($("referralCode") && $("referralCode").textContent) || "").trim();
+  if(!link || link === "------"){
+    return showToast("Referral link is not ready. Please login again.", true);
+  }
+  navigator.clipboard.writeText(link)
+    .then(() => showToast("Referral link copied!"))
+    .catch(() => showToast("Could not copy referral link.", true));
+}
+
+function copyReferralCode(){
+  const code = (window._referralCode || ($("referralCodeOnly") && $("referralCodeOnly").textContent) || "").trim();
+  if(!code || code === "------"){
+    return showToast("Referral code not ready. Login first.", true);
+  }
+  navigator.clipboard.writeText(code)
+    .then(() => showToast("Code copied: " + code))
+    .catch(() => showToast("Could not copy code.", true));
+}
+
+async function shareReferral(){
+  const link = (window._referralLink || "").trim();
+  const code = (window._referralCode || "").trim();
+  if(!link || link === "------"){
+    return showToast("Login first to share your invite.", true);
+  }
+  const text = "Join me on AMT (Alberto Marketplace Token) on Pi Testnet!\nCode: " + code + "\n" + link;
+  try{
+    if(navigator.share){
+      await navigator.share({ title: "AMT Referral", text: text, url: link });
+      showToast("Shared!");
+    }else{
+      await navigator.clipboard.writeText(text);
+      showToast("Invite text copied (share not supported on this browser)");
+    }
+  }catch(e){
+    if(e && e.name === "AbortError") return;
+    try{
+      await navigator.clipboard.writeText(text);
+      showToast("Invite text copied");
+    }catch(err){
+      showToast("Could not share", true);
+    }
+  }
+}
+
+async function applyReferral(){
+
+const code=
+$("referralInput")
+.value
+.trim();
+
+if(!code){
+
+return showToast(
+"Enter a referral code.",
+true
+);
+
+}
+
+try{
+
+// Prefer username-based auto-link endpoint
+await api("/api/referral/auto-link",{
+method:"POST",
+body:JSON.stringify({
+accessToken: accessToken,
+referralUsername: code
+})
+});
+
+$("referralInput").value="";
+clearPendingReferralCode();
+
+showToast(
+"Referral applied successfully."
+);
+
+await loadReferral();
+
+}catch(error){
+
+showToast(
+error.message || "Unable to apply referral.",
+true
+);
+
+}
+}
+
+/* Try to apply pending referral from URL (?ref=username) after login */
+async function tryApplyPendingReferral(){
+
+const pending = getPendingReferralCode();
+if(!pending || !accessToken) return;
+
+try{
+
+await api("/api/referral/auto-link",{
+method:"POST",
+body:JSON.stringify({
+accessToken: accessToken,
+referralUsername: pending
+})
+});
+
+clearPendingReferralCode();
+showToast("Referral from link applied: " + pending);
+
+}catch(error){
+  // silent fail - already linked or invalid
+  console.log("Pending referral:", error.message || error);
+}
+
+}
+
+/* ============================================================
+   SECURITY CIRCLE
+============================================================ */
+
+async function loadSecurityCircle(){
+
+try{
+
+const data=
+await api("/api/security-circle");
+
+const members=
+data.members||
+data.securityCircle||
+[];
+
+$("circleCount").textContent=
+members.length;
+
+$("circleStatus").textContent=
+members.length?
+"ACTIVE":
+"NO MEMBERS";
+
+if(!members.length){
+
+$("circleList").innerHTML=
+'<div class="empty">No security-circle members returned.</div>';
+
+return;
+}
+
+$("circleList").innerHTML=
+members.map(member=>`
+
+<div class="stake-item">
+
+<div class="row">
+<b>
+${esc(
+member.username??
+member.name??
+"Pioneer"
+)}
+</b>
+
+<span class="muted">Pi</span>
+</div>
+
+</div>
+
+`).join("");
+
+}catch(error){
+
+$("circleStatus").textContent=
+"Unavailable";
+
+$("circleList").innerHTML=
+'<div class="empty">Security Circle data is not available from the backend yet.</div>';
+
+console.log(error);
+
+}
+}
+
+/* ============================================================
+   PROFILE
+============================================================ */
+
+async function loadProfile(){
+
+try{
+
+const data=
+await api("/api/profile");
+
+const username=
+data.username??
+currentUser?.username??
+"Pioneer";
+
+const uid=
+data.uid??
+data.piUid??
+currentUser?.uid??
+"—";
+
+$("profileUsername").textContent=
+username;
+
+$("infoUsername").textContent=
+username;
+
+$("profileUid").textContent=
+"Pi UID: "+uid;
+
+$("infoUid").textContent=
+uid;
+
+$("infoKyc").textContent=
+data.kycStatus??
+data.kyc??
+"UNVERIFIED";
+
+renderAvatar(
+data.profileImage??
+data.profile_image??
+data.profileImageUrl??
+data.profile_image_url??
+data.avatarUrl??
+data.avatar??
+""
+);
+
+}catch(error){
+
+console.log(
+"Profile:",
+error
+);
+
+const username=
+currentUser?.username||
+"Pioneer";
+
+const uid=
+currentUser?.uid||
+"—";
+
+$("profileUsername").textContent=
+username;
+
+$("infoUsername").textContent=
+username;
+
+$("profileUid").textContent=
+"Pi UID: "+uid;
+
+$("infoUid").textContent=
+uid;
+
+}
+}
+
+function renderAvatar(url){
+
+const box=
+$("avatarBox");
+
+if(!url){
+
+box.className=
+"avatar avatar-placeholder";
+
+box.textContent=
+"👤";
+
+return;
+}
+
+box.outerHTML=
+'<img id="avatarBox" class="avatar" src="'+
+esc(url)+
+'" alt="AMT Profile Picture">';
+
+}
+
+async function compressImageToDataUrl(file, maxSize){
+maxSize = maxSize || 512;
+return new Promise((resolve, reject) => {
+const reader = new FileReader();
+reader.onerror = () => reject(new Error("Unable to read image."));
+reader.onload = () => {
+const img = new Image();
+img.onerror = () => reject(new Error("Invalid image file."));
+img.onload = () => {
+let w = img.width;
+let h = img.height;
+if (w > maxSize || h > maxSize) {
+if (w > h) {
+h = Math.round(h * (maxSize / w));
+w = maxSize;
+} else {
+w = Math.round(w * (maxSize / h));
+h = maxSize;
+}
+}
+const canvas = document.createElement("canvas");
+canvas.width = w;
+canvas.height = h;
+const ctx = canvas.getContext("2d");
+ctx.drawImage(img, 0, 0, w, h);
+resolve(canvas.toDataURL("image/jpeg", 0.82));
+};
+img.src = reader.result;
+};
+reader.readAsDataURL(file);
+});
+}
+
+async function uploadProfileImage(){
+
+const file=
+$("profileImageInput")
+.files[0];
+
+if(!file){
+
+return showToast(
+"Choose a profile picture first.",
+true
+);
+
+}
+
+if(file.size>8*1024*1024){
+
+return showToast(
+"Maximum image size is 8 MB.",
+true
+);
+
+}
+
+try{
+
+showToast("Uploading profile picture...");
+
+const imageData = await compressImageToDataUrl(file, 512);
+
+const data=
+await api("/api/profile/image",{
+method:"POST",
+body:JSON.stringify({
+image:imageData
+})
+});
+
+const image=
+data.profileImage??
+data.profile_image??
+data.profileImageUrl??
+data.profile_image_url??
+data.url??
+imageData;
+
+renderAvatar(image);
+
+$("profileImageInput").value="";
+
+showToast(
+"Profile picture saved!"
+);
+
+}catch(error){
+
+console.error(
+"Profile image:",
+error
+);
+
+showToast(
+error.message || "Failed to save profile picture.",
+true
+);
+
+}
+}
+
+async function deleteProfileImage(){
+
+try{
+
+await api("/api/profile/image",{
+method:"DELETE"
+});
+
+renderAvatar("");
+
+showToast(
+"Profile picture removed."
+);
+
+}catch(error){
+
+showToast(
+error.message,
+true
+);
+
+}
+}
+
+/* ============================================================
+   STAKING
+============================================================ */
+
+function selectPool(pool){
+
+selectedStakePool=pool;
+
+$("selectedPool").value=
+pool;
+
+document
+.querySelectorAll(".pool")
+.forEach(item=>
+item.classList.remove("active")
+);
+
+const pools=
+document.querySelectorAll(".pool");
+
+if(pool==="30D")
+pools[0]?.classList.add("active");
+
+if(pool==="90D")
+pools[1]?.classList.add("active");
+
+if(pool==="180D")
+pools[2]?.classList.add("active");
+
+}
+
+async function loadStaking(){
+
+try{
+
+const summary=
+await api("/api/staking/status");
+
+$("stakeAvailable").textContent=
+fmt(
+summary.availableBalance??
+summary.available??
+0
+)+
+" AMT";
+
+$("stakePrincipal").textContent=
+fmt(
+summary.stakedPrincipal??
+summary.staked??
+0
+)+
+" AMT";
+
+$("stakeRewards").textContent=
+fmt(
+summary.pendingRewards??
+summary.rewards??
+0
+)+
+" AMT";
+
+renderActiveStakes(
+summary.activeStakes??
+summary.stakes??
+[]
+);
+
+await loadStakingHistory();
+
+}catch(error){
+
+console.log(
+"Staking:",
+error
+);
+
+$("activeStakes").innerHTML=
+'<div class="empty">No active stakes.</div>';
+
+}
+}
+
+function renderActiveStakes(stakes){
+
+if(
+!stakes||
+!stakes.length
+){
+
+$("activeStakes").innerHTML=
+'<div class="empty">No active stakes.</div>';
+
+return;
+}
+
+$("activeStakes").innerHTML=
+stakes.map(stake=>{
+
+const principal=
+num(stake.principal);
+
+const reward=
+num(
+stake.rewardAmount??
+stake.reward_amount??
+0
+);
+
+const unlock=
+stake.unlockAt??
+stake.unlock_at??
+"—";
+
+const unlocked=
+Boolean(
+stake.unlocked??
+(
+unlock!=="—"&&
+new Date(unlock)<=new Date()
+)
+);
+
+return `
+
+<div class="stake-item">
+
+<div class="row">
+<b>
+${esc(
+stake.poolName??
+stake.poolId??
+"AMT STAKE"
+)}
+</b>
+
+<span style="color:#ffd450">
+${fmt(principal)} AMT
+</span>
+</div>
+
+<div class="row">
+<span class="muted">Reward</span>
+<span>${fmt(reward)} AMT</span>
+</div>
+
+<div class="row">
+<span class="muted">Unlock</span>
+<span>${esc(formatDate(unlock))}</span>
+</div>
+
+<button
+class="${unlocked?"primary":"secondary"}"
+style="margin-top:10px"
+${unlocked?"":"disabled"}
+onclick="unstake('${esc(stake.id)}')"
+>
+${unlocked?
+"💰 UNSTAKE + REWARD":
+"🔒 LOCKED"}
+</button>
+
+</div>
+
+`;
+
+}).join("");
+
+}
+
+async function createStake(){
+
+const poolId=
+$("selectedPool").value||
+selectedStakePool;
+
+const amount=
+num($("stakeAmount").value);
+
+if(amount<=0){
+
+return showToast(
+"Enter an AMT amount to stake.",
+true
+);
+
+}
+
+try{
+
+const data=
+await api("/api/staking/stake",{
+method:"POST",
+body:JSON.stringify({
+poolId,
+amount
+})
+});
+
+$("stakeAmount").value="";
+
+showToast(
+"Stake created: "+
+fmt(
+data.principal??
+amount
+)+
+" AMT"
+);
+
+await loadStaking();
+await refreshWallet();
+
+}catch(error){
+
+showToast(
+error.message,
+true
+);
+
+}
+}
+
+async function unstake(stakeId){
+
+if(
+!confirm(
+"Unstake this AMT stake and receive principal + earned reward?"
+)
+)return;
+
+try{
+
+const data=
+await api("/api/staking/unstake",{
+method:"POST",
+body:JSON.stringify({
+stakeId
+})
+});
+
+showToast(
+"Unstaked successfully. "+
+fmt(
+data.totalPayout??
+data.amount??
+0
+)+
+" AMT returned."
+);
+
+await loadStaking();
+await refreshWallet();
+
+}catch(error){
+
+showToast(
+error.message,
+true
+);
+
+}
+}
+
+async function loadStakingHistory(){
+
+try{
+
+const data=
+await api("/api/staking/history");
+
+const history=
+data.history??
+data.stakes??
+[];
+
+if(!history.length){
+
+$("stakingHistory").innerHTML=
+'<div class="empty">No staking history yet.</div>';
+
+return;
+}
+
+$("stakingHistory").innerHTML=
+history.map(item=>`
+
+<div class="stake-item">
+
+<div class="row">
+<b>
+${esc(
+item.poolName??
+item.poolId??
+"AMT"
+)}
+</b>
+
+<span>
+${fmt(
+item.principal??
+0
+)} AMT
+</span>
+</div>
+
+<div class="row">
+<span class="muted">Status</span>
+<span>
+${esc(
+item.status??
+"—"
+)}
+</span>
+</div>
+
+<div class="row">
+<span class="muted">Reward</span>
+<span>
+${fmt(
+item.rewardAmount??
+0
+)} AMT
+</span>
+</div>
+
+</div>
+
+`).join("");
+
+}catch(error){
+
+console.log(error);
+
+}
+}
+
+/* ============================================================
+   DATE
+============================================================ */
+
+function formatDate(value){
+
+if(
+!value||
+value==="—"
+)return "—";
+
+const date=
+new Date(value);
+
+if(
+Number.isNaN(
+date.getTime()
+)
+){
+return String(value);
+}
+
+return date.toLocaleString();
+
+}
+
+/* ============================================================
+   FULL PET SYSTEM
+============================================================ */
+
+let allPets = [];
+let selectedPet = null;
+let selectedOwned = null;
+let currentElementFilter = "";
+let currentPetTab = "shop";
+
+const PET_EMOJI = {
+  Earth: "🪨", Water: "💧", Nature: "🌿", Ice: "❄️",
+  Thunder: "⚡", Wind: "🌪️", Fire: "🔥"
+};
+
+/**
+ * IMAGE PATH READY (Mainnet)
+ * Prefer: assets/pets/{rarity}/{id}.png  e.g. assets/pets/common/earth-terra.png
+ * Fallback: GitHub root numbered files (01_terra_earth_common_lv1.png)
+ * Fallback: backend pet.image relative path
+ * Fallback: emoji
+ */
+const PET_ASSETS_BASE = "assets/pets";
+
+/* Root filenames already on GitHub (legacy testnet uploads) */
+const PET_FILE_BY_NAME = {
+  /* Official clean crops — assets/pets/common/{element}-{slug}.png
+     Also matched via pet.id in petImgCandidates */
+};;
+
+function rarityBadgeClass(rarity) {
+  const r = String(rarity || "common").toLowerCase();
+  if (r.indexOf("mythic") >= 0) return "r-mythic";
+  if (r.indexOf("legend") >= 0) return "r-legendary";
+  if (r.indexOf("epic") >= 0) return "r-epic";
+  if (r.indexOf("rare") >= 0) return "r-rare";
+  if (r.indexOf("uncommon") >= 0) return "r-uncommon";
+  return "r-common";
+}
+
+function petImgCandidates(pet) {
+  const list = [];
+  const nameKey = String(pet.name || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+  const rarity = String(pet.rarity || "Common").toLowerCase();
+  // Normalize id: prefer pet_id (catalog), never bare numeric owned id
+  let id = String(pet.pet_id || "")
+    .replace(/-hatch$/i, "")
+    .replace(/-egg\d+$/i, "");
+  if (!id || /^\d+$/.test(id)) {
+    const raw = String(pet.id || "");
+    if (raw && !/^\d+$/.test(raw)) {
+      id = raw.replace(/-hatch$/i, "").replace(/-egg\d+$/i, "");
+    }
+  }
+  const path = pet.image || pet.imageUrl || pet.image_url || "";
+
+  if (path && (/^https?:\/\//i.test(path) || path.startsWith("data:"))) {
+    list.push(path);
+  }
+
+  // 1) GitHub root — absolute filenames (PRIORITY)
+  if (id && !/^\d+$/.test(id)) {
+    list.push(id + ".png");
+    list.push(id + ".jpg");
+  }
+  // From display name: earth + rockpuppy → earth-rock-puppy
+  const element = String(pet.element || "").toLowerCase();
+  if (element && nameKey) {
+    // "Rock Puppy" → rockpuppy; prefer hyphenated slug from id when possible
+    const slugName = String(pet.name || "")
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, "-")
+      .replace(/[^a-z0-9-]/g, "");
+    if (slugName) {
+      list.push(element + "-" + slugName + ".png");
+    }
+  }
+
+  // 2) assets/pets structure (Mainnet folder)
+  if (id) {
+    list.push(PET_ASSETS_BASE + "/" + rarity + "/" + id + ".png");
+    list.push(PET_ASSETS_BASE + "/common/" + id + ".png");
+  }
+
+  // 3) Backend relative paths
+  if (path && !/^https?:\/\//i.test(path) && !path.startsWith("data:")) {
+    list.push(path);
+    // basename only (root)
+    const base = path.split("/").pop();
+    if (base) list.push(base);
+    list.push(PET_ASSETS_BASE + "/" + path.replace(/^pets\//, ""));
+  }
+
+  // 4) Legacy map
+  if (nameKey && PET_FILE_BY_NAME[nameKey]) {
+    list.push(PET_FILE_BY_NAME[nameKey]);
+  }
+
+  // unique preserve order
+  const seen = {};
+  return list.filter((u) => {
+    if (!u || seen[u]) return false;
+    seen[u] = true;
+    return true;
+  });
+}
+
+function petImg(pet) {
+  const c = petImgCandidates(pet);
+  return c[0] || "";
+}
+
+const PET_IMG_VER = "20260921e";
+const PET_IMG_HOSTS = [
+  "https://cdn.jsdelivr.net/gh/bonene28/bonene28.github.io@main",
+  "https://bonene28.github.io"
+];
+
+const PET_OLD_NAME_MAP = {
+  terra: "earth-rock-puppy",
+  boulder: "earth-mud-turtle",
+  clayto: "earth-clay-puppy",
+  stonepaw: "earth-mountain-bear",
+  granite: "earth-golem",
+  muddo: "earth-sand-cat",
+  stonix: "earth-crystal-wolf",
+  earthen: "earth-emerald-snake",
+  golem: "earth-golem",
+  pebble: "earth-gaia-titan",
+  aqua: "water-bubble-puppy",
+  marina: "water-mermaid-puppy",
+  splash: "water-splash-turtle",
+  bubble: "water-bubble-puppy",
+  tide: "water-wave-wolf",
+  coral: "water-coral-cat",
+  leafy: "nature-leaf-puppy",
+  sprout: "nature-sprout-cat",
+  bloom: "nature-bloom-dragon",
+  forest: "nature-forest-wolf",
+  vine: "nature-vine-snake",
+  flora: "nature-mother-earth",
+  frosty: "ice-snow-puppy",
+  glacier: "ice-glacier-bear",
+  phoenix: "fire-phoenix-chick",
+  ember: "fire-ember-puppy",
+  blaze: "fire-blaze-dragon",
+  flame: "fire-ember-puppy",
+  breeze: "wind-breeze-bunny",
+  zephyr: "wind-zephyr-wolf",
+  bolt: "thunder-bolt-fox",
+  storm: "thunder-storm-dragon",
+  zap: "thunder-zap-cat",
+  tempest: "thunder-zeus-titan",
+  shard: "ice-winter-god"
+};
+
+function resolvePetFileId(pet) {
+  let id = String(pet.pet_id || "")
+    .replace(/-hatch$/i, "")
+    .replace(/-egg\d+$/i, "");
+  if (!id || /^\d+$/.test(id)) {
+    const raw = String(pet.id || "");
+    if (raw && !/^\d+$/.test(raw)) {
+      id = raw.replace(/-hatch$/i, "").replace(/-egg\d+$/i, "");
+    }
+  }
+  if (!id || /^\d+$/.test(id)) {
+    const el = String(pet.element || "").toLowerCase();
+    const slug = String(pet.name || "")
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, "-")
+      .replace(/[^a-z0-9-]/g, "");
+    if (el && slug) id = el + "-" + slug;
+  }
+  const short = String(pet.name || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+  if (PET_OLD_NAME_MAP[short]) id = PET_OLD_NAME_MAP[short];
+  const tail = String(id || "").replace(/^[a-z]+-/, "");
+  if (PET_OLD_NAME_MAP[tail]) id = PET_OLD_NAME_MAP[tail];
+  return id;
+}
+
+function withImgVer(url) {
+  if (!url || /^data:/i.test(url)) return url;
+  let path = url;
+  if (/^https?:\/\//i.test(url)) {
+    try {
+      path = new URL(url).pathname.replace(/^\//, "");
+    } catch (e) {
+      path = url.replace(/^https?:\/\/[^/]+\//, "");
+    }
+  }
+  path = String(path).replace(/^\//, "");
+  return PET_IMG_HOSTS[0] + "/" + path + "?v=" + PET_IMG_VER;
+}
+
+function petArtHtml(pet, size) {
+  size = size || 140;
+  const emoji = PET_EMOJI[pet.element] || "🐾";
+  const fileId = resolvePetFileId(pet);
+  const candidates = [];
+  if (fileId && !/^\d+$/.test(fileId)) {
+    candidates.push(fileId + ".png");
+  }
+  // also try github.io direct as fallback host via petImgFallback hosts
+  const fromCandidates = petImgCandidates(pet);
+  fromCandidates.forEach((u) => {
+    if (candidates.indexOf(u) < 0) candidates.push(u);
+  });
+  if (!candidates.length) {
+    return `<div class="pet-card-emoji">${emoji}</div>`;
+  }
+  // Build absolute URLs for both CDN and github.io
+  const absList = [];
+  candidates.forEach((u) => {
+    let path = u;
+    if (/^https?:\/\//i.test(u)) {
+      try {
+        path = new URL(u).pathname.replace(/^\//, "");
+      } catch (e) {
+        path = u.replace(/^https?:\/\/[^/]+\//, "");
+      }
+    }
+    path = String(path).replace(/^\//, "");
+    PET_IMG_HOSTS.forEach((host) => {
+      absList.push(host + "/" + path + "?v=" + PET_IMG_VER);
+    });
+  });
+  const primary = absList[0];
+  const rest = absList.slice(1).join("|");
+  return `<img class="pet-card-img" src="${esc(primary)}" alt="${esc(pet.name || "pet")}"
+    data-fallbacks="${esc(rest)}"
+    loading="eager"
+    style="width:${size}px;height:${size}px;object-fit:contain;border-radius:14px;position:relative;z-index:2;filter:drop-shadow(0 8px 16px rgba(0,0,0,.45));background:transparent"
+    onerror="petImgFallback(this)">
+    <div class="pet-card-emoji" style="display:none">${emoji}</div>`;
+}
+
+function petImgFallback(img) {
+  const raw = img.getAttribute("data-fallbacks") || "";
+  const next = raw.split("|").filter(Boolean);
+  if (next.length) {
+    img.setAttribute("data-fallbacks", next.slice(1).join("|"));
+    img.src = next[0];
+    return;
+  }
+  img.style.display = "none";
+  if (img.nextElementSibling) img.nextElementSibling.style.display = "block";
+}
+
+function petStatsRow(pet) {
+  return `<div class="pet-card-stats">
+    <div class="pet-stat"><b>${pet.hp ?? "—"}</b><span>HP</span></div>
+    <div class="pet-stat"><b>${pet.atk ?? "—"}</b><span>ATK</span></div>
+    <div class="pet-stat"><b>${pet.def ?? "—"}</b><span>DEF</span></div>
+    <div class="pet-stat"><b>${pet.spd ?? "—"}</b><span>SPD</span></div>
+  </div>`;
+}
+
+function petTab(tab) {
+  currentPetTab = tab;
+  ["petShopPanel","petOwnedPanel","petEggsPanel","petListingsPanel"].forEach(id => {
+    const el = $(id);
+    if (el) el.classList.add("hidden");
+  });
+  if (tab === "shop") { $("petShopPanel").classList.remove("hidden"); loadPets(currentElementFilter); loadStarterStatus(); }
+  if (tab === "owned") { $("petOwnedPanel").classList.remove("hidden"); loadOwnedPets(); }
+  if (tab === "eggs") { $("petEggsPanel").classList.remove("hidden"); loadEggs(); }
+  if (tab === "listings") { $("petListingsPanel").classList.remove("hidden"); loadListings(); }
+}
+
+async function loadPets(element = "") {
+  try {
+    const q = element ? ("?element=" + encodeURIComponent(element)) : "";
+    const data = await api("/api/pets" + q);
+    allPets = data.pets || [];
+    renderPetGrid(allPets);
+  } catch (error) {
+    console.log("Pets:", error);
+    if ($("petGrid")) {
+      $("petGrid").innerHTML =
+        '<div class="empty">Unable to load pets. ' +
+        esc(error.message || "Check server / login.") +
+        "</div>";
+    }
+  }
+}
+
+function filterPets(element) {
+  currentElementFilter = element;
+  loadPets(element);
+}
+
+function petElementClass(element) {
+  const e = String(element || "").toLowerCase();
+  if (["earth","water","nature","ice","fire","wind","thunder"].includes(e)) return "pet-" + e;
+  return "pet-earth";
+}
+
+function renderPetGrid(pets) {
+  const grid = $("petGrid");
+  if (!grid) return;
+  if (!pets.length) {
+    grid.innerHTML = '<div class="empty">No pets found.</div>';
+    return;
+  }
+  window._petMap = {};
+  pets.forEach((p) => {
+    window._petMap[p.id] = p;
+  });
+  grid.innerHTML = pets
+    .map((pet) => {
+      const elClass = petElementClass(pet.element);
+      const rCls = rarityBadgeClass(pet.rarity);
+      return `<div class="pet-card ${elClass}" onclick="openPetById('${esc(pet.id)}')">
+      <div class="pet-card-top">
+        <span class="pet-card-element">${esc(pet.element)}</span>
+        <span class="pet-card-badge ${rCls}">${esc(pet.rarity || "Common")}</span>
+        ${petArtHtml(pet, 140)}
+      </div>
+      <div class="pet-card-body">
+        <div class="pet-card-name">${esc(pet.name)}</div>
+        <div class="pet-card-price">${pet.priceAmt} AMT</div>
+        ${petStatsRow(pet)}
+        <div class="pet-card-footer">
+          <button class="small-btn" onclick="event.stopPropagation();openPetById('${esc(pet.id)}')">VIEW / BUY</button>
+        </div>
+      </div>
+    </div>`;
+    })
+    .join("");
+}
+
+function openPetById(petId) {
+  const pet = (window._petMap && window._petMap[petId]) || allPets.find(p => p.id === petId);
+  if (pet) openPetModal(pet);
+}
+
+function openPetModal(pet) {
+  selectedPet = pet;
+  const elClass = petElementClass(pet.element);
+  $("modalPetName").textContent = pet.name;
+  $("modalPetArt").innerHTML = `
+    <div class="pet-modal-card ${elClass}" style="--pet-glow:inherit">
+      <div class="pet-modal-art">
+        <span class="pet-card-element" style="position:absolute;top:10px;left:10px">${esc(pet.element)}</span>
+        <span class="pet-card-badge" style="position:absolute;top:10px;right:10px">${esc(pet.rarity || "Common")}</span>
+        ${petArtHtml(pet, 120)}
+      </div>
+      <div class="pet-modal-stats">
+        <div class="pet-stat"><b>${pet.hp}</b><span>HP</span></div>
+        <div class="pet-stat"><b>${pet.atk}</b><span>ATK</span></div>
+        <div class="pet-stat"><b>${pet.def}</b><span>DEF</span></div>
+        <div class="pet-stat"><b>${pet.spd}</b><span>SPD</span></div>
+      </div>
+    </div>`;
+  $("modalElement").textContent = pet.element;
+  $("modalRarity").textContent = pet.rarity;
+  $("modalHp").textContent = pet.hp;
+  $("modalAtk").textContent = pet.atk;
+  $("modalDef").textContent = pet.def;
+  $("modalSpd").textContent = pet.spd;
+  $("modalAbility").textContent = pet.ability;
+  $("modalPrice").textContent = pet.priceAmt + " AMT";
+  const modal = $("petModal");
+  modal.classList.remove("hidden");
+  modal.style.display = "flex";
+}
+
+function closePetModal() {
+  selectedPet = null;
+  const modal = $("petModal");
+  modal.classList.add("hidden");
+  modal.style.display = "none";
+}
+
+async function buySelectedPet() {
+  if (!selectedPet) return;
+  if (!accessToken) {
+    showToast("Login with Pi first before buying.", true);
+    return;
+  }
+  const btn = $("buyPetBtn");
+  try {
+    btn.disabled = true;
+    btn.textContent = "BUYING...";
+    const data = await api("/api/pets/buy", {
+      method: "POST",
+      body: JSON.stringify({ petId: selectedPet.id })
+    });
+    if (!data || !data.purchased) {
+      throw new Error(data?.error || "Buy did not complete.");
+    }
+    showToast(
+      "Got " + selectedPet.name + "! -" + (data.paid || "") + " AMT · Saved to My Pets"
+    );
+    closePetModal();
+    await refreshWallet();
+    petTab("owned");
+    await new Promise(ok => setTimeout(ok, 500));
+    await loadOwnedPets();
+    // Always show purchased pet on grid
+    if (data.pet) {
+      if (!window._ownedMap) window._ownedMap = {};
+      window._ownedMap[data.pet.id] = data.pet;
+      const grid = $("ownedPetGrid");
+      if (grid) {
+        const elClass = petElementClass(data.pet.element);
+        const card =
+          `<div class="pet-card ${elClass}" onclick="openOwnedModal(${data.pet.id})">
+          <div class="pet-card-top">
+            <span class="pet-card-element">${esc(data.pet.element)}</span>
+            <span class="pet-card-badge">Lv ${data.pet.level || 1}</span>
+            ${petArtHtml(data.pet, 128)}
+          </div>
+          <div class="pet-card-body">
+            <div class="pet-card-name">${esc(data.pet.name)}</div>
+            <div class="pet-card-price">Just purchased · ${data.paid} AMT</div>
+            <div class="pet-card-footer">
+              <button class="small-btn" onclick="event.stopPropagation();openOwnedModal(${data.pet.id})">VIEW / BATTLE</button>
+            </div>
+          </div>
+        </div>`;
+        if (grid.querySelector(".empty")) grid.innerHTML = card;
+        else if (!grid.innerHTML.includes("openOwnedModal(" + data.pet.id + ")")) {
+          grid.insertAdjacentHTML("afterbegin", card);
+        }
+      }
+    }
+  } catch (error) {
+    showToast(error.message || "Purchase failed.", true);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = "BUY WITH AMT";
+    }
+  }
+}
+
+/* ---- Owned pets ---- */
+async function loadOwnedPets() {
+  const grid = $("ownedPetGrid");
+  if (!grid) return;
+  try {
+    if (!accessToken) {
+      grid.innerHTML = '<div class="empty">Login with Pi to see your pets.</div>';
+      return;
+    }
+    grid.innerHTML = '<div class="empty">Loading your pets...</div>';
+    const data = await api("/api/pets/owned");
+    const pets = data.pets || [];
+    window._ownedMap = {};
+    pets.forEach(p => {
+      window._ownedMap[p.id] = p;
+      window._ownedMap[String(p.id)] = p;
+    });
+    if (!pets.length) {
+      grid.innerHTML =
+        '<div class="empty">No pets yet. Buy from Shop (need in-app AMT from mining/airdrop).</div>';
+      return;
+    }
+    grid.innerHTML = pets
+      .map((pet) => {
+        const elClass = petElementClass(pet.element);
+        const rCls = rarityBadgeClass(pet.rarity);
+        const pid = pet.id;
+        return `<div class="pet-card ${elClass}" onclick="openOwnedModal(${pid})">
+        <div class="pet-card-top">
+          <span class="pet-card-element">${esc(pet.element)}</span>
+          <span class="pet-card-badge ${rCls}">Lv ${pet.level || 1}</span>
+          ${petArtHtml(pet, 140)}
+        </div>
+        <div class="pet-card-body">
+          <div class="pet-card-name">${esc(pet.name)}</div>
+          <div class="pet-card-sub">${esc(pet.rarity || "Common")} · ⚡${
+          pet.energy ?? 100
+        } · 😊${pet.happiness ?? 100}</div>
+          ${petStatsRow(pet)}
+          <div class="pet-card-footer">
+            <button class="small-btn" onclick="event.stopPropagation();openOwnedModal(${pid})">VIEW / CARE / BATTLE</button>
+          </div>
+        </div>
+      </div>`;
+      })
+      .join("");
+  } catch (e) {
+    console.log("Owned pets error:", e);
+    grid.innerHTML =
+      '<div class="empty">Unable to load My Pets. ' +
+      esc(e.message || "Check login / server.") +
+      '<br><button class="small-btn" style="margin-top:10px" onclick="loadOwnedPets()">Retry</button></div>';
+  }
+}
+
+function openOwnedModal(id) {
+  if (!window._ownedMap) window._ownedMap = {};
+  // support both number and string ids from Postgres BIGINT
+  let pet = window._ownedMap[id] || window._ownedMap[String(id)] || window._ownedMap[Number(id)];
+  if (!pet && selectedOwned && (selectedOwned.id == id)) pet = selectedOwned;
+  if (!pet) {
+    showToast("Pet data missing. Open My Pets again.", true);
+    return;
+  }
+  selectedOwned = pet;
+  if ($("ownedModalName")) $("ownedModalName").textContent = pet.name || "Pet";
+  if ($("ownedModalArt")) $("ownedModalArt").innerHTML = petArtHtml(pet, 100);
+  if ($("ownedLv")) $("ownedLv").textContent = pet.level || 1;
+  if ($("ownedEnergy")) $("ownedEnergy").textContent = pet.energy ?? 100;
+  if ($("ownedHappy")) $("ownedHappy").textContent = pet.happiness ?? 100;
+  if ($("ownedId")) $("ownedId").textContent = pet.id;
+  if ($("ownedHp")) $("ownedHp").textContent = pet.hp;
+  if ($("ownedAtk")) $("ownedAtk").textContent = pet.atk;
+  if ($("ownedDef")) $("ownedDef").textContent = pet.def;
+  if ($("ownedSpd")) $("ownedSpd").textContent = pet.spd;
+  const modal = $("ownedModal");
+  if (modal) {
+    modal.classList.remove("hidden");
+    modal.style.display = "flex";
+  }
+}
+
+function closeOwnedModal() {
+  selectedOwned = null;
+  const modal = $("ownedModal");
+  if (modal) {
+    modal.classList.add("hidden");
+    modal.style.display = "none";
+  }
+}
+
+function fillOwnedModalFromPet(pet) {
+  if (!pet) return;
+  if (!window._ownedMap) window._ownedMap = {};
+  window._ownedMap[pet.id] = pet;
+  window._ownedMap[String(pet.id)] = pet;
+  selectedOwned = pet;
+  openOwnedModal(pet.id);
+}
+
+async function carePet(action) {
+  if (!selectedOwned || !selectedOwned.id) {
+    showToast("Open a pet first (My Pets → VIEW).", true);
+    return;
+  }
+  const ownedId = Number(selectedOwned.id);
+  const petName = selectedOwned.name || "pet";
+  try {
+    showToast((action === "play" ? "Playing..." : "Feeding..."));
+    const data = await api("/api/pets/care", {
+      method: "POST",
+      body: JSON.stringify({ ownedPetId: ownedId, action: action || "feed" })
+    });
+    if (!data || !data.pet) throw new Error(data?.error || "Care failed — no pet returned");
+    showToast((action === "feed" ? "Fed " : "Played with ") + petName);
+    fillOwnedModalFromPet(data.pet);
+    await refreshWallet();
+    // soft refresh list in background
+    loadOwnedPets().catch(() => {});
+  } catch (e) {
+    showToast(e.message || "Care failed", true);
+  }
+}
+
+async function trainPet(stat) {
+  if (!selectedOwned || !selectedOwned.id) {
+    showToast("Open a pet first (My Pets → VIEW).", true);
+    return;
+  }
+  const ownedId = Number(selectedOwned.id);
+  try {
+    showToast("Training " + String(stat || "atk").toUpperCase() + "...");
+    const data = await api("/api/pets/train", {
+      method: "POST",
+      body: JSON.stringify({ ownedPetId: ownedId, stat: stat || "atk" })
+    });
+    if (!data || !data.pet) throw new Error(data?.error || "Train failed — no pet returned");
+    let msg = "Trained " + String(stat).toUpperCase() + " +" + (data.gain || "");
+    if (data.milestones && data.milestones.length) {
+      const b = data.milestones.map(m => "Lv" + m.level + " +" + m.amount).join(", ");
+      msg += " · Milestone " + b + " AMT!";
+    }
+    showToast(msg);
+    fillOwnedModalFromPet(data.pet);
+    await refreshWallet();
+    loadOwnedPets().catch(() => {});
+  } catch (e) {
+    showToast(e.message || "Train failed", true);
+  }
+}
+
+async function claimStarterPet() {
+  const btn = $("claimStarterBtn");
+  try {
+    if (btn) { btn.disabled = true; btn.textContent = "CLAIMING…"; }
+    const data = await api("/api/pets/claim-starter", { method: "POST", body: "{}" });
+    showToast(data.message || ("Starter " + (data.pet && data.pet.name) + " claimed!"));
+    if ($("starterPetCard")) $("starterPetCard").classList.add("hidden");
+    await loadOwnedPets();
+    petTab("owned");
+  } catch (e) {
+    showToast(e.message || "Claim failed", true);
+    if (btn) { btn.disabled = false; btn.textContent = "CLAIM FREE TERRA"; }
+    loadStarterStatus();
+  }
+}
+
+async function loadStarterStatus() {
+  try {
+    const data = await api("/api/pets/starter-status");
+    const card = $("starterPetCard");
+    const btn = $("claimStarterBtn");
+    const hint = $("starterPetHint");
+    if (!card) return;
+    if (data.claimed) {
+      card.classList.add("hidden");
+    } else {
+      card.classList.remove("hidden");
+      if (btn) { btn.disabled = false; btn.textContent = "CLAIM FREE TERRA"; }
+      if (hint) hint.textContent = "One-time free Common pet for every pioneer";
+    }
+  } catch (e) {
+    /* ignore */
+  }
+}
+
+async function buyEnergyPack(pack) {
+  if (!selectedOwned || !selectedOwned.id) {
+    showToast("Open a pet first (My Pets → VIEW).", true);
+    return;
+  }
+  try {
+    const data = await api("/api/pets/energy-pack", {
+      method: "POST",
+      body: JSON.stringify({
+        ownedPetId: Number(selectedOwned.id),
+        pack: pack || "energy"
+      })
+    });
+    showToast(data.message || "Pack applied");
+    if (data.pet) fillOwnedModalFromPet(data.pet);
+    await refreshWallet();
+    loadOwnedPets().catch(() => {});
+  } catch (e) {
+    showToast(e.message || "Pack failed", true);
+  }
+}
+
+async function battlePet() {
+  if (!selectedOwned) {
+    showToast("Select a pet from My Pets first", true);
+    return;
+  }
+  const petRef = selectedOwned;
+  const ownedId = Number(petRef.id);
+  try {
+    closeOwnedModal();
+    // keep ref for arena art (closeOwnedModal clears selectedOwned)
+    selectedOwned = petRef;
+    showToast("Battle starting...");
+    const data = await api("/api/pets/battle", {
+      method: "POST",
+      body: JSON.stringify({ ownedPetId: ownedId })
+    });
+    await playBattleArena(data);
+    if (data.milestones && data.milestones.length) {
+      const b = data.milestones.map(m => "Lv" + m.level + " +" + m.amount).join(", ");
+      showToast("Level milestone: " + b + " AMT!");
+    }
+    await refreshWallet();
+    await loadOwnedPets();
+  } catch (e) {
+    showToast(e.message || "Battle failed", true);
+  } finally {
+    selectedOwned = null;
+  }
+}
+
+function closeBattleArena() {
+  const arena = $("battleArena");
+  const result = $("battleResultPanel");
+  if (result) result.classList.add("hidden");
+  if (arena) {
+    arena.classList.add("hidden");
+    arena.style.display = "none";
+  }
+}
+
+async function playBattleArena(data) {
+  const arena = $("battleArena");
+  if (!arena) {
+    showToast(data.result + " vs " + data.opponent + " • +" + data.reward + " AMT");
+    return;
+  }
+  arena.classList.remove("hidden");
+  arena.style.display = "flex";
+  $("battleResultPanel").classList.add("hidden");
+
+  const myMax = data.myMaxHp || 100;
+  const enMax = data.enMaxHp || 100;
+  $("battleMyName").textContent = data.petName || "Your Pet";
+  $("battleEnemyName").textContent = data.opponent || "Enemy";
+  // Opponent uses uploaded pet art (same as shop/my pets)
+  const enemyPet = {
+    name: String(data.opponent || "Enemy").replace(/^Wild\s+/i, ""),
+    element: data.opponentElement || "Earth",
+    image: data.opponentImage || ""
+  };
+  $("battleEnemyArt").innerHTML = petArtHtml(enemyPet, 88);
+  $("battleMyArt").innerHTML = selectedOwned
+    ? petArtHtml(selectedOwned, 88)
+    : petArtHtml(
+        { name: data.petName, element: data.petElement, image: data.petImage },
+        88
+      );
+  $("battleMyHpBar").style.width = "100%";
+  $("battleEnemyHpBar").style.width = "100%";
+  $("battleMyHpText").textContent = myMax + " / " + myMax;
+  $("battleEnemyHpText").textContent = enMax + " / " + enMax;
+  $("battleLog").textContent = "Expedition start!";
+  $("battleRoundLabel").textContent = "Round 1";
+
+  const rounds = data.rounds || [];
+  for (let i = 0; i < rounds.length; i++) {
+    const r = rounds[i];
+    $("battleRoundLabel").textContent = "Round " + (r.round || i + 1);
+    $("battleLog").textContent = r.text || (r.actor === "you" ? "You hit!" : "Enemy hits!");
+    const myPct = Math.max(0, Math.min(100, (r.myHp / myMax) * 100));
+    const enPct = Math.max(0, Math.min(100, (r.enHp / enMax) * 100));
+    $("battleMyHpBar").style.width = myPct + "%";
+    $("battleEnemyHpBar").style.width = enPct + "%";
+    $("battleMyHpText").textContent = Math.round(r.myHp) + " / " + myMax;
+    $("battleEnemyHpText").textContent = Math.round(r.enHp) + " / " + enMax;
+    await new Promise(ok => setTimeout(ok, 700));
+  }
+
+  const win = data.result === "WIN";
+  $("battleResultBadge").textContent = win ? "🏆" : "💀";
+  $("battleResultTitle").textContent = win ? "Victory" : "Defeat";
+  $("battleResultTitle").style.color = win ? "#ffd54f" : "#ff8899";
+  $("battleResultReward").textContent =
+    (win ? "+" : "+") + (data.reward || 0) + " AMT";
+  $("battleResultPanel").classList.remove("hidden");
+}
+
+async function listPetForSale() {
+  if (!selectedOwned || !selectedOwned.id) {
+    showToast("Open a pet from My Pets first", true);
+    return;
+  }
+  const price = Number($("sellPrice") && $("sellPrice").value);
+  if (!(price > 0)) {
+    showToast("Enter a valid price (AMT)", true);
+    return;
+  }
+  try {
+    await api("/api/pets/list", {
+      method: "POST",
+      body: JSON.stringify({
+        ownedPetId: Number(selectedOwned.id),
+        priceAmt: price
+      })
+    });
+    showToast("Listed " + (selectedOwned.name || "pet") + " for " + price + " AMT");
+    closeOwnedModal();
+    await loadOwnedPets();
+    if (typeof loadListings === "function") loadListings();
+  } catch (e) {
+    showToast(e.message || "List failed", true);
+  }
+}
+
+/* ---- Breeding / Eggs ---- */
+let _breedSlot = 1;
+let _breedP1 = null;
+let _breedP2 = null;
+let _eggTimers = {};
+
+function clearBreedSelection() {
+  _breedP1 = null;
+  _breedP2 = null;
+  if ($("breedPet1")) $("breedPet1").value = "";
+  if ($("breedPet2")) $("breedPet2").value = "";
+  if ($("breedArt1")) $("breedArt1").innerHTML = "➕";
+  if ($("breedArt2")) $("breedArt2").innerHTML = "➕";
+  if ($("breedName1")) $("breedName1").textContent = "Tap to select";
+  if ($("breedName2")) $("breedName2").textContent = "Tap to select";
+  if ($("breedSlot1")) $("breedSlot1").classList.remove("filled");
+  if ($("breedSlot2")) $("breedSlot2").classList.remove("filled");
+}
+
+function setBreedSlot(slot, pet) {
+  if (!pet) return;
+  if (slot === 1) {
+    _breedP1 = pet;
+    if ($("breedPet1")) $("breedPet1").value = pet.id;
+    if ($("breedArt1")) $("breedArt1").innerHTML = petArtHtml(pet, 48);
+    if ($("breedName1")) $("breedName1").textContent = pet.name + " · Lv" + (pet.level || 1);
+    if ($("breedSlot1")) $("breedSlot1").classList.add("filled");
+  } else {
+    _breedP2 = pet;
+    if ($("breedPet2")) $("breedPet2").value = pet.id;
+    if ($("breedArt2")) $("breedArt2").innerHTML = petArtHtml(pet, 48);
+    if ($("breedName2")) $("breedName2").textContent = pet.name + " · Lv" + (pet.level || 1);
+    if ($("breedSlot2")) $("breedSlot2").classList.add("filled");
+  }
+}
+
+async function openBreedPicker(slot) {
+  _breedSlot = slot;
+  const modal = $("breedPickerModal");
+  const list = $("breedPickerList");
+  if ($("breedPickerTitle")) $("breedPickerTitle").textContent = "Select Parent " + slot;
+  if (!modal || !list) return;
+  list.innerHTML = '<div class="empty">Loading your pets...</div>';
+  modal.classList.remove("hidden");
+  modal.style.display = "flex";
+  try {
+    // Prefer cached map; else fetch
+    let pets = [];
+    if (window._ownedMap) {
+      const seen = {};
+      pets = Object.keys(window._ownedMap).map(k => window._ownedMap[k]).filter(p => {
+        if (!p || !p.id || seen[p.id]) return false;
+        seen[p.id] = true;
+        return true;
+      });
+    }
+    if (!pets.length) {
+      const data = await api("/api/pets/owned");
+      pets = data.pets || [];
+      window._ownedMap = {};
+      pets.forEach(p => {
+        window._ownedMap[p.id] = p;
+        window._ownedMap[String(p.id)] = p;
+      });
+    }
+    const otherId = slot === 1 ? (_breedP2 && _breedP2.id) : (_breedP1 && _breedP1.id);
+    const available = pets.filter(p => String(p.id) !== String(otherId));
+    if (!available.length) {
+      list.innerHTML = '<div class="empty">Need pets in My Pets first. Buy from Shop.</div>';
+      return;
+    }
+    list.innerHTML = available.map(pet => {
+      const elClass = petElementClass(pet.element);
+      return `<div class="pet-card ${elClass}" style="min-height:auto;cursor:pointer" onclick="pickBreedPet(${pet.id})">
+        <div class="pet-card-top" style="height:100px">
+          <span class="pet-card-element">${esc(pet.element)}</span>
+          <span class="pet-card-badge">Lv ${pet.level || 1}</span>
+          ${petArtHtml(pet, 64)}
+        </div>
+        <div class="pet-card-body" style="padding:10px">
+          <div class="pet-card-name">${esc(pet.name)}</div>
+          <div class="pet-card-price">ID ${pet.id}</div>
+        </div>
+      </div>`;
+    }).join("");
+  } catch (e) {
+    list.innerHTML = '<div class="empty">' + esc(e.message || "Could not load pets") + '</div>';
+  }
+}
+
+function closeBreedPicker() {
+  const modal = $("breedPickerModal");
+  if (modal) {
+    modal.classList.add("hidden");
+    modal.style.display = "none";
+  }
+}
+
+function pickBreedPet(id) {
+  const pet = (window._ownedMap && (window._ownedMap[id] || window._ownedMap[String(id)])) || null;
+  if (!pet) {
+    showToast("Pet not found in list", true);
+    return;
+  }
+  setBreedSlot(_breedSlot, pet);
+  closeBreedPicker();
+}
+
+async function breedPets() {
+  const p1 = Number($("breedPet1") && $("breedPet1").value);
+  const p2 = Number($("breedPet2") && $("breedPet2").value);
+  if (!p1 || !p2) return showToast("Select two different pets first", true);
+  if (p1 === p2) return showToast("Pick two different pets", true);
+  const btn = $("breedBtn");
+  try {
+    if (btn) { btn.disabled = true; btn.textContent = "BREEDING…"; }
+    const data = await api("/api/pets/breed", {
+      method: "POST",
+      body: JSON.stringify({ pet1Id: p1, pet2Id: p2 })
+    });
+    showToast(data.message || "Egg incubating — hatch in 24 hours");
+    clearBreedSelection();
+    await loadEggs();
+    await refreshWallet();
+  } catch (e) {
+    showToast(e.message || "Breed failed", true);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = "🥚 BREED (1 AMT)"; }
+  }
+}
+
+function formatCountdown(ms) {
+  if (ms <= 0) return "00:00:00";
+  const total = Math.floor(ms / 1000);
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  return String(h).padStart(2, "0") + ":" + String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+}
+
+function stopEggTimers() {
+  Object.keys(_eggTimers).forEach(k => {
+    clearInterval(_eggTimers[k]);
+    delete _eggTimers[k];
+  });
+}
+
+function startEggCountdown(eggId, hatchAtMs, createdMs) {
+  const timerEl = $("eggTimer_" + eggId);
+  const btn = $("hatchBtn_" + eggId);
+  if (!timerEl) return;
+  if (_eggTimers[eggId]) clearInterval(_eggTimers[eggId]);
+  const tick = () => {
+    const left = hatchAtMs - Date.now();
+    if (left <= 0) {
+      timerEl.textContent = "READY";
+      timerEl.classList.add("ready");
+      if (btn && btn.textContent.indexOf("LISTED") < 0) {
+        btn.disabled = false;
+        btn.textContent = "🐣 Deliver baby";
+      }
+      clearInterval(_eggTimers[eggId]);
+      delete _eggTimers[eggId];
+      return;
+    }
+    timerEl.textContent = formatCountdown(left);
+  };
+  tick();
+  _eggTimers[eggId] = setInterval(tick, 1000);
+}
+
+function eggArtEmoji(element) {
+  const map = {
+    Earth: "🪨",
+    Water: "💧",
+    Nature: "🌿",
+    Ice: "❄️",
+    Fire: "🔥",
+    Wind: "💨",
+    Thunder: "⚡"
+  };
+  return map[element] || "🥚";
+}
+
+function eggCssClass(element) {
+  const e = String(element || "").toLowerCase();
+  if (["earth", "water", "nature", "ice", "fire", "wind", "thunder"].includes(e)) {
+    return e;
+  }
+  return "default";
+}
+
+/** PiPet-style spotted egg (CSS shape, not placeholder icon) */
+function eggArtHtml(element, ready) {
+  const cls = eggCssClass(element);
+  const wrap = ready ? "baby-egg-wrap ready-glow" : "baby-egg-wrap";
+  return `<div class="${wrap}"><div class="pipet-egg ${cls}"></div></div>`;
+}
+
+async function loadEggs() {
+  stopEggTimers();
+  const box = $("eggsList");
+  if (!box) return;
+  try {
+    const data = await api("/api/pets/eggs");
+    const eggs = data.eggs || [];
+    if (!eggs.length) {
+      box.className = "";
+      box.innerHTML =
+        '<div class="empty">No eggs yet. Breed two pets above to start the Baby Room.</div>';
+      return;
+    }
+    box.className = "baby-grid";
+    box.innerHTML = eggs
+      .map((egg) => {
+        const isHatched = egg.status === "HATCHED";
+        const isListed = !!egg.is_listed;
+        const hatchMs = egg.hatch_at ? new Date(egg.hatch_at).getTime() : 0;
+        const ready = !isHatched && hatchMs && hatchMs <= Date.now();
+        let cls = "baby-card";
+        if (ready) cls += " ready";
+        if (isHatched) cls += " hatched";
+        if (isListed) cls += " listed";
+        const gen = egg.gen || 1;
+        const elName = esc(egg.element || "Mystery");
+        return `<div class="${cls}">
+        <div class="baby-gen">🧬 ${gen} Gen</div>
+        <div class="baby-name-row">
+          <span class="baby-lv">LV.1</span>
+          <span class="baby-name">${elName} Egg #${egg.id}</span>
+        </div>
+        ${eggArtHtml(egg.element, ready)}
+        ${
+          isHatched
+            ? `<div class="muted" style="font-size:11px;margin-top:8px">Hatched · see My Pets</div>`
+            : `<div class="baby-timer-pill ${ready ? "ready" : ""}" id="eggTimer_${egg.id}">${
+                ready ? "READY" : "00:00:00"
+              }</div>
+        <button class="baby-deliver" id="hatchBtn_${egg.id}" onclick="hatchEgg(${egg.id})" ${
+                ready && !isListed ? "" : "disabled"
+              }>${
+                isListed
+                  ? "🏪 LISTED FOR SALE"
+                  : ready
+                  ? "🐣 Deliver baby"
+                  : "⏳ Incubating"
+              }</button>
+        ${
+          !isListed
+            ? `<div class="baby-sell-row">
+          <input class="input" id="eggSellPrice_${egg.id}" type="number" min="0.1" step="0.1" placeholder="AMT price">
+          <button class="secondary baby-sell-btn" onclick="listEggForSale(${egg.id})">SELL EGG</button>
+        </div>`
+            : `<button class="secondary" style="margin-top:8px;font-size:11px;width:100%" onclick="cancelEggListing(${egg.id})">Cancel listing</button>`
+        }`
+        }
+      </div>`;
+      })
+      .join("");
+
+    eggs.forEach((egg) => {
+      if (egg.status === "HATCHED" || !egg.hatch_at) return;
+      const hatchMs = new Date(egg.hatch_at).getTime();
+      if (hatchMs > Date.now()) {
+        const createdMs = egg.created_at
+          ? new Date(egg.created_at).getTime()
+          : hatchMs - 24 * 3600 * 1000;
+        startEggCountdown(egg.id, hatchMs, createdMs);
+      } else {
+        const timerEl = $("eggTimer_" + egg.id);
+        if (timerEl) {
+          timerEl.textContent = "READY";
+          timerEl.classList.add("ready");
+        }
+        const btn = $("hatchBtn_" + egg.id);
+        if (btn && !egg.is_listed) {
+          btn.disabled = false;
+          btn.textContent = "🐣 Deliver baby";
+        }
+      }
+    });
+  } catch (e) {
+    box.className = "";
+    box.innerHTML =
+      '<div class="empty">Unable to load eggs. ' + esc(e.message || "") + "</div>";
+  }
+}
+
+async function hatchEgg(eggId) {
+  const btn = $("hatchBtn_" + eggId);
+  try {
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = "Delivering…";
+    }
+    const data = await api("/api/pets/hatch", {
+      method: "POST",
+      body: JSON.stringify({ eggId: Number(eggId) })
+    });
+    const name = (data.pet && data.pet.name) || "baby";
+    showToast(data.message || ("Delivered " + name + "! Opening My Pets…"));
+    await loadEggs();
+    await loadOwnedPets();
+    petTab("owned");
+    if (data.pet && data.pet.id) {
+      setTimeout(function () {
+        try {
+          openOwnedModal(data.pet.id);
+        } catch (err) {}
+      }, 400);
+    }
+  } catch (e) {
+    showToast(e.message || "Hatch failed", true);
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = "🐣 Deliver baby";
+    }
+    loadEggs().catch(function () {});
+  }
+}
+
+async function listEggForSale(eggId) {
+  const input = $("eggSellPrice_" + eggId);
+  const price = Number(input && input.value);
+  if (!(price > 0)) {
+    showToast("Enter a valid AMT price", true);
+    return;
+  }
+  try {
+    const data = await api("/api/pets/list-egg", {
+      method: "POST",
+      body: JSON.stringify({ eggId: Number(eggId), priceAmt: price })
+    });
+    showToast(data.message || "Egg listed");
+    await loadEggs();
+    if (typeof loadListings === "function") loadListings();
+  } catch (e) {
+    showToast(e.message || "List egg failed", true);
+  }
+}
+
+async function cancelEggListing(eggId) {
+  try {
+    await api("/api/pets/cancel-egg-listing", {
+      method: "POST",
+      body: JSON.stringify({ eggId: Number(eggId) })
+    });
+    showToast("Listing cancelled");
+    await loadEggs();
+    if (typeof loadListings === "function") loadListings();
+  } catch (e) {
+    showToast(e.message || "Cancel failed", true);
+  }
+}
+
+/* ---- Public listings (live P2P · My Pets) ---- */
+async function loadListings() {
+  const grid = $("listingsGrid");
+  if (!grid) return;
+  try {
+    const data = await api("/api/pets/listings");
+    const list = data.listings || [];
+    if (!list.length) {
+      grid.innerHTML =
+        '<div class="empty">No public listings yet.<br>List a <b>pet</b> (My Pets) or <b>egg</b> (Baby Room).</div>';
+      return;
+    }
+    grid.innerHTML = list
+      .map((L) => {
+        const isEgg = L.listing_type === "EGG";
+        const elClass = petElementClass(L.element);
+        if (isEgg) {
+          const hatchMs = L.hatch_at ? new Date(L.hatch_at).getTime() : 0;
+          const ready = hatchMs && hatchMs <= Date.now();
+          return `<div class="pet-card ${elClass}">
+        <div class="pet-card-top">
+          <span class="pet-card-element">${esc(L.element || "")}</span>
+          <span class="pet-card-badge">EGG</span>
+          <div style="padding:8px 0">${eggArtHtml(L.element, false)}</div>
+        </div>
+        <div class="pet-card-body">
+          <div class="pet-card-name">${esc(L.name || "Egg")}</div>
+          <div class="pet-card-price">${Number(L.price_amt)} AMT</div>
+          <div class="muted" style="font-size:10px;margin-top:4px">${L.gen || 1} Gen · ${
+            ready ? "Ready to hatch" : "Incubating"
+          }</div>
+          <div class="muted" style="font-size:10px">Seller: ${esc(L.seller_username || "?")}</div>
+          <div class="pet-card-footer">
+            <button class="small-btn" onclick="buyEggListing(${L.id})">BUY EGG</button>
+          </div>
+        </div>
+      </div>`;
+        }
+        const pet = {
+          name: L.name,
+          element: L.element,
+          image: L.image,
+          rarity: L.rarity,
+          level: L.level
+        };
+        return `<div class="pet-card ${elClass}">
+        <div class="pet-card-top">
+          <span class="pet-card-element">${esc(L.element || "")}</span>
+          <span class="pet-card-badge">PET</span>
+          ${petArtHtml(pet, 120)}
+        </div>
+        <div class="pet-card-body">
+          <div class="pet-card-name">${esc(L.name || "Pet")}</div>
+          <div class="pet-card-price">${Number(L.price_amt)} AMT</div>
+          <div class="muted" style="font-size:10px;margin-top:4px">Lv ${L.level || 1} · ${esc(
+          L.rarity || "Common"
+        )}</div>
+          <div class="muted" style="font-size:10px">Seller: ${esc(L.seller_username || "?")}</div>
+          <div class="pet-card-footer">
+            <button class="small-btn" onclick="buyListing(${L.id})">BUY PET</button>
+          </div>
+        </div>
+      </div>`;
+      })
+      .join("");
+  } catch (e) {
+    grid.innerHTML =
+      '<div class="empty">Unable to load listings. ' +
+      esc(e.message || "") +
+      "</div>";
+  }
+}
+
+async function buyListing(listingId) {
+  try {
+    const data = await api("/api/pets/buy-listing", {
+      method: "POST",
+      body: JSON.stringify({ listingId: Number(listingId) })
+    });
+    showToast("Pet purchased for " + (data.price != null ? data.price : "") + " AMT");
+    await loadListings();
+    await loadOwnedPets();
+    await refreshWallet();
+  } catch (e) {
+    showToast(e.message || "Buy failed", true);
+  }
+}
+
+async function buyEggListing(listingId) {
+  try {
+    const data = await api("/api/pets/buy-egg-listing", {
+      method: "POST",
+      body: JSON.stringify({ listingId: Number(listingId) })
+    });
+    showToast(data.message || "Egg purchased");
+    await loadListings();
+    await loadEggs();
+    await refreshWallet();
+  } catch (e) {
+    showToast(e.message || "Buy egg failed", true);
+  }
+}
+
+function marketInfo(name) {
+  showToast(name + " • Use Pet tabs");
+}
+
+/* ============================================================
+   START
+============================================================ */
+
+document.addEventListener(
+"DOMContentLoaded",
+()=>{
+
+selectPool("30D");
+
+// Capture ?ref= from URL early (before login)
+getPendingReferralCode();
+
+restoreSession();
+
+}
+);
+
+/* ============================================================
+   CLEANUP
+============================================================ */
+
+window.addEventListener(
+"beforeunload",
+()=>{
+
+if(miningInterval){
+clearInterval(miningInterval);
+}
+
+}
+);
+
+</script>
+</body>
+</html>
