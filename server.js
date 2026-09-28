@@ -3,11 +3,11 @@
 /*
 ============================================================
 ALBERTO MARKETPLACE TOKEN (AMT)
-PI TESTNET BACKEND
+PI BACKEND (APP LEDGER)
 FULL SERVER VERSION 2.4.28
 
 IMPORTANT:
-- TESTNET ONLY
+- Application ledger backend (works with Mainnet or Testnet Pi app keys)
 - AMT application ledger wallet only
 - Generated AMT- address is NOT a Pi/Stellar blockchain wallet
 - Pi authentication is verified server-side
@@ -15,8 +15,8 @@ IMPORTANT:
 - Airdrop is application-ledger accounting
 - AMT transfers are application-ledger accounting
 - Staking is application-ledger accounting
-- Marketplace payments use Pi Testnet Payments API
-- NO MAINNET VALUE IS CLAIMED
+- Pi Payments API depends on PI_API_KEY network (Mainnet key = Mainnet payments)
+- In-app AMT balances are ledger accounting; on-chain Mainnet AMT is separate
 
 VERSION 2.4.3:
 - OLD 1 AMT airdrop claims are cleared → users can claim new 100 AMT airdrop
@@ -462,11 +462,16 @@ async function verifyPiAccessToken(
     !response.ok ||
     !data?.uid
   ) {
+    console.error("AUTH ERROR detail:", {
+      status: response.status,
+      body: data,
+      tokenPrefix: String(accessToken).slice(0, 12) + "…"
+    });
     throw new HttpError(
       401,
       data?.error ||
         data?.message ||
-        "Pi authentication failed."
+        `Pi authentication failed (${response.status}).`
     );
   }
 
