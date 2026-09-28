@@ -7,7 +7,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#090711">
-<title>Alberto Marketplace Token • AMT Mainnet</title>
+<title>Alberto Marketplace Token • AMT Testnet</title>
 <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 
 <style>
@@ -1174,7 +1174,7 @@ animation:ecosystemBlink 1s ease-in-out infinite;
 <div class="brand-sub">TOKEN • TESTNET ECOSYSTEM</div>
 </div>
 </div>
-<div class="testnet">● PI TESTNET</div>
+<div class="testnet">● PI MAINNET</div>
 </div>
 </header>
 
@@ -1198,7 +1198,7 @@ animation:ecosystemBlink 1s ease-in-out infinite;
 
 <div class="login-top-badge">
 <span></span>
-PI TESTNET • AMT CORE
+PI MAINNET • AMT CORE
 </div>
 
 <div class="login-core">
@@ -1272,7 +1272,7 @@ onclick="loginWithPi()"
 
 <div class="login-testnet-note">
 <span>●</span>
-PI TESTNET ONLY • AMT HAS NO MAINNET VALUE
+PI MAINNET ONLY • AMT HAS NO MAINNET VALUE
 </div>
 
 <div class="login-notice">
@@ -1299,7 +1299,7 @@ AMT shown here has no Mainnet value.
 <h1><span>AMT</span> MINING</h1>
 <p>Mine · Daily reward · Build your balance</p>
 <div class="notice">
-Pi KYC is <b>not required</b> for AMT Testnet mining.
+Pi KYC is <b>not required</b> for AMT Mainnet mining.
 KYC may be required for applicable Mainnet functions.
 </div>
 </div>
@@ -1332,7 +1332,7 @@ CLAIM DAILY REWARD
 <!-- MINING SESSION -->
 <div class="card">
 <div class="card-title">MINING SESSION</div>
-<div class="muted" style="margin-bottom:8px">24h session · 0.5 AMT/hr · Claim when timer ends</div>
+<div class="muted" style="margin-bottom:8px">24h session · <b>0.5 AMT/hr</b> (12 AMT/day) · Claim when timer ends</div>
 
 <div class="mining-ring">
 <div class="mining-inner">
@@ -1370,7 +1370,7 @@ CLAIM DAILY REWARD
 </div>
 <div class="stat">
 <div class="stat-label">Network</div>
-<div class="stat-value">Pi Testnet</div>
+<div class="stat-value">Pi Mainnet</div>
 </div>
 </div>
 </section>
@@ -1417,7 +1417,7 @@ CLAIM DAILY REWARD
             <span class="amt-card-sub">ON-CHAIN · VIRTUAL</span>
           </div>
         </div>
-        <div class="amt-card-network">PI TESTNET</div>
+        <div class="amt-card-network">PI MAINNET</div>
       </div>
       <div class="amt-card-chip-row">
         <div class="amt-card-chip" aria-hidden="true"></div>
@@ -1472,7 +1472,7 @@ CLAIM DAILY REWARD
 <div class="card">
 <div class="card-title">ALL BALANCES</div>
 <div class="notice" style="margin-bottom:12px">
-<b>In-app</b> = app ledger · <b>On-chain AMT</b> = Pi Testnet token · <b>Test-Pi</b> = native Pi. Only your wallet is shown.
+<b>In-app</b> = app ledger · <b>On-chain AMT</b> = Pi Mainnet token · <b>Test-Pi</b> = native Pi. Only your wallet is shown.
 </div>
 <div class="balance-stack">
 <div class="balance-row">
@@ -1521,7 +1521,7 @@ Your wallets only. Other Pioneers cannot see or use your addresses.
 <hr>
 
 <div class="form-group">
-<label>Link your Pi Testnet wallet (G... address)</label>
+<label>Link your Pi Mainnet wallet (G... address)</label>
 <input id="linkPiWalletInput" class="input" placeholder="GXXXXXXXX...">
 </div>
 <button class="primary" onclick="linkPiWallet()">
@@ -1581,7 +1581,7 @@ Unlink Pi Wallet
 </button>
 
 <div class="notice">
-One eligible claim per account. Testnet only.
+One eligible claim per account. Mainnet app.
 </div>
 </div>
 </section>
@@ -1752,7 +1752,7 @@ Pi UID: —
 
 <div class="row">
 <span class="muted">Network</span>
-<b>Pi Testnet</b>
+<b>Pi Mainnet</b>
 </div>
 </div>
 
@@ -2058,14 +2058,14 @@ SELECT 180D
 <section id="swapSection" class="section">
 <div class="hero">
 <h1>AMT <span>SWAP</span></h1>
-<p>Pi Testnet swap interface</p>
+<p>Pi Mainnet swap interface</p>
 </div>
 
 <div class="card">
-<div class="card-title">AMT / PI TESTNET</div>
+<div class="card-title">AMT / PI MAINNET</div>
 
 <div class="notice">
-Swap functionality depends on the currently available Pi Testnet liquidity and platform integration.
+Swap functionality depends on the currently available Pi Mainnet liquidity and platform integration.
 </div>
 
 <button class="secondary" style="margin-top:14px" onclick="showToast('Swap interface is available for Testnet integration.',false)">
@@ -2292,8 +2292,8 @@ showToast("Connecting to Pi...");
 try{
 
 Pi.init({
-    version:"2.0",
-    sandbox:false
+version:"2.0",
+sandbox:false
 });
 
 }catch(e){
@@ -2609,11 +2609,11 @@ async function linkPiWallet(){
   const address = (input && input.value ? input.value : "").trim();
 
   if(!address){
-    return showToast("Paste your Pi Testnet wallet address (starts with G).", true);
+    return showToast("Paste your Pi Mainnet wallet address (starts with G).", true);
   }
 
   if(!/^G[A-Z2-7]{55}$/i.test(address)){
-    return showToast("Invalid address. Use your G... wallet from Pi Testnet.", true);
+    return showToast("Invalid address. Use your G... wallet from Pi Mainnet.", true);
   }
 
   try{
@@ -2838,9 +2838,9 @@ async function refreshOnchainBalances(){
       if(!data.linked){
         $("onchainStatus").textContent = "Link your Pi wallet to load on-chain balances.";
       }else if(data.accountExists === false){
-        $("onchainStatus").textContent = data.message || "Wallet not found on Pi Testnet yet.";
+        $("onchainStatus").textContent = data.message || "Wallet not found on Pi Mainnet yet.";
       }else{
-        $("onchainStatus").textContent = "On-chain data from Pi Testnet · your wallet only";
+        $("onchainStatus").textContent = "On-chain data from Pi Mainnet · your wallet only";
       }
     }
   }catch(e){
@@ -3067,6 +3067,7 @@ $("miningTimer").textContent=
 $("miningProgress").style.width=
 "100%";
 
+
 if(miningInterval){
 
 clearInterval(miningInterval);
@@ -3090,6 +3091,7 @@ $("startMiningBtn").disabled=true;
 $("claimMiningBtn")
 .classList.add("hidden");
 
+
 startMiningClock(data);
 
 return;
@@ -3111,6 +3113,7 @@ $("miningTimer").textContent=
 
 $("miningProgress").style.width=
 "0%";
+
 
 if(miningInterval){
 
@@ -3383,7 +3386,7 @@ true
    REFERRAL
 ============================================================ */
 
-const APP_BASE_URL = "https://bonene28.github.io";
+const APP_BASE_URL = "https://amtmining13.github.io";
 
 function getPendingReferralCode(){
   try{
@@ -3512,7 +3515,7 @@ async function shareReferral(){
   if(!link || link === "------"){
     return showToast("Login first to share your invite.", true);
   }
-  const text = "Join me on AMT (Alberto Marketplace Token) on Pi Testnet!\nCode: " + code + "\n" + link;
+  const text = "Join me on AMT (Alberto Marketplace Token) on Pi Mainnet!\nCode: " + code + "\n" + link;
   try{
     if(navigator.share){
       await navigator.share({ title: "AMT Referral", text: text, url: link });
