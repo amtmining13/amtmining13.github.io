@@ -1354,7 +1354,7 @@ CLAIM DAILY REWARD
 <button id="watchAdBtn" class="secondary" style="margin-top:10px" onclick="watchRewardedAd()">
 📺 WATCH AD FOR BONUS
 </button>
-<div class="muted" style="font-size:11px;margin-top:6px;text-align:center">Optional · Pi Ads · Rewarded video</div>
+<div class="muted" style="font-size:11px;margin-top:6px;text-align:center">Optional · Also shows 1x/day when you START MINING · Bonus when Pi Ads approved</div>
 
 <div class="progress"><span id="miningProgress"></span></div>
 
@@ -2512,6 +2512,48 @@ async function maybeShowInterstitial(){
   }
 }
 
+/** Once per calendar day: show ad after START MINING */
+function adDayKey(){
+  const d=new Date();
+  return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate();
+}
+function alreadyShowedMiningAdToday(){
+  try{return localStorage.getItem("amt_mining_ad_day")===adDayKey();}catch(e){return false;}
+}
+function markMiningAdShownToday(){
+  try{localStorage.setItem("amt_mining_ad_day",adDayKey());}catch(e){}
+}
+
+async function showDailyMiningAd(){
+  try{
+    if(alreadyShowedMiningAdToday())return;
+    if(!window.Pi||!Pi.Ads)return;
+    if(!ensurePiInit())return;
+    // Prefer interstitial on mining start (non-blocking to session); fallback rewarded
+    let type="interstitial";
+    let ready=await Pi.Ads.isAdReady(type);
+    if(!(ready&&(ready.ready===true||ready===true))){
+      const req=await Pi.Ads.requestAd(type);
+      if(!req||req.result!=="AD_LOADED"){
+        type="rewarded";
+        ready=await Pi.Ads.isAdReady(type);
+        if(!(ready&&(ready.ready===true||ready===true))){
+          const req2=await Pi.Ads.requestAd(type);
+          if(!req2||req2.result!=="AD_LOADED")return;
+        }
+      }
+    }
+    const res=await Pi.Ads.showAd(type);
+    markMiningAdShownToday();
+    if(res&&(res.result==="AD_REWARDED"||res.result==="AD_CLOSED")){
+      showToast("Ad done · Daily mining ad (1x/day). Bonus when Pi Ads is approved.");
+    }
+    preloadPiAds();
+  }catch(e){
+    console.warn("Daily mining ad:",e);
+  }
+}
+
 function enterApp(){
 
 $("loginSection").classList.remove("active");
@@ -3328,6 +3370,9 @@ showToast(
 );
 
 await loadMiningStatus();
+
+// 1x per day: show Pi Ad after successful start (does not block mining)
+showDailyMiningAd().catch(()=>{});
 
 }catch(error){
 
