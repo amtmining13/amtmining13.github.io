@@ -3456,19 +3456,22 @@ const claimed=Boolean(
 data.claimed??
 data.alreadyClaimed
 );
+const expired=Boolean(data.expired);
+const canClaim=data.canClaim!=null?Boolean(data.canClaim):(!claimed&&!expired);
 
-$("airdropStatus").textContent=
-claimed?
-"CLAIMED":
-"AVAILABLE";
-
-$("airdropBtn").disabled=
-claimed;
-
-$("airdropBtn").textContent=
-claimed?
-"✅ AIRDROP CLAIMED":
-"🎁 CLAIM AIRDROP";
+if(claimed){
+$("airdropStatus").textContent="CLAIMED";
+$("airdropBtn").disabled=true;
+$("airdropBtn").textContent="✅ AIRDROP CLAIMED";
+}else if(expired||!canClaim){
+$("airdropStatus").textContent="EXPIRED";
+$("airdropBtn").disabled=true;
+$("airdropBtn").textContent="⏰ WINDOW CLOSED";
+}else{
+$("airdropStatus").textContent="AVAILABLE";
+$("airdropBtn").disabled=false;
+$("airdropBtn").textContent="🎁 CLAIM AIRDROP";
+}
 
 }catch(error){
 
@@ -3476,6 +3479,7 @@ console.log(
 "Airdrop status:",
 error
 );
+$("airdropStatus").textContent="ERROR";
 
 }
 }
