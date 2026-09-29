@@ -138,15 +138,16 @@ const DEV_LEDGER_ADDRESSES = String(
   .filter(Boolean);
 const DEV_TREASURY_REF = "AMT-DEV-TREASURY-5M";
 
-/* 48-hour claim window for NEW 100 AMT airdrop (shared campaign window) */
+/* Airdrop claim window (shared campaign). Default: 30 days from campaign start.
+   Override with env: AIRDROP_CAMPAIGN_START, AIRDROP_WINDOW_HOURS */
 const AIRDROP_CLAIM_WINDOW_SECONDS =
-  48 * 60 * 60;
+  Number(process.env.AIRDROP_WINDOW_HOURS || "720") * 60 * 60; /* default 30 days */
 
-/* Campaign starts when 100 AMT airdrop went live — all users share this window */
+/* Campaign start — reopen for Mainnet app era. Override via env if needed. */
 const AIRDROP_CAMPAIGN_START_MS =
   new Date(
     process.env.AIRDROP_CAMPAIGN_START ||
-    "2026-09-18T00:00:00.000Z"
+    "2026-09-29T00:00:00.000Z"
   ).getTime();
 
 const MAX_DIRECT_REFERRALS = null;
@@ -2696,7 +2697,7 @@ app.get(
         "Pi Testnet",
 
       type:
-        "ONE_TIME_TESTNET_AIRDROP_48H",
+        "ONE_TIME_AIRDROP",
 
       claimWindowSeconds:
         AIRDROP_CLAIM_WINDOW_SECONDS,
@@ -2759,7 +2760,7 @@ app.post(
           .json({
             ok: false,
             error:
-              "Airdrop claim window has expired (48 hours).",
+              "Airdrop claim window has expired.",
             expired: true
           });
       }
