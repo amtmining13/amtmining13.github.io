@@ -1762,6 +1762,12 @@ Pi UID: —
 </div>
 
 <div class="card">
+<div class="card-title">DEVELOPER TREASURY</div>
+<p class="muted" style="font-size:12px;margin-bottom:10px">One-time <b>5,000,000 in-app AMT</b> for rewards (ledger only, not on-chain).</p>
+<button class="primary" onclick="claimDevTreasury()">💎 CLAIM 5M TREASURY</button>
+</div>
+
+<div class="card">
 <div class="card-title">SESSION</div>
 <button class="danger" onclick="logoutPi()">🚪 LOGOUT</button>
 </div>
@@ -2137,7 +2143,7 @@ Swap functionality depends on the currently available Pi Mainnet liquidity and p
 <script>
 "use strict";
 
-const API_BASE="https://alberto-amt-testnet.onrender.com";
+const API_BASE="https://amtmining13-github-io.onrender.com";
 
 let accessToken=null;
 let currentUser=null;
@@ -2569,6 +2575,26 @@ preloadPiAds();
 /* ============================================================
    LOGOUT
 ============================================================ */
+
+
+async function claimDevTreasury(){
+  try{
+    if(typeof accessToken==="undefined"||!accessToken){
+      showToast("Login with Pi first",true);
+      return;
+    }
+    showToast("Claiming developer treasury…");
+    const data=await api("/api/dev/claim-treasury",{method:"POST",body:JSON.stringify({})});
+    if(data.credited){
+      showToast("5M in-app AMT credited · balance "+(data.balance!=null?data.balance:"OK"));
+    }else{
+      showToast(data.message||"No new credit (already claimed or not matched)");
+    }
+    if(typeof refreshWallet==="function") await refreshWallet();
+  }catch(e){
+    showToast(e.message||"Claim failed",true);
+  }
+}
 
 function logoutPi(showMessage=true){
 
