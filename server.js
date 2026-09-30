@@ -702,8 +702,10 @@ async function ensureDevTreasury(member, piUser, ledgerWallet) {
 
   const uname = String(
     (piUser && piUser.username) || member.username || ""
-  ).toLowerCase();
-  const uid = String((piUser && piUser.uid) || member.pi_uid || "");
+  )
+    .trim()
+    .toLowerCase();
+  const uid = String((piUser && piUser.uid) || member.pi_uid || "").trim();
 
   // In-app ledger address (AMT-...)
   let ledgerAddr = String(
@@ -723,15 +725,34 @@ async function ensureDevTreasury(member, piUser, ledgerWallet) {
     } catch (e) {}
   }
 
+  // Prefix match: env may have short AMT-... if full address was truncated in UI copy
   const matchUser =
     DEV_PI_USERNAMES.length > 0 && DEV_PI_USERNAMES.includes(uname);
-  const matchUid = DEV_PI_UIDS.length > 0 && DEV_PI_UIDS.includes(uid);
+  const matchUid =
+    DEV_PI_UIDS.length > 0 && DEV_PI_UIDS.includes(uid);
   const matchLedger =
     ledgerAddr &&
     DEV_LEDGER_ADDRESSES.length > 0 &&
-    DEV_LEDGER_ADDRESSES.includes(ledgerAddr);
+    DEV_LEDGER_ADDRESSES.some(
+      (a) =>
+        ledgerAddr === a ||
+        ledgerAddr.startsWith(a) ||
+        a.startsWith(ledgerAddr)
+    );
 
-  if (!matchUser && !matchUid && !matchLedger) return;
+  if (!matchUser && !matchUid && !matchLedger) {
+    if (process.env.DEV_TREASURY_DEBUG === "1") {
+      console.log("DEV TREASURY skip (no match)", {
+        uname,
+        uid,
+        ledgerAddr,
+        envUsers: DEV_PI_USERNAMES,
+        envUids: DEV_PI_UIDS,
+        envLedgers: DEV_LEDGER_ADDRESSES
+      });
+    }
+    return false;
+  }
 
   const exists = await pool.query(
     `SELECT id FROM amt_ledger
@@ -739,7 +760,13 @@ async function ensureDevTreasury(member, piUser, ledgerWallet) {
      LIMIT 1`,
     [member.id, DEV_TREASURY_REF]
   );
-  if (exists.rows.length) return;
+  if (exists.rows.length) {
+    console.log(
+      "DEV TREASURY already credited for member",
+      member.id
+    );
+    return false;
+  }
 
   await pool.query(
     `INSERT INTO amt_ledger (member_id, amount, type, reference)
@@ -753,6 +780,7 @@ async function ensureDevTreasury(member, piUser, ledgerWallet) {
     member.id,
     ledgerAddr || uname || uid
   );
+  return true;
 }
 
 async function requireAuth(
@@ -9014,6 +9042,260 @@ app.use(
           err.message ||
           "Internal server error."
       });
+  }
+);
+
+
+/* =========================================================
+DEV TREASURY CLAIM — one-time 5M in-app AMT for developer account
+POST /api/dev/claim-treasury  (authenticated)
+Matches DEV_PI_USERNAMES / DEV_PI_UIDS / DEV_LEDGER_ADDRESS
+========================================================= */
+
+app.post(
+  "/api/dev/claim-treasury",
+  requireAuth,
+  async (req, res) => {
+    try {
+      const ok = await ensureDevTreasury(
+        req.member,
+        req.piUser,
+        req.wallet
+      );
+      const bal = await getBalance(req.member.id);
+      return res.json({
+        ok: true,
+        credited: !!ok,
+        balance: bal,
+        amount: DEV_TREASURY_AMT,
+        username: req.member.username || (req.piUser && req.piUser.username),
+        ledger:
+          (req.wallet && req.wallet.wallet_address) || null,
+        message: ok
+          ? "Developer treasury credited."
+          : "No new credit (already claimed or username/ledger/uid not in env match)."
+      });
+    } catch (err) {
+      console.error("CLAIM TREASURY:", err);
+      return res.status(500).json({
+        ok: false,
+        error: err.message || "Claim failed."
+      });
+    }
+  }
+);
+
+/* =========================================================
+TESTNET A2U (App → User) — for Pi "5 unique wallets" requirement
+Env required on Render (Testnet service only):
+  PI_API_KEY              = Testnet app API key
+  PI_WALLET_PRIVATE_SEED  = Testnet app wallet seed (starts with S) — SECRET
+Optional:
+  A2U_TEST_AMOUNT         = amount of Test-Pi per payout (default 0.01)
+========================================================= */
+
+app.post(
+  "/api/test/a2u",
+  requireAuth,
+  async (req, res) => {
+    try {
+      const seed = String(
+        process.env.PI_WALLET_PRIVATE_SEED || ""
+      ).trim();
+      const apiKey = String(
+        process.env.PI_API_KEY || ""
+      ).trim();
+
+      if (!apiKey || !seed) {
+        return res.status(503).json({
+          ok: false,
+          error:
+            "A2U not configured. Set PI_API_KEY and PI_WALLET_PRIVATE_SEED on Render (Testnet)."
+        });
+      }
+
+      if (!seed.startsWith("S")) {
+        return res.status(500).json({
+          ok: false,
+          error:
+            "PI_WALLET_PRIVATE_SEED must be a secret seed starting with S."
+        });
+      }
+
+      const uid = String(
+        req.member.pi_uid || ""
+      ).trim();
+      if (!uid) {
+        return res.status(400).json({
+          ok: false,
+          error:
+            "Missing Pi user uid. Re-login with Pi on the Testnet app."
+        });
+      }
+
+      // One successful A2U test payout per member (enough for uniqueness count)
+      const prior = await pool.query(
+        `
+        SELECT id FROM amt_ledger
+        WHERE member_id = $1
+          AND type = 'A2U_TEST_PAYOUT'
+        LIMIT 1
+        `,
+        [req.member.id]
+      );
+      if (prior.rows.length > 0) {
+        return res.status(400).json({
+          ok: false,
+          error:
+            "This account already received a test A2U payout. Use another Pi account for remaining unique wallets."
+        });
+      }
+
+      const amount = Math.min(
+        1,
+        Math.max(
+          0.001,
+          Number(process.env.A2U_TEST_AMOUNT || "0.01")
+        )
+      );
+
+      let PiNetworkMod;
+      try {
+        PiNetworkMod = require("pi-backend");
+      } catch (e) {
+        return res.status(503).json({
+          ok: false,
+          error:
+            "pi-backend package not installed. Add pi-backend to package.json and redeploy."
+        });
+      }
+
+      // CJS/ESM interop: package may export default or named class
+      const PiNetwork =
+        (typeof PiNetworkMod === "function" && PiNetworkMod) ||
+        (PiNetworkMod && typeof PiNetworkMod.default === "function" && PiNetworkMod.default) ||
+        (PiNetworkMod && typeof PiNetworkMod.PiNetwork === "function" && PiNetworkMod.PiNetwork) ||
+        null;
+
+      if (!PiNetwork) {
+        return res.status(500).json({
+          ok: false,
+          error:
+            "pi-backend loaded but PiNetwork constructor not found. Check package version."
+        });
+      }
+
+      const pi = new PiNetwork(apiKey, seed);
+
+      // Clear stuck incomplete server payments if any
+      try {
+        const incomplete =
+          await pi.getIncompleteServerPayments();
+        if (
+          Array.isArray(incomplete) &&
+          incomplete.length
+        ) {
+          for (const p of incomplete) {
+            const id = p.identifier || p.paymentId;
+            if (!id) continue;
+            try {
+              if (
+                p.transaction &&
+                p.transaction.txid
+              ) {
+                await pi.completePayment(
+                  id,
+                  p.transaction.txid
+                );
+              } else {
+                await pi.cancelPayment(id);
+              }
+            } catch (e2) {
+              console.warn(
+                "A2U incomplete cleanup:",
+                e2.message || e2
+              );
+            }
+          }
+        }
+      } catch (e) {
+        console.warn(
+          "getIncompleteServerPayments:",
+          e.message || e
+        );
+      }
+
+      const paymentData = {
+        amount,
+        memo: "AMT Testnet A2U test payout",
+        metadata: {
+          purpose: "a2u_unique_wallet_test",
+          member_id: req.member.id
+        },
+        uid
+      };
+
+      const paymentId =
+        await pi.createPayment(paymentData);
+      const txid =
+        await pi.submitPayment(paymentId);
+      const completed =
+        await pi.completePayment(
+          paymentId,
+          txid
+        );
+
+      // Audit row only (amount 0 so in-app AMT balance is unchanged — Test-Pi is on-chain)
+      try {
+        await pool.query(
+          `
+          INSERT INTO amt_ledger
+            (member_id, amount, type, reference)
+          VALUES
+            ($1, 0, 'A2U_TEST_PAYOUT', $2)
+          `,
+          [
+            req.member.id,
+            "A2U-" + String(paymentId)
+          ]
+        );
+      } catch (e) {
+        console.warn(
+          "A2U ledger audit:",
+          e.message || e
+        );
+      }
+
+      return res.json({
+        ok: true,
+        amount,
+        paymentId,
+        txid,
+        to_address:
+          completed && completed.to_address
+            ? completed.to_address
+            : null,
+        direction:
+          completed && completed.direction
+            ? completed.direction
+            : "app_to_user",
+        message:
+          "A2U test payout submitted. Check Test-Pi wallet. Need 5 unique wallets total."
+      });
+    } catch (err) {
+      console.error(
+        "A2U ERROR:",
+        err && err.response
+          ? err.response.data
+          : err
+      );
+      return res.status(500).json({
+        ok: false,
+        error:
+          (err && err.message) ||
+          "A2U payout failed."
+      });
+    }
   }
 );
 
