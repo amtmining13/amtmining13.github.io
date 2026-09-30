@@ -2143,7 +2143,7 @@ Swap functionality depends on the currently available Pi Mainnet liquidity and p
 <script>
 "use strict";
 
-const API_BASE="https://alberto-amt-testnet.onrender.com"; /* backend currently used by app — change only when Mainnet Render URL is ready */
+const API_BASE="https://amtmining13-github-io.onrender.com";
 
 let accessToken=null;
 let currentUser=null;
@@ -2491,7 +2491,7 @@ async function watchRewardedAd(){
     }
     const res=await Pi.Ads.showAd("rewarded");
     if(res&&(res.result==="AD_REWARDED"||res.result==="AD_CLOSED")){
-      showToast("Thanks for watching! Bonus unlocks when Pi Ad Network is approved.");
+      await claimMiningAdBonus();
       preloadPiAds();
     }else{
       showToast("Ad finished or unavailable.",true);
@@ -2530,33 +2530,61 @@ function markMiningAdShownToday(){
   try{localStorage.setItem("amt_mining_ad_day",adDayKey());}catch(e){}
 }
 
+async function claimMiningAdBonus(){
+  try{
+    const data=await api("/api/ads/mining-bonus",{method:"POST",body:JSON.stringify({})});
+    if(data&&data.credited){
+      showToast("Ad bonus +"+(data.amount||0.5)+" AMT");
+      if(typeof refreshWallet==="function") refreshWallet().catch(()=>{});
+    }else if(data&&data.message){
+      showToast(data.message);
+    }
+  }catch(e){
+    // Backend optional — still OK if ads show without bonus API
+    console.warn("Ad bonus API:",e);
+  }
+}
+
 async function showDailyMiningAd(){
   try{
     if(alreadyShowedMiningAdToday())return;
-    if(!window.Pi||!Pi.Ads)return;
+    if(!window.Pi||!Pi.Ads){
+      console.warn("Pi.Ads not available");
+      return;
+    }
     if(!ensurePiInit())return;
-    // Prefer interstitial on mining start (non-blocking to session); fallback rewarded
-    let type="interstitial";
+
+    showToast("Loading daily mining ad…");
+
+    // Prefer rewarded (bonus path); fallback interstitial
+    let type="rewarded";
     let ready=await Pi.Ads.isAdReady(type);
     if(!(ready&&(ready.ready===true||ready===true))){
       const req=await Pi.Ads.requestAd(type);
       if(!req||req.result!=="AD_LOADED"){
-        type="rewarded";
+        type="interstitial";
         ready=await Pi.Ads.isAdReady(type);
         if(!(ready&&(ready.ready===true||ready===true))){
           const req2=await Pi.Ads.requestAd(type);
-          if(!req2||req2.result!=="AD_LOADED")return;
+          if(!req2||req2.result!=="AD_LOADED"){
+            showToast("No ad available right now. Try WATCH AD FOR BONUS later.");
+            return;
+          }
         }
       }
     }
+
     const res=await Pi.Ads.showAd(type);
     markMiningAdShownToday();
-    if(res&&(res.result==="AD_REWARDED"||res.result==="AD_CLOSED")){
-      showToast("Ad done · Daily mining ad (1x/day). Bonus when Pi Ads is approved.");
+
+    if(res&&(res.result==="AD_REWARDED"||res.result==="AD_CLOSED"||res.result==="AD_DISPLAYED")){
+      // In-app bonus for everyone who completes the daily mining ad (1x/day)
+      await claimMiningAdBonus();
     }
     preloadPiAds();
   }catch(e){
     console.warn("Daily mining ad:",e);
+    showToast("Ad could not load. Try again later or use WATCH AD FOR BONUS.");
   }
 }
 
@@ -3650,14 +3678,43 @@ if($("tierProgressText")) $("tierProgressText").textContent = progressText;
 }
 }
 
+function fallbackCopyText(text){
+  try{
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.cssText = "position:fixed;left:-9999px;top:0;opacity:0;";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    ta.setSelectionRange(0, text.length);
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return !!ok;
+  }catch(e){
+    return false;
+  }
+}
+
+async function copyTextSmart(text){
+  if(!text) return false;
+  try{
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  }catch(e){}
+  return fallbackCopyText(text);
+}
+
 function copyReferral(){
   const link = (window._referralLink || ($("referralCode") && $("referralCode").textContent) || "").trim();
   if(!link || link === "------"){
     return showToast("Referral link is not ready. Please login again.", true);
   }
-  navigator.clipboard.writeText(link)
-    .then(() => showToast("Referral link copied!"))
-    .catch(() => showToast("Could not copy referral link.", true));
+  copyTextSmart(link).then(function(ok){
+    showToast(ok ? "Link copied! Paste sa Messenger / chat." : "Could not copy link.", !ok);
+  });
 }
 
 function copyReferralCode(){
@@ -3665,9 +3722,9 @@ function copyReferralCode(){
   if(!code || code === "------"){
     return showToast("Referral code not ready. Login first.", true);
   }
-  navigator.clipboard.writeText(code)
-    .then(() => showToast("Code copied: " + code))
-    .catch(() => showToast("Could not copy code.", true));
+  copyTextSmart(code).then(function(ok){
+    showToast(ok ? ("Code copied: " + code) : "Could not copy code.", !ok);
+  });
 }
 
 async function shareReferral(){
@@ -3676,23 +3733,37 @@ async function shareReferral(){
   if(!link || link === "------"){
     return showToast("Login first to share your invite.", true);
   }
-  const text = "Join me on AMT (Alberto Marketplace Token) on Pi Mainnet!\nCode: " + code + "\n" + link;
-  try{
-    if(navigator.share){
-      await navigator.share({ title: "AMT Referral", text: text, url: link });
-      showToast("Shared!");
-    }else{
-      await navigator.clipboard.writeText(text);
-      showToast("Invite text copied (share not supported on this browser)");
-    }
-  }catch(e){
-    if(e && e.name === "AbortError") return;
+  const text =
+    "Join AMT on Pi Mainnet!\n" +
+    "App: https://amtmining13.github.io\n" +
+    "My code: " + code + "\n" +
+    "Invite: " + link;
+
+  // 1) Native share sheet (Android / some Pi Browser builds)
+  if(navigator.share){
     try{
-      await navigator.clipboard.writeText(text);
-      showToast("Invite text copied");
-    }catch(err){
-      showToast("Could not share", true);
+      // Prefer text-only — more reliable on in-app browsers than text+url together
+      await navigator.share({ title: "AMT Invite", text: text });
+      showToast("Shared!");
+      return;
+    }catch(e){
+      if(e && e.name === "AbortError") return; // user cancelled
+      try{
+        await navigator.share({ title: "AMT Invite", text: text, url: link });
+        showToast("Shared!");
+        return;
+      }catch(e2){
+        if(e2 && e2.name === "AbortError") return;
+      }
     }
+  }
+
+  // 2) Clipboard fallback (Pi Browser often lands here)
+  const ok = await copyTextSmart(text);
+  if(ok){
+    showToast("Invite copied! Open Messenger / Viber / Telegram → Paste → Send");
+  }else{
+    showToast("Copy failed. Use COPY LINK or COPY CODE.", true);
   }
 }
 
