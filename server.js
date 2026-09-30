@@ -9046,6 +9046,70 @@ app.use(
 );
 
 
+
+/* =========================================================
+DAILY MINING AD BONUS (in-app AMT · 1x per UTC day per member)
+POST /api/ads/mining-bonus  (authenticated)
+Env: AD_MINING_BONUS_AMT (default 0.5)
+========================================================= */
+
+app.post(
+  "/api/ads/mining-bonus",
+  requireAuth,
+  async (req, res) => {
+    try {
+      const bonus = Math.min(
+        50,
+        Math.max(
+          0.01,
+          Number(process.env.AD_MINING_BONUS_AMT || "0.5")
+        )
+      );
+      const dayKey = new Date()
+        .toISOString()
+        .slice(0, 10);
+      const ref = "AD-MINING-" + dayKey;
+
+      const exists = await pool.query(
+        `SELECT id FROM amt_ledger
+         WHERE member_id = $1 AND reference = $2
+         LIMIT 1`,
+        [req.member.id, ref]
+      );
+      if (exists.rows.length) {
+        const bal = await getBalance(req.member.id);
+        return res.json({
+          ok: true,
+          credited: false,
+          amount: 0,
+          balance: bal,
+          message: "Ad bonus already claimed today."
+        });
+      }
+
+      await pool.query(
+        `INSERT INTO amt_ledger (member_id, amount, type, reference)
+         VALUES ($1, $2, 'AD_MINING_BONUS', $3)`,
+        [req.member.id, bonus, ref]
+      );
+      const bal = await getBalance(req.member.id);
+      return res.json({
+        ok: true,
+        credited: true,
+        amount: bonus,
+        balance: bal,
+        message: "Ad bonus +" + bonus + " AMT"
+      });
+    } catch (err) {
+      console.error("AD MINING BONUS:", err);
+      return res.status(500).json({
+        ok: false,
+        error: err.message || "Ad bonus failed."
+      });
+    }
+  }
+);
+
 /* =========================================================
 DEV TREASURY CLAIM — one-time 5M in-app AMT for developer account
 POST /api/dev/claim-treasury  (authenticated)
