@@ -117,7 +117,7 @@ const DEV_TREASURY_AMT = Number(
 );
 /* Match by Pi username and/or pi_uid (comma-separated). Empty = disabled. */
 const DEV_PI_USERNAMES = String(
-  process.env.DEV_PI_USERNAMES || process.env.DEV_PI_USERNAME || ""
+  process.env.DEV_PI_USERNAMES || process.env.DEV_PI_USERNAME || "utoy0913"
 )
   .split(",")
   .map(s => s.trim().toLowerCase())
