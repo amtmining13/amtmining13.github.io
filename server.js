@@ -3390,12 +3390,12 @@ app.get("/api/daily/status", requireAuth, async (req, res) => {
     const today = utcDateString();
     const yesterday = yesterdayUtcString();
 
-    const last = await pool.query(
+    const hist = await pool.query(
       `SELECT claim_date, amount, streak, created_at
        FROM daily_rewards
        WHERE member_id = $1
        ORDER BY claim_date DESC
-       LIMIT 1`,
+       LIMIT 14`,
       [req.member.id]
     );
 
@@ -3404,15 +3404,16 @@ app.get("/api/daily/status", requireAuth, async (req, res) => {
     let lastClaimDate = null;
     let lastAmount = null;
 
-    if (last.rows.length) {
-      const row = last.rows[0];
-      lastClaimDate = String(row.claim_date).slice(0, 10);
+    if (hist.rows.length) {
+      const row = hist.rows[0];
+      lastClaimDate = asYmd(row.claim_date);
       lastAmount = Number(row.amount);
+      const dates = hist.rows.map((r) => asYmd(r.claim_date));
       if (lastClaimDate === today) {
         claimedToday = true;
-        streak = Number(row.streak) || 1;
+        streak = streakFromClaimDates(dates, today) || Number(row.streak) || 1;
       } else if (lastClaimDate === yesterday) {
-        streak = Number(row.streak) || 1;
+        streak = streakFromClaimDates(dates, yesterday) || Number(row.streak) || 1;
       } else {
         streak = 0;
       }
@@ -3486,12 +3487,22 @@ app.post("/api/daily/claim", requireAuth, async (req, res) => {
       [req.member.id]
     );
 
+    // Build streak from actual consecutive claim days (repairs old streak=1 rows)
+    const hist = await client.query(
+      `SELECT claim_date FROM daily_rewards
+       WHERE member_id = $1
+       ORDER BY claim_date DESC
+       LIMIT 14`,
+      [req.member.id]
+    );
+    const pastDates = hist.rows.map((r) => asYmd(r.claim_date));
+    // After today's insert, streak ends at today; before insert use yesterday chain + 1
     let streak = 1;
-    if (last.rows.length) {
-      const lastDate = String(last.rows[0].claim_date).slice(0, 10);
-      if (lastDate === yesterday) {
-        streak = Math.min(DAILY_MAX_STREAK, (Number(last.rows[0].streak) || 1) + 1);
-      }
+    if (pastDates.includes(yesterday)) {
+      const prior = streakFromClaimDates(pastDates, yesterday);
+      streak = Math.min(DAILY_MAX_STREAK, (prior || 1) + 1);
+    } else {
+      streak = 1;
     }
 
     const amount = dailyAmountForStreak(streak);
@@ -6535,9 +6546,50 @@ function yesterdayUtcString() {
   return d.toISOString().slice(0, 10);
 }
 
+/** Normalize PG DATE / Date / string → YYYY-MM-DD (UTC) */
+function asYmd(v) {
+  if (v == null || v === "") return null;
+  if (typeof v === "string") {
+    // "2026-10-01" or ISO datetime
+    const m = v.match(/(\d{4}-\d{2}-\d{2})/);
+    if (m) return m[1];
+    const d = new Date(v);
+    if (!isNaN(d.getTime())) {
+      return d.toISOString().slice(0, 10);
+    }
+    return v.slice(0, 10);
+  }
+  if (v instanceof Date && !isNaN(v.getTime())) {
+    const y = v.getUTCFullYear();
+    const m = String(v.getUTCMonth() + 1).padStart(2, "0");
+    const day = String(v.getUTCDate()).padStart(2, "0");
+    return y + "-" + m + "-" + day;
+  }
+  try {
+    return asYmd(String(v));
+  } catch (e) {
+    return null;
+  }
+}
+
 function dailyAmountForStreak(streak) {
   const s = Math.max(1, Math.min(DAILY_MAX_STREAK, Number(streak) || 1));
   return DAILY_REWARD_AMOUNTS[s - 1];
+}
+
+/** Count consecutive UTC days ending at endYmd from claim date list (YYYY-MM-DD desc or asc). */
+function streakFromClaimDates(datesYmd, endYmd) {
+  const set = new Set((datesYmd || []).map(asYmd).filter(Boolean));
+  if (!endYmd || !set.has(endYmd)) return 0;
+  let streak = 0;
+  let cur = endYmd;
+  while (set.has(cur) && streak < DAILY_MAX_STREAK) {
+    streak += 1;
+    const d = new Date(cur + "T00:00:00.000Z");
+    d.setUTCDate(d.getUTCDate() - 1);
+    cur = d.toISOString().slice(0, 10);
+  }
+  return streak;
 }
 
 /* ---------- Catalog ---------- */
