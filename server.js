@@ -1877,21 +1877,35 @@ app.delete(
 ON-CHAIN BALANCES (Pi Testnet Horizon — own wallet only)
 ========================================================= */
 
-const PI_HORIZON_BASE =
+const PI_HORIZON_MAINNET =
+  process.env.PI_HORIZON_MAINNET ||
   process.env.PI_HORIZON_BASE ||
+  "https://api.mainnet.minepi.com";
+
+const PI_HORIZON_TESTNET =
+  process.env.PI_HORIZON_TESTNET ||
   "https://api.testnet.minepi.com";
 
-const PI_HORIZON_BASE_2 =
-  process.env.PI_HORIZON_BASE_2 ||
+const PI_HORIZON_TESTNET_2 =
+  process.env.PI_HORIZON_TESTNET_2 ||
   "https://api.testnet2.minepi.com";
 
-async function fetchHorizonAccount(address) {
-  const urls = [
-    `${PI_HORIZON_BASE}/accounts/${encodeURIComponent(address)}`,
-    `${PI_HORIZON_BASE_2}/accounts/${encodeURIComponent(address)}`
-  ];
+/** Prefer Mainnet PI balance; optional Testnet for on-chain AMT tests */
+async function fetchHorizonAccount(address, preferMainnet = true) {
+  const urls = preferMainnet
+    ? [
+        `${PI_HORIZON_MAINNET}/accounts/${encodeURIComponent(address)}`,
+        `${PI_HORIZON_TESTNET}/accounts/${encodeURIComponent(address)}`,
+        `${PI_HORIZON_TESTNET_2}/accounts/${encodeURIComponent(address)}`
+      ]
+    : [
+        `${PI_HORIZON_TESTNET}/accounts/${encodeURIComponent(address)}`,
+        `${PI_HORIZON_TESTNET_2}/accounts/${encodeURIComponent(address)}`,
+        `${PI_HORIZON_MAINNET}/accounts/${encodeURIComponent(address)}`
+      ];
 
   let lastError = null;
+  let last404 = null;
 
   for (const url of urls) {
     try {
@@ -1900,7 +1914,8 @@ async function fetchHorizonAccount(address) {
       });
 
       if (response.status === 404) {
-        return { exists: false, balances: [] };
+        last404 = { exists: false, balances: [], horizon: horizonLabel(url) };
+        continue;
       }
 
       if (!response.ok) {
@@ -1912,14 +1927,21 @@ async function fetchHorizonAccount(address) {
       return {
         exists: true,
         balances: Array.isArray(data.balances) ? data.balances : [],
-        horizon: url.includes("testnet2") ? "testnet2" : "testnet"
+        horizon: horizonLabel(url)
       };
     } catch (err) {
       lastError = err;
     }
   }
 
+  if (last404) return last404;
   throw lastError || new Error("Horizon unavailable");
+}
+
+function horizonLabel(url) {
+  if (url.includes("mainnet")) return "mainnet";
+  if (url.includes("testnet2")) return "testnet2";
+  return "testnet";
 }
 
 app.get(
@@ -1941,11 +1963,12 @@ app.get(
           onchainAmtBalance: null,
           otherTokens: [],
           message:
-            "Link your Pi Testnet wallet first to see on-chain balances."
+            "Link your Pi Mainnet wallet (G...) to see Mainnet PI balance."
         });
       }
 
-      const account = await fetchHorizonAccount(address);
+      // Mainnet first → native PI balance for miners
+      const account = await fetchHorizonAccount(address, true);
 
       if (!account.exists) {
         return res.json({
@@ -1953,23 +1976,29 @@ app.get(
           linked: true,
           piWalletAddress: address,
           accountExists: false,
+          mainnetPiBalance: 0,
           testPiBalance: 0,
           onchainAmtBalance: 0,
           otherTokens: [],
+          horizon: account.horizon || "mainnet",
+          network: "Pi Mainnet",
           message:
-            "Account not found on Pi Testnet yet (or not activated)."
+            "Wallet not found on Pi Mainnet yet (or not activated)."
         });
       }
 
+      let mainnetPiBalance = 0;
       let testPiBalance = 0;
       let onchainAmtBalance = 0;
       const otherTokens = [];
+      const isMainnet = account.horizon === "mainnet";
 
       for (const b of account.balances) {
         const amount = Number(b.balance || 0);
 
         if (b.asset_type === "native") {
-          testPiBalance = amount;
+          if (isMainnet) mainnetPiBalance = amount;
+          else testPiBalance = amount;
           continue;
         }
 
@@ -1987,23 +2016,43 @@ app.get(
         }
       }
 
+      // If Mainnet had no AMT, try Testnet for on-chain AMT only (optional)
+      if (isMainnet && onchainAmtBalance === 0) {
+        try {
+          const tn = await fetchHorizonAccount(address, false);
+          if (tn.exists) {
+            for (const b of tn.balances) {
+              const amount = Number(b.balance || 0);
+              if (b.asset_type === "native") {
+                testPiBalance = amount;
+              } else if (String(b.asset_code || "").toUpperCase() === "AMT") {
+                onchainAmtBalance += amount;
+              }
+            }
+          }
+        } catch (e) {
+          /* ignore testnet fallback errors */
+        }
+      }
+
       res.json({
         ok: true,
         linked: true,
         accountExists: true,
         piWalletAddress: address,
+        mainnetPiBalance,
         testPiBalance,
         onchainAmtBalance,
         otherTokens,
-        horizon: account.horizon || "testnet",
-        network: "Pi Testnet"
+        horizon: account.horizon || "mainnet",
+        network: isMainnet ? "Pi Mainnet" : "Pi Testnet"
       });
     } catch (error) {
       console.error("ONCHAIN BALANCE ERROR:", error);
       res.status(500).json({
         ok: false,
         error:
-          "Unable to fetch on-chain balances from Pi Testnet."
+          "Unable to fetch on-chain balances from Pi network."
       });
     }
   }
