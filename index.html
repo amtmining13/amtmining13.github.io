@@ -2076,10 +2076,10 @@ SELECT 180D
 <div class="card-title">AMT / PI MAINNET</div>
 
 <div class="notice">
-Swap functionality depends on the currently available Pi Mainnet liquidity and platform integration.
+Opens Coixa for on-chain AMT swap & liquidity (Testnet token pools: AMT/PI, AMT/OUSD, etc.). Not the same as in-app mining AMT.
 </div>
 
-<button class="secondary" style="margin-top:14px" onclick="showToast('Swap interface is available for wallet integration.',false)">
+<button class="secondary" style="margin-top:14px" onclick="openCoixaSwap()">
 🔄 OPEN SWAP
 </button>
 </div>
@@ -3725,6 +3725,23 @@ function copyReferralCode(){
   copyTextSmart(code).then(function(ok){
     showToast(ok ? ("Code copied: " + code) : "Could not copy code.", !ok);
   });
+}
+
+
+function openCoixaSwap(){
+  // On-chain Testnet AMT swap / LP via Coixa (not in-app ledger)
+  const url = "https://app.coixa.xyz?ref=exe5LLq";
+  try{
+    if(window.Pi && typeof Pi.openUrlInSystemBrowser === "function"){
+      Pi.openUrlInSystemBrowser(url);
+    }else{
+      window.open(url, "_blank");
+    }
+    showToast("Opening Coixa · AMT on-chain swap / portfolio");
+  }catch(e){
+    try{ window.location.href = url; }catch(err){}
+    showToast("Open: app.coixa.xyz");
+  }
 }
 
 async function shareReferral(){
