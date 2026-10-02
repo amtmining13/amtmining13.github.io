@@ -1477,7 +1477,7 @@ CLAIM DAILY REWARD
 <div class="card">
 <div class="card-title">ALL BALANCES</div>
 <div class="notice" style="margin-bottom:12px">
-<b>In-app</b> = app ledger · <b>On-chain AMT</b> = Pi Mainnet token · <b>Test-Pi</b> = native Pi. Only your wallet is shown.
+<b>In-app</b> = app ledger · <b>On-chain AMT</b> = token on Pi · <b>Mainnet PI</b> = native Pi on Mainnet. Only your linked wallet is shown.
 </div>
 <div class="balance-stack">
 <div class="balance-row">
@@ -1489,7 +1489,11 @@ CLAIM DAILY REWARD
 <span class="balance-row-value" id="balOnchainAmt">—</span>
 </div>
 <div class="balance-row">
-<span class="balance-row-label">Test-Pi</span>
+<span class="balance-row-label">Mainnet PI</span>
+<span class="balance-row-value" id="balMainnetPi">—</span>
+</div>
+<div class="balance-row">
+<span class="balance-row-label">Testnet PI</span>
 <span class="balance-row-value" id="balTestPi">—</span>
 </div>
 </div>
@@ -2825,6 +2829,7 @@ async function unlinkPiWallet(){
       $("piWalletAddress").textContent = "Not linked — paste your G... address below";
     }
     if($("balOnchainAmt")) $("balOnchainAmt").textContent = "—";
+    if($("balMainnetPi")) $("balMainnetPi").textContent = "—";
     if($("balTestPi")) $("balTestPi").textContent = "—";
     if($("onchainStatus")) $("onchainStatus").textContent = "Link wallet to see on-chain balances.";
     showToast("Pi wallet unlinked.");
@@ -2995,8 +3000,19 @@ async function refreshOnchainBalances(){
       }
     }
 
+    if($("balMainnetPi")){
+      const mp = data.mainnetPiBalance != null ? data.mainnetPiBalance : (data.horizon === "mainnet" ? data.testPiBalance : null);
+      if(data.linked && mp != null){
+        $("balMainnetPi").textContent = Number(mp).toFixed(4) + " π";
+      }else{
+        $("balMainnetPi").textContent = "—";
+      }
+    }
+
     if($("balTestPi")){
-      if(data.linked && data.testPiBalance != null){
+      if(data.linked && data.testPiBalance != null && data.horizon !== "mainnet"){
+        $("balTestPi").textContent = Number(data.testPiBalance).toFixed(4) + " Test-π";
+      }else if(data.linked && data.testPiBalance != null && Number(data.testPiBalance) > 0 && data.mainnetPiBalance != null){
         $("balTestPi").textContent = Number(data.testPiBalance).toFixed(4) + " Test-π";
       }else{
         $("balTestPi").textContent = "—";
