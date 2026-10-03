@@ -2562,8 +2562,8 @@ async function preloadPiAds(){
   try{
     if(!window.Pi||!Pi.Ads)return;
     if(!ensurePiInit())return;
-    await Pi.Ads.requestAd("rewarded").catch(()=>{});
     await Pi.Ads.requestAd("interstitial").catch(()=>{});
+    await Pi.Ads.requestAd("rewarded").catch(()=>{});
   }catch(e){
     console.warn("Pi Ads preload:",e);
   }
@@ -2617,16 +2617,23 @@ async function maybeShowInterstitial(){
   }
 }
 
-/** Once per calendar day: show ad after START MINING */
+/** Mining ads: show on START MINING. Bonus still 1x/day (server). */
 function adDayKey(){
   const d=new Date();
   return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate();
 }
-function alreadyShowedMiningAdToday(){
-  try{return localStorage.getItem("amt_mining_ad_day")===adDayKey();}catch(e){return false;}
+function miningAdCooldownOk(){
+  try{
+    const last=Number(localStorage.getItem("amt_mining_ad_ts")||0);
+    // 2 min cooldown so rapid re-clicks don't spam
+    return Date.now()-last>2*60*1000;
+  }catch(e){return true;}
 }
-function markMiningAdShownToday(){
-  try{localStorage.setItem("amt_mining_ad_day",adDayKey());}catch(e){}
+function markMiningAdAttempt(){
+  try{localStorage.setItem("amt_mining_ad_ts",String(Date.now()));}catch(e){}
+}
+function markMiningAdSuccessToday(){
+  try{localStorage.setItem("amt_mining_ad_ok_day",adDayKey());}catch(e){}
 }
 
 async function claimMiningAdBonus(){
@@ -2639,51 +2646,73 @@ async function claimMiningAdBonus(){
       showToast(data.message);
     }
   }catch(e){
-    // Backend optional — still OK if ads show without bonus API
     console.warn("Ad bonus API:",e);
   }
 }
 
+async function waitAdLoaded(type, tries){
+  tries=tries||4;
+  for(let i=0;i<tries;i++){
+    try{
+      let ready=await Pi.Ads.isAdReady(type);
+      if(ready&&(ready.ready===true||ready===true))return true;
+      const req=await Pi.Ads.requestAd(type);
+      if(req&&(req.result==="AD_LOADED"||req.result==="ADS_LOADED"))return true;
+      // ADS_NOT_LOADED / ADS_UNAVAILABLE — short wait then retry
+      await new Promise(r=>setTimeout(r,600+i*400));
+    }catch(e){
+      console.warn("waitAdLoaded",type,e);
+      await new Promise(r=>setTimeout(r,500));
+    }
+  }
+  return false;
+}
+
 async function showDailyMiningAd(){
   try{
-    if(alreadyShowedMiningAdToday())return;
-    if(!window.Pi||!Pi.Ads){
-      console.warn("Pi.Ads not available");
+    if(!miningAdCooldownOk()){
+      console.log("Mining ad cooldown");
       return;
     }
-    if(!ensurePiInit())return;
+    if(!window.Pi||!Pi.Ads){
+      showToast("Pi Ads needs Pi Browser. Open app inside Pi Browser.",true);
+      return;
+    }
+    if(!ensurePiInit()){
+      showToast("Pi SDK init failed. Reopen in Pi Browser.",true);
+      return;
+    }
 
-    showToast("Loading daily mining ad…");
+    showToast("Loading mining ad…");
+    markMiningAdAttempt();
 
-    // Prefer rewarded (bonus path); fallback interstitial
+    // Prefer rewarded, then interstitial — with retries
     let type="rewarded";
-    let ready=await Pi.Ads.isAdReady(type);
-    if(!(ready&&(ready.ready===true||ready===true))){
-      const req=await Pi.Ads.requestAd(type);
-      if(!req||req.result!=="AD_LOADED"){
-        type="interstitial";
-        ready=await Pi.Ads.isAdReady(type);
-        if(!(ready&&(ready.ready===true||ready===true))){
-          const req2=await Pi.Ads.requestAd(type);
-          if(!req2||req2.result!=="AD_LOADED"){
-            showToast("No ad available right now. Try WATCH AD FOR BONUS later.");
-            return;
-          }
-        }
-      }
+    let ok=await waitAdLoaded("rewarded",4);
+    if(!ok){
+      type="interstitial";
+      ok=await waitAdLoaded("interstitial",4);
+    }
+    if(!ok){
+      showToast("No ad inventory right now. If Ads not approved yet on develop.pi, ads stay empty. Try WATCH AD later.",true);
+      preloadPiAds();
+      return;
     }
 
     const res=await Pi.Ads.showAd(type);
-    markMiningAdShownToday();
-
-    if(res&&(res.result==="AD_REWARDED"||res.result==="AD_CLOSED"||res.result==="AD_DISPLAYED")){
-      // In-app bonus for everyone who completes the daily mining ad (1x/day)
+    console.log("Mining ad result:",res);
+    const result=res&&res.result?String(res.result):"";
+    if(result==="AD_REWARDED"||result==="AD_CLOSED"||result==="AD_DISPLAYED"||result==="AD_SHOWN"){
+      markMiningAdSuccessToday();
       await claimMiningAdBonus();
+      showToast("Thanks for watching!");
+    }else if(result){
+      showToast("Ad: "+result);
     }
     preloadPiAds();
   }catch(e){
     console.warn("Daily mining ad:",e);
-    showToast("Ad could not load. Try again later or use WATCH AD FOR BONUS.");
+    showToast((e&&e.message)||"Ad could not load. Try WATCH AD FOR BONUS.",true);
   }
 }
 
@@ -3536,8 +3565,8 @@ showToast(
 
 await loadMiningStatus();
 
-// 1x per day: show Pi Ad after successful start (does not block mining)
-showDailyMiningAd().catch(()=>{});
+// Show Pi Ad on mining click (bonus still 1x/day on server)
+try{ await showDailyMiningAd(); }catch(e){ console.warn(e); }
 
 }catch(error){
 
