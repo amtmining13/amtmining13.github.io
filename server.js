@@ -3,20 +3,24 @@
 /*
 ============================================================
 ALBERTO MARKETPLACE TOKEN (AMT)
-PI BACKEND (APP LEDGER)
-FULL SERVER VERSION 2.4.28
+PI BACKEND (APP LEDGER) — MAINNET
+FULL SERVER VERSION 2.5.0-mainnet
 
 IMPORTANT:
-- Application ledger backend (works with Mainnet or Testnet Pi app keys)
-- AMT application ledger wallet only
+- MAINNET build — use Mainnet PI_API_KEY + PI_API_BASE=https://api.minepi.com
+- Application ledger backend for AMT mining app
 - Generated AMT- address is NOT a Pi/Stellar blockchain wallet
-- Pi authentication is verified server-side
-- Mining rewards are application-ledger accounting
-- Airdrop is application-ledger accounting
-- AMT transfers are application-ledger accounting
-- Staking is application-ledger accounting
+- Pi authentication is verified server-side (Mainnet)
+- Mining / airdrop / transfers / staking = application-ledger accounting
 - Pi Payments API depends on PI_API_KEY network (Mainnet key = Mainnet payments)
 - In-app AMT balances are ledger accounting; on-chain Mainnet AMT is separate
+- API root must report: network "Pi Mainnet", version "2.5.0-mainnet"
+
+VERSION 2.5.0-mainnet:
+- Forced Mainnet labels (removed Testnet display strings)
+- Pet gear / weapon store, squad, story, battle charges
+- Premium pets + Shadow/Light/Cosmic
+- Login auth hardened for Mainnet keys
 
 VERSION 2.4.3:
 - OLD 1 AMT airdrop claims are cleared → users can claim new 100 AMT airdrop
@@ -41,9 +45,9 @@ VERSION 2.4.0:
 - Preserved all existing mining sessions
 - Preserved all existing ledger history
 - Preserved reward/mining/staking logic
-- Added verified Pi Testnet wallet address to auth response
-- Added verified Pi Testnet wallet address to profile response
-- Added verified Pi Testnet wallet address to wallet response
+- Added verified Pi Mainnet wallet address to auth response
+- Added verified Pi Mainnet wallet address to profile response
+- Added verified Pi Mainnet wallet address to wallet response
 - AMT ledger address remains separate from Pi wallet address
 - FIXED: Explicitly return referralCode (= username) for every Pioneer
   in /api/auth/verify, /api/profile, /api/wallet, and /api/referral/status
@@ -1166,13 +1170,13 @@ app.get("/", async (req, res) => {
       "AMT",
 
     network:
-      "Pi Testnet",
+      "Pi Mainnet",
 
     environment:
-      "TESTNET",
+      "MAINNET",
 
     version:
-      "2.4.28",
+      "2.5.0-mainnet",
 
     features: [
       "Pi Login",
@@ -1221,7 +1225,7 @@ async function healthHandler(
         db === "OK",
 
       service:
-        "AMT Testnet Backend",
+        "AMT Mainnet Backend",
 
       database:
         db,
@@ -1232,10 +1236,10 @@ async function healthHandler(
         ),
 
       network:
-        "Pi Testnet",
+        "Pi Mainnet",
 
       environment:
-        "TESTNET",
+        "MAINNET",
 
       staking:
         true,
@@ -1341,14 +1345,14 @@ app.all(
             false,
 
           walletType:
-            "AMT_TESTNET_LEDGER"
+            "AMT_MAINNET_LEDGER"
         },
 
         network:
-          "Pi Testnet",
+          "Pi Mainnet",
 
         environment:
-          "TESTNET",
+          "MAINNET",
 
         // Referral code of this Pioneer (saved from Pi username on login)
         referralCode:
@@ -1420,16 +1424,16 @@ app.get(
           .wallet_address,
 
       walletType:
-        "AMT_TESTNET_LEDGER",
+        "AMT_MAINNET_LEDGER",
 
       isBlockchainWallet:
         false,
 
       network:
-        "Pi Testnet",
+        "Pi Mainnet",
 
       environment:
-        "TESTNET",
+        "MAINNET",
 
       // Referral code of this Pioneer (saved from Pi username on login)
       referralCode:
@@ -1724,10 +1728,10 @@ app.get(
       totalBalance,
 
       network:
-        "Pi Testnet",
+        "Pi Mainnet",
 
       environment:
-        "TESTNET",
+        "MAINNET",
 
       /*
        * VERIFIED Pi Testnet wallet (live from Pi API, else saved on login).
@@ -1763,7 +1767,7 @@ app.get(
         false,
 
       walletType:
-        "AMT_TESTNET_LEDGER",
+        "AMT_MAINNET_LEDGER",
 
       // Referral code of this Pioneer (saved from Pi username on login)
       referralCode:
@@ -1874,7 +1878,7 @@ app.delete(
 );
 
 /* =========================================================
-ON-CHAIN BALANCES (Pi Testnet Horizon — own wallet only)
+ON-CHAIN BALANCES (Pi Mainnet Horizon — own wallet only)
 ========================================================= */
 
 const PI_HORIZON_MAINNET =
@@ -2045,7 +2049,7 @@ app.get(
         onchainAmtBalance,
         otherTokens,
         horizon: account.horizon || "mainnet",
-        network: isMainnet ? "Pi Mainnet" : "Pi Testnet"
+        network: isMainnet ? "Pi Mainnet" : "Pi Mainnet"
       });
     } catch (error) {
       console.error("ONCHAIN BALANCE ERROR:", error);
@@ -2119,7 +2123,7 @@ app.get(
         treasuryAddress: AMT_ONCHAIN_TREASURY || null,
         assetCode: AMT_ASSET_CODE,
         rate: "1 on-chain AMT = 1 in-app AMT",
-        network: "Pi Testnet",
+        network: "Pi Mainnet",
         instructions: AMT_ONCHAIN_TREASURY
           ? [
               "1. Open Pi Wallet (Testnet)",
@@ -2195,7 +2199,7 @@ app.post(
         return res.status(400).json({
           ok: false,
           error:
-            "Transaction not found on Pi Testnet. Check hash and network."
+            "Transaction not found on Pi Mainnet. Check hash and network."
         });
       }
 
@@ -2582,9 +2586,9 @@ app.post(
         ok: true,
         ...result,
         network:
-          "Pi Testnet",
+          "Pi Mainnet",
         walletType:
-          "AMT_TESTNET_LEDGER"
+          "AMT_MAINNET_LEDGER"
       });
 
     } catch (error) {
@@ -2771,7 +2775,7 @@ app.get(
         AIRDROP_AMOUNT_AMT,
 
       network:
-        "Pi Testnet",
+        "Pi Mainnet",
 
       type:
         "ONE_TIME_AIRDROP",
@@ -2975,7 +2979,7 @@ app.post(
         remainingSeconds,
 
         network:
-          "Pi Testnet"
+          "Pi Mainnet"
       });
 
     } catch (error) {
@@ -4521,10 +4525,10 @@ app.get(
       ok: true,
 
       network:
-        "Pi Testnet",
+        "Pi Mainnet",
 
       environment:
-        "TESTNET",
+        "MAINNET",
 
       minimumStake:
         STAKING_MIN_AMOUNT_AMT,
@@ -4696,10 +4700,10 @@ app.get(
         ok: true,
 
         network:
-          "Pi Testnet",
+          "Pi Mainnet",
 
         environment:
-          "TESTNET",
+          "MAINNET",
 
         minimumStake:
           STAKING_MIN_AMOUNT_AMT,
@@ -4993,10 +4997,10 @@ app.post(
           newBalance,
 
         network:
-          "Pi Testnet",
+          "Pi Mainnet",
 
         environment:
-          "TESTNET"
+          "MAINNET"
       });
 
     } catch (error) {
@@ -5231,10 +5235,10 @@ app.post(
           "COMPLETED",
 
         network:
-          "Pi Testnet",
+          "Pi Mainnet",
 
         environment:
-          "TESTNET"
+          "MAINNET"
       });
 
     } catch (error) {
@@ -5368,7 +5372,7 @@ app.get(
         ok: true,
 
         network:
-          "Pi Testnet",
+          "Pi Mainnet",
 
         history
       });
@@ -6626,18 +6630,54 @@ const AMT_PETS = [
 
 /* =========================================================
    PET GEAR — wearable equipment (not emoji)
+   SOURCE: Weapon/Gear STORE only (buy with AMT).
+   GEAR LOOT DISABLED — no battle/story drops for now.
 ========================================================= */
 const AMT_GEAR = [
+  /* --- Swords --- */
   { id: "wpn_wood_blade", name: "Wood Blade", slot: "weapon", rarity: "Common", priceAmt: 0.8,
-    atk: 4, def: 0, hp: 0, spd: 0, color: "#c4a574", shape: "sword" },
+    atk: 4, def: 0, hp: 0, spd: 0, color: "#c4a574", shape: "sword", weaponType: "sword" },
   { id: "wpn_iron_sword", name: "Iron Sword", slot: "weapon", rarity: "Uncommon", priceAmt: 2.5,
-    atk: 9, def: 0, hp: 0, spd: 1, color: "#9aa4b2", shape: "sword" },
+    atk: 9, def: 0, hp: 0, spd: 1, color: "#9aa4b2", shape: "sword", weaponType: "sword" },
   { id: "wpn_flame_edge", name: "Flame Edge", slot: "weapon", rarity: "Rare", priceAmt: 8,
-    atk: 16, def: 0, hp: 0, spd: 2, color: "#ff6b35", shape: "sword" },
-  { id: "wpn_thunder_spear", name: "Thunder Spear", slot: "weapon", rarity: "Epic", priceAmt: 18,
-    atk: 24, def: 0, hp: 5, spd: 4, color: "#ffd93d", shape: "spear" },
+    atk: 16, def: 0, hp: 0, spd: 2, color: "#ff6b35", shape: "sword", weaponType: "sword" },
   { id: "wpn_cosmic_blade", name: "Cosmic Blade", slot: "weapon", rarity: "Legendary", priceAmt: 40,
-    atk: 35, def: 5, hp: 10, spd: 5, color: "#b388ff", shape: "sword" },
+    atk: 35, def: 5, hp: 10, spd: 5, color: "#b388ff", shape: "sword", weaponType: "sword" },
+  /* --- Daggers --- */
+  { id: "wpn_bone_dagger", name: "Bone Dagger", slot: "weapon", rarity: "Common", priceAmt: 0.7,
+    atk: 3, def: 0, hp: 0, spd: 3, color: "#e0d5c0", shape: "dagger", weaponType: "dagger" },
+  { id: "wpn_shadow_dagger", name: "Shadow Dagger", slot: "weapon", rarity: "Rare", priceAmt: 7.5,
+    atk: 14, def: 0, hp: 0, spd: 8, color: "#7e57c2", shape: "dagger", weaponType: "dagger" },
+  { id: "wpn_venom_fang", name: "Venom Fang", slot: "weapon", rarity: "Epic", priceAmt: 17,
+    atk: 20, def: 0, hp: 0, spd: 10, color: "#69f0ae", shape: "dagger", weaponType: "dagger" },
+  /* --- Axes --- */
+  { id: "wpn_stone_axe", name: "Stone Axe", slot: "weapon", rarity: "Common", priceAmt: 0.9,
+    atk: 5, def: 1, hp: 0, spd: -1, color: "#90a4ae", shape: "axe", weaponType: "axe" },
+  { id: "wpn_war_axe", name: "War Axe", slot: "weapon", rarity: "Uncommon", priceAmt: 3,
+    atk: 11, def: 2, hp: 5, spd: -1, color: "#ef5350", shape: "axe", weaponType: "axe" },
+  { id: "wpn_berserker_axe", name: "Berserker Axe", slot: "weapon", rarity: "Epic", priceAmt: 19,
+    atk: 26, def: 3, hp: 8, spd: 0, color: "#ff1744", shape: "axe", weaponType: "axe" },
+  /* --- Bows --- */
+  { id: "wpn_hunter_bow", name: "Hunter Bow", slot: "weapon", rarity: "Common", priceAmt: 0.9,
+    atk: 4, def: 0, hp: 0, spd: 2, color: "#8d6e63", shape: "bow", weaponType: "bow" },
+  { id: "wpn_wind_bow", name: "Wind Bow", slot: "weapon", rarity: "Rare", priceAmt: 8,
+    atk: 15, def: 0, hp: 0, spd: 6, color: "#4fc3f7", shape: "bow", weaponType: "bow" },
+  { id: "wpn_star_bow", name: "Star Bow", slot: "weapon", rarity: "Legendary", priceAmt: 38,
+    atk: 30, def: 0, hp: 5, spd: 8, color: "#e1bee7", shape: "bow", weaponType: "bow" },
+  /* --- Mage / staff --- */
+  { id: "wpn_apprentice_staff", name: "Apprentice Staff", slot: "weapon", rarity: "Common", priceAmt: 0.85,
+    atk: 3, def: 0, hp: 5, spd: 1, color: "#ce93d8", shape: "staff", weaponType: "staff" },
+  { id: "wpn_arcane_staff", name: "Arcane Staff", slot: "weapon", rarity: "Rare", priceAmt: 9,
+    atk: 14, def: 2, hp: 12, spd: 2, color: "#7c4dff", shape: "staff", weaponType: "staff" },
+  { id: "wpn_crystal_wand", name: "Crystal Wand", slot: "weapon", rarity: "Uncommon", priceAmt: 2.8,
+    atk: 8, def: 0, hp: 8, spd: 2, color: "#80d8ff", shape: "wand", weaponType: "wand" },
+  { id: "wpn_void_staff", name: "Void Staff", slot: "weapon", rarity: "Legendary", priceAmt: 42,
+    atk: 32, def: 4, hp: 15, spd: 4, color: "#ea80fc", shape: "staff", weaponType: "staff" },
+  /* --- Spear / pole --- */
+  { id: "wpn_thunder_spear", name: "Thunder Spear", slot: "weapon", rarity: "Epic", priceAmt: 18,
+    atk: 24, def: 0, hp: 5, spd: 4, color: "#ffd93d", shape: "spear", weaponType: "spear" },
+  { id: "wpn_halberd", name: "Iron Halberd", slot: "weapon", rarity: "Uncommon", priceAmt: 3.2,
+    atk: 10, def: 3, hp: 0, spd: 0, color: "#b0bec5", shape: "halberd", weaponType: "halberd" },
 
   { id: "shd_wood_buckler", name: "Wood Buckler", slot: "shield", rarity: "Common", priceAmt: 0.8,
     atk: 0, def: 5, hp: 8, spd: 0, color: "#c4a574", shape: "shield" },
@@ -9547,10 +9587,10 @@ app.get(
           "Pi",
 
         network:
-          "Pi Testnet",
+          "Pi Mainnet",
 
         environment:
-          "TESTNET"
+          "MAINNET"
       }
     });
   }
@@ -9907,7 +9947,7 @@ app.post(
             payment.product_id,
 
           network:
-            "Pi Testnet"
+            "Pi Mainnet"
         });
       }
 
@@ -9969,7 +10009,7 @@ app.post(
           payment.product_id,
 
         network:
-          "Pi Testnet"
+          "Pi Mainnet"
       });
 
     } catch (error) {
@@ -10122,10 +10162,10 @@ app.post(
           staking.pendingRewards,
 
         network:
-          "Pi Testnet",
+          "Pi Mainnet",
 
         environment:
-          "TESTNET",
+          "MAINNET",
 
         // Referral code of this Pioneer (saved from Pi username on login)
         referralCode:
@@ -10197,7 +10237,7 @@ app.get(
           "AMT",
 
         network:
-          "Pi Testnet",
+          "Pi Mainnet",
 
         walletAddress:
           req.wallet
@@ -10290,10 +10330,10 @@ app.post(
         ...result,
 
         network:
-          "Pi Testnet",
+          "Pi Mainnet",
 
         walletType:
-          "AMT_TESTNET_LEDGER"
+          "AMT_MAINNET_LEDGER"
       });
 
     } catch (error) {
