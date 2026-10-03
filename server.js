@@ -6468,6 +6468,158 @@ const AMT_PETS = [
     "image": "assets/pets/common/thunder-zeus-titan.png",
     "number": 10
   }
+  ,
+  {
+    "id": "premium-earth-guardian",
+    "name": "Earth Guardian",
+    "element": "Earth",
+    "rarity": "Common",
+    "priceAmt": 1.0,
+    "hp": 110,
+    "atk": 16,
+    "def": 28,
+    "spd": 10,
+    "ability": "Strong Roots",
+    "image": "amt_pet_earth.png",
+    "tagline": "Strong Roots, Brighter Tomorrow.",
+    "number": 101
+  },
+  {
+    "id": "premium-water-spirit",
+    "name": "Water Spirit",
+    "element": "Water",
+    "rarity": "Common",
+    "priceAmt": 1.0,
+    "hp": 100,
+    "atk": 18,
+    "def": 18,
+    "spd": 16,
+    "ability": "Flow Path",
+    "image": "amt_pet_water.png",
+    "tagline": "Flow with Change, Find Your Path.",
+    "number": 102
+  },
+  {
+    "id": "premium-nature-sprout",
+    "name": "Nature Sprout",
+    "element": "Nature",
+    "rarity": "Common",
+    "priceAmt": 1.0,
+    "hp": 95,
+    "atk": 17,
+    "def": 17,
+    "spd": 15,
+    "ability": "Big Growth",
+    "image": "amt_pet_nature.png",
+    "tagline": "Small Steps, Big Growth.",
+    "number": 103
+  },
+  {
+    "id": "premium-ice-crystal",
+    "name": "Ice Crystal",
+    "element": "Ice",
+    "rarity": "Common",
+    "priceAmt": 1.0,
+    "hp": 98,
+    "atk": 19,
+    "def": 16,
+    "spd": 14,
+    "ability": "Cool Mind",
+    "image": "amt_pet_ice.png",
+    "tagline": "Cool Mind, Strong Soul.",
+    "number": 104
+  },
+  {
+    "id": "premium-thunder-bolt",
+    "name": "Thunder Bolt",
+    "element": "Thunder",
+    "rarity": "Common",
+    "priceAmt": 1.0,
+    "hp": 92,
+    "atk": 24,
+    "def": 14,
+    "spd": 22,
+    "ability": "Lightning Speed",
+    "image": "amt_pet_thunder.png",
+    "tagline": "Lightning Speed, Limitless Energy.",
+    "number": 105
+  },
+  {
+    "id": "premium-wind-flyer",
+    "name": "Wind Flyer",
+    "element": "Wind",
+    "rarity": "Common",
+    "priceAmt": 1.0,
+    "hp": 90,
+    "atk": 18,
+    "def": 14,
+    "spd": 26,
+    "ability": "Fly Higher",
+    "image": "amt_pet_wind.png",
+    "tagline": "Fly Higher, Reach Further.",
+    "number": 106
+  },
+  {
+    "id": "premium-fire-ember",
+    "name": "Fire Ember",
+    "element": "Fire",
+    "rarity": "Common",
+    "priceAmt": 1.0,
+    "hp": 94,
+    "atk": 22,
+    "def": 14,
+    "spd": 18,
+    "ability": "Small Flame",
+    "image": "amt_pet_fire.png",
+    "tagline": "Small Flame, Big Dreams.",
+    "number": 107
+  },
+  {
+    "id": "premium-shadow-wraith",
+    "name": "Shadow Wraith",
+    "element": "Shadow",
+    "rarity": "Rare",
+    "priceAmt": 5.0,
+    "hp": 105,
+    "atk": 28,
+    "def": 18,
+    "spd": 24,
+    "ability": "Dark Strength",
+    "image": "amt_pet_shadow.png",
+    "tagline": "In the Darkness, We Find Strength.",
+    "number": 108
+  },
+  {
+    "id": "premium-light-angel",
+    "name": "Light Angel",
+    "element": "Light",
+    "rarity": "Epic",
+    "priceAmt": 15.0,
+    "hp": 120,
+    "atk": 30,
+    "def": 22,
+    "spd": 20,
+    "ability": "Spread Light",
+    "image": "amt_pet_light.png",
+    "tagline": "Bring Hope, Spread Light.",
+    "number": 109
+  },
+  {
+    "id": "premium-cosmic-nova",
+    "name": "Cosmic Nova",
+    "element": "Cosmic",
+    "rarity": "Legendary",
+    "priceAmt": 45.0,
+    "hp": 140,
+    "atk": 35,
+    "def": 28,
+    "spd": 25,
+    "ability": "Beyond Dimensions",
+    "image": "amt_pet_cosmic.png",
+    "tagline": "Beyond Dimensions, Together We Shine.",
+    "number": 110
+  }
+
 ];
 
 
@@ -7747,7 +7899,10 @@ const ELEMENT_BEATS = {
   Thunder: "Water",
   Earth: "Thunder",
   Ice: "Nature",
-  Wind: "Earth"
+  Wind: "Earth",
+  Shadow: "Light",
+  Light: "Shadow",
+  Cosmic: "Shadow"
 };
 
 function elementMult(atkEl, defEl) {
@@ -8410,6 +8565,18 @@ const PET_SKILLS = {
   Wind: [
     { id: "gust", name: "Gust", minLv: 1, power: 1.2, kind: "attack", desc: "Wind hit · 120% ATK" },
     { id: "cyclone", name: "Cyclone", minLv: 12, power: 1.5, kind: "attack", desc: "Heavy wind · 150% ATK" }
+  ],
+  Shadow: [
+    { id: "shade", name: "Shadow Strike", minLv: 1, power: 1.3, kind: "attack", desc: "Dark hit · 130% ATK" },
+    { id: "void", name: "Void Pulse", minLv: 15, power: 1.6, kind: "attack", desc: "Heavy shadow · 160% ATK" }
+  ],
+  Light: [
+    { id: "ray", name: "Holy Ray", minLv: 1, power: 1.25, kind: "attack", desc: "Light hit · 125% ATK" },
+    { id: "bless", name: "Blessing", minLv: 12, power: 0.2, kind: "heal", desc: "Heal 20% max HP" }
+  ],
+  Cosmic: [
+    { id: "nova", name: "Star Nova", minLv: 1, power: 1.35, kind: "attack", desc: "Cosmic hit · 135% ATK" },
+    { id: "galaxy", name: "Galaxy Burst", minLv: 18, power: 1.7, kind: "attack", desc: "Heavy cosmic · 170% ATK" }
   ]
 };
 
