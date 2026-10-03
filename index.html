@@ -5915,7 +5915,16 @@ async function playBattleArena(data) {
     await new Promise(ok => setTimeout(ok, 700));
   }
 
-  const win = data.result === "WIN";
+  // Match banner to final HP on screen (feedback: was inverted)
+  let win = data.result === "WIN";
+  if (rounds.length) {
+    const last = rounds[rounds.length - 1];
+    const lastMy = Number(last.myHp);
+    const lastEn = Number(last.enHp);
+    if (lastMy <= 0 && lastEn > 0) win = false;
+    else if (lastEn <= 0 && lastMy > 0) win = true;
+    else if (lastMy <= 0 && lastEn <= 0) win = false;
+  }
   $("battleResultBadge").textContent = win ? "🏆" : "💀";
   $("battleResultTitle").textContent = win ? "Victory" : "Defeat";
   $("battleResultTitle").style.color = win ? "#ffd54f" : "#ff8899";
