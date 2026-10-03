@@ -6556,7 +6556,11 @@ async function ensurePetTables() {
     `ALTER TABLE pet_eggs ADD COLUMN IF NOT EXISTS gen INT NOT NULL DEFAULT 1`,
     `ALTER TABLE pet_listings ADD COLUMN IF NOT EXISTS egg_id BIGINT`,
     `ALTER TABLE pet_listings ADD COLUMN IF NOT EXISTS listing_type TEXT DEFAULT 'PET'`,
-    `ALTER TABLE pet_listings ALTER COLUMN owned_pet_id DROP NOT NULL`
+    `ALTER TABLE pet_listings ALTER COLUMN owned_pet_id DROP NOT NULL`,
+    `ALTER TABLE owned_pets ADD COLUMN IF NOT EXISTS rep INT NOT NULL DEFAULT 0`,
+    `ALTER TABLE owned_pets ADD COLUMN IF NOT EXISTS wins INT NOT NULL DEFAULT 0`,
+    `ALTER TABLE owned_pets ADD COLUMN IF NOT EXISTS losses INT NOT NULL DEFAULT 0`,
+    `ALTER TABLE owned_pets ADD COLUMN IF NOT EXISTS origin TEXT DEFAULT 'shop'`
   ];
   for (const q of alts) {
     try {
@@ -6565,7 +6569,126 @@ async function ensurePetTables() {
       /* ignore */
     }
   }
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS pet_ownership_history (
+      id BIGSERIAL PRIMARY KEY,
+      owned_pet_id BIGINT NOT NULL,
+      from_member_id BIGINT,
+      to_member_id BIGINT,
+      event_type TEXT NOT NULL,
+      price_amt NUMERIC(20,8) DEFAULT 0,
+      note TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS owner_rep (
+      member_id BIGINT PRIMARY KEY REFERENCES members(id) ON DELETE CASCADE,
+      rep INT NOT NULL DEFAULT 0,
+      wins INT NOT NULL DEFAULT 0,
+      losses INT NOT NULL DEFAULT 0,
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS pet_story_progress (
+      member_id BIGINT NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+      chapter INT NOT NULL DEFAULT 1,
+      clears_today INT NOT NULL DEFAULT 0,
+      clear_date DATE,
+      total_clears INT NOT NULL DEFAULT 0,
+      PRIMARY KEY (member_id)
+    )
+  `);
 }
+
+function repBadge(rep) {
+  const r = Number(rep) || 0;
+  if (r >= 500) return "Mythic Ace";
+  if (r >= 250) return "Legend";
+  if (r >= 120) return "Veteran";
+  if (r >= 40) return "Fighter";
+  return "Rookie";
+}
+
+async function ensureOwnerRep(client, memberId) {
+  const q = client ? client.query.bind(client) : pool.query.bind(pool);
+  await q(
+    `INSERT INTO owner_rep (member_id, rep, wins, losses)
+     VALUES ($1, 0, 0, 0) ON CONFLICT (member_id) DO NOTHING`,
+    [memberId]
+  );
+}
+
+async function addOwnershipEvent(client, ownedPetId, fromId, toId, eventType, price, note) {
+  const q = client ? client.query.bind(client) : pool.query.bind(pool);
+  await q(
+    `INSERT INTO pet_ownership_history
+      (owned_pet_id, from_member_id, to_member_id, event_type, price_amt, note)
+     VALUES ($1,$2,$3,$4,$5,$6)`,
+    [ownedPetId, fromId || null, toId || null, eventType, price || 0, note || null]
+  );
+}
+
+async function applyBattleRep(client, memberId, ownedPetId, won, tierKey, underdog) {
+  let petRep = won ? 3 : 0;
+  let ownerRep = won ? 2 : 0;
+  if (won) {
+    if (tierKey === "hunter") { petRep = 5; ownerRep = 3; }
+    if (tierKey === "elite") { petRep = 8; ownerRep = 5; }
+    if (tierKey === "mythic") { petRep = 12; ownerRep = 8; }
+    if (tierKey === "pvp") { petRep = 6; ownerRep = 4; }
+    if (tierKey === "squad") { petRep = 10; ownerRep = 6; }
+    if (tierKey === "story") { petRep = 4; ownerRep = 2; }
+    if (underdog) { petRep += 5; ownerRep += 3; }
+  } else {
+    petRep = 0;
+    ownerRep = 0;
+  }
+  if (ownedPetId) {
+    if (won) {
+      await client.query(
+        `UPDATE owned_pets SET rep = COALESCE(rep,0) + $1, wins = COALESCE(wins,0) + 1
+         WHERE id = $2`,
+        [petRep, ownedPetId]
+      );
+    } else {
+      await client.query(
+        `UPDATE owned_pets SET losses = COALESCE(losses,0) + 1 WHERE id = $1`,
+        [ownedPetId]
+      );
+    }
+  }
+  await ensureOwnerRep(client, memberId);
+  if (won) {
+    await client.query(
+      `UPDATE owner_rep SET rep = rep + $1, wins = wins + 1, updated_at = NOW()
+       WHERE member_id = $2`,
+      [ownerRep, memberId]
+    );
+  } else {
+    await client.query(
+      `UPDATE owner_rep SET losses = losses + 1, updated_at = NOW()
+       WHERE member_id = $1`,
+      [memberId]
+    );
+  }
+  return { petRep, ownerRep };
+}
+
+const STORY_CHAPTERS = [
+  { id: 1, name: "Whispering Forest", mult: 0.55, exp: 45, reward: 0.15, energy: 8 },
+  { id: 2, name: "Crystal Cave", mult: 0.70, exp: 55, reward: 0.20, energy: 8 },
+  { id: 3, name: "Storm Ridge", mult: 0.85, exp: 70, reward: 0.30, energy: 10 },
+  { id: 4, name: "Ember Peak", mult: 1.00, exp: 85, reward: 0.40, energy: 10 },
+  { id: 5, name: "Frozen Hollow", mult: 1.15, exp: 100, reward: 0.50, energy: 12 },
+  { id: 6, name: "Thunder Valley", mult: 1.30, exp: 120, reward: 0.65, energy: 12 },
+  { id: 7, name: "Shadow Marsh", mult: 1.45, exp: 140, reward: 0.80, energy: 14 },
+  { id: 8, name: "Golden Ruins", mult: 1.60, exp: 160, reward: 1.00, energy: 14 },
+  { id: 9, name: "Mythic Gate", mult: 1.80, exp: 200, reward: 1.40, energy: 16 },
+  { id: 10, name: "Legend Trial", mult: 2.00, exp: 250, reward: 2.00, energy: 18 }
+];
+
 
 ensurePetTables().catch(err => console.error("Pet tables init:", err.message));
 
@@ -6719,8 +6842,8 @@ app.post("/api/pets/buy", requireAuth, async (req, res) => {
     );
     const ins = await client.query(
       `INSERT INTO owned_pets
-        (member_id, pet_id, name, element, rarity, hp, atk, def, spd, ability, image)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+        (member_id, pet_id, name, element, rarity, hp, atk, def, spd, ability, image, origin)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'shop')
        RETURNING *`,
       [
         req.member.id,
@@ -6736,6 +6859,9 @@ app.post("/api/pets/buy", requireAuth, async (req, res) => {
         pet.image
       ]
     );
+    try {
+      await addOwnershipEvent(client, ins.rows[0].id, null, req.member.id, "ORIGIN_SHOP", pet.priceAmt, "Bought from shop");
+    } catch (e) { console.error("ownership shop:", e.message); }
     await client.query("COMMIT");
 
     // Verify row is actually readable after commit
@@ -6860,7 +6986,10 @@ app.post("/api/pets/claim-starter", requireAuth, async (req, res) => {
         pet.image
       ]
     );
-    await client.query("COMMIT");
+        try {
+      await addOwnershipEvent(client, ins.rows[0].id, null, req.member.id, "ORIGIN_STARTER", 0, "Starter claim");
+    } catch (e) {}
+await client.query("COMMIT");
     res.json({
       ok: true,
       pet: ins.rows[0],
@@ -7245,7 +7374,11 @@ app.post("/api/pets/hatch", requireAuth, async (req, res) => {
       ]
     );
 
-    if (!ins.rows.length) {
+        try {
+      const newId = (typeof ins !== "undefined" && ins.rows && ins.rows[0]) ? ins.rows[0].id : null;
+      if (newId) await addOwnershipEvent(client, newId, null, req.member.id, "ORIGIN_HATCH", 0, "Hatched from egg");
+    } catch (e) {}
+if (!ins.rows.length) {
       await client.query("ROLLBACK");
       return res.status(500).json({ ok: false, error: "Hatch insert failed." });
     }
@@ -7563,11 +7696,22 @@ app.post("/api/pets/buy-listing", requireAuth, async (req, res) => {
       `INSERT INTO amt_ledger (member_id, amount, type, reference) VALUES ($1,$2,'PET_BUY_LISTING',$3)`,
       [req.member.id, -price, makeReference("AMT-BUY")]
     );
-    // Transfer ownership
+    // Transfer ownership + history
     await client.query(
       `UPDATE owned_pets SET member_id = $1, is_listed = FALSE WHERE id = $2`,
       [req.member.id, L.owned_pet_id]
     );
+    try {
+      await addOwnershipEvent(
+        client,
+        L.owned_pet_id,
+        L.seller_member_id,
+        req.member.id,
+        "SALE",
+        price,
+        "Public sell"
+      );
+    } catch (e) { console.error("ownership sale:", e.message); }
     await client.query(
       `UPDATE pet_listings SET status = 'SOLD' WHERE id = $1`,
       [listingId]
@@ -7884,6 +8028,8 @@ app.post("/api/pets/battle", requireAuth, async (req, res) => {
       [req.member.id, ownedId, en.name, win ? "WIN" : "LOSS", reward]
     );
     const chargeInfo = await applyBattleWinCharges(client, req.member.id, day, win);
+    const underdog = false;
+    const repInfo = await applyBattleRep(client, req.member.id, ownedId, win, tierKey, underdog);
 
     res.json({
       ok: true,
@@ -7893,6 +8039,8 @@ app.post("/api/pets/battle", requireAuth, async (req, res) => {
       chargesLeft: chargeInfo.charges,
       winStreak: chargeInfo.streak,
       chargeBonus: chargeInfo.message || "",
+      petRepGained: repInfo.petRep,
+      ownerRepGained: repInfo.ownerRep,
       petLevel: petAfterBattle && petAfterBattle.level,
       petRarity: petAfterBattle && petAfterBattle.rarity,
       petExp: petAfterBattle && petAfterBattle.exp,
@@ -8172,6 +8320,7 @@ app.post("/api/pets/arena/challenge", requireAuth, async (req, res) => {
        VALUES ($1,$2,'PET_PVP',$3)`,
       [req.member.id, rewardR, makeReference("AMT-PVP")]
     );
+    const repPvp = await applyBattleRep(client, req.member.id, ownedId, win, "pvp", false);
 
     // Rating
     const delta = win ? 18 : -12;
@@ -8205,6 +8354,8 @@ app.post("/api/pets/arena/challenge", requireAuth, async (req, res) => {
       result: win ? "WIN" : "LOSS",
       mode: "pvp",
       tierLabel: "PvP",
+      petRepGained: repPvp && repPvp.petRep,
+      ownerRepGained: repPvp && repPvp.ownerRep,
       opponent: en.name,
       opponentElement: foe.pet_element,
       opponentImage: foe.pet_image,
@@ -8641,6 +8792,9 @@ app.post("/api/pets/squad/battle", requireAuth, async (req, res) => {
       [req.member.id, reward, makeReference("AMT-SQUAD")]
     );
     const chargeInfo = await applyBattleWinCharges(client, req.member.id, day, teamWin);
+    for (const p of squadRows.rows) {
+      try { await applyBattleRep(client, req.member.id, p.id, teamWin, "squad", false); } catch (e) {}
+    }
 
     // Flatten first match rounds for existing arena UI + include team summary
     const first = allRounds[0] || { rounds: [] };
@@ -8673,8 +8827,256 @@ app.post("/api/pets/squad/battle", requireAuth, async (req, res) => {
   }
 });
 
+
+app.get("/api/pets/:ownedId/history", requireAuth, async (req, res) => {
+  const ownedId = Number(req.params.ownedId);
+  if (!Number.isInteger(ownedId)) {
+    return res.status(400).json({ ok: false, error: "Invalid pet id." });
+  }
+  try {
+    await ensurePetTables();
+    const pet = await pool.query(
+      `SELECT id, name, rep, wins, losses, origin, level, member_id FROM owned_pets WHERE id = $1`,
+      [ownedId]
+    );
+    if (!pet.rows.length) {
+      return res.status(404).json({ ok: false, error: "Pet not found." });
+    }
+    const hist = await pool.query(
+      `SELECT h.*, mf.username AS from_user, mt.username AS to_user
+       FROM pet_ownership_history h
+       LEFT JOIN members mf ON mf.id = h.from_member_id
+       LEFT JOIN members mt ON mt.id = h.to_member_id
+       WHERE h.owned_pet_id = $1
+       ORDER BY h.created_at ASC
+       LIMIT 50`,
+      [ownedId]
+    );
+    res.json({
+      ok: true,
+      pet: pet.rows[0],
+      repBadge: repBadge(pet.rows[0].rep),
+      history: hist.rows
+    });
+  } catch (e) {
+    console.error("HISTORY:", e);
+    res.status(500).json({ ok: false, error: "History unavailable." });
+  }
+});
+
+app.get("/api/owner/rep", requireAuth, async (req, res) => {
+  try {
+    await ensurePetTables();
+    await ensureOwnerRep(null, req.member.id);
+    const r = await pool.query(`SELECT * FROM owner_rep WHERE member_id = $1`, [req.member.id]);
+    const row = r.rows[0] || { rep: 0, wins: 0, losses: 0 };
+    res.json({
+      ok: true,
+      rep: row.rep,
+      wins: row.wins,
+      losses: row.losses,
+      badge: repBadge(row.rep)
+    });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: "Rep unavailable." });
+  }
+});
+
+app.get("/api/pets/story", requireAuth, async (req, res) => {
+  try {
+    await ensurePetTables();
+    let prog = await pool.query(
+      `SELECT * FROM pet_story_progress WHERE member_id = $1`,
+      [req.member.id]
+    );
+    if (!prog.rows.length) {
+      await pool.query(
+        `INSERT INTO pet_story_progress (member_id, chapter, clears_today, total_clears)
+         VALUES ($1, 1, 0, 0)`,
+        [req.member.id]
+      );
+      prog = await pool.query(
+        `SELECT * FROM pet_story_progress WHERE member_id = $1`,
+        [req.member.id]
+      );
+    }
+    const p = prog.rows[0];
+    const today = new Date().toISOString().slice(0, 10);
+    let clearsToday = Number(p.clears_today || 0);
+    if (String(p.clear_date || "") !== today) clearsToday = 0;
+    res.json({
+      ok: true,
+      chapter: Number(p.chapter) || 1,
+      clearsToday,
+      clearsLeft: Math.max(0, 3 - clearsToday),
+      totalClears: Number(p.total_clears || 0),
+      chapters: STORY_CHAPTERS.map(c => ({
+        id: c.id,
+        name: c.name,
+        unlocked: c.id <= (Number(p.chapter) || 1),
+        exp: c.exp,
+        reward: c.reward
+      }))
+    });
+  } catch (e) {
+    console.error("STORY GET:", e);
+    res.status(500).json({ ok: false, error: "Story unavailable." });
+  }
+});
+
+app.post("/api/pets/story/play", requireAuth, async (req, res) => {
+  const ownedId = Number(req.body?.ownedPetId);
+  const chapterId = Number(req.body?.chapter) || 0;
+  if (!Number.isInteger(ownedId)) {
+    return res.status(400).json({ ok: false, error: "ownedPetId required." });
+  }
+  const client = await pool.connect();
+  try {
+    await ensurePetTables();
+    const petRes = await client.query(
+      `SELECT * FROM owned_pets WHERE id = $1 AND member_id = $2`,
+      [ownedId, req.member.id]
+    );
+    if (!petRes.rows.length) {
+      return res.status(404).json({ ok: false, error: "Pet not found." });
+    }
+    const pet = petRes.rows[0];
+    let prog = await client.query(
+      `SELECT * FROM pet_story_progress WHERE member_id = $1 FOR UPDATE`,
+      [req.member.id]
+    );
+    if (!prog.rows.length) {
+      await client.query(
+        `INSERT INTO pet_story_progress (member_id, chapter) VALUES ($1, 1)`,
+        [req.member.id]
+      );
+      prog = await client.query(
+        `SELECT * FROM pet_story_progress WHERE member_id = $1 FOR UPDATE`,
+        [req.member.id]
+      );
+    }
+    const pr = prog.rows[0];
+    const maxChapter = Number(pr.chapter) || 1;
+    const ch = STORY_CHAPTERS.find(c => c.id === (chapterId || maxChapter)) ||
+      STORY_CHAPTERS[Math.min(maxChapter, STORY_CHAPTERS.length) - 1];
+    if (ch.id > maxChapter) {
+      return res.status(400).json({ ok: false, error: "Chapter locked. Clear previous first." });
+    }
+    const today = new Date().toISOString().slice(0, 10);
+    let clearsToday = Number(pr.clears_today || 0);
+    if (String(pr.clear_date || "") !== today) clearsToday = 0;
+    if (clearsToday >= 3) {
+      return res.status(400).json({
+        ok: false,
+        error: "Daily story limit (3). Come back tomorrow."
+      });
+    }
+    if (Number(pet.energy) < ch.energy) {
+      return res.status(400).json({
+        ok: false,
+        error: "Need " + ch.energy + " energy for this chapter."
+      });
+    }
+
+    const lv = Number(pet.level) || 1;
+    const my = {
+      name: pet.name,
+      level: lv,
+      hp: Number(pet.hp) + lv * 8,
+      maxHp: Number(pet.hp) + lv * 8,
+      atk: Number(pet.atk) + lv * 2,
+      def: Number(pet.def) + Math.floor(lv * 0.8),
+      spd: Number(pet.spd) + Math.floor(lv * 0.5)
+    };
+    // Story enemies scale soft — friendlier for low level
+    const mult = ch.mult * (lv < 15 ? 0.85 : lv > 30 ? 1.05 : 0.95);
+    let foePool = AMT_PETS.slice();
+    const wild = foePool[Math.floor(Math.random() * foePool.length)] || AMT_PETS[0];
+    const en = {
+      name: ch.name + " Guardian",
+      level: Math.max(1, Math.round(lv * mult)),
+      hp: Math.max(25, Math.round(my.hp * mult)),
+      maxHp: Math.max(25, Math.round(my.hp * mult)),
+      atk: Math.max(6, Math.round(my.atk * mult * 0.9)),
+      def: Math.max(4, Math.round(my.def * mult * 0.85)),
+      spd: Math.max(4, Math.round(my.spd * 0.95))
+    };
+    const sim = (typeof simulateBattleWithSkills === "function")
+      ? simulateBattleWithSkills(my, en, pet.element, wild.element || "Earth")
+      : simulateBattle(my, en, pet.element, wild.element || "Earth");
+    const win = sim.win;
+
+    // Exp: boost for low level, damp for high
+    let expGain = ch.exp;
+    if (lv <= 10) expGain = Math.round(ch.exp * 1.5);
+    else if (lv <= 20) expGain = Math.round(ch.exp * 1.2);
+    else if (lv >= 30) expGain = Math.round(ch.exp * 0.5);
+    if (!win) expGain = Math.round(expGain * 0.25);
+
+    const reward = win ? ch.reward : 0.05;
+    const underdog = win && en.level >= lv + 8;
+
+    await client.query(
+      `UPDATE owned_pets SET energy = GREATEST(0, energy - $1),
+        exp = COALESCE(exp, 0) + $2 WHERE id = $3`,
+      [ch.energy, expGain, ownedId]
+    );
+    const petAfter = await applyLevelAndRarity(client, ownedId, req.member.id);
+    await client.query(
+      `INSERT INTO amt_ledger (member_id, amount, type, reference)
+       VALUES ($1,$2,'PET_STORY',$3)`,
+      [req.member.id, reward, makeReference("AMT-STORY")]
+    );
+    await applyBattleRep(client, req.member.id, ownedId, win, "story", underdog);
+
+    let newChapter = maxChapter;
+    if (win && ch.id >= maxChapter && maxChapter < STORY_CHAPTERS.length) {
+      newChapter = maxChapter + 1;
+    }
+    await client.query(
+      `UPDATE pet_story_progress SET
+        chapter = $1,
+        clears_today = $2,
+        clear_date = $3::date,
+        total_clears = total_clears + 1
+       WHERE member_id = $4`,
+      [newChapter, clearsToday + 1, today, req.member.id]
+    );
+
+    res.json({
+      ok: true,
+      result: win ? "WIN" : "LOSS",
+      mode: "story",
+      tierLabel: "Story · " + ch.name,
+      chapter: ch.id,
+      chapterName: ch.name,
+      reward,
+      expGain,
+      underdog,
+      opponent: en.name,
+      opponentElement: wild.element,
+      opponentImage: wild.image,
+      petName: pet.name,
+      petElement: pet.element,
+      petImage: pet.image,
+      myMaxHp: sim.myMax,
+      enMaxHp: sim.enMax,
+      rounds: sim.rounds,
+      petLevel: petAfter && petAfter.level,
+      milestones: (petAfter && petAfter._milestones) || [],
+      nextChapter: newChapter,
+      clearsLeft: Math.max(0, 3 - (clearsToday + 1))
+    });
+  } catch (e) {
+    console.error("STORY PLAY:", e);
+    res.status(500).json({ ok: false, error: "Story battle failed." });
+  } finally {
+    client.release();
+  }
+});
+
 app.get("/api/pets/:petId", async (req, res) => {
-  const reserved = ["owned", "eggs", "listings", "buy", "care", "train", "breed", "hatch", "list", "battle", "arena", "skills", "squad"];
+  const reserved = ["owned", "eggs", "listings", "buy", "care", "train", "breed", "hatch", "list", "battle", "arena", "skills", "squad", "story", "battle-charges"];
   if (reserved.includes(String(req.params.petId || "").toLowerCase())) {
     return res.status(404).json({ ok: false, error: "Not found." });
   }
