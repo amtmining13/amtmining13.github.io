@@ -8726,7 +8726,12 @@ function simulateBattleWithSkills(my, en, myEl, enEl) {
     }
   }
 
-  const win = enHp <= 0 || (myHp > 0 && myHp >= enHp);
+  // Strict outcome (fixes inverted Victory/Defeat reports)
+  let win = false;
+  if (enHp <= 0 && myHp > 0) win = true;          // clear win
+  else if (myHp <= 0 && enHp > 0) win = false;     // clear loss
+  else if (myHp <= 0 && enHp <= 0) win = false;    // mutual KO = loss
+  else win = myHp > enHp;                          // timeout: higher HP wins
   return { win, rounds, myMax, enMax, myHp, enHp };
 }
 
