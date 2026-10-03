@@ -7663,10 +7663,107 @@ async function ensureArenaTables() {
       battle_date DATE NOT NULL,
       cpu_count INT DEFAULT 0,
       pvp_count INT DEFAULT 0,
+      charges INT DEFAULT 5,
+      wins INT DEFAULT 0,
+      streak INT DEFAULT 0,
+      bonus_earned INT DEFAULT 0,
       PRIMARY KEY (member_id, battle_date)
     )
   `);
+  await pool.query(`ALTER TABLE pet_battle_daily ADD COLUMN IF NOT EXISTS charges INT DEFAULT 5`);
+  await pool.query(`ALTER TABLE pet_battle_daily ADD COLUMN IF NOT EXISTS wins INT DEFAULT 0`);
+  await pool.query(`ALTER TABLE pet_battle_daily ADD COLUMN IF NOT EXISTS streak INT DEFAULT 0`);
+  await pool.query(`ALTER TABLE pet_battle_daily ADD COLUMN IF NOT EXISTS bonus_earned INT DEFAULT 0`);
 }
+
+const BATTLE_BASE_CHARGES = 5;
+const BATTLE_MAX_CHARGES = 15;
+const BATTLE_MAX_BONUS = 10;
+
+async function getBattleDay(client, memberId) {
+  const day = new Date().toISOString().slice(0, 10);
+  const q = client ? client.query.bind(client) : pool.query.bind(pool);
+  await q(
+    `INSERT INTO pet_battle_daily
+      (member_id, battle_date, cpu_count, pvp_count, charges, wins, streak, bonus_earned)
+     VALUES ($1, $2::date, 0, 0, $3, 0, 0, 0)
+     ON CONFLICT (member_id, battle_date) DO NOTHING`,
+    [memberId, day, BATTLE_BASE_CHARGES]
+  );
+  const r = await q(
+    `SELECT * FROM pet_battle_daily WHERE member_id = $1 AND battle_date = $2::date`,
+    [memberId, day]
+  );
+  return { day, row: r.rows[0] };
+}
+
+/** Spend 1 charge; return error string or null */
+async function spendBattleCharge(client, memberId) {
+  const { day, row } = await getBattleDay(client, memberId);
+  let charges = Number(row.charges);
+  if (Number.isNaN(charges) || row.charges == null) charges = BATTLE_BASE_CHARGES;
+  if (charges <= 0) {
+    return {
+      error:
+        "No battle charges left. Win battles to earn more (max " +
+        BATTLE_MAX_CHARGES +
+        "/day). Resets tomorrow.",
+      charges: 0,
+      day
+    };
+  }
+  await client.query(
+    `UPDATE pet_battle_daily SET charges = charges - 1, cpu_count = cpu_count + 1
+     WHERE member_id = $1 AND battle_date = $2::date`,
+    [memberId, day]
+  );
+  return { error: null, charges: charges - 1, day };
+}
+
+/** After a battle: win grants +1 charge (capped), streak bonus */
+async function applyBattleWinCharges(client, memberId, day, won) {
+  const r = await client.query(
+    `SELECT charges, wins, streak, bonus_earned FROM pet_battle_daily
+     WHERE member_id = $1 AND battle_date = $2::date`,
+    [memberId, day]
+  );
+  if (!r.rows.length) return { charges: 0, streak: 0, bonus: 0 };
+  let { charges, wins, streak, bonus_earned } = r.rows[0];
+  charges = Number(charges) || 0;
+  wins = Number(wins) || 0;
+  streak = Number(streak) || 0;
+  bonus_earned = Number(bonus_earned) || 0;
+  let bonus = 0;
+  let msg = [];
+
+  if (won) {
+    wins += 1;
+    streak += 1;
+    if (bonus_earned < BATTLE_MAX_BONUS && charges < BATTLE_MAX_CHARGES) {
+      charges = Math.min(BATTLE_MAX_CHARGES, charges + 1);
+      bonus_earned += 1;
+      bonus += 1;
+      msg.push("+1 charge for win");
+    }
+    if (streak > 0 && streak % 3 === 0 && bonus_earned < BATTLE_MAX_BONUS && charges < BATTLE_MAX_CHARGES) {
+      charges = Math.min(BATTLE_MAX_CHARGES, charges + 1);
+      bonus_earned += 1;
+      bonus += 1;
+      msg.push("3-win streak +1 charge");
+    }
+  } else {
+    streak = 0;
+  }
+
+  await client.query(
+    `UPDATE pet_battle_daily
+     SET charges = $1, wins = $2, streak = $3, bonus_earned = $4
+     WHERE member_id = $5 AND battle_date = $6::date`,
+    [charges, wins, streak, bonus_earned, memberId, day]
+  );
+  return { charges, wins, streak, bonus, bonus_earned, message: msg.join(" · ") };
+}
+
 
 function simulateBattle(my, en, myEl, enEl) {
   // Skills-enabled duel (1v1 CPU / PvP)
@@ -7709,22 +7806,16 @@ app.post("/api/pets/battle", requireAuth, async (req, res) => {
       });
     }
 
-    // Daily CPU limit
-    const day = new Date().toISOString().slice(0, 10);
-    const daily = await client.query(
-      `INSERT INTO pet_battle_daily (member_id, battle_date, cpu_count, pvp_count)
-       VALUES ($1, $2::date, 0, 0)
-       ON CONFLICT (member_id, battle_date) DO UPDATE SET member_id = EXCLUDED.member_id
-       RETURNING cpu_count`,
-      [req.member.id, day]
-    );
-    const cpuCount = Number(daily.rows[0]?.cpu_count || 0);
-    if (cpuCount >= 12) {
+    // Win-to-earn battle charges (base 5, +1 per win, max 15)
+    const spent = await spendBattleCharge(client, req.member.id);
+    if (spent.error) {
       return res.status(400).json({
         ok: false,
-        error: "Daily CPU battle limit reached (12). Try PvP or come back tomorrow."
+        error: spent.error,
+        charges: spent.charges
       });
     }
+    const day = spent.day;
 
     // Player combat stats
     const lv = Number(pet.level) || 1;
@@ -7792,17 +7883,16 @@ app.post("/api/pets/battle", requireAuth, async (req, res) => {
        VALUES ($1,$2,$3,$4,$5)`,
       [req.member.id, ownedId, en.name, win ? "WIN" : "LOSS", reward]
     );
-    await client.query(
-      `UPDATE pet_battle_daily SET cpu_count = cpu_count + 1
-       WHERE member_id = $1 AND battle_date = $2::date`,
-      [req.member.id, day]
-    );
+    const chargeInfo = await applyBattleWinCharges(client, req.member.id, day, win);
 
     res.json({
       ok: true,
       result: win ? "WIN" : "LOSS",
       tier: tierKey,
       tierLabel: tier.label,
+      chargesLeft: chargeInfo.charges,
+      winStreak: chargeInfo.streak,
+      chargeBonus: chargeInfo.message || "",
       petLevel: petAfterBattle && petAfterBattle.level,
       petRarity: petAfterBattle && petAfterBattle.rarity,
       petExp: petAfterBattle && petAfterBattle.exp,
@@ -8325,6 +8415,26 @@ function simulateBattleWithSkills(my, en, myEl, enEl) {
 // Patch: use skills in existing simulateBattle path — replace function body calls
 // We keep simulateBattle for compatibility; squad uses simulateBattleWithSkills
 
+app.get("/api/pets/battle-charges", requireAuth, async (req, res) => {
+  try {
+    await ensureArenaTables();
+    const { day, row } = await getBattleDay(null, req.member.id);
+    res.json({
+      ok: true,
+      date: day,
+      charges: Number(row.charges ?? BATTLE_BASE_CHARGES),
+      wins: Number(row.wins || 0),
+      streak: Number(row.streak || 0),
+      bonusEarned: Number(row.bonus_earned || 0),
+      baseCharges: BATTLE_BASE_CHARGES,
+      maxCharges: BATTLE_MAX_CHARGES,
+      rule: "Start with 5 charges. Each win +1 charge (max 15). 3-win streak +1 extra. Resets daily."
+    });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: "Could not load charges." });
+  }
+});
+
 app.get("/api/pets/skills", requireAuth, async (req, res) => {
   try {
     const element = req.query.element || "Earth";
@@ -8453,23 +8563,11 @@ app.post("/api/pets/squad/battle", requireAuth, async (req, res) => {
       }
     }
 
-    const day = new Date().toISOString().slice(0, 10);
-    await client.query(
-      `INSERT INTO pet_battle_daily (member_id, battle_date, cpu_count, pvp_count)
-       VALUES ($1, $2::date, 0, 0)
-       ON CONFLICT (member_id, battle_date) DO UPDATE SET member_id = EXCLUDED.member_id`,
-      [req.member.id, day]
-    );
-    const daily = await client.query(
-      `SELECT cpu_count FROM pet_battle_daily WHERE member_id = $1 AND battle_date = $2::date`,
-      [req.member.id, day]
-    );
-    if (Number(daily.rows[0]?.cpu_count || 0) >= 12) {
-      return res.status(400).json({
-        ok: false,
-        error: "Daily battle limit reached. Try again tomorrow."
-      });
+    const spent = await spendBattleCharge(client, req.member.id);
+    if (spent.error) {
+      return res.status(400).json({ ok: false, error: spent.error, charges: spent.charges });
     }
+    const day = spent.day;
 
     const myTeam = squadRows.rows.map(combatStatsFromOwned);
     // Build enemy team scaled
@@ -8542,11 +8640,7 @@ app.post("/api/pets/squad/battle", requireAuth, async (req, res) => {
        VALUES ($1,$2,'PET_SQUAD',$3)`,
       [req.member.id, reward, makeReference("AMT-SQUAD")]
     );
-    await client.query(
-      `UPDATE pet_battle_daily SET cpu_count = cpu_count + 1
-       WHERE member_id = $1 AND battle_date = $2::date`,
-      [req.member.id, day]
-    );
+    const chargeInfo = await applyBattleWinCharges(client, req.member.id, day, teamWin);
 
     // Flatten first match rounds for existing arena UI + include team summary
     const first = allRounds[0] || { rounds: [] };
@@ -8566,7 +8660,10 @@ app.post("/api/pets/squad/battle", requireAuth, async (req, res) => {
       myMaxHp: first.rounds && first.rounds.length ? (allRounds[0].rounds[0] ? myAlive[0].maxHp : 100) : myAlive[0].maxHp,
       enMaxHp: enAlive[0].maxHp,
       rounds: allRounds.length ? allRounds[allRounds.length - 1].rounds : [],
-      teamSummary: allRounds.map(m => m.myPet + (m.result === "WIN" ? " ✓" : " ✗") + " vs " + m.enemyPet).join(" · ")
+      teamSummary: allRounds.map(m => m.myPet + (m.result === "WIN" ? " ✓" : " ✗") + " vs " + m.enemyPet).join(" · "),
+      chargesLeft: chargeInfo.charges,
+      winStreak: chargeInfo.streak,
+      chargeBonus: chargeInfo.message || ""
     });
   } catch (e) {
     console.error("SQUAD BATTLE:", e);
