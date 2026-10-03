@@ -4636,7 +4636,7 @@ let currentPetTab = "shop";
 
 const PET_EMOJI = {
   Earth: "🪨", Water: "💧", Nature: "🌿", Ice: "❄️",
-  Thunder: "⚡", Wind: "🌪️", Fire: "🔥"
+  Thunder: "⚡", Shadow: "🌑", Light: "✨", Cosmic: "🌌", Wind: "🌪️", Fire: "🔥"
 };
 
 /**
@@ -4650,9 +4650,17 @@ const PET_ASSETS_BASE = "assets/pets";
 
 /* Root filenames already on GitHub (legacy image uploads) */
 const PET_FILE_BY_NAME = {
-  /* Official clean crops — assets/pets/common/{element}-{slug}.png
-     Also matched via pet.id in petImgCandidates */
-};;
+  earthguardian: "amt_pet_earth.png",
+  waterspirit: "amt_pet_water.png",
+  naturesprout: "amt_pet_nature.png",
+  icecrystal: "amt_pet_ice.png",
+  thunderbolt: "amt_pet_thunder.png",
+  windflyer: "amt_pet_wind.png",
+  fireember: "amt_pet_fire.png",
+  shadowwraith: "amt_pet_shadow.png",
+  lightangel: "amt_pet_light.png",
+  cosmicnova: "amt_pet_cosmic.png"
+};
 
 function rarityBadgeClass(rarity) {
   const r = String(rarity || "common").toLowerCase();
@@ -4686,6 +4694,13 @@ function petImgCandidates(pet) {
     list.push(path);
   }
 
+  // 0) Premium root cards amt_pet_{element}.png
+  if (element) {
+    list.push("amt_pet_" + element + ".png");
+  }
+  if (path && /amt_pet_/i.test(path)) {
+    list.unshift(path.split("/").pop());
+  }
   // 1) GitHub root — absolute filenames (PRIORITY)
   if (id && !/^\d+$/.test(id)) {
     list.push(id + ".png");
@@ -6080,7 +6095,7 @@ function eggArtEmoji(element) {
     Ice: "❄️",
     Fire: "🔥",
     Wind: "💨",
-    Thunder: "⚡"
+    Thunder: "⚡", Shadow: "🌑", Light: "✨", Cosmic: "🌌"
   };
   return map[element] || "🥚";
 }
