@@ -2016,7 +2016,7 @@ SELECT 180D
   <div id="storyInfo" class="notice" style="margin-bottom:8px;font-size:12px">Loading story...</div>
   <div id="storyChapters" class="balance-stack" style="margin-bottom:8px"></div>
   <button class="primary" onclick="playStoryChapter()">📖 PLAY CURRENT CHAPTER</button>
-  <div class="muted" style="font-size:10px;margin-top:6px">Uses selected pet from My Pets (open a pet first)</div>
+  <div class="muted" style="font-size:10px;margin-top:6px">Open a pet in My Pets (or tap PLAY STORY on the pet). Last opened pet is remembered.</div>
 </div>
 <div class="card" id="repSection" style="margin-top:12px">
   <div class="card-title">REPUTATION</div>
@@ -2137,6 +2137,7 @@ SELECT 180D
 <div id="ownedSkills" class="muted" style="font-size:11px;margin-bottom:10px">—</div>
 <div id="ownedRepLine" class="muted" style="font-size:11px;margin-bottom:6px">Rep: —</div>
 <button class="secondary" style="margin-bottom:8px" onclick="showPetHistory()">📜 OWNERSHIP HISTORY</button>
+<button class="primary" style="margin-bottom:8px" onclick="playStoryFromModal()">📖 PLAY STORY</button>
 
 <button class="secondary" style="margin-bottom:8px" onclick="carePet('feed')">🍖 FEED (0.2 AMT)</button>
 <button class="secondary" style="margin-bottom:8px" onclick="carePet('play')">🎾 PLAY (0.1 AMT)</button>
@@ -5178,7 +5179,8 @@ function openOwnedModal(id) {
 }
 
 function closeOwnedModal() {
-  selectedOwned = null;
+  // Keep selectedOwned so Story / Squad can use the last opened pet
+  if (selectedOwned) window._storyPet = selectedOwned;
   const modal = $("ownedModal");
   if (modal) {
     modal.classList.add("hidden");
@@ -5354,8 +5356,11 @@ async function refreshStory() {
   try {
     const d = await api("/api/pets/story");
     const info = $("storyInfo");
+    const fighter = (selectedOwned || window._storyPet);
+    const fname = fighter && fighter.name ? fighter.name : "none — open a pet first";
     if (info) {
-      info.innerHTML = "Chapter <b>" + d.chapter + "</b> · Clears left today <b>" + d.clearsLeft + "</b>/3 · Total " + (d.totalClears || 0);
+      info.innerHTML = "Chapter <b>" + d.chapter + "</b> · Clears left <b>" + d.clearsLeft + "</b>/3 · Total " + (d.totalClears || 0) +
+        "<br>Fighter: <b>" + fname + "</b>";
     }
     const box = $("storyChapters");
     if (box) {
@@ -5368,17 +5373,25 @@ async function refreshStory() {
     window._storyChapter = d.chapter;
   } catch (e) {
     const info = $("storyInfo");
-    if (info) info.textContent = "Story unavailable";
+    if (info) info.textContent = "Story: " + (e.message || "unavailable — redeploy server?");
   }
 }
 
+function playStoryFromModal() {
+  if (selectedOwned) window._storyPet = selectedOwned;
+  closeOwnedModal();
+  playStoryChapter();
+}
+
 async function playStoryChapter() {
-  if (!selectedOwned || !selectedOwned.id) {
-    // try last from cache
-    showToast("Open My Pets → select a pet first, then Play Story", true);
+  const pet = selectedOwned || window._storyPet;
+  if (!pet || !pet.id) {
+    showToast("Open My Pets → open a pet first, then Play Story", true);
     return;
   }
-  const ownedId = Number(selectedOwned.id);
+  selectedOwned = pet;
+  window._storyPet = pet;
+  const ownedId = Number(pet.id);
   try {
     showToast("Story battle...");
     const data = await api("/api/pets/story/play", {
