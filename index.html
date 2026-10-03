@@ -4718,6 +4718,7 @@ function petImgCandidates(pet) {
     }
   }
   const path = pet.image || pet.imageUrl || pet.image_url || "";
+  const element = String(pet.element || "").toLowerCase();
 
   if (path && (/^https?:\/\//i.test(path) || path.startsWith("data:"))) {
     list.push(path);
@@ -4736,7 +4737,6 @@ function petImgCandidates(pet) {
     list.push(id + ".jpg");
   }
   // From display name: earth + rockpuppy → earth-rock-puppy
-  const element = String(pet.element || "").toLowerCase();
   if (element && nameKey) {
     // "Rock Puppy" → rockpuppy; prefer hyphenated slug from id when possible
     const slugName = String(pet.name || "")
