@@ -2010,6 +2010,20 @@ SELECT 180D
   </div>
 </div>
 
+<div class="card" id="storySection" style="margin-top:12px">
+  <div class="card-title">STORY MODE</div>
+  <div class="muted" style="font-size:11px;margin-bottom:6px">Best for leveling weak pets · 3 clears/day · more EXP under Lv20</div>
+  <div id="storyInfo" class="notice" style="margin-bottom:8px;font-size:12px">Loading story...</div>
+  <div id="storyChapters" class="balance-stack" style="margin-bottom:8px"></div>
+  <button class="primary" onclick="playStoryChapter()">📖 PLAY CURRENT CHAPTER</button>
+  <div class="muted" style="font-size:10px;margin-top:6px">Uses selected pet from My Pets (open a pet first)</div>
+</div>
+<div class="card" id="repSection" style="margin-top:12px">
+  <div class="card-title">REPUTATION</div>
+  <div id="ownerRepInfo" class="muted" style="font-size:12px">Owner rep: —</div>
+</div>
+
+
 <!-- BATTLE ARENA (visual rounds) -->
 <div id="battleArena" class="hidden" style="position:fixed;inset:0;z-index:400;background:linear-gradient(180deg,#0a1628 0%,#122038 40%,#1a2840 100%);display:flex;flex-direction:column;align-items:stretch">
   <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px">
@@ -2052,6 +2066,16 @@ SELECT 180D
 
 
 
+<!-- Pet ownership history -->
+<div id="petHistoryModal" class="hidden" style="position:fixed;inset:0;z-index:380;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;padding:16px">
+  <div class="card" style="max-width:420px;width:100%;max-height:85vh;overflow:auto;margin:0">
+    <div class="row">
+      <div class="card-title" style="margin:0">Ownership history</div>
+      <button class="small-btn" style="width:auto;padding:6px 12px" onclick="closePetHistory()">✕</button>
+    </div>
+    <div id="petHistoryBody" class="muted" style="margin-top:10px;font-size:12px"></div>
+  </div>
+</div>
 <!-- Squad pet picker -->
 <div id="squadPickModal" class="hidden" style="position:fixed;inset:0;z-index:370;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;padding:16px">
   <div class="card" style="max-width:420px;width:100%;max-height:85vh;overflow:auto;margin:0">
@@ -2111,6 +2135,8 @@ SELECT 180D
 </div>
 <div class="card-title" style="font-size:12px;margin:8px 0 4px">Skills</div>
 <div id="ownedSkills" class="muted" style="font-size:11px;margin-bottom:10px">—</div>
+<div id="ownedRepLine" class="muted" style="font-size:11px;margin-bottom:6px">Rep: —</div>
+<button class="secondary" style="margin-bottom:8px" onclick="showPetHistory()">📜 OWNERSHIP HISTORY</button>
 
 <button class="secondary" style="margin-bottom:8px" onclick="carePet('feed')">🍖 FEED (0.2 AMT)</button>
 <button class="secondary" style="margin-bottom:8px" onclick="carePet('play')">🎾 PLAY (0.1 AMT)</button>
@@ -5119,6 +5145,17 @@ function openOwnedModal(id) {
   if ($("ownedAtk")) $("ownedAtk").textContent = pet.atk;
   if ($("ownedDef")) $("ownedDef").textContent = pet.def;
   if ($("ownedSpd")) $("ownedSpd").textContent = pet.spd;
+  if ($("ownedRepLine")) {
+    const rep = pet.rep != null ? pet.rep : 0;
+    const wins = pet.wins != null ? pet.wins : 0;
+    const losses = pet.losses != null ? pet.losses : 0;
+    let badge = "Rookie";
+    if (rep >= 500) badge = "Mythic Ace";
+    else if (rep >= 250) badge = "Legend";
+    else if (rep >= 120) badge = "Veteran";
+    else if (rep >= 40) badge = "Fighter";
+    $("ownedRepLine").textContent = badge + " · Rep " + rep + " · W" + wins + "/L" + losses;
+  }
   if ($("ownedSkills")) {
     $("ownedSkills").textContent = "Loading skills...";
     const el = pet.element || "Earth";
@@ -5301,6 +5338,111 @@ async function battlePet(tier) {
 
 
 /* ---- Squad 3v3 / 4v4 ---- */
+
+async function refreshOwnerRep() {
+  try {
+    const d = await api("/api/owner/rep");
+    const el = $("ownerRepInfo");
+    if (el) {
+      el.innerHTML = "<b>" + (d.badge || "Rookie") + "</b> · Rep " + (d.rep || 0) +
+        " · Wins " + (d.wins || 0) + " · Losses " + (d.losses || 0);
+    }
+  } catch (e) {}
+}
+
+async function refreshStory() {
+  try {
+    const d = await api("/api/pets/story");
+    const info = $("storyInfo");
+    if (info) {
+      info.innerHTML = "Chapter <b>" + d.chapter + "</b> · Clears left today <b>" + d.clearsLeft + "</b>/3 · Total " + (d.totalClears || 0);
+    }
+    const box = $("storyChapters");
+    if (box) {
+      box.innerHTML = (d.chapters || []).map(function(c) {
+        const lock = c.unlocked ? "✓" : "🔒";
+        return "<div class='balance-row'><span>" + lock + " Ch." + c.id + " " + c.name +
+          "</span><span class='muted'>EXP " + c.exp + " · " + c.reward + " AMT</span></div>";
+      }).join("");
+    }
+    window._storyChapter = d.chapter;
+  } catch (e) {
+    const info = $("storyInfo");
+    if (info) info.textContent = "Story unavailable";
+  }
+}
+
+async function playStoryChapter() {
+  if (!selectedOwned || !selectedOwned.id) {
+    // try last from cache
+    showToast("Open My Pets → select a pet first, then Play Story", true);
+    return;
+  }
+  const ownedId = Number(selectedOwned.id);
+  try {
+    showToast("Story battle...");
+    const data = await api("/api/pets/story/play", {
+      method: "POST",
+      body: JSON.stringify({
+        ownedPetId: ownedId,
+        chapter: window._storyChapter || 1
+      })
+    });
+    if (data.expGain) showToast("+" + data.expGain + " EXP" + (data.underdog ? " · Underdog!" : ""));
+    await playBattleArena(data);
+    await refreshWallet();
+    await loadOwnedPets();
+    refreshStory();
+    refreshOwnerRep();
+    refreshBattleCharges();
+  } catch (e) {
+    showToast(e.message || "Story failed", true);
+  }
+}
+
+function closePetHistory() {
+  const m = $("petHistoryModal");
+  if (m) { m.classList.add("hidden"); m.style.display = "none"; }
+}
+
+async function showPetHistory() {
+  if (!selectedOwned || !selectedOwned.id) {
+    showToast("Open a pet first", true);
+    return;
+  }
+  try {
+    const d = await api("/api/pets/" + selectedOwned.id + "/history");
+    const body = $("petHistoryBody");
+    const modal = $("petHistoryModal");
+    if (!body || !modal) return;
+    const pet = d.pet || {};
+    let html = "<div style='margin-bottom:10px'><b>" + (pet.name || "Pet") +
+      "</b> · " + (d.repBadge || "Rookie") + " · Rep " + (pet.rep || 0) +
+      " · W" + (pet.wins || 0) + "/L" + (pet.losses || 0) + "</div>";
+    const hist = d.history || [];
+    if (!hist.length) {
+      html += "<div>No ownership events yet.</div>";
+    } else {
+      html += hist.map(function(h) {
+        const when = h.created_at ? String(h.created_at).slice(0, 16) : "";
+        const from = h.from_user ? "@" + h.from_user : "—";
+        const to = h.to_user ? "@" + h.to_user : "—";
+        return "<div style='margin:8px 0;padding:8px;background:rgba(255,255,255,.04);border-radius:8px'>" +
+          "<b>" + (h.event_type || "EVENT") + "</b> · " + when + "<br>" +
+          from + " → " + to +
+          (Number(h.price_amt) ? " · " + h.price_amt + " AMT" : "") +
+          (h.note ? "<br><span class='muted'>" + h.note + "</span>" : "") +
+          "</div>";
+      }).join("");
+    }
+    body.innerHTML = html;
+    modal.classList.remove("hidden");
+    modal.style.display = "flex";
+  } catch (e) {
+    showToast(e.message || "History failed", true);
+  }
+}
+
 async function refreshBattleCharges() {
   try {
     const d = await api("/api/pets/battle-charges");
@@ -5342,6 +5484,8 @@ async function loadSquad() {
     else if (sq.length === 3) squadSize = 3;
     renderSquadSlots();
     refreshBattleCharges();
+    refreshStory();
+    refreshOwnerRep();
   } catch (e) {
     renderSquadSlots();
   }
