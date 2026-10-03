@@ -7669,58 +7669,16 @@ async function ensureArenaTables() {
 }
 
 function simulateBattle(my, en, myEl, enEl) {
-  let myHp = my.hp;
-  let enHp = en.hp;
-  const myMax = myHp;
-  const enMax = enHp;
-  const rounds = [];
-  let round = 0;
-  const maxRounds = 10;
-  while (myHp > 0 && enHp > 0 && round < maxRounds) {
-    round += 1;
-    const myFirst = my.spd + Math.random() * 8 >= en.spd + Math.random() * 8;
-    const resolveHit = (attacker, defender, actor, atkEl, defEl) => {
-      const em = elementMult(atkEl, defEl);
-      const dmg = Math.max(
-        4,
-        Math.round((attacker.atk - defender.def * 0.35) * em + Math.random() * 8)
-      );
-      return dmg;
-    };
-    if (myFirst) {
-      const dmg = resolveHit(my, en, "you", myEl, enEl);
-      enHp = Math.max(0, enHp - dmg);
-      rounds.push({
-        round, actor: "you", dmg, myHp, enHp,
-        text: my.name + " hits " + en.name + " for " + dmg +
-          (elementMult(myEl, enEl) > 1 ? " (super!)" : elementMult(myEl, enEl) < 1 ? " (resisted)" : "")
-      });
-      if (enHp <= 0) break;
-      const edmg = resolveHit(en, my, "enemy", enEl, myEl);
-      myHp = Math.max(0, myHp - edmg);
-      rounds.push({
-        round, actor: "enemy", dmg: edmg, myHp, enHp,
-        text: en.name + " hits for " + edmg
-      });
-    } else {
-      const edmg = resolveHit(en, my, "enemy", enEl, myEl);
-      myHp = Math.max(0, myHp - edmg);
-      rounds.push({
-        round, actor: "enemy", dmg: edmg, myHp, enHp,
-        text: en.name + " hits for " + edmg
-      });
-      if (myHp <= 0) break;
-      const dmg = resolveHit(my, en, "you", myEl, enEl);
-      enHp = Math.max(0, enHp - dmg);
-      rounds.push({
-        round, actor: "you", dmg, myHp, enHp,
-        text: my.name + " hits " + en.name + " for " + dmg
-      });
-    }
+  // Skills-enabled duel (1v1 CPU / PvP)
+  const a = { ...my, level: my.level || 1, maxHp: my.maxHp || my.hp };
+  const b = { ...en, level: en.level || 1, maxHp: en.maxHp || en.hp };
+  if (typeof simulateBattleWithSkills === "function") {
+    return simulateBattleWithSkills(a, b, myEl, enEl);
   }
-  const win = enHp <= 0 || (myHp > 0 && myHp >= enHp);
-  return { win, rounds, myMax, enMax, myHp, enHp };
+  let myHp = my.hp, enHp = en.hp;
+  return { win: myHp >= enHp, rounds: [], myMax: myHp, enMax: enHp, myHp, enHp };
 }
+
 
 app.post("/api/pets/battle", requireAuth, async (req, res) => {
   const ownedId = Number(req.body?.ownedPetId);
@@ -7772,7 +7730,9 @@ app.post("/api/pets/battle", requireAuth, async (req, res) => {
     const lv = Number(pet.level) || 1;
     const my = {
       name: pet.name,
+      level: lv,
       hp: Number(pet.hp) + lv * 8,
+      maxHp: Number(pet.hp) + lv * 8,
       atk: Number(pet.atk) + lv * 2,
       def: Number(pet.def) + Math.floor(lv * 0.8),
       spd: Number(pet.spd) + Math.floor(lv * 0.5)
@@ -7949,6 +7909,85 @@ app.get("/api/pets/arena", requireAuth, async (req, res) => {
   }
 });
 
+
+app.get("/api/pets/arena/mine", requireAuth, async (req, res) => {
+  try {
+    await ensureArenaTables();
+    const rows = await pool.query(
+      `SELECT id, pet_name, pet_element, pet_image, level, hp, atk, def, spd, rating, active, owned_pet_id
+       FROM pet_arena
+       WHERE member_id = $1 AND active = TRUE
+       ORDER BY updated_at DESC
+       LIMIT 5`,
+      [req.member.id]
+    );
+    res.json({ ok: true, listings: rows.rows });
+  } catch (e) {
+    console.error("ARENA MINE:", e);
+    res.status(500).json({ ok: false, error: "Could not load your arena listing." });
+  }
+});
+
+app.post("/api/pets/arena/unlist", requireAuth, async (req, res) => {
+  const arenaId = req.body?.arenaId != null ? Number(req.body.arenaId) : null;
+  try {
+    await ensureArenaTables();
+    let result;
+    if (Number.isInteger(arenaId)) {
+      result = await pool.query(
+        `UPDATE pet_arena SET active = FALSE, updated_at = NOW()
+         WHERE id = $1 AND member_id = $2 AND active = TRUE
+         RETURNING id, pet_name`,
+        [arenaId, req.member.id]
+      );
+    } else {
+      result = await pool.query(
+        `UPDATE pet_arena SET active = FALSE, updated_at = NOW()
+         WHERE member_id = $1 AND active = TRUE
+         RETURNING id, pet_name`,
+        [req.member.id]
+      );
+    }
+    if (!result.rows.length) {
+      return res.json({ ok: true, unlisted: 0, message: "No active arena listing." });
+    }
+    res.json({
+      ok: true,
+      unlisted: result.rows.length,
+      message: "Unlisted " + result.rows.map(r => r.pet_name).join(", ")
+    });
+  } catch (e) {
+    console.error("ARENA UNLIST:", e);
+    res.status(500).json({ ok: false, error: "Could not unlist." });
+  }
+});
+
+app.get("/api/pets/arena/:arenaId", requireAuth, async (req, res) => {
+  const arenaId = Number(req.params.arenaId);
+  if (!Number.isInteger(arenaId)) {
+    return res.status(400).json({ ok: false, error: "Invalid arena id." });
+  }
+  try {
+    await ensureArenaTables();
+    const rows = await pool.query(
+      `SELECT a.id, a.pet_name, a.pet_element, a.pet_image, a.level,
+              a.hp, a.atk, a.def, a.spd, a.rating, a.member_id,
+              m.username
+       FROM pet_arena a
+       LEFT JOIN members m ON m.id = a.member_id
+       WHERE a.id = $1 AND a.active = TRUE`,
+      [arenaId]
+    );
+    if (!rows.rows.length) {
+      return res.status(404).json({ ok: false, error: "Opponent not found or unlisted." });
+    }
+    res.json({ ok: true, opponent: rows.rows[0] });
+  } catch (e) {
+    console.error("ARENA VIEW:", e);
+    res.status(500).json({ ok: false, error: "Could not load opponent." });
+  }
+});
+
 app.post("/api/pets/arena/challenge", requireAuth, async (req, res) => {
   const ownedId = Number(req.body?.ownedPetId);
   const arenaId = Number(req.body?.arenaId);
@@ -8012,7 +8051,9 @@ app.post("/api/pets/arena/challenge", requireAuth, async (req, res) => {
     const lv = Number(pet.level) || 1;
     const my = {
       name: pet.name,
+      level: lv,
       hp: Number(pet.hp) + lv * 8,
+      maxHp: Number(pet.hp) + lv * 8,
       atk: Number(pet.atk) + lv * 2,
       def: Number(pet.def) + Math.floor(lv * 0.8),
       spd: Number(pet.spd) + Math.floor(lv * 0.5)
@@ -8095,8 +8136,448 @@ app.post("/api/pets/arena/challenge", requireAuth, async (req, res) => {
   }
 });
 
+
+/* =========================================================
+   PET SKILLS + SQUAD 3v3 / 4v4
+========================================================= */
+
+const PET_SKILLS = {
+  Fire: [
+    { id: "ember", name: "Ember Strike", minLv: 1, power: 1.25, kind: "attack", desc: "Fire hit · 125% ATK" },
+    { id: "inferno", name: "Inferno", minLv: 12, power: 1.55, kind: "attack", desc: "Heavy fire · 155% ATK" }
+  ],
+  Water: [
+    { id: "splash", name: "Aqua Pulse", minLv: 1, power: 1.2, kind: "attack", desc: "Water hit · 120% ATK" },
+    { id: "tide", name: "Tidal Guard", minLv: 12, power: 0, kind: "defend", desc: "Raise DEF next hit" }
+  ],
+  Nature: [
+    { id: "vine", name: "Vine Lash", minLv: 1, power: 1.2, kind: "attack", desc: "Nature hit · 120% ATK" },
+    { id: "bloom", name: "Bloom Heal", minLv: 10, power: 0.18, kind: "heal", desc: "Heal 18% max HP" }
+  ],
+  Thunder: [
+    { id: "spark", name: "Spark", minLv: 1, power: 1.3, kind: "attack", desc: "Thunder · 130% ATK" },
+    { id: "storm", name: "Storm Bolt", minLv: 15, power: 1.6, kind: "attack", desc: "Heavy thunder · 160% ATK" }
+  ],
+  Earth: [
+    { id: "quake", name: "Quake", minLv: 1, power: 1.15, kind: "attack", desc: "Earth hit · 115% ATK" },
+    { id: "shell", name: "Stone Shell", minLv: 10, power: 0, kind: "defend", desc: "Raise DEF next hit" }
+  ],
+  Ice: [
+    { id: "frost", name: "Frostbite", minLv: 1, power: 1.2, kind: "attack", desc: "Ice hit · 120% ATK" },
+    { id: "freeze", name: "Deep Freeze", minLv: 14, power: 1.45, kind: "attack", desc: "Heavy ice · 145% ATK" }
+  ],
+  Wind: [
+    { id: "gust", name: "Gust", minLv: 1, power: 1.2, kind: "attack", desc: "Wind hit · 120% ATK" },
+    { id: "cyclone", name: "Cyclone", minLv: 12, power: 1.5, kind: "attack", desc: "Heavy wind · 150% ATK" }
+  ]
+};
+
+function skillsForPet(element, level) {
+  const el = String(element || "Earth");
+  const list = PET_SKILLS[el] || PET_SKILLS.Earth;
+  const lv = Number(level) || 1;
+  return list.filter(s => lv >= s.minLv).map(s => ({
+    id: s.id,
+    name: s.name,
+    minLv: s.minLv,
+    kind: s.kind,
+    power: s.power,
+    desc: s.desc,
+    unlocked: true
+  }));
+}
+
+function allSkillsPreview(element, level) {
+  const el = String(element || "Earth");
+  const list = PET_SKILLS[el] || PET_SKILLS.Earth;
+  const lv = Number(level) || 1;
+  return list.map(s => ({
+    id: s.id,
+    name: s.name,
+    minLv: s.minLv,
+    kind: s.kind,
+    power: s.power,
+    desc: s.desc,
+    unlocked: lv >= s.minLv
+  }));
+}
+
+function pickSkill(element, level) {
+  const unlocked = skillsForPet(element, level);
+  if (!unlocked.length) return null;
+  // Prefer stronger skill ~35% if available
+  if (unlocked.length > 1 && Math.random() < 0.35) {
+    return unlocked[unlocked.length - 1];
+  }
+  if (Math.random() < 0.45) return unlocked[0];
+  return null; // basic attack
+}
+
+async function ensureSquadTables() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS pet_squads (
+      member_id BIGINT NOT NULL REFERENCES members(id),
+      slot SMALLINT NOT NULL CHECK (slot >= 1 AND slot <= 4),
+      owned_pet_id BIGINT NOT NULL,
+      updated_at TIMESTAMPTZ DEFAULT NOW(),
+      PRIMARY KEY (member_id, slot)
+    )
+  `);
+}
+
+function combatStatsFromOwned(pet) {
+  const lv = Number(pet.level) || 1;
+  return {
+    ownedId: pet.id,
+    name: pet.name,
+    element: pet.element || "Earth",
+    image: pet.image || null,
+    level: lv,
+    hp: Number(pet.hp) + lv * 8,
+    atk: Number(pet.atk) + lv * 2,
+    def: Number(pet.def) + Math.floor(lv * 0.8),
+    spd: Number(pet.spd) + Math.floor(lv * 0.5),
+    maxHp: Number(pet.hp) + lv * 8
+  };
+}
+
+/** Single duel with skills */
+function simulateBattleWithSkills(my, en, myEl, enEl) {
+  let myHp = my.hp;
+  let enHp = en.hp;
+  const myMax = my.maxHp || my.hp;
+  const enMax = en.maxHp || en.hp;
+  let myDefBuf = 0;
+  let enDefBuf = 0;
+  const rounds = [];
+  let round = 0;
+  const maxRounds = 12;
+
+  while (myHp > 0 && enHp > 0 && round < maxRounds) {
+    round += 1;
+    const myFirst = my.spd + Math.random() * 8 >= en.spd + Math.random() * 8;
+
+    const turn = (attacker, defender, actor, atkEl, defEl, isMe) => {
+      const skill = pickSkill(atkEl, attacker.level || 1);
+      let dmg = 0;
+      let text = "";
+      const defExtra = isMe ? enDefBuf : myDefBuf;
+
+      if (skill && skill.kind === "heal") {
+        const heal = Math.round((isMe ? myMax : enMax) * skill.power);
+        if (isMe) {
+          myHp = Math.min(myMax, myHp + heal);
+        } else {
+          enHp = Math.min(enMax, enHp + heal);
+        }
+        text = attacker.name + " uses " + skill.name + " · +" + heal + " HP";
+        // clear opposite def buf not needed
+      } else if (skill && skill.kind === "defend") {
+        if (isMe) myDefBuf = Math.round(attacker.def * 0.5);
+        else enDefBuf = Math.round(attacker.def * 0.5);
+        text = attacker.name + " uses " + skill.name + " · DEF up";
+      } else {
+        const power = skill && skill.kind === "attack" ? skill.power : 1;
+        const em = elementMult(atkEl, defEl);
+        const def = (defender.def + defExtra) * 0.35;
+        dmg = Math.max(4, Math.round((attacker.atk * power - def) * em + Math.random() * 8));
+        if (isMe) {
+          enHp = Math.max(0, enHp - dmg);
+          enDefBuf = 0;
+        } else {
+          myHp = Math.max(0, myHp - dmg);
+          myDefBuf = 0;
+        }
+        if (skill && skill.kind === "attack") {
+          text = attacker.name + " · " + skill.name + " for " + dmg +
+            (em > 1 ? " (super!)" : em < 1 ? " (resisted)" : "");
+        } else {
+          text = attacker.name + " hits " + defender.name + " for " + dmg +
+            (em > 1 ? " (super!)" : em < 1 ? " (resisted)" : "");
+        }
+      }
+      rounds.push({
+        round,
+        actor,
+        dmg,
+        skill: skill ? skill.name : null,
+        myHp,
+        enHp,
+        text
+      });
+    };
+
+    if (myFirst) {
+      turn(my, en, "you", myEl, enEl, true);
+      if (enHp <= 0) break;
+      turn(en, my, "enemy", enEl, myEl, false);
+    } else {
+      turn(en, my, "enemy", enEl, myEl, false);
+      if (myHp <= 0) break;
+      turn(my, en, "you", myEl, enEl, true);
+    }
+  }
+
+  const win = enHp <= 0 || (myHp > 0 && myHp >= enHp);
+  return { win, rounds, myMax, enMax, myHp, enHp };
+}
+
+// Patch: use skills in existing simulateBattle path — replace function body calls
+// We keep simulateBattle for compatibility; squad uses simulateBattleWithSkills
+
+app.get("/api/pets/skills", requireAuth, async (req, res) => {
+  try {
+    const element = req.query.element || "Earth";
+    const level = Number(req.query.level) || 1;
+    res.json({
+      ok: true,
+      element,
+      level,
+      skills: allSkillsPreview(element, level)
+    });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: "Skills unavailable." });
+  }
+});
+
+app.get("/api/pets/squad", requireAuth, async (req, res) => {
+  try {
+    await ensurePetTables();
+    await ensureSquadTables();
+    const rows = await pool.query(
+      `SELECT s.slot, s.owned_pet_id, p.name, p.element, p.image, p.level,
+              p.hp, p.atk, p.def, p.spd, p.energy, p.rarity
+       FROM pet_squads s
+       JOIN owned_pets p ON p.id = s.owned_pet_id AND p.member_id = s.member_id
+       WHERE s.member_id = $1
+       ORDER BY s.slot ASC`,
+      [req.member.id]
+    );
+    res.json({ ok: true, squad: rows.rows });
+  } catch (e) {
+    console.error("SQUAD GET:", e);
+    res.status(500).json({ ok: false, error: "Could not load squad." });
+  }
+});
+
+app.post("/api/pets/squad/set", requireAuth, async (req, res) => {
+  // body: { slots: [ownedPetId|null, ...] } length 3 or 4
+  const slots = Array.isArray(req.body?.slots) ? req.body.slots : [];
+  const size = Number(req.body?.size) === 4 ? 4 : 3;
+  if (slots.length < size) {
+    return res.status(400).json({
+      ok: false,
+      error: "Need " + size + " pet ids in slots (use null for empty)."
+    });
+  }
+  const ids = [];
+  for (let i = 0; i < size; i++) {
+    const id = slots[i] == null || slots[i] === "" ? null : Number(slots[i]);
+    if (id != null && !Number.isInteger(id)) {
+      return res.status(400).json({ ok: false, error: "Invalid pet id in slot " + (i + 1) });
+    }
+    if (id != null) ids.push(id);
+  }
+  if (ids.length < size) {
+    return res.status(400).json({
+      ok: false,
+      error: "Fill all " + size + " slots with different pets."
+    });
+  }
+  if (new Set(ids).size !== ids.length) {
+    return res.status(400).json({ ok: false, error: "Duplicate pets in squad." });
+  }
+
+  const client = await pool.connect();
+  try {
+    await ensurePetTables();
+    await ensureSquadTables();
+    const owned = await client.query(
+      `SELECT id FROM owned_pets WHERE member_id = $1 AND id = ANY($2::bigint[])`,
+      [req.member.id, ids]
+    );
+    if (owned.rows.length !== ids.length) {
+      return res.status(400).json({ ok: false, error: "All pets must be in your My Pets." });
+    }
+    await client.query(`DELETE FROM pet_squads WHERE member_id = $1`, [req.member.id]);
+    for (let i = 0; i < size; i++) {
+      await client.query(
+        `INSERT INTO pet_squads (member_id, slot, owned_pet_id)
+         VALUES ($1,$2,$3)`,
+        [req.member.id, i + 1, ids[i]]
+      );
+    }
+    res.json({ ok: true, size, message: size + "v" + size + " squad saved." });
+  } catch (e) {
+    console.error("SQUAD SET:", e);
+    res.status(500).json({ ok: false, error: "Could not save squad." });
+  } finally {
+    client.release();
+  }
+});
+
+app.post("/api/pets/squad/battle", requireAuth, async (req, res) => {
+  const size = Number(req.body?.size) === 4 ? 4 : 3;
+  const tierKey = pickTier(req.body?.tier, 15);
+  const tier = BATTLE_TIERS[tierKey] || BATTLE_TIERS.hunter;
+
+  const client = await pool.connect();
+  try {
+    await ensurePetTables();
+    await ensureSquadTables();
+    await ensureArenaTables();
+
+    const squadRows = await client.query(
+      `SELECT s.slot, p.*
+       FROM pet_squads s
+       JOIN owned_pets p ON p.id = s.owned_pet_id AND p.member_id = s.member_id
+       WHERE s.member_id = $1
+       ORDER BY s.slot ASC
+       LIMIT $2`,
+      [req.member.id, size]
+    );
+    if (squadRows.rows.length < size) {
+      return res.status(400).json({
+        ok: false,
+        error: "Set a full " + size + "v" + size + " squad first (Market → Squad)."
+      });
+    }
+
+    // Energy: each pet needs 10
+    for (const p of squadRows.rows) {
+      if (Number(p.energy) < 10) {
+        return res.status(400).json({
+          ok: false,
+          error: p.name + " needs at least 10 energy."
+        });
+      }
+    }
+
+    const day = new Date().toISOString().slice(0, 10);
+    await client.query(
+      `INSERT INTO pet_battle_daily (member_id, battle_date, cpu_count, pvp_count)
+       VALUES ($1, $2::date, 0, 0)
+       ON CONFLICT (member_id, battle_date) DO UPDATE SET member_id = EXCLUDED.member_id`,
+      [req.member.id, day]
+    );
+    const daily = await client.query(
+      `SELECT cpu_count FROM pet_battle_daily WHERE member_id = $1 AND battle_date = $2::date`,
+      [req.member.id, day]
+    );
+    if (Number(daily.rows[0]?.cpu_count || 0) >= 12) {
+      return res.status(400).json({
+        ok: false,
+        error: "Daily battle limit reached. Try again tomorrow."
+      });
+    }
+
+    const myTeam = squadRows.rows.map(combatStatsFromOwned);
+    // Build enemy team scaled
+    const enemyTeam = [];
+    for (let i = 0; i < size; i++) {
+      const ref = myTeam[i];
+      let foePool = AMT_PETS.filter(p => p.name !== ref.name);
+      if (!foePool.length) foePool = AMT_PETS.slice();
+      const wild = foePool[Math.floor(Math.random() * foePool.length)] || AMT_PETS[0];
+      const mult = tier.mult * (0.96 + Math.random() * 0.1);
+      enemyTeam.push({
+        name: tier.label + " " + wild.name,
+        element: wild.element || "Earth",
+        image: wild.image || null,
+        level: ref.level,
+        hp: Math.max(30, Math.round(ref.hp * mult)),
+        maxHp: Math.max(30, Math.round(ref.hp * mult)),
+        atk: Math.max(8, Math.round(ref.atk * mult * 0.95)),
+        def: Math.max(5, Math.round(ref.def * mult * 0.9)),
+        spd: Math.max(5, Math.round(ref.spd * (0.9 + Math.random() * 0.25)))
+      });
+    }
+
+    // Sequential 1v1 until one team wiped
+    const allRounds = [];
+    let myIdx = 0;
+    let enIdx = 0;
+    let match = 0;
+    const myAlive = myTeam.map(p => ({ ...p, hp: p.hp, maxHp: p.maxHp || p.hp }));
+    const enAlive = enemyTeam.map(p => ({ ...p, hp: p.hp, maxHp: p.maxHp || p.hp }));
+
+    while (myIdx < size && enIdx < size && match < size * 2) {
+      match += 1;
+      const a = myAlive[myIdx];
+      const b = enAlive[enIdx];
+      const sim = simulateBattleWithSkills(a, b, a.element, b.element);
+      allRounds.push({
+        match,
+        myPet: a.name,
+        enemyPet: b.name,
+        result: sim.win ? "WIN" : "LOSS",
+        rounds: sim.rounds
+      });
+      if (sim.win) {
+        enIdx += 1;
+        // carry some HP for winner optional - full reset next fight for simplicity
+      } else {
+        myIdx += 1;
+      }
+    }
+
+    const teamWin = enIdx >= size && myIdx < size;
+    const baseReward = size === 4 ? 2.5 : 1.8;
+    const reward = teamWin
+      ? Math.round((baseReward * tier.mult * (0.9 + Math.random() * 0.3)) * 100) / 100
+      : 0.15;
+
+    // Deduct energy + exp
+    for (const p of squadRows.rows) {
+      await client.query(
+        `UPDATE owned_pets SET energy = GREATEST(0, energy - 10),
+          exp = COALESCE(exp, 0) + $1 WHERE id = $2`,
+        [teamWin ? 30 : 10, p.id]
+      );
+      await applyLevelAndRarity(client, p.id, req.member.id);
+    }
+
+    await client.query(
+      `INSERT INTO amt_ledger (member_id, amount, type, reference)
+       VALUES ($1,$2,'PET_SQUAD',$3)`,
+      [req.member.id, reward, makeReference("AMT-SQUAD")]
+    );
+    await client.query(
+      `UPDATE pet_battle_daily SET cpu_count = cpu_count + 1
+       WHERE member_id = $1 AND battle_date = $2::date`,
+      [req.member.id, day]
+    );
+
+    // Flatten first match rounds for existing arena UI + include team summary
+    const first = allRounds[0] || { rounds: [] };
+    res.json({
+      ok: true,
+      result: teamWin ? "WIN" : "LOSS",
+      mode: "squad",
+      size,
+      tier: tierKey,
+      tierLabel: size + "v" + size + " " + tier.label,
+      reward,
+      matches: allRounds,
+      opponent: enAlive.map(e => e.name).join(" / "),
+      opponentElement: enAlive[0] && enAlive[0].element,
+      opponentImage: enAlive[0] && enAlive[0].image,
+      petName: myAlive.map(m => m.name).join(" / "),
+      myMaxHp: first.rounds && first.rounds.length ? (allRounds[0].rounds[0] ? myAlive[0].maxHp : 100) : myAlive[0].maxHp,
+      enMaxHp: enAlive[0].maxHp,
+      rounds: allRounds.length ? allRounds[allRounds.length - 1].rounds : [],
+      teamSummary: allRounds.map(m => m.myPet + (m.result === "WIN" ? " ✓" : " ✗") + " vs " + m.enemyPet).join(" · ")
+    });
+  } catch (e) {
+    console.error("SQUAD BATTLE:", e);
+    res.status(500).json({ ok: false, error: "Squad battle failed." });
+  } finally {
+    client.release();
+  }
+});
+
 app.get("/api/pets/:petId", async (req, res) => {
-  const reserved = ["owned", "eggs", "listings", "buy", "care", "train", "breed", "hatch", "list", "battle", "arena"];
+  const reserved = ["owned", "eggs", "listings", "buy", "care", "train", "breed", "hatch", "list", "battle", "arena", "skills", "squad"];
   if (reserved.includes(String(req.params.petId || "").toLowerCase())) {
     return res.status(404).json({ ok: false, error: "Not found." });
   }
