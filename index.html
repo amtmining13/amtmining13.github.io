@@ -2035,11 +2035,13 @@ SELECT 180D
 </div>
 
 <div class="card" id="gearSection" style="margin-top:12px">
-  <div class="card-title">GEAR SHOP · BACKPACK</div>
-  <div class="muted" style="font-size:11px;margin-bottom:8px">Real wearable gear · boosts ATK DEF HP SPD in battle</div>
-  <div class="row" style="gap:8px;margin-bottom:8px">
-    <button class="secondary" style="margin:0;flex:1" onclick="loadGearShop()">Shop</button>
-    <button class="secondary" style="margin:0;flex:1" onclick="loadGearInventory()">Backpack</button>
+  <div class="card-title">WEAPON STORE · GEAR</div>
+  <div class="muted" style="font-size:11px;margin-bottom:8px">Buy only · no battle loot yet · equip on My Pet</div>
+  <div class="row" style="gap:6px;margin-bottom:8px;flex-wrap:wrap">
+    <button class="secondary" style="margin:0;flex:1;min-width:70px" onclick="loadGearShop('weapon')">Weapons</button>
+    <button class="secondary" style="margin:0;flex:1;min-width:70px" onclick="loadGearShop('armor')">Armor</button>
+    <button class="secondary" style="margin:0;flex:1;min-width:70px" onclick="loadGearShop('all')">All</button>
+    <button class="secondary" style="margin:0;flex:1;min-width:70px" onclick="loadGearInventory()">Backpack</button>
   </div>
   <div id="gearShopGrid" class="balance-stack"></div>
 </div>
@@ -2470,13 +2472,28 @@ throw new Error(
 accessToken=authResult.accessToken;
 currentUser=authResult.user;
 
-await api("/api/users",{
-method:"POST",
-body:JSON.stringify({
-username:currentUser.username,
-uid:currentUser.uid
-})
-});
+// Verify token with backend (Mainnet API key required on Render)
+try{
+  await api("/api/users",{
+    method:"POST",
+    body:JSON.stringify({
+      username:currentUser.username,
+      uid:currentUser.uid
+    })
+  });
+}catch(userErr){
+  console.warn("POST /api/users:", userErr);
+  try{
+    await api("/api/auth/verify");
+  }catch(verErr){
+    accessToken=null;
+    throw new Error(
+      (verErr&&verErr.message)||
+      (userErr&&userErr.message)||
+      "Server rejected Pi login. Check Render PI_API_KEY is Mainnet key + app approved."
+    );
+  }
+}
 
 localStorage.setItem(
 "amt_pi_access_token",
@@ -5578,6 +5595,24 @@ function gearSvg(shape, color) {
   if (shape === "orb") {
     return '<svg viewBox="0 0 32 32"><defs><radialGradient id="o" cx="35%" cy="35%"><stop offset="0%" stop-color="#fff"/><stop offset="70%" stop-color="'+c+'"/><stop offset="100%" stop-color="#222"/></radialGradient></defs><circle cx="16" cy="16" r="11" fill="url(#o)"/></svg>';
   }
+  if (shape === "dagger") {
+    return '<svg viewBox="0 0 32 32"><polygon points="16,2 19,14 16,13 13,14" fill="'+c+'"/><rect x="14.5" y="13" width="3" height="6" fill="#8d6e63"/><rect x="12" y="19" width="8" height="2.5" fill="#5d4037"/><rect x="15" y="21" width="2" height="6" fill="#4e342e"/></svg>';
+  }
+  if (shape === "axe") {
+    return '<svg viewBox="0 0 32 32"><path d="M18 4 L28 10 L28 16 L18 14 Z" fill="'+c+'"/><rect x="14" y="6" width="4" height="20" rx="1" fill="#6d4c41"/></svg>';
+  }
+  if (shape === "bow") {
+    return '<svg viewBox="0 0 32 32"><path d="M10 4 Q4 16 10 28" fill="none" stroke="'+c+'" stroke-width="3"/><path d="M10 4 L10 28" fill="none" stroke="#eee" stroke-width="1.5"/><line x1="10" y1="16" x2="26" y2="16" stroke="#ddd" stroke-width="1.5"/><polygon points="26,16 22,14 22,18" fill="'+c+'"/></svg>';
+  }
+  if (shape === "staff") {
+    return '<svg viewBox="0 0 32 32"><rect x="14.5" y="10" width="3" height="20" fill="#6d4c41"/><circle cx="16" cy="7" r="5" fill="'+c+'"/><circle cx="16" cy="7" r="2" fill="rgba(255,255,255,.5)"/></svg>';
+  }
+  if (shape === "wand") {
+    return '<svg viewBox="0 0 32 32"><rect x="15" y="8" width="2" height="20" fill="#a1887f"/><circle cx="16" cy="6" r="4" fill="'+c+'"/><path d="M16 2 L17 5 L16 4 L15 5 Z" fill="#fff"/></svg>';
+  }
+  if (shape === "halberd") {
+    return '<svg viewBox="0 0 32 32"><rect x="15" y="8" width="2" height="22" fill="#5d4037"/><path d="M17 6 L28 12 L17 14 Z" fill="'+c+'"/><polygon points="16,2 18,8 14,8" fill="'+c+'"/></svg>';
+  }
   return '<svg viewBox="0 0 32 32"><rect x="6" y="6" width="20" height="20" rx="4" fill="'+c+'"/></svg>';
 }
 
@@ -5588,18 +5623,28 @@ function gearIconHtml(g, size) {
     gearSvg(g.shape, g.color) + "</div>";
 }
 
-async function loadGearShop() {
+async function loadGearShop(filter) {
   const box = $("gearShopGrid");
   if (!box) return;
-  box.innerHTML = "<div class='muted'>Loading gear shop...</div>";
+  filter = filter || "weapon";
+  box.innerHTML = "<div class='muted'>Loading weapon store...</div>";
   try {
     const d = await api("/api/gear/shop");
-    const list = d.gear || [];
+    let list = d.gear || [];
+    if (filter === "weapon") {
+      list = list.filter(function(g){ return g.slot === "weapon"; });
+    } else if (filter === "armor") {
+      list = list.filter(function(g){ return g.slot !== "weapon"; });
+    }
+    if (!list.length) {
+      box.innerHTML = "<div class='muted'>No items in this category.</div>";
+      return;
+    }
     box.innerHTML = list.map(function(g) {
       return '<div class="balance-row" style="flex-wrap:wrap;gap:8px;align-items:center">' +
         gearIconHtml(g) +
         '<div style="flex:1;min-width:120px"><b>' + g.name + '</b><div class="muted" style="font-size:10px">' +
-        g.slot + " · " + g.rarity +
+        g.slot + (g.weaponType ? " · " + g.weaponType : "") + " · " + g.rarity +
         " · +" + g.atk + "ATK +" + g.def + "DEF +" + g.hp + "HP +" + g.spd + "SPD</div></div>" +
         '<button class="small-btn" style="width:auto" onclick="buyGear(\\'' + g.id + '\\')">' + g.priceAmt + " AMT</button></div>";
     }).join("");
