@@ -5395,7 +5395,7 @@ AMT PET MARKETPLACE + FULL PET SYSTEM (v2.4.0)
 ========================================================= */
 
 const PET_ELEMENTS = [
-  "Earth", "Water", "Nature", "Ice", "Fire", "Wind", "Thunder"
+  "Earth", "Water", "Nature", "Ice", "Fire", "Wind", "Thunder", "Shadow", "Light", "Cosmic"
 ];
 
 const PET_RARITIES = [
