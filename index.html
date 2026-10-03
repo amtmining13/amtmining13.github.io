@@ -1996,7 +1996,8 @@ SELECT 180D
 
 <div class="card" id="squadSection" style="margin-top:12px">
   <div class="card-title">SQUAD BATTLE</div>
-  <div class="muted" style="font-size:11px;margin-bottom:8px">Set 3 or 4 pets · skills auto-cast in battle · tier scales enemies</div>
+  <div id="battleChargesInfo" class="notice" style="margin-bottom:8px;font-size:12px">Charges: — · Win to earn more battles</div>
+  <div class="muted" style="font-size:11px;margin-bottom:8px">Set 3 or 4 pets · skills auto-cast · win = +1 charge (max 15/day)</div>
   <div class="row" style="gap:8px;margin-bottom:8px">
     <button class="secondary" style="margin:0;flex:1" onclick="setSquadSize(3)">3v3</button>
     <button class="secondary" style="margin:0;flex:1" onclick="setSquadSize(4)">4v4</button>
@@ -2049,6 +2050,19 @@ SELECT 180D
   </div>
 </div>
 
+
+
+<!-- Squad pet picker -->
+<div id="squadPickModal" class="hidden" style="position:fixed;inset:0;z-index:370;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;padding:16px">
+  <div class="card" style="max-width:420px;width:100%;max-height:85vh;overflow:auto;margin:0">
+    <div class="row">
+      <div class="card-title" style="margin:0" id="squadPickTitle">Pick pet</div>
+      <button class="small-btn" style="width:auto;padding:6px 12px" onclick="closeSquadPick()">✕</button>
+    </div>
+    <div class="muted" style="font-size:11px;margin:8px 0">Tap a pet to put in this slot</div>
+    <div id="squadPickList" class="balance-stack"></div>
+  </div>
+</div>
 
 <!-- PvP ARENA LIST -->
 <div id="arenaModal" class="hidden" style="position:fixed;inset:0;z-index:350;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;padding:16px">
@@ -5042,8 +5056,6 @@ async function loadOwnedPets() {
     const data = await api("/api/pets/owned");
     const pets = data.pets || data.owned || [];
     window.ownedPetsCache = pets.slice();
-  window.ownedPetsCache = list || pets || rows || [];
-;
     window._ownedMap = {};
     pets.forEach(p => {
       window._ownedMap[p.id] = p;
@@ -5271,12 +5283,15 @@ async function battlePet(tier) {
       body: JSON.stringify({ ownedPetId: ownedId, tier: tname })
     });
     await playBattleArena(data);
+    if (data.chargeBonus) showToast(data.chargeBonus + " · " + (data.chargesLeft ?? "?") + " charges left");
+    else if (data.chargesLeft != null) showToast(data.chargesLeft + " charges left");
     if (data.milestones && data.milestones.length) {
       const b = data.milestones.map(m => "Lv" + m.level + " +" + m.amount).join(", ");
       showToast("Level milestone: " + b + " AMT!");
     }
     await refreshWallet();
     await loadOwnedPets();
+    refreshBattleCharges();
   } catch (e) {
     showToast(e.message || "Battle failed", true);
   } finally {
@@ -5286,6 +5301,18 @@ async function battlePet(tier) {
 
 
 /* ---- Squad 3v3 / 4v4 ---- */
+async function refreshBattleCharges() {
+  try {
+    const d = await api("/api/pets/battle-charges");
+    const el = $("battleChargesInfo");
+    if (el) {
+      el.innerHTML = "<b>" + d.charges + "</b> charges left · Wins today " + (d.wins || 0) +
+        " · Streak " + (d.streak || 0) +
+        "<br><span class='muted' style='font-size:10px'>" + (d.rule || "") + "</span>";
+    }
+  } catch (e) {}
+}
+
 let squadSize = 3;
 let squadPicks = [null, null, null, null];
 
@@ -5314,6 +5341,7 @@ async function loadSquad() {
     if (sq.length === 4) squadSize = 4;
     else if (sq.length === 3) squadSize = 3;
     renderSquadSlots();
+    refreshBattleCharges();
   } catch (e) {
     renderSquadSlots();
   }
@@ -5343,29 +5371,78 @@ function clearSquadSlot(i) {
   renderSquadSlots();
 }
 
-function pickSquadSlot(i) {
+let _squadPickSlot = 0;
+
+function closeSquadPick() {
+  const m = $("squadPickModal");
+  if (m) {
+    m.classList.add("hidden");
+    m.style.display = "none";
+  }
+}
+
+async function pickSquadSlot(i) {
+  _squadPickSlot = i;
   if (!window.ownedPetsCache || !window.ownedPetsCache.length) {
-    showToast("Open My Pets first so squad can see your pets", true);
-    loadOwnedPets().then(function(){ pickSquadSlot(i); });
+    try {
+      await loadOwnedPets();
+    } catch (e) {}
+  }
+  const list = window.ownedPetsCache || [];
+  if (!list.length) {
+    showToast("No pets yet. Buy or claim pets in My Pets first.", true);
     return;
   }
-  const names = window.ownedPetsCache.map(function(p, idx) {
-    return (idx + 1) + ". " + p.name + " Lv" + (p.level || 1);
-  }).join("\\n");
-  const choice = prompt("Pick pet number for slot " + (i + 1) + ":\\n" + names);
-  const n = Number(choice);
-  if (!n || n < 1 || n > window.ownedPetsCache.length) {
-    return showToast("Cancelled", true);
+  const title = $("squadPickTitle");
+  if (title) title.textContent = "Pick pet · Slot " + (i + 1);
+  const box = $("squadPickList");
+  if (!box) return;
+  box.innerHTML = list.map(function(p) {
+    const used = squadPicks.some(function(s, idx) {
+      return s && idx !== i && Number(s.id) === Number(p.id);
+    });
+    const name = String(p.name || "Pet").replace(/</g, "");
+    const el = String(p.element || "").replace(/</g, "");
+    return (
+      '<div class="card" style="margin:0 0 8px;padding:12px;opacity:' + (used ? "0.45" : "1") + '">' +
+        '<div style="font-weight:900">' + name + ' <span class="muted">Lv' + (p.level || 1) + '</span></div>' +
+        '<div class="muted" style="font-size:11px;margin:4px 0">' + el +
+          ' · HP ' + (p.hp || "—") + ' · ATK ' + (p.atk || "—") +
+          ' · DEF ' + (p.def || "—") + ' · SPD ' + (p.spd || "—") +
+        '</div>' +
+        (used
+          ? '<div class="muted" style="font-size:11px">Already in squad</div>'
+          : '<button class="primary" style="margin-top:6px" onclick="confirmSquadPick(\'' + p.id + '\')">Select</button>') +
+      '</div>'
+    );
+  }).join("");
+  const m = $("squadPickModal");
+  if (m) {
+    m.classList.remove("hidden");
+    m.style.display = "flex";
   }
-  const pet = window.ownedPetsCache[n - 1];
-  // no duplicate
+}
+
+function confirmSquadPick(petId) {
+  const list = window.ownedPetsCache || [];
+  const pet = list.find(function(p) {
+    return String(p.id) === String(petId);
+  });
+  if (!pet) return showToast("Pet not found", true);
   for (let j = 0; j < squadSize; j++) {
-    if (j !== i && squadPicks[j] && Number(squadPicks[j].id) === Number(pet.id)) {
+    if (j !== _squadPickSlot && squadPicks[j] && Number(squadPicks[j].id) === Number(pet.id)) {
       return showToast("Pet already in squad", true);
     }
   }
-  squadPicks[i] = { id: pet.id, name: pet.name, level: pet.level, element: pet.element };
+  squadPicks[_squadPickSlot] = {
+    id: pet.id,
+    name: pet.name,
+    level: pet.level,
+    element: pet.element
+  };
+  closeSquadPick();
   renderSquadSlots();
+  showToast((pet.name || "Pet") + " → Slot " + (_squadPickSlot + 1));
 }
 
 async function saveSquad() {
@@ -5393,9 +5470,11 @@ async function squadBattle(tier) {
       body: JSON.stringify({ size: squadSize, tier: tier || "hunter" })
     });
     if (data.teamSummary) showToast(data.teamSummary);
+    if (data.chargeBonus) showToast(data.chargeBonus + " · " + (data.chargesLeft ?? "?") + " left");
     await playBattleArena(data);
     await refreshWallet();
     await loadOwnedPets();
+    refreshBattleCharges();
   } catch (e) {
     showToast(e.message || "Squad battle failed", true);
   }
@@ -5632,7 +5711,9 @@ async function playBattleArena(data) {
   $("battleResultTitle").style.color = win ? "#ffd54f" : "#ff8899";
   $("battleResultReward").textContent =
     (data.tierLabel ? "[" + data.tierLabel + "] " : "") +
-    (win ? "+" : "+") + (data.reward || 0) + " AMT";
+    (win ? "+" : "+") + (data.reward || 0) + " AMT" +
+    (data.chargesLeft != null ? " · " + data.chargesLeft + " charges" : "") +
+    (data.chargeBonus ? " · " + data.chargeBonus : "");
   $("battleResultPanel").classList.remove("hidden");
 }
 
