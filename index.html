@@ -2033,6 +2033,19 @@ SELECT 180D
   </div>
 </div>
 
+
+<!-- PvP ARENA LIST -->
+<div id="arenaModal" class="hidden" style="position:fixed;inset:0;z-index:350;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;padding:16px">
+  <div class="card" style="max-width:420px;width:100%;max-height:85vh;overflow:auto;margin:0">
+    <div class="row">
+      <div class="card-title" style="margin:0">PvP Arena</div>
+      <button class="small-btn" style="width:auto;padding:6px 12px" onclick="closeArenaModal()">✕</button>
+    </div>
+    <div class="muted" style="font-size:11px;margin:8px 0">Challenge another miner's pet (async). Select your pet in My Pets first, then challenge.</div>
+    <div id="arenaList" class="balance-stack"></div>
+  </div>
+</div>
+
 <!-- Owned Pet Actions Modal -->
 <div id="ownedModal" class="hidden" style="position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;padding:16px">
 <div class="card" style="max-width:400px;width:100%;max-height:90vh;overflow:auto;margin:0">
@@ -2059,7 +2072,15 @@ SELECT 180D
 <button class="secondary" style="margin-bottom:8px" onclick="buyEnergyPack('full')">💖 FULL PACK (3 AMT)</button>
 <button class="secondary" style="margin-bottom:8px" onclick="trainPet('atk')">⚔️ TRAIN ATK (0.5)</button>
 <button class="secondary" style="margin-bottom:8px" onclick="trainPet('hp')">❤️ TRAIN HP (0.5)</button>
-<button class="primary" style="margin-bottom:8px" onclick="battlePet()">⚔️ BATTLE</button>
+<div class="muted" style="font-size:10px;margin:6px 0 4px">CPU battle tier (scales with your level)</div>
+<div class="grid" style="grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
+<button class="secondary" style="margin:0;padding:10px 6px;font-size:11px" onclick="battlePet('rookie')">⚔️ Rookie</button>
+<button class="secondary" style="margin:0;padding:10px 6px;font-size:11px" onclick="battlePet('hunter')">🗡️ Hunter</button>
+<button class="secondary" style="margin:0;padding:10px 6px;font-size:11px" onclick="battlePet('elite')">💀 Elite</button>
+<button class="secondary" style="margin:0;padding:10px 6px;font-size:11px" onclick="battlePet('mythic')">🐉 Mythic</button>
+</div>
+<button class="primary" style="margin-bottom:8px" onclick="listPetInArena()">🏟️ LIST IN PvP ARENA</button>
+<button class="secondary" style="margin-bottom:8px" onclick="openArenaModal()">⚔️ OPEN PvP ARENA</button>
 <div class="muted" style="font-size:10px;margin:6px 0 10px;text-align:center">Milestones: Lv10 +2 · Lv20 +5 · Lv50 +15 AMT</div>
 <div class="form-group" style="margin-top:10px">
 <label>Sell Price (AMT)</label>
@@ -5183,21 +5204,21 @@ async function buyEnergyPack(pack) {
   }
 }
 
-async function battlePet() {
+async function battlePet(tier) {
   if (!selectedOwned) {
     showToast("Select a pet from My Pets first", true);
     return;
   }
   const petRef = selectedOwned;
   const ownedId = Number(petRef.id);
+  const tname = tier || "hunter";
   try {
     closeOwnedModal();
-    // keep ref for arena art (closeOwnedModal clears selectedOwned)
     selectedOwned = petRef;
-    showToast("Battle starting...");
+    showToast((tname.toUpperCase()) + " battle starting...");
     const data = await api("/api/pets/battle", {
       method: "POST",
-      body: JSON.stringify({ ownedPetId: ownedId })
+      body: JSON.stringify({ ownedPetId: ownedId, tier: tname })
     });
     await playBattleArena(data);
     if (data.milestones && data.milestones.length) {
@@ -5208,6 +5229,91 @@ async function battlePet() {
     await loadOwnedPets();
   } catch (e) {
     showToast(e.message || "Battle failed", true);
+  } finally {
+    selectedOwned = null;
+  }
+}
+
+async function listPetInArena() {
+  if (!selectedOwned || !selectedOwned.id) {
+    showToast("Open a pet from My Pets first", true);
+    return;
+  }
+  try {
+    const data = await api("/api/pets/arena/list", {
+      method: "POST",
+      body: JSON.stringify({ ownedPetId: Number(selectedOwned.id) })
+    });
+    showToast(data.message || "Listed in PvP Arena");
+    closeOwnedModal();
+  } catch (e) {
+    showToast(e.message || "Arena list failed", true);
+  }
+}
+
+function closeArenaModal() {
+  const m = $("arenaModal");
+  if (m) {
+    m.classList.add("hidden");
+    m.style.display = "none";
+  }
+}
+
+async function openArenaModal() {
+  const m = $("arenaModal");
+  if (!m) return;
+  m.classList.remove("hidden");
+  m.style.display = "flex";
+  const box = $("arenaList");
+  if (box) box.innerHTML = "<div class='muted'>Loading arena...</div>";
+  try {
+    const data = await api("/api/pets/arena");
+    const list = data.listings || [];
+    if (!list.length) {
+      box.innerHTML = "<div class='muted'>No opponents yet. List your pet first!</div>";
+      return;
+    }
+    box.innerHTML = list.map(function(a) {
+      const name = (a.pet_name || "Pet").replace(/</g, "");
+      const user = (a.username || "miner").replace(/</g, "");
+      return (
+        '<div class="balance-row" style="flex-wrap:wrap;gap:6px;align-items:center">' +
+          '<div style="flex:1;min-width:120px">' +
+            '<div style="font-weight:800">' + name + ' · Lv' + (a.level || 1) + '</div>' +
+            '<div class="muted" style="font-size:10px">@' + user + ' · ' + (a.pet_element || "") +
+            ' · Rating ' + (a.rating || 1000) + '</div>' +
+            '<div class="muted" style="font-size:10px">HP ' + a.hp + ' · ATK ' + a.atk + ' · DEF ' + a.def + '</div>' +
+          '</div>' +
+          '<button class="small-btn" style="width:auto" onclick="challengeArena(' + a.id + ')">Fight</button>' +
+        '</div>'
+      );
+    }).join("");
+  } catch (e) {
+    if (box) box.innerHTML = "<div class='muted'>" + (e.message || "Failed") + "</div>";
+  }
+}
+
+async function challengeArena(arenaId) {
+  if (!selectedOwned || !selectedOwned.id) {
+    showToast("Open My Pets → select your fighter pet first, then Fight", true);
+    return;
+  }
+  const petRef = selectedOwned;
+  const ownedId = Number(petRef.id);
+  try {
+    closeArenaModal();
+    closeOwnedModal();
+    selectedOwned = petRef;
+    showToast("PvP starting...");
+    const data = await api("/api/pets/arena/challenge", {
+      method: "POST",
+      body: JSON.stringify({ ownedPetId: ownedId, arenaId: Number(arenaId) })
+    });
+    await playBattleArena(data);
+    await refreshWallet();
+    await loadOwnedPets();
+  } catch (e) {
+    showToast(e.message || "PvP failed", true);
   } finally {
     selectedOwned = null;
   }
@@ -5276,6 +5382,7 @@ async function playBattleArena(data) {
   $("battleResultTitle").textContent = win ? "Victory" : "Defeat";
   $("battleResultTitle").style.color = win ? "#ffd54f" : "#ff8899";
   $("battleResultReward").textContent =
+    (data.tierLabel ? "[" + data.tierLabel + "] " : "") +
     (win ? "+" : "+") + (data.reward || 0) + " AMT";
   $("battleResultPanel").classList.remove("hidden");
 }
