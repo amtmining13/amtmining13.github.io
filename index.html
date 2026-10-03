@@ -1993,6 +1993,22 @@ SELECT 180D
 </div>
 </div>
 
+
+<div class="card" id="squadSection" style="margin-top:12px">
+  <div class="card-title">SQUAD BATTLE</div>
+  <div class="muted" style="font-size:11px;margin-bottom:8px">Set 3 or 4 pets · skills auto-cast in battle · tier scales enemies</div>
+  <div class="row" style="gap:8px;margin-bottom:8px">
+    <button class="secondary" style="margin:0;flex:1" onclick="setSquadSize(3)">3v3</button>
+    <button class="secondary" style="margin:0;flex:1" onclick="setSquadSize(4)">4v4</button>
+  </div>
+  <div id="squadSlots" class="balance-stack" style="margin-bottom:8px"></div>
+  <button class="secondary" style="margin-bottom:6px" onclick="saveSquad()">💾 SAVE SQUAD</button>
+  <div class="grid" style="grid-template-columns:1fr 1fr;gap:6px">
+    <button class="secondary" style="margin:0" onclick="squadBattle('hunter')">🗡️ Squad Hunter</button>
+    <button class="secondary" style="margin:0" onclick="squadBattle('elite')">💀 Squad Elite</button>
+  </div>
+</div>
+
 <!-- BATTLE ARENA (visual rounds) -->
 <div id="battleArena" class="hidden" style="position:fixed;inset:0;z-index:400;background:linear-gradient(180deg,#0a1628 0%,#122038 40%,#1a2840 100%);display:flex;flex-direction:column;align-items:stretch">
   <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px">
@@ -2036,13 +2052,26 @@ SELECT 180D
 
 <!-- PvP ARENA LIST -->
 <div id="arenaModal" class="hidden" style="position:fixed;inset:0;z-index:350;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;padding:16px">
-  <div class="card" style="max-width:420px;width:100%;max-height:85vh;overflow:auto;margin:0">
+  <div class="card" style="max-width:440px;width:100%;max-height:85vh;overflow:auto;margin:0">
     <div class="row">
       <div class="card-title" style="margin:0">PvP Arena</div>
       <button class="small-btn" style="width:auto;padding:6px 12px" onclick="closeArenaModal()">✕</button>
     </div>
-    <div class="muted" style="font-size:11px;margin:8px 0">Challenge another miner's pet (async). Select your pet in My Pets first, then challenge.</div>
+    <div class="muted" style="font-size:11px;margin:8px 0">View full stats before fight. Select your fighter in My Pets first.</div>
+    <div id="myArenaBox" style="margin-bottom:12px"></div>
+    <div class="card-title" style="font-size:13px;margin-bottom:8px">Opponents</div>
     <div id="arenaList" class="balance-stack"></div>
+  </div>
+</div>
+<!-- Opponent preview -->
+<div id="arenaPreviewModal" class="hidden" style="position:fixed;inset:0;z-index:360;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;padding:16px">
+  <div class="card" style="max-width:360px;width:100%;margin:0">
+    <div class="row">
+      <div class="card-title" style="margin:0">Opponent</div>
+      <button class="small-btn" style="width:auto;padding:6px 12px" onclick="closeArenaPreview()">✕</button>
+    </div>
+    <div id="arenaPreviewBody" style="margin-top:10px"></div>
+    <button class="primary" style="margin-top:12px" id="arenaPreviewFightBtn">⚔️ FIGHT THIS PET</button>
   </div>
 </div>
 
@@ -2066,6 +2095,9 @@ SELECT 180D
 <div class="stat"><div class="stat-label">DEF</div><div class="stat-value" id="ownedDef">—</div></div>
 <div class="stat"><div class="stat-label">SPD</div><div class="stat-value" id="ownedSpd">—</div></div>
 </div>
+<div class="card-title" style="font-size:12px;margin:8px 0 4px">Skills</div>
+<div id="ownedSkills" class="muted" style="font-size:11px;margin-bottom:10px">—</div>
+
 <button class="secondary" style="margin-bottom:8px" onclick="carePet('feed')">🍖 FEED (0.2 AMT)</button>
 <button class="secondary" style="margin-bottom:8px" onclick="carePet('play')">🎾 PLAY (0.1 AMT)</button>
 <button class="secondary" style="margin-bottom:8px" onclick="buyEnergyPack('energy')">⚡ ENERGY PACK (1 AMT)</button>
@@ -2080,6 +2112,7 @@ SELECT 180D
 <button class="secondary" style="margin:0;padding:10px 6px;font-size:11px" onclick="battlePet('mythic')">🐉 Mythic</button>
 </div>
 <button class="primary" style="margin-bottom:8px" onclick="listPetInArena()">🏟️ LIST IN PvP ARENA</button>
+<button class="secondary" style="margin-bottom:8px" onclick="unlistMyArena()">🚫 UNLIST FROM ARENA</button>
 <button class="secondary" style="margin-bottom:8px" onclick="openArenaModal()">⚔️ OPEN PvP ARENA</button>
 <div class="muted" style="font-size:10px;margin:6px 0 10px;text-align:center">Milestones: Lv10 +2 · Lv20 +5 · Lv50 +15 AMT</div>
 <div class="form-group" style="margin-top:10px">
@@ -5007,7 +5040,10 @@ async function loadOwnedPets() {
     }
     grid.innerHTML = '<div class="empty">Loading your pets...</div>';
     const data = await api("/api/pets/owned");
-    const pets = data.pets || [];
+    const pets = data.pets || data.owned || [];
+    window.ownedPetsCache = pets.slice();
+  window.ownedPetsCache = list || pets || rows || [];
+;
     window._ownedMap = {};
     pets.forEach(p => {
       window._ownedMap[p.id] = p;
@@ -5071,6 +5107,20 @@ function openOwnedModal(id) {
   if ($("ownedAtk")) $("ownedAtk").textContent = pet.atk;
   if ($("ownedDef")) $("ownedDef").textContent = pet.def;
   if ($("ownedSpd")) $("ownedSpd").textContent = pet.spd;
+  if ($("ownedSkills")) {
+    $("ownedSkills").textContent = "Loading skills...";
+    const el = pet.element || "Earth";
+    const lv = Number(pet.level) || 1;
+    api("/api/pets/skills?element=" + encodeURIComponent(el) + "&level=" + lv)
+      .then(function(sk) {
+        const list = sk.skills || [];
+        $("ownedSkills").innerHTML = list.map(function(s) {
+          const lock = s.unlocked ? "✓" : ("🔒 Lv" + s.minLv);
+          return "<div style=\"margin:3px 0\"><b>" + s.name + "</b> " + lock + " · " + s.desc + "</div>";
+        }).join("") || "No skills";
+      })
+      .catch(function() { $("ownedSkills").textContent = "Skills unavailable"; });
+  }
   const modal = $("ownedModal");
   if (modal) {
     modal.classList.remove("hidden");
@@ -5234,6 +5284,123 @@ async function battlePet(tier) {
   }
 }
 
+
+/* ---- Squad 3v3 / 4v4 ---- */
+let squadSize = 3;
+let squadPicks = [null, null, null, null];
+
+function setSquadSize(n) {
+  squadSize = n === 4 ? 4 : 3;
+  showToast(squadSize + "v" + squadSize + " mode");
+  renderSquadSlots();
+}
+
+async function loadSquad() {
+  try {
+    const data = await api("/api/pets/squad");
+    const sq = data.squad || [];
+    squadPicks = [null, null, null, null];
+    sq.forEach(function(s) {
+      const slot = Number(s.slot) - 1;
+      if (slot >= 0 && slot < 4) {
+        squadPicks[slot] = {
+          id: s.owned_pet_id,
+          name: s.name,
+          level: s.level,
+          element: s.element
+        };
+      }
+    });
+    if (sq.length === 4) squadSize = 4;
+    else if (sq.length === 3) squadSize = 3;
+    renderSquadSlots();
+  } catch (e) {
+    renderSquadSlots();
+  }
+}
+
+function renderSquadSlots() {
+  const box = $("squadSlots");
+  if (!box) return;
+  let html = "";
+  for (let i = 0; i < squadSize; i++) {
+    const p = squadPicks[i];
+    html += '<div class="balance-row" style="flex-wrap:wrap;gap:6px">' +
+      '<span class="balance-row-label">Slot ' + (i + 1) + '</span>' +
+      '<span class="balance-row-value" style="font-size:12px">' +
+        (p ? (p.name + " Lv" + (p.level || 1)) : "— empty") +
+      '</span>' +
+      '<button class="small-btn" style="width:auto" onclick="pickSquadSlot(' + i + ')">' +
+        (p ? "Change" : "Pick") + "</button>" +
+      (p ? '<button class="small-btn" style="width:auto" onclick="clearSquadSlot(' + i + ')">✕</button>' : "") +
+      "</div>";
+  }
+  box.innerHTML = html;
+}
+
+function clearSquadSlot(i) {
+  squadPicks[i] = null;
+  renderSquadSlots();
+}
+
+function pickSquadSlot(i) {
+  if (!window.ownedPetsCache || !window.ownedPetsCache.length) {
+    showToast("Open My Pets first so squad can see your pets", true);
+    loadOwnedPets().then(function(){ pickSquadSlot(i); });
+    return;
+  }
+  const names = window.ownedPetsCache.map(function(p, idx) {
+    return (idx + 1) + ". " + p.name + " Lv" + (p.level || 1);
+  }).join("\\n");
+  const choice = prompt("Pick pet number for slot " + (i + 1) + ":\\n" + names);
+  const n = Number(choice);
+  if (!n || n < 1 || n > window.ownedPetsCache.length) {
+    return showToast("Cancelled", true);
+  }
+  const pet = window.ownedPetsCache[n - 1];
+  // no duplicate
+  for (let j = 0; j < squadSize; j++) {
+    if (j !== i && squadPicks[j] && Number(squadPicks[j].id) === Number(pet.id)) {
+      return showToast("Pet already in squad", true);
+    }
+  }
+  squadPicks[i] = { id: pet.id, name: pet.name, level: pet.level, element: pet.element };
+  renderSquadSlots();
+}
+
+async function saveSquad() {
+  const slots = [];
+  for (let i = 0; i < squadSize; i++) {
+    if (!squadPicks[i]) return showToast("Fill slot " + (i + 1), true);
+    slots.push(Number(squadPicks[i].id));
+  }
+  try {
+    const data = await api("/api/pets/squad/set", {
+      method: "POST",
+      body: JSON.stringify({ size: squadSize, slots: slots })
+    });
+    showToast(data.message || "Squad saved");
+  } catch (e) {
+    showToast(e.message || "Save failed", true);
+  }
+}
+
+async function squadBattle(tier) {
+  try {
+    showToast((squadSize) + "v" + squadSize + " starting...");
+    const data = await api("/api/pets/squad/battle", {
+      method: "POST",
+      body: JSON.stringify({ size: squadSize, tier: tier || "hunter" })
+    });
+    if (data.teamSummary) showToast(data.teamSummary);
+    await playBattleArena(data);
+    await refreshWallet();
+    await loadOwnedPets();
+  } catch (e) {
+    showToast(e.message || "Squad battle failed", true);
+  }
+}
+
 async function listPetInArena() {
   if (!selectedOwned || !selectedOwned.id) {
     showToast("Open a pet from My Pets first", true);
@@ -5251,8 +5418,32 @@ async function listPetInArena() {
   }
 }
 
+async function unlistMyArena() {
+  try {
+    const data = await api("/api/pets/arena/unlist", {
+      method: "POST",
+      body: JSON.stringify({})
+    });
+    showToast(data.message || "Unlisted from arena");
+    if ($("arenaModal") && !$("arenaModal").classList.contains("hidden")) {
+      openArenaModal();
+    }
+  } catch (e) {
+    showToast(e.message || "Unlist failed", true);
+  }
+}
+
 function closeArenaModal() {
   const m = $("arenaModal");
+  if (m) {
+    m.classList.add("hidden");
+    m.style.display = "none";
+  }
+  closeArenaPreview();
+}
+
+function closeArenaPreview() {
+  const m = $("arenaPreviewModal");
   if (m) {
     m.classList.add("hidden");
     m.style.display = "none";
@@ -5265,31 +5456,88 @@ async function openArenaModal() {
   m.classList.remove("hidden");
   m.style.display = "flex";
   const box = $("arenaList");
+  const mine = $("myArenaBox");
   if (box) box.innerHTML = "<div class='muted'>Loading arena...</div>";
+  if (mine) mine.innerHTML = "";
   try {
+    // My listing — viewable + unlist
+    try {
+      const mineData = await api("/api/pets/arena/mine");
+      const ml = (mineData.listings || [])[0];
+      if (ml && mine) {
+        mine.innerHTML =
+          '<div class="notice" style="margin:0">' +
+            '<b>Your listed pet</b><br>' +
+            (ml.pet_name || "Pet") + " · Lv" + (ml.level || 1) + " · " + (ml.pet_element || "") + "<br>" +
+            "HP " + ml.hp + " · ATK " + ml.atk + " · DEF " + ml.def + " · SPD " + ml.spd + "<br>" +
+            "Rating " + (ml.rating || 1000) +
+            '<button class="secondary" style="margin-top:8px" onclick="unlistMyArena()">🚫 UNLIST</button>' +
+          "</div>";
+      } else if (mine) {
+        mine.innerHTML = "<div class='muted' style='font-size:11px'>You have no pet listed. Open My Pets → List in PvP Arena.</div>";
+      }
+    } catch (e1) {}
+
     const data = await api("/api/pets/arena");
     const list = data.listings || [];
     if (!list.length) {
-      box.innerHTML = "<div class='muted'>No opponents yet. List your pet first!</div>";
+      box.innerHTML = "<div class='muted'>No opponents yet. Be the first to list!</div>";
       return;
     }
     box.innerHTML = list.map(function(a) {
-      const name = (a.pet_name || "Pet").replace(/</g, "");
-      const user = (a.username || "miner").replace(/</g, "");
+      const name = String(a.pet_name || "Pet").replace(/</g, "");
+      const user = String(a.username || "miner").replace(/</g, "");
+      const el = String(a.pet_element || "").replace(/</g, "");
       return (
-        '<div class="balance-row" style="flex-wrap:wrap;gap:6px;align-items:center">' +
-          '<div style="flex:1;min-width:120px">' +
-            '<div style="font-weight:800">' + name + ' · Lv' + (a.level || 1) + '</div>' +
-            '<div class="muted" style="font-size:10px">@' + user + ' · ' + (a.pet_element || "") +
-            ' · Rating ' + (a.rating || 1000) + '</div>' +
-            '<div class="muted" style="font-size:10px">HP ' + a.hp + ' · ATK ' + a.atk + ' · DEF ' + a.def + '</div>' +
+        '<div class="card" style="margin:0 0 10px;padding:12px">' +
+          '<div style="font-weight:900;font-size:14px">' + name + ' <span class="muted">Lv' + (a.level || 1) + '</span></div>' +
+          '<div class="muted" style="font-size:11px;margin:4px 0">@' + user + ' · ' + el + ' · Rating ' + (a.rating || 1000) + '</div>' +
+          '<div class="grid" style="grid-template-columns:repeat(4,1fr);gap:6px;margin:8px 0">' +
+            '<div class="stat"><div class="stat-label">HP</div><div class="stat-value" style="font-size:12px">' + a.hp + '</div></div>' +
+            '<div class="stat"><div class="stat-label">ATK</div><div class="stat-value" style="font-size:12px">' + a.atk + '</div></div>' +
+            '<div class="stat"><div class="stat-label">DEF</div><div class="stat-value" style="font-size:12px">' + a.def + '</div></div>' +
+            '<div class="stat"><div class="stat-label">SPD</div><div class="stat-value" style="font-size:12px">' + a.spd + '</div></div>' +
           '</div>' +
-          '<button class="small-btn" style="width:auto" onclick="challengeArena(' + a.id + ')">Fight</button>' +
+          '<div class="row" style="gap:8px">' +
+            '<button class="secondary" style="margin:0;flex:1" onclick="viewArenaOpponent(' + a.id + ')">👁️ View</button>' +
+            '<button class="primary" style="margin:0;flex:1" onclick="challengeArena(' + a.id + ')">⚔️ Fight</button>' +
+          '</div>' +
         '</div>'
       );
     }).join("");
   } catch (e) {
     if (box) box.innerHTML = "<div class='muted'>" + (e.message || "Failed") + "</div>";
+  }
+}
+
+async function viewArenaOpponent(arenaId) {
+  try {
+    const data = await api("/api/pets/arena/" + Number(arenaId));
+    const o = data.opponent;
+    if (!o) return showToast("Opponent not found", true);
+    const body = $("arenaPreviewBody");
+    const modal = $("arenaPreviewModal");
+    if (!body || !modal) return;
+    body.innerHTML =
+      '<div style="text-align:center;font-weight:900;font-size:18px;margin-bottom:6px">' +
+        String(o.pet_name || "Pet").replace(/</g, "") + "</div>" +
+      '<div class="muted" style="text-align:center;margin-bottom:10px">@' +
+        String(o.username || "miner").replace(/</g, "") +
+        " · Lv" + (o.level || 1) + " · " + String(o.pet_element || "") +
+        " · Rating " + (o.rating || 1000) + "</div>" +
+      '<div class="grid" style="grid-template-columns:repeat(2,1fr);gap:8px">' +
+        '<div class="stat"><div class="stat-label">HP</div><div class="stat-value">' + o.hp + '</div></div>' +
+        '<div class="stat"><div class="stat-label">ATK</div><div class="stat-value">' + o.atk + '</div></div>' +
+        '<div class="stat"><div class="stat-label">DEF</div><div class="stat-value">' + o.def + '</div></div>' +
+        '<div class="stat"><div class="stat-label">SPD</div><div class="stat-value">' + o.spd + '</div></div>' +
+      '</div>' +
+      '<div class="muted" style="font-size:11px;margin-top:10px;text-align:center">Full stats visible · fair fight</div>';
+    const btn = $("arenaPreviewFightBtn");
+    if (btn) btn.onclick = function() { challengeArena(arenaId); };
+    modal.classList.remove("hidden");
+    modal.style.display = "flex";
+  } catch (e) {
+    showToast(e.message || "Could not view opponent", true);
   }
 }
 
@@ -5301,6 +5549,7 @@ async function challengeArena(arenaId) {
   const petRef = selectedOwned;
   const ownedId = Number(petRef.id);
   try {
+    closeArenaPreview();
     closeArenaModal();
     closeOwnedModal();
     selectedOwned = petRef;
