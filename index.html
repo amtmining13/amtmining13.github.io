@@ -4703,6 +4703,7 @@ function rarityBadgeClass(rarity) {
 
 function petImgCandidates(pet) {
   const list = [];
+  pet = pet || {};
   const nameKey = String(pet.name || "")
     .toLowerCase()
     .replace(/[^a-z0-9]/g, "");
@@ -4783,7 +4784,7 @@ function petImg(pet) {
   return c[0] || "";
 }
 
-const PET_IMG_VER = "20260921e";
+const PET_IMG_VER = "20261004a";
 const PET_IMG_HOSTS = [
   "https://amtmining13.github.io",
   "https://cdn.jsdelivr.net/gh/amtmining13/amtmining13.github.io@main",
@@ -4873,7 +4874,8 @@ function withImgVer(url) {
 
 function petArtHtml(pet, size) {
   size = size || 140;
-  const emoji = PET_EMOJI[pet.element] || "🐾";
+  pet = pet || {};
+  const emoji = (typeof PET_EMOJI !== "undefined" && PET_EMOJI[pet.element]) ? PET_EMOJI[pet.element] : "🐾";
   const fileId = resolvePetFileId(pet);
   const candidates = [];
   if (fileId && !/^\d+$/.test(fileId)) {
@@ -4946,9 +4948,10 @@ function petTab(tab) {
   if (tab === "listings") { $("petListingsPanel").classList.remove("hidden"); loadListings(); }
 }
 
-async function loadPets(element = "") {
+async function loadPets(elementFilter) {
   try {
-    const q = element ? ("?element=" + encodeURIComponent(element)) : "";
+    elementFilter = elementFilter || "";
+    const q = elementFilter ? ("?element=" + encodeURIComponent(elementFilter)) : "";
     const data = await api("/api/pets" + q);
     allPets = data.pets || [];
     renderPetGrid(allPets);
@@ -5139,6 +5142,8 @@ async function loadOwnedPets() {
     }
     grid.innerHTML = pets
       .map((pet) => {
+        try {
+        if (!pet) return "";
         const elClass = petElementClass(pet.element);
         const rCls = rarityBadgeClass(pet.rarity);
         const pid = pet.id;
@@ -5159,6 +5164,10 @@ async function loadOwnedPets() {
           </div>
         </div>
       </div>`;
+        } catch (cardErr) {
+          console.warn("pet card error", cardErr, pet);
+          return "";
+        }
       })
       .join("");
   } catch (e) {
