@@ -2277,6 +2277,7 @@ const API_BASE="https://amtmining13-github-io.onrender.com";
 
 let accessToken=null;
 let currentUser=null;
+let piSdkReady=false;
 let miningInterval=null;
 let selectedStakePool="30D";
 
@@ -2595,7 +2596,6 @@ logoutPi(false);
 ============================================================ */
 
 /* ========== Pi Ads (Rewarded + Interstitial) ========== */
-let piSdkReady=false;
 function ensurePiInit(){
   if(!window.Pi)return false;
   if(piSdkReady)return true;
@@ -5656,7 +5656,7 @@ async function loadGearShop(filter) {
         '<div style="flex:1;min-width:120px"><b>' + g.name + '</b><div class="muted" style="font-size:10px">' +
         g.slot + (g.weaponType ? " · " + g.weaponType : "") + " · " + g.rarity +
         " · +" + g.atk + "ATK +" + g.def + "DEF +" + g.hp + "HP +" + g.spd + "SPD</div></div>" +
-        '<button class="small-btn" style="width:auto" onclick="buyGear(\\'' + g.id + '\\')">' + g.priceAmt + " AMT</button></div>";
+        '<button class="small-btn" style="width:auto" onclick="buyGear(\'' + g.id + '\')">' + g.priceAmt + " AMT</button></div>";
     }).join("");
   } catch (e) {
     box.innerHTML = "<div class='muted'>" + (e.message || "Failed") + "</div>";
@@ -5732,7 +5732,7 @@ async function loadOwnedGear(ownedId) {
       if (g) {
         html += '<div style="display:flex;gap:6px;align-items:center">' + gearIconHtml(g, 36) +
           '<div style="flex:1;font-size:11px"><b>' + g.name + '</b><br>' +
-          '<button class="small-btn" style="width:auto;padding:4px 8px;margin-top:4px" onclick="unequipGear(\\'' + s.slot + '\\')">Unequip</button></div></div>';
+          '<button class="small-btn" style="width:auto;padding:4px 8px;margin-top:4px" onclick="unequipGear(\'' + s.slot + '\')">Unequip</button></div></div>';
       } else {
         html += '<div class="muted" style="font-size:10px">Empty</div>';
       }
@@ -5745,7 +5745,7 @@ async function loadOwnedGear(ownedId) {
     if (items.length) {
       html += '<div class="muted" style="font-size:11px;margin:8px 0 4px">Tap item to equip</div>';
       html += items.map(function(g) {
-        return '<button class="secondary" style="margin:4px 0;display:flex;gap:8px;align-items:center;text-align:left" onclick="equipGear(\\'' + g.id + '\\')">' +
+        return '<button class="secondary" style="margin:4px 0;display:flex;gap:8px;align-items:center;text-align:left" onclick="equipGear(\'' + g.id + '\')">' +
           gearIconHtml(g, 32) + '<span>' + g.name + ' · ' + g.slot + ' ×' + g.qty + '</span></button>';
       }).join("");
     }
