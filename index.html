@@ -1126,6 +1126,21 @@ animation:ecosystemBlink 1s ease-in-out infinite;
 0%,100%{transform:scale(.94);box-shadow:0 0 25px rgba(170,80,255,.6),0 0 60px rgba(255,200,60,.25),inset 0 0 20px rgba(0,0,0,.6)}
 50%{transform:scale(1.06);box-shadow:0 0 35px rgba(255,210,80,.55),0 0 90px rgba(170,80,255,.4),inset 0 0 20px rgba(0,0,0,.6)}
 }
+
+.gear-icon{width:44px;height:44px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;position:relative;box-shadow:inset 0 0 0 2px rgba(255,255,255,.15),0 4px 12px rgba(0,0,0,.35)}
+.gear-icon svg{width:28px;height:28px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5))}
+.gear-slot{background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:8px;min-height:72px}
+.gear-slot-label{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:#9ab;margin-bottom:4px}
+.pet-wear-wrap{position:relative;display:inline-block;margin:8px auto}
+.pet-wear-slot{position:absolute;width:36px;height:36px;border-radius:8px;background:rgba(10,16,32,.85);border:1px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;z-index:5}
+.pet-wear-slot svg{width:22px;height:22px}
+.pet-wear-weapon{right:-8px;top:40%}
+.pet-wear-shield{left:-8px;top:40%}
+.pet-wear-head{left:50%;transform:translateX(-50%);top:-6px}
+.pet-wear-body{left:50%;transform:translateX(-50%);bottom:4px}
+.pet-wear-boots{right:10%;bottom:-4px}
+.pet-wear-accessory{left:10%;bottom:-4px}
+
 </style>
 </head>
 
@@ -2018,6 +2033,19 @@ SELECT 180D
   <button class="primary" onclick="playStoryChapter()">📖 PLAY CURRENT CHAPTER</button>
   <div class="muted" style="font-size:10px;margin-top:6px">Open a pet in My Pets (or tap PLAY STORY on the pet). Last opened pet is remembered.</div>
 </div>
+
+<div class="card" id="gearSection" style="margin-top:12px">
+  <div class="card-title">WEAPON STORE · GEAR</div>
+  <div class="muted" style="font-size:11px;margin-bottom:8px">Buy only · no battle loot yet · equip on My Pet</div>
+  <div class="row" style="gap:6px;margin-bottom:8px;flex-wrap:wrap">
+    <button class="secondary" style="margin:0;flex:1;min-width:70px" onclick="loadGearShop('weapon')">Weapons</button>
+    <button class="secondary" style="margin:0;flex:1;min-width:70px" onclick="loadGearShop('armor')">Armor</button>
+    <button class="secondary" style="margin:0;flex:1;min-width:70px" onclick="loadGearShop('all')">All</button>
+    <button class="secondary" style="margin:0;flex:1;min-width:70px" onclick="loadGearInventory()">Backpack</button>
+  </div>
+  <div id="gearShopGrid" class="balance-stack"></div>
+</div>
+
 <div class="card" id="repSection" style="margin-top:12px">
   <div class="card-title">REPUTATION</div>
   <div id="ownerRepInfo" class="muted" style="font-size:12px">Owner rep: —</div>
@@ -2121,6 +2149,9 @@ SELECT 180D
 <button class="small-btn" style="width:auto;padding:6px 12px" onclick="closeOwnedModal()">✕</button>
 </div>
 <div id="ownedModalArt" style="text-align:center;margin:12px 0"></div>
+<div id="ownedWearPreview" style="text-align:center;margin-bottom:8px"></div>
+<div id="ownedGearPanel" style="margin-bottom:10px"></div>
+<div id="ownedGearBonus" class="muted" style="font-size:11px;margin-bottom:8px"></div>
 <div class="grid" style="margin-bottom:10px">
 <div class="stat"><div class="stat-label">Lv</div><div class="stat-value" id="ownedLv">1</div></div>
 <div class="stat"><div class="stat-label">Energy</div><div class="stat-value" id="ownedEnergy">100</div></div>
@@ -2397,6 +2428,17 @@ throw new Error(
 );
 }
 
+// Warn if Render still serves old Testnet backend
+try{
+  const root=await fetch(API_BASE+"/",{cache:"no-store"}).then(r=>r.json());
+  if(root&&String(root.environment||"").toUpperCase().indexOf("TEST")>=0){
+    showToast("Backend is still TESTNET ("+ (root.version||"?") +"). Redeploy server.js 2.5.0-mainnet on Render.",true);
+  }
+  if(root&&String(root.version||"").indexOf("2.5.0")<0&&String(root.version||"").indexOf("mainnet")<0){
+    console.warn("Backend version:",root.version,root.network);
+  }
+}catch(e){console.warn("backend check",e)}
+
 showToast("Connecting to Pi...");
 
 try{
@@ -2441,13 +2483,27 @@ throw new Error(
 accessToken=authResult.accessToken;
 currentUser=authResult.user;
 
-await api("/api/users",{
-method:"POST",
-body:JSON.stringify({
-username:currentUser.username,
-uid:currentUser.uid
-})
-});
+// Verify token with backend (Mainnet API key required on Render)
+try{
+  await api("/api/users",{
+    method:"POST",
+    body:JSON.stringify({
+      username:currentUser.username,
+      uid:currentUser.uid
+    })
+  });
+}catch(userErr){
+  console.warn("POST /api/users:", userErr);
+  try{
+    await api("/api/auth/verify");
+  }catch(verErr){
+    accessToken=null;
+    throw new Error(
+      ((verErr&&verErr.message)||(userErr&&userErr.message)||"Auth failed") +
+      " — Render: use Mainnet PI_API_KEY + redeploy server.js 2.5.0-mainnet (not 2.4.28)."
+    );
+  }
+}
 
 localStorage.setItem(
 "amt_pi_access_token",
@@ -4973,7 +5029,7 @@ function filterPets(element) {
 
 function petElementClass(element) {
   const e = String(element || "").toLowerCase();
-  if (["earth","water","nature","ice","fire","wind","thunder"].includes(e)) return "pet-" + e;
+  if (["earth","water","nature","ice","fire","wind","thunder","shadow","light","cosmic"].includes(e)) return "pet-" + e;
   return "pet-earth";
 }
 
@@ -5224,6 +5280,7 @@ function openOwnedModal(id) {
       })
       .catch(function() { $("ownedSkills").textContent = "Skills unavailable"; });
   }
+  if (pet.id) loadOwnedGear(pet.id);
   const modal = $("ownedModal");
   if (modal) {
     modal.classList.remove("hidden");
@@ -5506,6 +5563,223 @@ async function showPetHistory() {
     modal.style.display = "flex";
   } catch (e) {
     showToast(e.message || "History failed", true);
+  }
+}
+
+
+const GEAR_SLOTS = ["weapon","shield","head","body","boots","accessory"];
+
+function gearSvg(shape, color) {
+  color = color || "#aaa";
+  const c = color;
+  if (shape === "sword") {
+    return '<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#fff"/><stop offset="40%" stop-color="'+c+'"/><stop offset="100%" stop-color="#333"/></linearGradient></defs><rect x="14" y="2" width="4" height="18" rx="1" fill="url(#g)"/><rect x="12" y="18" width="8" height="3" fill="#8d6e63"/><rect x="14.5" y="21" width="3" height="8" fill="#5d4037"/></svg>';
+  }
+  if (shape === "spear") {
+    return '<svg viewBox="0 0 32 32"><polygon points="16,2 19,10 16,9 13,10" fill="'+c+'"/><rect x="15" y="9" width="2" height="18" fill="#8d6e63"/></svg>';
+  }
+  if (shape === "shield") {
+    return '<svg viewBox="0 0 32 32"><path d="M16 2 L28 8 V16 C28 24 16 30 16 30 S4 24 4 16 V8 Z" fill="'+c+'" stroke="rgba(255,255,255,.3)" stroke-width="1"/><path d="M16 6 L24 10 V16 C24 21 16 26 16 26 S8 21 8 16 V10 Z" fill="rgba(0,0,0,.2)"/></svg>';
+  }
+  if (shape === "helm") {
+    return '<svg viewBox="0 0 32 32"><path d="M6 18 Q6 6 16 6 Q26 6 26 18 L26 22 L6 22 Z" fill="'+c+'"/><rect x="10" y="14" width="5" height="3" fill="#111"/><rect x="17" y="14" width="5" height="3" fill="#111"/></svg>';
+  }
+  if (shape === "crown") {
+    return '<svg viewBox="0 0 32 32"><path d="M4 22 L4 12 L10 18 L16 8 L22 18 L28 12 L28 22 Z" fill="'+c+'" stroke="#fff3" stroke-width="1"/></svg>';
+  }
+  if (shape === "armor") {
+    return '<svg viewBox="0 0 32 32"><path d="M8 8 L16 4 L24 8 L26 12 L22 14 L22 28 L10 28 L10 14 L6 12 Z" fill="'+c+'"/><rect x="14" y="14" width="4" height="10" fill="rgba(0,0,0,.25)"/></svg>';
+  }
+  if (shape === "cloak") {
+    return '<svg viewBox="0 0 32 32"><path d="M10 6 Q16 2 22 6 L24 28 Q16 24 8 28 Z" fill="'+c+'"/><circle cx="16" cy="8" r="3" fill="rgba(255,255,255,.2)"/></svg>';
+  }
+  if (shape === "boots") {
+    return '<svg viewBox="0 0 32 32"><path d="M8 8 H16 V20 H24 V26 H8 Z" fill="'+c+'"/><rect x="8" y="24" width="16" height="4" fill="rgba(0,0,0,.3)"/></svg>';
+  }
+  if (shape === "ring") {
+    return '<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="9" fill="none" stroke="'+c+'" stroke-width="4"/><circle cx="16" cy="7" r="3" fill="'+c+'"/></svg>';
+  }
+  if (shape === "amulet") {
+    return '<svg viewBox="0 0 32 32"><path d="M16 4 L18 12 H14 Z" fill="#ddd"/><circle cx="16" cy="20" r="8" fill="'+c+'"/><circle cx="16" cy="20" r="3" fill="rgba(255,255,255,.4)"/></svg>';
+  }
+  if (shape === "orb") {
+    return '<svg viewBox="0 0 32 32"><defs><radialGradient id="o" cx="35%" cy="35%"><stop offset="0%" stop-color="#fff"/><stop offset="70%" stop-color="'+c+'"/><stop offset="100%" stop-color="#222"/></radialGradient></defs><circle cx="16" cy="16" r="11" fill="url(#o)"/></svg>';
+  }
+  if (shape === "dagger") {
+    return '<svg viewBox="0 0 32 32"><polygon points="16,2 19,14 16,13 13,14" fill="'+c+'"/><rect x="14.5" y="13" width="3" height="6" fill="#8d6e63"/><rect x="12" y="19" width="8" height="2.5" fill="#5d4037"/><rect x="15" y="21" width="2" height="6" fill="#4e342e"/></svg>';
+  }
+  if (shape === "axe") {
+    return '<svg viewBox="0 0 32 32"><path d="M18 4 L28 10 L28 16 L18 14 Z" fill="'+c+'"/><rect x="14" y="6" width="4" height="20" rx="1" fill="#6d4c41"/></svg>';
+  }
+  if (shape === "bow") {
+    return '<svg viewBox="0 0 32 32"><path d="M10 4 Q4 16 10 28" fill="none" stroke="'+c+'" stroke-width="3"/><path d="M10 4 L10 28" fill="none" stroke="#eee" stroke-width="1.5"/><line x1="10" y1="16" x2="26" y2="16" stroke="#ddd" stroke-width="1.5"/><polygon points="26,16 22,14 22,18" fill="'+c+'"/></svg>';
+  }
+  if (shape === "staff") {
+    return '<svg viewBox="0 0 32 32"><rect x="14.5" y="10" width="3" height="20" fill="#6d4c41"/><circle cx="16" cy="7" r="5" fill="'+c+'"/><circle cx="16" cy="7" r="2" fill="rgba(255,255,255,.5)"/></svg>';
+  }
+  if (shape === "wand") {
+    return '<svg viewBox="0 0 32 32"><rect x="15" y="8" width="2" height="20" fill="#a1887f"/><circle cx="16" cy="6" r="4" fill="'+c+'"/><path d="M16 2 L17 5 L16 4 L15 5 Z" fill="#fff"/></svg>';
+  }
+  if (shape === "halberd") {
+    return '<svg viewBox="0 0 32 32"><rect x="15" y="8" width="2" height="22" fill="#5d4037"/><path d="M17 6 L28 12 L17 14 Z" fill="'+c+'"/><polygon points="16,2 18,8 14,8" fill="'+c+'"/></svg>';
+  }
+  return '<svg viewBox="0 0 32 32"><rect x="6" y="6" width="20" height="20" rx="4" fill="'+c+'"/></svg>';
+}
+
+function gearIconHtml(g, size) {
+  if (!g) return '<div class="gear-icon" style="background:#222;width:'+(size||44)+'px;height:'+(size||44)+'px"></div>';
+  const bg = "linear-gradient(145deg," + (g.color||"#666") + "55,#111)";
+  return '<div class="gear-icon" style="background:' + bg + ';width:'+(size||44)+'px;height:'+(size||44)+'px">' +
+    gearSvg(g.shape, g.color) + "</div>";
+}
+
+async function loadGearShop(filter) {
+  const box = $("gearShopGrid");
+  if (!box) return;
+  filter = filter || "weapon";
+  box.innerHTML = "<div class='muted'>Loading weapon store...</div>";
+  try {
+    const d = await api("/api/gear/shop");
+    let list = d.gear || [];
+    if (filter === "weapon") {
+      list = list.filter(function(g){ return g.slot === "weapon"; });
+    } else if (filter === "armor") {
+      list = list.filter(function(g){ return g.slot !== "weapon"; });
+    }
+    if (!list.length) {
+      box.innerHTML = "<div class='muted'>No items in this category.</div>";
+      return;
+    }
+    box.innerHTML = list.map(function(g) {
+      return '<div class="balance-row" style="flex-wrap:wrap;gap:8px;align-items:center">' +
+        gearIconHtml(g) +
+        '<div style="flex:1;min-width:120px"><b>' + g.name + '</b><div class="muted" style="font-size:10px">' +
+        g.slot + (g.weaponType ? " · " + g.weaponType : "") + " · " + g.rarity +
+        " · +" + g.atk + "ATK +" + g.def + "DEF +" + g.hp + "HP +" + g.spd + "SPD</div></div>" +
+        '<button class="small-btn" style="width:auto" onclick="buyGear(\\'' + g.id + '\\')">' + g.priceAmt + " AMT</button></div>";
+    }).join("");
+  } catch (e) {
+    box.innerHTML = "<div class='muted'>" + (e.message || "Failed") + "</div>";
+  }
+}
+
+async function loadGearInventory() {
+  const box = $("gearShopGrid");
+  if (!box) return;
+  box.innerHTML = "<div class='muted'>Loading backpack...</div>";
+  try {
+    const d = await api("/api/gear/inventory");
+    const list = d.items || [];
+    if (!list.length) {
+      box.innerHTML = "<div class='muted'>Backpack empty. Buy gear from Shop.</div>";
+      return;
+    }
+    box.innerHTML = list.map(function(g) {
+      return '<div class="balance-row" style="flex-wrap:wrap;gap:8px;align-items:center">' +
+        gearIconHtml(g) +
+        '<div style="flex:1"><b>' + g.name + '</b> ×' + g.qty +
+        '<div class="muted" style="font-size:10px">' + g.slot + " · equip from My Pet</div></div></div>";
+    }).join("");
+  } catch (e) {
+    box.innerHTML = "<div class='muted'>" + (e.message || "Failed") + "</div>";
+  }
+}
+
+async function buyGear(gearId) {
+  try {
+    const d = await api("/api/gear/buy", { method: "POST", body: JSON.stringify({ gearId: gearId }) });
+    showToast(d.message || "Purchased");
+    if (typeof refreshWallet === "function") refreshWallet();
+    loadGearInventory();
+  } catch (e) {
+    showToast(e.message || "Buy failed", true);
+  }
+}
+
+function renderWearPreview(slots) {
+  const wrap = $("ownedWearPreview");
+  if (!wrap) return;
+  const by = {};
+  (slots || []).forEach(function(s) { if (s.gear) by[s.slot] = s.gear; });
+  const art = $("ownedModalArt") ? $("ownedModalArt").innerHTML : "";
+  wrap.innerHTML =
+    '<div class="pet-wear-wrap">' +
+      (by.head ? '<div class="pet-wear-slot pet-wear-head">' + gearSvg(by.head.shape, by.head.color) + '</div>' : '') +
+      (by.weapon ? '<div class="pet-wear-slot pet-wear-weapon">' + gearSvg(by.weapon.shape, by.weapon.color) + '</div>' : '') +
+      (by.shield ? '<div class="pet-wear-slot pet-wear-shield">' + gearSvg(by.shield.shape, by.shield.color) + '</div>' : '') +
+      (by.body ? '<div class="pet-wear-slot pet-wear-body">' + gearSvg(by.body.shape, by.body.color) + '</div>' : '') +
+      (by.boots ? '<div class="pet-wear-slot pet-wear-boots">' + gearSvg(by.boots.shape, by.boots.color) + '</div>' : '') +
+      (by.accessory ? '<div class="pet-wear-slot pet-wear-accessory">' + gearSvg(by.accessory.shape, by.accessory.color) + '</div>' : '') +
+    '</div>';
+}
+
+async function loadOwnedGear(ownedId) {
+  const panel = $("ownedGearPanel");
+  const bonus = $("ownedGearBonus");
+  if (!panel) return;
+  try {
+    const d = await api("/api/pets/" + ownedId + "/equipment");
+    renderWearPreview(d.slots);
+    const b = d.bonuses || {};
+    if (bonus) {
+      bonus.innerHTML = "Gear bonus: +" + (b.atk||0) + " ATK · +" + (b.def||0) + " DEF · +" +
+        (b.hp||0) + " HP · +" + (b.spd||0) + " SPD";
+    }
+    let html = '<div class="card-title" style="font-size:12px">Equipment</div><div class="grid" style="grid-template-columns:1fr 1fr;gap:6px">';
+    (d.slots || []).forEach(function(s) {
+      const g = s.gear;
+      html += '<div class="gear-slot"><div class="gear-slot-label">' + s.slot + '</div>';
+      if (g) {
+        html += '<div style="display:flex;gap:6px;align-items:center">' + gearIconHtml(g, 36) +
+          '<div style="flex:1;font-size:11px"><b>' + g.name + '</b><br>' +
+          '<button class="small-btn" style="width:auto;padding:4px 8px;margin-top:4px" onclick="unequipGear(\\'' + s.slot + '\\')">Unequip</button></div></div>';
+      } else {
+        html += '<div class="muted" style="font-size:10px">Empty</div>';
+      }
+      html += '</div>';
+    });
+    html += '</div>';
+    // inventory quick equip
+    const inv = await api("/api/gear/inventory");
+    const items = inv.items || [];
+    if (items.length) {
+      html += '<div class="muted" style="font-size:11px;margin:8px 0 4px">Tap item to equip</div>';
+      html += items.map(function(g) {
+        return '<button class="secondary" style="margin:4px 0;display:flex;gap:8px;align-items:center;text-align:left" onclick="equipGear(\\'' + g.id + '\\')">' +
+          gearIconHtml(g, 32) + '<span>' + g.name + ' · ' + g.slot + ' ×' + g.qty + '</span></button>';
+      }).join("");
+    }
+    panel.innerHTML = html;
+  } catch (e) {
+    panel.innerHTML = "<div class='muted'>" + (e.message || "Gear unavailable") + "</div>";
+  }
+}
+
+async function equipGear(gearId) {
+  if (!selectedOwned || !selectedOwned.id) return showToast("No pet selected", true);
+  try {
+    const d = await api("/api/gear/equip", {
+      method: "POST",
+      body: JSON.stringify({ ownedPetId: Number(selectedOwned.id), gearId: gearId })
+    });
+    showToast(d.message || "Equipped");
+    loadOwnedGear(selectedOwned.id);
+  } catch (e) {
+    showToast(e.message || "Equip failed", true);
+  }
+}
+
+async function unequipGear(slot) {
+  if (!selectedOwned || !selectedOwned.id) return;
+  try {
+    await api("/api/gear/unequip", {
+      method: "POST",
+      body: JSON.stringify({ ownedPetId: Number(selectedOwned.id), slot: slot })
+    });
+    showToast("Unequipped " + slot);
+    loadOwnedGear(selectedOwned.id);
+  } catch (e) {
+    showToast(e.message || "Unequip failed", true);
   }
 }
 
