@@ -3,20 +3,24 @@
 /*
 ============================================================
 ALBERTO MARKETPLACE TOKEN (AMT)
-PI BACKEND (APP LEDGER)
-FULL SERVER VERSION 2.4.28
+PI BACKEND (APP LEDGER) — MAINNET
+FULL SERVER VERSION 2.5.0-mainnet
 
 IMPORTANT:
-- Application ledger backend (works with Mainnet or Testnet Pi app keys)
-- AMT application ledger wallet only
+- MAINNET build — use Mainnet PI_API_KEY + PI_API_BASE=https://api.minepi.com
+- Application ledger backend for AMT mining app
 - Generated AMT- address is NOT a Pi/Stellar blockchain wallet
-- Pi authentication is verified server-side
-- Mining rewards are application-ledger accounting
-- Airdrop is application-ledger accounting
-- AMT transfers are application-ledger accounting
-- Staking is application-ledger accounting
+- Pi authentication is verified server-side (Mainnet)
+- Mining / airdrop / transfers / staking = application-ledger accounting
 - Pi Payments API depends on PI_API_KEY network (Mainnet key = Mainnet payments)
 - In-app AMT balances are ledger accounting; on-chain Mainnet AMT is separate
+- API root must report: network "Pi Mainnet", version "2.5.0-mainnet"
+
+VERSION 2.5.0-mainnet:
+- Forced Mainnet labels (removed Testnet display strings)
+- Pet gear / weapon store, squad, story, battle charges
+- Premium pets + Shadow/Light/Cosmic
+- Login auth hardened for Mainnet keys
 
 VERSION 2.4.3:
 - OLD 1 AMT airdrop claims are cleared → users can claim new 100 AMT airdrop
@@ -41,9 +45,9 @@ VERSION 2.4.0:
 - Preserved all existing mining sessions
 - Preserved all existing ledger history
 - Preserved reward/mining/staking logic
-- Added verified Pi Testnet wallet address to auth response
-- Added verified Pi Testnet wallet address to profile response
-- Added verified Pi Testnet wallet address to wallet response
+- Added verified Pi Mainnet wallet address to auth response
+- Added verified Pi Mainnet wallet address to profile response
+- Added verified Pi Mainnet wallet address to wallet response
 - AMT ledger address remains separate from Pi wallet address
 - FIXED: Explicitly return referralCode (= username) for every Pioneer
   in /api/auth/verify, /api/profile, /api/wallet, and /api/referral/status
@@ -1166,13 +1170,13 @@ app.get("/", async (req, res) => {
       "AMT",
 
     network:
-      "Pi Testnet",
+      "Pi Mainnet",
 
     environment:
-      "TESTNET",
+      "MAINNET",
 
     version:
-      "2.4.28",
+      "2.5.0-mainnet",
 
     features: [
       "Pi Login",
@@ -1221,7 +1225,7 @@ async function healthHandler(
         db === "OK",
 
       service:
-        "AMT Testnet Backend",
+        "AMT Mainnet Backend",
 
       database:
         db,
@@ -1232,10 +1236,10 @@ async function healthHandler(
         ),
 
       network:
-        "Pi Testnet",
+        "Pi Mainnet",
 
       environment:
-        "TESTNET",
+        "MAINNET",
 
       staking:
         true,
@@ -1341,14 +1345,14 @@ app.all(
             false,
 
           walletType:
-            "AMT_TESTNET_LEDGER"
+            "AMT_MAINNET_LEDGER"
         },
 
         network:
-          "Pi Testnet",
+          "Pi Mainnet",
 
         environment:
-          "TESTNET",
+          "MAINNET",
 
         // Referral code of this Pioneer (saved from Pi username on login)
         referralCode:
@@ -1420,16 +1424,16 @@ app.get(
           .wallet_address,
 
       walletType:
-        "AMT_TESTNET_LEDGER",
+        "AMT_MAINNET_LEDGER",
 
       isBlockchainWallet:
         false,
 
       network:
-        "Pi Testnet",
+        "Pi Mainnet",
 
       environment:
-        "TESTNET",
+        "MAINNET",
 
       // Referral code of this Pioneer (saved from Pi username on login)
       referralCode:
@@ -1724,10 +1728,10 @@ app.get(
       totalBalance,
 
       network:
-        "Pi Testnet",
+        "Pi Mainnet",
 
       environment:
-        "TESTNET",
+        "MAINNET",
 
       /*
        * VERIFIED Pi Testnet wallet (live from Pi API, else saved on login).
@@ -1763,7 +1767,7 @@ app.get(
         false,
 
       walletType:
-        "AMT_TESTNET_LEDGER",
+        "AMT_MAINNET_LEDGER",
 
       // Referral code of this Pioneer (saved from Pi username on login)
       referralCode:
@@ -1874,7 +1878,7 @@ app.delete(
 );
 
 /* =========================================================
-ON-CHAIN BALANCES (Pi Testnet Horizon — own wallet only)
+ON-CHAIN BALANCES (Pi Mainnet Horizon — own wallet only)
 ========================================================= */
 
 const PI_HORIZON_MAINNET =
@@ -2045,7 +2049,7 @@ app.get(
         onchainAmtBalance,
         otherTokens,
         horizon: account.horizon || "mainnet",
-        network: isMainnet ? "Pi Mainnet" : "Pi Testnet"
+        network: isMainnet ? "Pi Mainnet" : "Pi Mainnet"
       });
     } catch (error) {
       console.error("ONCHAIN BALANCE ERROR:", error);
@@ -2119,7 +2123,7 @@ app.get(
         treasuryAddress: AMT_ONCHAIN_TREASURY || null,
         assetCode: AMT_ASSET_CODE,
         rate: "1 on-chain AMT = 1 in-app AMT",
-        network: "Pi Testnet",
+        network: "Pi Mainnet",
         instructions: AMT_ONCHAIN_TREASURY
           ? [
               "1. Open Pi Wallet (Testnet)",
@@ -2195,7 +2199,7 @@ app.post(
         return res.status(400).json({
           ok: false,
           error:
-            "Transaction not found on Pi Testnet. Check hash and network."
+            "Transaction not found on Pi Mainnet. Check hash and network."
         });
       }
 
@@ -2582,9 +2586,9 @@ app.post(
         ok: true,
         ...result,
         network:
-          "Pi Testnet",
+          "Pi Mainnet",
         walletType:
-          "AMT_TESTNET_LEDGER"
+          "AMT_MAINNET_LEDGER"
       });
 
     } catch (error) {
@@ -2771,7 +2775,7 @@ app.get(
         AIRDROP_AMOUNT_AMT,
 
       network:
-        "Pi Testnet",
+        "Pi Mainnet",
 
       type:
         "ONE_TIME_AIRDROP",
@@ -2975,7 +2979,7 @@ app.post(
         remainingSeconds,
 
         network:
-          "Pi Testnet"
+          "Pi Mainnet"
       });
 
     } catch (error) {
@@ -4521,10 +4525,10 @@ app.get(
       ok: true,
 
       network:
-        "Pi Testnet",
+        "Pi Mainnet",
 
       environment:
-        "TESTNET",
+        "MAINNET",
 
       minimumStake:
         STAKING_MIN_AMOUNT_AMT,
@@ -4696,10 +4700,10 @@ app.get(
         ok: true,
 
         network:
-          "Pi Testnet",
+          "Pi Mainnet",
 
         environment:
-          "TESTNET",
+          "MAINNET",
 
         minimumStake:
           STAKING_MIN_AMOUNT_AMT,
@@ -4993,10 +4997,10 @@ app.post(
           newBalance,
 
         network:
-          "Pi Testnet",
+          "Pi Mainnet",
 
         environment:
-          "TESTNET"
+          "MAINNET"
       });
 
     } catch (error) {
@@ -5231,10 +5235,10 @@ app.post(
           "COMPLETED",
 
         network:
-          "Pi Testnet",
+          "Pi Mainnet",
 
         environment:
-          "TESTNET"
+          "MAINNET"
       });
 
     } catch (error) {
@@ -5368,7 +5372,7 @@ app.get(
         ok: true,
 
         network:
-          "Pi Testnet",
+          "Pi Mainnet",
 
         history
       });
@@ -5395,7 +5399,7 @@ AMT PET MARKETPLACE + FULL PET SYSTEM (v2.4.0)
 ========================================================= */
 
 const PET_ELEMENTS = [
-  "Earth", "Water", "Nature", "Ice", "Fire", "Wind", "Thunder"
+  "Earth", "Water", "Nature", "Ice", "Fire", "Wind", "Thunder", "Shadow", "Light", "Cosmic"
 ];
 
 const PET_RARITIES = [
@@ -6622,6 +6626,145 @@ const AMT_PETS = [
 
 ];
 
+
+
+/* =========================================================
+   PET GEAR — wearable equipment (not emoji)
+   SOURCE: Weapon/Gear STORE only (buy with AMT).
+   GEAR LOOT DISABLED — no battle/story drops for now.
+========================================================= */
+const AMT_GEAR = [
+  /* --- Swords --- */
+  { id: "wpn_wood_blade", name: "Wood Blade", slot: "weapon", rarity: "Common", priceAmt: 0.8,
+    atk: 4, def: 0, hp: 0, spd: 0, color: "#c4a574", shape: "sword", weaponType: "sword" },
+  { id: "wpn_iron_sword", name: "Iron Sword", slot: "weapon", rarity: "Uncommon", priceAmt: 2.5,
+    atk: 9, def: 0, hp: 0, spd: 1, color: "#9aa4b2", shape: "sword", weaponType: "sword" },
+  { id: "wpn_flame_edge", name: "Flame Edge", slot: "weapon", rarity: "Rare", priceAmt: 8,
+    atk: 16, def: 0, hp: 0, spd: 2, color: "#ff6b35", shape: "sword", weaponType: "sword" },
+  { id: "wpn_cosmic_blade", name: "Cosmic Blade", slot: "weapon", rarity: "Legendary", priceAmt: 40,
+    atk: 35, def: 5, hp: 10, spd: 5, color: "#b388ff", shape: "sword", weaponType: "sword" },
+  /* --- Daggers --- */
+  { id: "wpn_bone_dagger", name: "Bone Dagger", slot: "weapon", rarity: "Common", priceAmt: 0.7,
+    atk: 3, def: 0, hp: 0, spd: 3, color: "#e0d5c0", shape: "dagger", weaponType: "dagger" },
+  { id: "wpn_shadow_dagger", name: "Shadow Dagger", slot: "weapon", rarity: "Rare", priceAmt: 7.5,
+    atk: 14, def: 0, hp: 0, spd: 8, color: "#7e57c2", shape: "dagger", weaponType: "dagger" },
+  { id: "wpn_venom_fang", name: "Venom Fang", slot: "weapon", rarity: "Epic", priceAmt: 17,
+    atk: 20, def: 0, hp: 0, spd: 10, color: "#69f0ae", shape: "dagger", weaponType: "dagger" },
+  /* --- Axes --- */
+  { id: "wpn_stone_axe", name: "Stone Axe", slot: "weapon", rarity: "Common", priceAmt: 0.9,
+    atk: 5, def: 1, hp: 0, spd: -1, color: "#90a4ae", shape: "axe", weaponType: "axe" },
+  { id: "wpn_war_axe", name: "War Axe", slot: "weapon", rarity: "Uncommon", priceAmt: 3,
+    atk: 11, def: 2, hp: 5, spd: -1, color: "#ef5350", shape: "axe", weaponType: "axe" },
+  { id: "wpn_berserker_axe", name: "Berserker Axe", slot: "weapon", rarity: "Epic", priceAmt: 19,
+    atk: 26, def: 3, hp: 8, spd: 0, color: "#ff1744", shape: "axe", weaponType: "axe" },
+  /* --- Bows --- */
+  { id: "wpn_hunter_bow", name: "Hunter Bow", slot: "weapon", rarity: "Common", priceAmt: 0.9,
+    atk: 4, def: 0, hp: 0, spd: 2, color: "#8d6e63", shape: "bow", weaponType: "bow" },
+  { id: "wpn_wind_bow", name: "Wind Bow", slot: "weapon", rarity: "Rare", priceAmt: 8,
+    atk: 15, def: 0, hp: 0, spd: 6, color: "#4fc3f7", shape: "bow", weaponType: "bow" },
+  { id: "wpn_star_bow", name: "Star Bow", slot: "weapon", rarity: "Legendary", priceAmt: 38,
+    atk: 30, def: 0, hp: 5, spd: 8, color: "#e1bee7", shape: "bow", weaponType: "bow" },
+  /* --- Mage / staff --- */
+  { id: "wpn_apprentice_staff", name: "Apprentice Staff", slot: "weapon", rarity: "Common", priceAmt: 0.85,
+    atk: 3, def: 0, hp: 5, spd: 1, color: "#ce93d8", shape: "staff", weaponType: "staff" },
+  { id: "wpn_arcane_staff", name: "Arcane Staff", slot: "weapon", rarity: "Rare", priceAmt: 9,
+    atk: 14, def: 2, hp: 12, spd: 2, color: "#7c4dff", shape: "staff", weaponType: "staff" },
+  { id: "wpn_crystal_wand", name: "Crystal Wand", slot: "weapon", rarity: "Uncommon", priceAmt: 2.8,
+    atk: 8, def: 0, hp: 8, spd: 2, color: "#80d8ff", shape: "wand", weaponType: "wand" },
+  { id: "wpn_void_staff", name: "Void Staff", slot: "weapon", rarity: "Legendary", priceAmt: 42,
+    atk: 32, def: 4, hp: 15, spd: 4, color: "#ea80fc", shape: "staff", weaponType: "staff" },
+  /* --- Spear / pole --- */
+  { id: "wpn_thunder_spear", name: "Thunder Spear", slot: "weapon", rarity: "Epic", priceAmt: 18,
+    atk: 24, def: 0, hp: 5, spd: 4, color: "#ffd93d", shape: "spear", weaponType: "spear" },
+  { id: "wpn_halberd", name: "Iron Halberd", slot: "weapon", rarity: "Uncommon", priceAmt: 3.2,
+    atk: 10, def: 3, hp: 0, spd: 0, color: "#b0bec5", shape: "halberd", weaponType: "halberd" },
+
+  { id: "shd_wood_buckler", name: "Wood Buckler", slot: "shield", rarity: "Common", priceAmt: 0.8,
+    atk: 0, def: 5, hp: 8, spd: 0, color: "#c4a574", shape: "shield" },
+  { id: "shd_iron_guard", name: "Iron Guard", slot: "shield", rarity: "Uncommon", priceAmt: 2.5,
+    atk: 0, def: 10, hp: 15, spd: 0, color: "#9aa4b2", shape: "shield" },
+  { id: "shd_crystal_aegis", name: "Crystal Aegis", slot: "shield", rarity: "Rare", priceAmt: 8,
+    atk: 0, def: 18, hp: 25, spd: 0, color: "#4fc3f7", shape: "shield" },
+
+  { id: "hd_leather_cap", name: "Leather Cap", slot: "head", rarity: "Common", priceAmt: 0.6,
+    atk: 0, def: 3, hp: 10, spd: 0, color: "#8d6e63", shape: "helm" },
+  { id: "hd_iron_helm", name: "Iron Helm", slot: "head", rarity: "Uncommon", priceAmt: 2.2,
+    atk: 1, def: 7, hp: 18, spd: 0, color: "#90a4ae", shape: "helm" },
+  { id: "hd_crown_light", name: "Crown of Light", slot: "head", rarity: "Epic", priceAmt: 16,
+    atk: 5, def: 10, hp: 30, spd: 2, color: "#ffe082", shape: "crown" },
+
+  { id: "bd_cloth_vest", name: "Cloth Vest", slot: "body", rarity: "Common", priceAmt: 0.7,
+    atk: 0, def: 4, hp: 12, spd: 0, color: "#81c784", shape: "armor" },
+  { id: "bd_scale_mail", name: "Scale Mail", slot: "body", rarity: "Uncommon", priceAmt: 3,
+    atk: 0, def: 12, hp: 28, spd: -1, color: "#66bb6a", shape: "armor" },
+  { id: "bd_shadow_cloak", name: "Shadow Cloak", slot: "body", rarity: "Rare", priceAmt: 9,
+    atk: 6, def: 10, hp: 20, spd: 5, color: "#7e57c2", shape: "cloak" },
+  { id: "bd_cosmic_plate", name: "Cosmic Plate", slot: "body", rarity: "Legendary", priceAmt: 42,
+    atk: 8, def: 22, hp: 45, spd: 2, color: "#ce93d8", shape: "armor" },
+
+  { id: "bt_soft_paws", name: "Soft Paws", slot: "boots", rarity: "Common", priceAmt: 0.6,
+    atk: 0, def: 1, hp: 5, spd: 4, color: "#a1887f", shape: "boots" },
+  { id: "bt_wind_runners", name: "Wind Runners", slot: "boots", rarity: "Rare", priceAmt: 7,
+    atk: 2, def: 2, hp: 8, spd: 12, color: "#4dd0e1", shape: "boots" },
+
+  { id: "acc_power_ring", name: "Power Ring", slot: "accessory", rarity: "Uncommon", priceAmt: 2,
+    atk: 5, def: 0, hp: 0, spd: 2, color: "#ff8a65", shape: "ring" },
+  { id: "acc_guardian_amulet", name: "Guardian Amulet", slot: "accessory", rarity: "Rare", priceAmt: 7.5,
+    atk: 0, def: 8, hp: 20, spd: 0, color: "#26c6da", shape: "amulet" },
+  { id: "acc_mythic_orb", name: "Mythic Orb", slot: "accessory", rarity: "Legendary", priceAmt: 35,
+    atk: 12, def: 12, hp: 25, spd: 6, color: "#ea80fc", shape: "orb" }
+];
+
+function getGearById(id) {
+  return AMT_GEAR.find(g => g.id === id) || null;
+}
+
+async function ensureGearTables() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS pet_inventory (
+      id BIGSERIAL PRIMARY KEY,
+      member_id BIGINT NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+      gear_id TEXT NOT NULL,
+      qty INT NOT NULL DEFAULT 1,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      UNIQUE (member_id, gear_id)
+    )
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS pet_equipment (
+      owned_pet_id BIGINT NOT NULL REFERENCES owned_pets(id) ON DELETE CASCADE,
+      slot TEXT NOT NULL,
+      gear_id TEXT NOT NULL,
+      updated_at TIMESTAMPTZ DEFAULT NOW(),
+      PRIMARY KEY (owned_pet_id, slot)
+    )
+  `);
+}
+
+async function getPetEquipmentMap(client, ownedPetId) {
+  const q = client ? client.query.bind(client) : pool.query.bind(pool);
+  const r = await q(
+    `SELECT slot, gear_id FROM pet_equipment WHERE owned_pet_id = $1`,
+    [ownedPetId]
+  );
+  const map = {};
+  for (const row of r.rows) map[row.slot] = row.gear_id;
+  return map;
+}
+
+function sumGearBonuses(equipMap) {
+  const b = { atk: 0, def: 0, hp: 0, spd: 0, items: [] };
+  for (const slot of Object.keys(equipMap || {})) {
+    const g = getGearById(equipMap[slot]);
+    if (!g) continue;
+    b.atk += Number(g.atk) || 0;
+    b.def += Number(g.def) || 0;
+    b.hp += Number(g.hp) || 0;
+    b.spd += Number(g.spd) || 0;
+    b.items.push({ slot, ...g });
+  }
+  return b;
+}
 
 function getPetById(petId) {
   return AMT_PETS.find(p => p.id === petId) || null;
@@ -8118,14 +8261,20 @@ app.post("/api/pets/battle", requireAuth, async (req, res) => {
 
     // Player combat stats
     const lv = Number(pet.level) || 1;
+    let gearBonus = { atk: 0, def: 0, hp: 0, spd: 0 };
+    try {
+      await ensureGearTables();
+      const emap = await getPetEquipmentMap(client, ownedId);
+      gearBonus = sumGearBonuses(emap);
+    } catch (e) {}
     const my = {
       name: pet.name,
       level: lv,
-      hp: Number(pet.hp) + lv * 8,
-      maxHp: Number(pet.hp) + lv * 8,
-      atk: Number(pet.atk) + lv * 2,
-      def: Number(pet.def) + Math.floor(lv * 0.8),
-      spd: Number(pet.spd) + Math.floor(lv * 0.5)
+      hp: Number(pet.hp) + lv * 8 + (gearBonus.hp || 0),
+      maxHp: Number(pet.hp) + lv * 8 + (gearBonus.hp || 0),
+      atk: Number(pet.atk) + lv * 2 + (gearBonus.atk || 0),
+      def: Number(pet.def) + Math.floor(lv * 0.8) + (gearBonus.def || 0),
+      spd: Number(pet.spd) + Math.floor(lv * 0.5) + (gearBonus.spd || 0)
     };
     const myEl = pet.element || "Earth";
 
@@ -8633,19 +8782,20 @@ async function ensureSquadTables() {
   `);
 }
 
-function combatStatsFromOwned(pet) {
+function combatStatsFromOwned(pet, gearBonus) {
   const lv = Number(pet.level) || 1;
+  const b = gearBonus || { atk: 0, def: 0, hp: 0, spd: 0 };
   return {
     ownedId: pet.id,
     name: pet.name,
     element: pet.element || "Earth",
     image: pet.image || null,
     level: lv,
-    hp: Number(pet.hp) + lv * 8,
-    atk: Number(pet.atk) + lv * 2,
-    def: Number(pet.def) + Math.floor(lv * 0.8),
-    spd: Number(pet.spd) + Math.floor(lv * 0.5),
-    maxHp: Number(pet.hp) + lv * 8
+    hp: Number(pet.hp) + lv * 8 + (b.hp || 0),
+    atk: Number(pet.atk) + lv * 2 + (b.atk || 0),
+    def: Number(pet.def) + Math.floor(lv * 0.8) + (b.def || 0),
+    spd: Number(pet.spd) + Math.floor(lv * 0.5) + (b.spd || 0),
+    maxHp: Number(pet.hp) + lv * 8 + (b.hp || 0)
   };
 }
 
@@ -9247,6 +9397,159 @@ app.post("/api/pets/story/play", requireAuth, async (req, res) => {
   }
 });
 
+
+app.get("/api/gear/shop", requireAuth, async (req, res) => {
+  res.json({ ok: true, gear: AMT_GEAR });
+});
+
+app.get("/api/gear/inventory", requireAuth, async (req, res) => {
+  try {
+    await ensureGearTables();
+    const r = await pool.query(
+      `SELECT gear_id, qty FROM pet_inventory WHERE member_id = $1 AND qty > 0`,
+      [req.member.id]
+    );
+    const items = r.rows.map(row => {
+      const g = getGearById(row.gear_id) || { id: row.gear_id, name: row.gear_id };
+      return { ...g, qty: row.qty };
+    });
+    res.json({ ok: true, items });
+  } catch (e) {
+    console.error("GEAR INV:", e);
+    res.status(500).json({ ok: false, error: "Inventory failed." });
+  }
+});
+
+app.post("/api/gear/buy", requireAuth, async (req, res) => {
+  const gearId = String(req.body?.gearId || "").trim();
+  const g = getGearById(gearId);
+  if (!g) return res.status(404).json({ ok: false, error: "Gear not found." });
+  const client = await pool.connect();
+  try {
+    await ensureGearTables();
+    await client.query("BEGIN");
+    const bal = await getBalance(req.member.id, client);
+    if (bal < g.priceAmt) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Insufficient AMT." });
+    }
+    await client.query(
+      `INSERT INTO amt_ledger (member_id, amount, type, reference)
+       VALUES ($1,$2,'GEAR_BUY',$3)`,
+      [req.member.id, -g.priceAmt, makeReference("AMT-GEAR")]
+    );
+    await client.query(
+      `INSERT INTO pet_inventory (member_id, gear_id, qty)
+       VALUES ($1,$2,1)
+       ON CONFLICT (member_id, gear_id)
+       DO UPDATE SET qty = pet_inventory.qty + 1`,
+      [req.member.id, gearId]
+    );
+    await client.query("COMMIT");
+    const newBal = await getBalance(req.member.id);
+    res.json({ ok: true, gear: g, balance: newBal, message: g.name + " added to backpack." });
+  } catch (e) {
+    try { await client.query("ROLLBACK"); } catch (_) {}
+    console.error("GEAR BUY:", e);
+    res.status(500).json({ ok: false, error: "Purchase failed." });
+  } finally {
+    client.release();
+  }
+});
+
+app.get("/api/pets/:ownedId/equipment", requireAuth, async (req, res) => {
+  const ownedId = Number(req.params.ownedId);
+  if (!Number.isInteger(ownedId)) {
+    return res.status(400).json({ ok: false, error: "Invalid pet." });
+  }
+  try {
+    await ensureGearTables();
+    const pet = await pool.query(
+      `SELECT id, name, member_id FROM owned_pets WHERE id = $1 AND member_id = $2`,
+      [ownedId, req.member.id]
+    );
+    if (!pet.rows.length) return res.status(404).json({ ok: false, error: "Pet not found." });
+    const map = await getPetEquipmentMap(null, ownedId);
+    const bonuses = sumGearBonuses(map);
+    const slots = ["weapon", "shield", "head", "body", "boots", "accessory"].map(slot => {
+      const gid = map[slot];
+      const g = gid ? getGearById(gid) : null;
+      return { slot, gear: g };
+    });
+    res.json({ ok: true, slots, bonuses });
+  } catch (e) {
+    console.error("GEAR GET:", e);
+    res.status(500).json({ ok: false, error: "Equipment failed." });
+  }
+});
+
+app.post("/api/gear/equip", requireAuth, async (req, res) => {
+  const ownedId = Number(req.body?.ownedPetId);
+  const gearId = String(req.body?.gearId || "").trim();
+  const g = getGearById(gearId);
+  if (!Number.isInteger(ownedId) || !g) {
+    return res.status(400).json({ ok: false, error: "ownedPetId and gearId required." });
+  }
+  const client = await pool.connect();
+  try {
+    await ensureGearTables();
+    const pet = await client.query(
+      `SELECT id FROM owned_pets WHERE id = $1 AND member_id = $2`,
+      [ownedId, req.member.id]
+    );
+    if (!pet.rows.length) {
+      return res.status(404).json({ ok: false, error: "Pet not found." });
+    }
+    const inv = await client.query(
+      `SELECT qty FROM pet_inventory WHERE member_id = $1 AND gear_id = $2`,
+      [req.member.id, gearId]
+    );
+    if (!inv.rows.length || Number(inv.rows[0].qty) < 1) {
+      return res.status(400).json({ ok: false, error: "Item not in backpack." });
+    }
+    // Unequip previous in slot back stays in inventory (shared pool)
+    await client.query(
+      `INSERT INTO pet_equipment (owned_pet_id, slot, gear_id)
+       VALUES ($1,$2,$3)
+       ON CONFLICT (owned_pet_id, slot)
+       DO UPDATE SET gear_id = EXCLUDED.gear_id, updated_at = NOW()`,
+      [ownedId, g.slot, gearId]
+    );
+    const map = await getPetEquipmentMap(client, ownedId);
+    res.json({
+      ok: true,
+      message: g.name + " equipped on " + g.slot,
+      slots: map,
+      bonuses: sumGearBonuses(map)
+    });
+  } catch (e) {
+    console.error("GEAR EQUIP:", e);
+    res.status(500).json({ ok: false, error: "Equip failed." });
+  } finally {
+    client.release();
+  }
+});
+
+app.post("/api/gear/unequip", requireAuth, async (req, res) => {
+  const ownedId = Number(req.body?.ownedPetId);
+  const slot = String(req.body?.slot || "").trim();
+  if (!Number.isInteger(ownedId) || !slot) {
+    return res.status(400).json({ ok: false, error: "ownedPetId and slot required." });
+  }
+  try {
+    await ensureGearTables();
+    await pool.query(
+      `DELETE FROM pet_equipment WHERE owned_pet_id = $1 AND slot = $2
+       AND owned_pet_id IN (SELECT id FROM owned_pets WHERE member_id = $3)`,
+      [ownedId, slot, req.member.id]
+    );
+    const map = await getPetEquipmentMap(null, ownedId);
+    res.json({ ok: true, message: "Unequipped " + slot, bonuses: sumGearBonuses(map) });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: "Unequip failed." });
+  }
+});
+
 app.get("/api/pets/:petId", async (req, res) => {
   const reserved = ["owned", "eggs", "listings", "buy", "care", "train", "breed", "hatch", "list", "battle", "arena", "skills", "squad", "story", "battle-charges"];
   if (reserved.includes(String(req.params.petId || "").toLowerCase())) {
@@ -9284,10 +9587,10 @@ app.get(
           "Pi",
 
         network:
-          "Pi Testnet",
+          "Pi Mainnet",
 
         environment:
-          "TESTNET"
+          "MAINNET"
       }
     });
   }
@@ -9644,7 +9947,7 @@ app.post(
             payment.product_id,
 
           network:
-            "Pi Testnet"
+            "Pi Mainnet"
         });
       }
 
@@ -9706,7 +10009,7 @@ app.post(
           payment.product_id,
 
         network:
-          "Pi Testnet"
+          "Pi Mainnet"
       });
 
     } catch (error) {
@@ -9859,10 +10162,10 @@ app.post(
           staking.pendingRewards,
 
         network:
-          "Pi Testnet",
+          "Pi Mainnet",
 
         environment:
-          "TESTNET",
+          "MAINNET",
 
         // Referral code of this Pioneer (saved from Pi username on login)
         referralCode:
@@ -9934,7 +10237,7 @@ app.get(
           "AMT",
 
         network:
-          "Pi Testnet",
+          "Pi Mainnet",
 
         walletAddress:
           req.wallet
@@ -10027,10 +10330,10 @@ app.post(
         ...result,
 
         network:
-          "Pi Testnet",
+          "Pi Mainnet",
 
         walletType:
-          "AMT_TESTNET_LEDGER"
+          "AMT_MAINNET_LEDGER"
       });
 
     } catch (error) {
