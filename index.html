@@ -1568,6 +1568,22 @@ Unlink Pi Wallet
 </div>
 
 <div class="card">
+
+<div class="card" id="payScanCard" style="margin-top:12px">
+  <div class="card-title">PAYMENT QR</div>
+  <div class="muted" style="font-size:11px;margin-bottom:8px">Show this QR so others can pay you AMT (in-app). Scan / open link.</div>
+  <div class="qr-wrap">
+    <img id="paymentQr" class="qr-img" alt="Payment QR" width="200" height="200"
+      src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%231a1028' width='200' height='200'/%3E%3Ctext x='50%25' y='50%25' fill='%23958ba3' text-anchor='middle' dy='.3em' font-size='12'%3ELogin for QR%3C/text%3E%3C/svg%3E">
+  </div>
+  <div class="muted" id="paymentQrHint" style="font-size:11px;text-align:center;margin:8px 0">Amount optional</div>
+  <div class="row" style="gap:8px;margin-top:8px">
+    <input id="payQrAmount" type="number" min="0" step="0.01" placeholder="Amount AMT (optional)" style="flex:1">
+    <button class="secondary" style="margin:0;width:auto;padding:10px 14px" onclick="refreshPaymentQr()">Update QR</button>
+  </div>
+  <button class="primary" style="margin-top:10px" onclick="copyPaymentLink()">📋 COPY PAY LINK</button>
+</div>
+
 <div class="card-title">SEND AMT</div>
 
 <div class="form-group">
@@ -2453,6 +2469,7 @@ behavior:"smooth"
 if(id==="walletSection")refreshWallet();
 if(id==="airdropSection")loadAirdrop();
 if(id==="referralSection")loadReferral();
+  if(id==="walletSection"){ try{ refreshPaymentQr(); }catch(e){} }
 if(id==="circleSection")loadSecurityCircle();
 if(id==="profileSection")loadProfile();
 if(id==="stakingSection")loadStaking();
@@ -3842,21 +3859,90 @@ function buildReferralLink(code){
   return APP_BASE_URL + "/?ref=" + encodeURIComponent(code);
 }
 
-function updateReferralQr(link){
-  const img = $("referralQr");
+function qrPlaceholder(msg){
+  return "data:image/svg+xml," + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">' +
+    '<rect fill="#1a1028" width="200" height="200"/>' +
+    '<text x="50%" y="50%" fill="#958ba3" text-anchor="middle" dy=".3em" font-size="12">' +
+    (msg || "QR") + '</text></svg>'
+  );
+}
+
+function setQrImage(img, data){
   if(!img) return;
-  if(!link || link === "------"){
-    img.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%231a1028' width='200' height='200'/%3E%3Ctext x='50%25' y='50%25' fill='%23958ba3' text-anchor='middle' dy='.3em' font-size='12'%3ELogin for QR%3C/text%3E%3C/svg%3E";
+  if(!data || data === "------"){
+    img.src = qrPlaceholder("Login for QR");
+    img.onclick = null;
     return;
   }
-  // Client-side QR via public API (no extra JS dependency)
-  img.src =
-    "https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=8&ecc=M&data=" +
-    encodeURIComponent(link);
-  img.onerror = function(){
-    img.alt = "QR unavailable — use copy link";
-  };
+  var encoded = encodeURIComponent(data);
+  var sources = [
+    "https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=8&ecc=M&data=" + encoded,
+    "https://quickchart.io/qr?size=220&margin=2&text=" + encoded,
+    "https://cdn.pixabay.com/photo/placeholder" // will fail; last resort handled below
+  ];
+  // real third fallback
+  sources[2] = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" + encoded + "&t=" + Date.now();
+  var i = 0;
+  function tryNext(){
+    if(i >= sources.length){
+      img.src = qrPlaceholder("Use Copy Link");
+      img.alt = "QR unavailable — use copy link";
+      return;
+    }
+    img.onerror = function(){ i++; tryNext(); };
+    img.onload = function(){ img.onerror = null; };
+    img.src = sources[i];
+  }
+  tryNext();
 }
+
+function updateReferralQr(link){
+  setQrImage($("referralQr"), link);
+}
+
+function updatePaymentQr(payload){
+  setQrImage($("paymentQr"), payload);
+}
+
+function buildPaymentLink(amount){
+  var user = (window._referralCode || (currentUser && currentUser.username) || localStorage.getItem("amt_pi_username") || "").trim();
+  if(!user) return "";
+  var url = APP_BASE_URL + "/?pay=" + encodeURIComponent(user);
+  if(amount && Number(amount) > 0){
+    url += "&amt=" + encodeURIComponent(String(amount));
+  }
+  return url;
+}
+
+function refreshPaymentQr(){
+  var amtEl = $("payQrAmount");
+  var amount = amtEl ? amtEl.value : "";
+  var link = buildPaymentLink(amount);
+  if(!link){
+    updatePaymentQr(null);
+    if($("paymentQrHint")) $("paymentQrHint").textContent = "Login first";
+    return;
+  }
+  updatePaymentQr(link);
+  window._paymentLink = link;
+  if($("paymentQrHint")){
+    $("paymentQrHint").textContent = amount && Number(amount) > 0
+      ? ("Pay " + amount + " AMT to you")
+      : "Open link / scan to pay you AMT";
+  }
+}
+
+function copyPaymentLink(){
+  var link = window._paymentLink || buildPaymentLink($("payQrAmount") && $("payQrAmount").value);
+  if(!link) return showToast("Login first", true);
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(link).then(function(){ showToast("Pay link copied"); }).catch(function(){ showToast(link); });
+  }else{
+    showToast(link);
+  }
+}
+
 
 async function loadReferral(){
 try{
@@ -3870,6 +3956,7 @@ if(code && code !== "------"){
   updateReferralQr(fullLink);
   window._referralLink = fullLink;
   window._referralCode = code;
+  try{ refreshPaymentQr(); }catch(e){}
 }else{
   if($("referralCode")) $("referralCode").textContent = "------";
   if($("referralCodeOnly")) $("referralCodeOnly").textContent = "------";
