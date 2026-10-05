@@ -2352,28 +2352,49 @@ async function performAmtTransfer(
       );
     }
 
-    const recipientWallet =
-      await client.query(
+    // Accept AMT-... address OR Pi username / referral_code
+    const rawRecipient = String(recipientAddress || "").trim();
+    const asAddress = rawRecipient.toUpperCase();
+    const asUser = rawRecipient.toLowerCase();
+
+    let recipientWallet = await client.query(
+      `
+      SELECT
+        w.id,
+        w.member_id,
+        w.wallet_address
+      FROM amt_wallets w
+      WHERE UPPER(w.wallet_address) = $1
+      LIMIT 1
+      FOR UPDATE
+      `,
+      [asAddress]
+    );
+
+    if (!recipientWallet.rows.length) {
+      recipientWallet = await client.query(
         `
         SELECT
-          id,
-          member_id,
-          wallet_address
-        FROM amt_wallets
-        WHERE
-          UPPER(wallet_address) = $1
+          w.id,
+          w.member_id,
+          w.wallet_address
+        FROM amt_wallets w
+        JOIN members m ON m.id = w.member_id
+        WHERE LOWER(m.username) = $1
+           OR LOWER(COALESCE(m.referral_code, '')) = $1
         LIMIT 1
         FOR UPDATE
         `,
-        [recipientAddress]
+        [asUser]
       );
+    }
 
     if (
       !recipientWallet.rows.length
     ) {
       throw new HttpError(
         404,
-        "Recipient AMT ledger address was not found."
+        "Recipient not found. Use AMT address or Pi username (must have logged in to AMT app once)."
       );
     }
 
