@@ -1569,6 +1569,13 @@ Unlink Pi Wallet
 
 <div class="card">
 
+
+<div id="pendingPayBanner" class="card" style="display:none;margin-bottom:12px;border:1px solid rgba(255,212,82,.35)">
+  <div class="card-title">💳 PENDING PAYMENT</div>
+  <div class="muted" style="font-size:12px" id="pendingPayBannerText">You have a pay request from a QR link.</div>
+  <button class="primary" style="margin-top:10px" onclick="showPayConfirmModal()">Open Pay Screen</button>
+</div>
+
 <div class="card" id="payScanCard" style="margin-top:12px">
   <div class="card-title">PAYMENT QR</div>
   <div class="muted" style="font-size:11px;margin-bottom:8px">Show this QR so others can pay you AMT (in-app). Scan / open link.</div>
@@ -2606,6 +2613,12 @@ enterApp();
 // Apply referral from link (?ref=username) if present
 await tryApplyPendingReferral();
 
+// Payment QR link (?pay=user&amt=)
+capturePendingPaymentFromUrl();
+setTimeout(function(){
+  try{ showPayConfirmModal(); }catch(e){}
+}, 600);
+
 setTimeout(()=>{
 hideEcosystemLoading();
 },250);
@@ -2658,6 +2671,11 @@ enterApp();
 
 // Apply referral from link if present
 await tryApplyPendingReferral();
+
+capturePendingPaymentFromUrl();
+setTimeout(function(){
+  try{ showPayConfirmModal(); }catch(e){}
+}, 800);
 
 }catch(error){
 
@@ -3899,6 +3917,11 @@ function clearPendingPayment(){
 function showPayConfirmModal(){
   const pending = getPendingPayment();
   if(!pending || !pending.user) return false;
+  // Prefill classic SEND form as backup
+  try{
+    if($("sendTo")) $("sendTo").value = pending.user;
+    if($("sendAmount") && pending.amount) $("sendAmount").value = pending.amount;
+  }catch(e){}
   const box = $("payConfirmModal");
   if(!box) return false;
   if($("payConfirmUser")) $("payConfirmUser").textContent = pending.user;
@@ -3909,6 +3932,16 @@ function showPayConfirmModal(){
   }
   box.classList.add("show");
   box.style.display = "flex";
+  box.style.alignItems = "center";
+  box.style.justifyContent = "center";
+  var ban = $("pendingPayBanner");
+  if(ban){
+    ban.style.display = "block";
+    if($("pendingPayBannerText")){
+      $("pendingPayBannerText").textContent = "Pay " + pending.user +
+        (pending.amount ? (" · " + pending.amount + " AMT") : "");
+    }
+  }
   return true;
 }
 
@@ -3918,6 +3951,8 @@ function hidePayConfirmModal(){
     box.classList.remove("show");
     box.style.display = "none";
   }
+  var ban = $("pendingPayBanner");
+  if(ban) ban.style.display = "none";
 }
 
 async function confirmPendingPay(){
