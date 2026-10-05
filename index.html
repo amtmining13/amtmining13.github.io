@@ -1588,7 +1588,7 @@ Unlink Pi Wallet
 
 <div class="form-group">
 <label>Recipient AMT App Wallet Address</label>
-<input id="sendTo" class="input" placeholder="AMT wallet address">
+<input id="sendTo" class="input" placeholder="AMT address or Pi username">
 </div>
 
 <div class="form-group">
@@ -2328,6 +2328,22 @@ Opens Coixa for on-chain AMT swap & liquidity (Testnet token pools: AMT/PI, AMT/
 
 </div>
 </nav>
+
+
+<div id="payConfirmModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.72);align-items:center;justify-content:center;padding:18px">
+  <div class="card" style="max-width:360px;width:100%;margin:0">
+    <div class="card-title">💳 CONFIRM PAYMENT</div>
+    <div class="muted" style="font-size:12px;margin-bottom:10px">In-app AMT ledger transfer</div>
+    <div class="balance-row"><span class="balance-row-label">To</span><span class="balance-row-value" id="payConfirmUser">—</span></div>
+    <div class="balance-row"><span class="balance-row-label">Request</span><span class="balance-row-value" id="payConfirmAmount">—</span></div>
+    <div class="form-group" style="margin-top:12px">
+      <label>Amount AMT</label>
+      <input id="payConfirmInput" class="input" type="number" min="0" step="0.00000001" placeholder="0.00">
+    </div>
+    <button class="primary" onclick="confirmPendingPay()">✅ PAY NOW</button>
+    <button class="secondary" style="margin-top:8px" onclick="dismissPendingPay()">Cancel</button>
+  </div>
+</div>
 
 <div id="toast" class="toast"></div>
 
@@ -3847,6 +3863,96 @@ function getPendingReferralCode(){
   }catch(e){
     return "";
   }
+}
+
+function capturePendingPaymentFromUrl(){
+  try{
+    const params = new URLSearchParams(window.location.search);
+    const payUser = (params.get("pay") || "").trim();
+    const payAmt = (params.get("amt") || params.get("amount") || "").trim();
+    if(payUser){
+      localStorage.setItem("amt_pending_pay_user", payUser);
+      if(payAmt) localStorage.setItem("amt_pending_pay_amt", payAmt);
+      else localStorage.removeItem("amt_pending_pay_amt");
+    }
+  }catch(e){}
+}
+
+function getPendingPayment(){
+  try{
+    const user = (localStorage.getItem("amt_pending_pay_user") || "").trim();
+    const amt = (localStorage.getItem("amt_pending_pay_amt") || "").trim();
+    if(!user) return null;
+    return { user: user, amount: amt };
+  }catch(e){
+    return null;
+  }
+}
+
+function clearPendingPayment(){
+  try{
+    localStorage.removeItem("amt_pending_pay_user");
+    localStorage.removeItem("amt_pending_pay_amt");
+  }catch(e){}
+}
+
+function showPayConfirmModal(){
+  const pending = getPendingPayment();
+  if(!pending || !pending.user) return false;
+  const box = $("payConfirmModal");
+  if(!box) return false;
+  if($("payConfirmUser")) $("payConfirmUser").textContent = pending.user;
+  if($("payConfirmAmount")) $("payConfirmAmount").textContent =
+    pending.amount && Number(pending.amount) > 0 ? (pending.amount + " AMT") : "Enter amount below";
+  if($("payConfirmInput")){
+    $("payConfirmInput").value = pending.amount && Number(pending.amount) > 0 ? pending.amount : "";
+  }
+  box.classList.add("show");
+  box.style.display = "flex";
+  return true;
+}
+
+function hidePayConfirmModal(){
+  const box = $("payConfirmModal");
+  if(box){
+    box.classList.remove("show");
+    box.style.display = "none";
+  }
+}
+
+async function confirmPendingPay(){
+  const pending = getPendingPayment();
+  if(!pending || !pending.user){
+    hidePayConfirmModal();
+    return;
+  }
+  const inputAmt = $("payConfirmInput") ? num($("payConfirmInput").value) : 0;
+  const amount = inputAmt > 0 ? inputAmt : num(pending.amount);
+  if(amount <= 0){
+    return showToast("Enter a valid AMT amount", true);
+  }
+  try{
+    await api("/api/ledger/send", {
+      method: "POST",
+      body: JSON.stringify({
+        recipient: pending.user,
+        amount: amount,
+        memo: "QR Pay"
+      })
+    });
+    clearPendingPayment();
+    hidePayConfirmModal();
+    showToast("Paid " + amount + " AMT to " + pending.user);
+    try{ await refreshWallet(); }catch(e){}
+  }catch(error){
+    showToast(error.message || "Payment failed", true);
+  }
+}
+
+function dismissPendingPay(){
+  clearPendingPayment();
+  hidePayConfirmModal();
+  showToast("Payment cancelled");
 }
 
 function clearPendingReferralCode(){
