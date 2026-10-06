@@ -9962,7 +9962,15 @@ app.get("/api/gear/inventory", requireAuth, async (req, res) => {
       const g = getGearById(row.gear_id) || { id: row.gear_id, name: row.gear_id };
       return { ...g, qty: row.qty };
     });
-    res.json({ ok: true, items });
+    const mr = await pool.query(
+      `SELECT material_id, qty FROM member_materials WHERE member_id = $1 AND qty > 0`,
+      [req.member.id]
+    );
+    const materials = mr.rows.map(row => {
+      const m = getMaterial(row.material_id) || { id: row.material_id, name: row.material_id };
+      return { ...m, qty: Number(row.qty) };
+    });
+    res.json({ ok: true, items, materials });
   } catch (e) {
     console.error("GEAR INV:", e);
     res.status(500).json({ ok: false, error: "Inventory failed." });
