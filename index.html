@@ -6098,7 +6098,7 @@ async function buyMaterial(id) {
 
 async function upgradeEquipped(slot) {
   if (!selectedOwned || !selectedOwned.id) {
-    showToast("Open a pet first", true);
+    showToast("Open My Pets → VIEW pet → equip weapon muna", true);
     return;
   }
   try {
@@ -6106,11 +6106,11 @@ async function upgradeEquipped(slot) {
       method: "POST",
       body: JSON.stringify({ ownedPetId: Number(selectedOwned.id), slot: slot || "weapon" })
     });
-    showToast(d.message || "Upgraded");
+    showToast(d.message || ("Weapon +" + d.upgrade_level + "!"));
     await refreshWallet();
     if (selectedOwned.id) loadOwnedGear(selectedOwned.id);
   } catch (e) {
-    showToast(e.message || "Upgrade failed", true);
+    showToast(e.message || "Upgrade failed — equip weapon on this pet first", true);
   }
 }
 
@@ -6190,38 +6190,83 @@ async function loadGearShop(filter) {
 async function useBagMaterial(materialId) {
   const mid = String(materialId || "");
   if (!mid) return;
-  // Need a pet open or pick from owned list
-  if (!selectedOwned || !selectedOwned.id) {
-    showToast("Open My Pets → VIEW a pet with equipped weapon, then tap the core/gem again — or use Upgrade/Gem buttons on the pet.");
-    try {
-      if (typeof showSection === "function") showSection("marketSection");
-      if (typeof petTab === "function") petTab("owned");
-    } catch (e) {}
-    return;
-  }
-  const m = mid.indexOf("gem_") === 0 ? "gem" : (mid === "upgrade_core" ? "core" : "other");
   try {
-    if (m === "core") {
-      showToast("Upgrading weapon...");
-      await upgradeEquipped("weapon");
+    // 1) Ensure we have a pet
+    var pet = selectedOwned;
+    if (!pet || !pet.id) {
+      const owned = await api("/api/pets/owned");
+      const list = owned.pets || owned.items || owned || [];
+      const arr = Array.isArray(list) ? list : [];
+      if (!arr.length) {
+        showToast("Walang pet. Bumili muna ng pet sa Market.", true);
+        return;
+      }
+      pet = arr[0];
+      selectedOwned = pet;
+      showToast("Using pet: " + (pet.name || pet.id));
+    }
+    const ownedId = Number(pet.id);
+
+    // 2) Ensure weapon equipped
+    var eq = await api("/api/pets/" + ownedId + "/equipment");
+    var weaponSlot = (eq.slots || []).find(function(s){ return s.slot === "weapon" && s.gear; });
+    if (!weaponSlot) {
+      const inv = await api("/api/gear/inventory");
+      const weapons = (inv.items || []).filter(function(g){ return g.slot === "weapon"; });
+      if (!weapons.length) {
+        showToast("Walang weapon sa bag. Bumili muna sa Weapons tab.", true);
+        return;
+      }
+      showToast("Auto-equipping " + weapons[0].name + "...");
+      await api("/api/gear/equip", {
+        method: "POST",
+        body: JSON.stringify({ ownedPetId: ownedId, gearId: weapons[0].id })
+      });
+      eq = await api("/api/pets/" + ownedId + "/equipment");
+      weaponSlot = (eq.slots || []).find(function(s){ return s.slot === "weapon" && s.gear; });
+    }
+    if (!weaponSlot) {
+      showToast("Failed to equip weapon.", true);
+      return;
+    }
+
+    // 3) Apply core or gem
+    if (mid === "upgrade_core") {
+      showToast("Upgrading " + weaponSlot.gear.name + "...");
+      const d = await api("/api/gear/upgrade", {
+        method: "POST",
+        body: JSON.stringify({ ownedPetId: ownedId, slot: "weapon" })
+      });
+      showToast((d.message || ("Upgraded to +" + d.upgrade_level)) + " · Open My Pet to see +level");
+      await refreshWallet();
       loadGearInventory();
       return;
     }
-    if (m === "gem") {
-      // prefer stat from id gem_atk_1 etc
-      if (mid.indexOf("atk") >= 0) window._socketPrefer = "atk";
-      else if (mid.indexOf("hp") >= 0) window._socketPrefer = "hp";
-      else if (mid.indexOf("def") >= 0) window._socketPrefer = "def";
-      showToast("Socketing gem on weapon...");
-      await socketGem("weapon", 1, mid);
+    if (mid.indexOf("gem_") === 0) {
+      // pick empty gem slot first
+      var gidx = 1;
+      if (weaponSlot.gem1 && !weaponSlot.gem2) gidx = 2;
+      else if (weaponSlot.gem1 && weaponSlot.gem2) gidx = 1; // replace gem1
+      showToast("Socketing on " + weaponSlot.gear.name + " slot " + gidx + "...");
+      const d = await api("/api/gear/socket", {
+        method: "POST",
+        body: JSON.stringify({
+          ownedPetId: ownedId,
+          slot: "weapon",
+          gemIndex: gidx,
+          materialId: mid
+        })
+      });
+      showToast((d.message || "Gem socketed!") + " · Open My Pet to see gems");
       loadGearInventory();
       return;
     }
-    showToast("Unknown material");
+    showToast("Unknown item", true);
   } catch (e) {
-    showToast((e && e.message) || "Could not use item", true);
+    showToast((e && e.message) || "Hindi mailagay. Equip weapon sa pet muna.", true);
   }
 }
+
 
 async function loadGearInventory() {
   const box = $("gearShopGrid");
@@ -6331,13 +6376,18 @@ async function loadOwnedGear(ownedId) {
     let html = '<div class="card-title" style="font-size:12px">Equipment</div><div class="grid" style="grid-template-columns:1fr 1fr;gap:6px">';
     (d.slots || []).forEach(function(s) {
       const g = s.gear;
-      html += '<div class="gear-slot"><div class="gear-slot-label">' + s.slot + '</div>';
+      html += '<div class="gear-slot"><div class="gear-slot-label">' + s.slot +
+        (s.upgrade_level ? (' +' + s.upgrade_level) : '') + '</div>';
       if (g) {
+        var g1n = s.gem1 || 'empty';
+        var g2n = s.gem2 || 'empty';
         html += '<div style="display:flex;gap:6px;align-items:center">' + gearIconHtml(g, 36) +
-          '<div style="flex:1;font-size:11px"><b>' + g.name + '</b><br>' +
+          '<div style="flex:1;font-size:11px"><b>' + g.name +
+          (s.upgrade_level ? (' +' + s.upgrade_level) : '') + '</b><br>' +
+          '<span class="muted" style="font-size:10px">Gems: ' + g1n + ' | ' + g2n + '</span><br>' +
           '<button class="small-btn" style="width:auto;padding:4px 8px;margin-top:4px" onclick="unequipGear(\'' + s.slot + '\')">Unequip</button></div></div>';
       } else {
-        html += '<div class="muted" style="font-size:10px">Empty</div>';
+        html += '<div class="muted" style="font-size:10px">Empty — equip from list below</div>';
       }
       html += '</div>';
     });
