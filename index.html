@@ -6281,15 +6281,29 @@ async function loadOwnedGear(ownedId) {
   try {
     const panel = $("ownedUpgradePanel");
     if (panel) {
-      panel.innerHTML = "<div class='muted' style='font-size:10px;margin:6px 0'>Upgrade uses Cores · Gems socket on weapon</div>" +
+      panel.innerHTML = "<div class='muted' style='font-size:10px;margin:6px 0'>Buy Cores/Gems: Market → Weapons store → <b>Gems/Cores</b> tab · or win battles</div>" +
         "<button class='secondary' style='margin-bottom:6px' onclick=\"upgradeEquipped('weapon')\">⬆️ UPGRADE WEAPON (+Core)</button>" +
-        "<div style='display:flex;gap:6px;flex-wrap:wrap'>" +
+        "<div style='display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px'>" +
         "<button class='small-btn' style='width:auto' onclick=\"window._socketPrefer='atk';pickSocketGem('weapon',1)\">💎 Gem1 ATK</button>" +
         "<button class='small-btn' style='width:auto' onclick=\"window._socketPrefer='hp';pickSocketGem('weapon',2)\">💎 Gem2 HP</button>" +
-        "</div>";
+        "</div>" +
+        "<button class='primary' style='margin-bottom:6px' onclick='goBuyGemsCores()'>🛒 BUY GEMS / CORES</button>";
     }
   } catch (e) {}
 }
+
+function goBuyGemsCores() {
+  try { closeOwnedModal(); } catch (e) {}
+  try {
+    if (typeof showSection === "function") showSection("marketSection");
+    else if (typeof petTab === "function") petTab("shop");
+  } catch (e) {}
+  setTimeout(function() {
+    try { loadMaterialsShop(); } catch (e) {}
+  }, 200);
+  showToast("Market → Gems/Cores");
+}
+
 
 
 async function equipGear(gearId) {
