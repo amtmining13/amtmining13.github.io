@@ -1511,8 +1511,8 @@ CLAIM DAILY REWARD
 <span class="balance-row-label">Mainnet PI</span>
 <span class="balance-row-value" id="balMainnetPi">—</span>
 </div>
-<div class="balance-row">
-<span class="balance-row-label">Testnet PI</span>
+<div class="balance-row hidden" id="balTestPiRow">
+<span class="balance-row-label">PI (secondary)</span>
 <span class="balance-row-value" id="balTestPi">—</span>
 </div>
 </div>
@@ -2264,7 +2264,7 @@ SELECT 180D
 <div class="card-title">AMT / PI MAINNET</div>
 
 <div class="notice">
-Opens Coixa for on-chain AMT swap & liquidity (Testnet token pools: AMT/PI, AMT/OUSD, etc.). Not the same as in-app mining AMT.
+Open Coixa to swap and add liquidity for on-chain AMT pairs. In-app mining AMT is separate from on-chain balances.
 </div>
 
 <button class="secondary" style="margin-top:14px" onclick="openCoixaSwap()">
@@ -2508,11 +2508,11 @@ throw new Error(
 );
 }
 
-// Warn if Render still serves old Testnet backend
+// Backend environment check (console only)
 try{
   const root=await fetch(API_BASE+"/",{cache:"no-store"}).then(r=>r.json());
   if(root&&String(root.environment||"").toUpperCase().indexOf("TEST")>=0){
-    showToast("Backend is still TESTNET ("+ (root.version||"?") +"). Redeploy server.js 2.5.0-mainnet on Render.",true);
+    console.warn("Backend environment:", root.environment, root.version);
   }
   if(root&&String(root.version||"").indexOf("2.5.0")<0&&String(root.version||"").indexOf("mainnet")<0){
     console.warn("Backend version:",root.version,root.network);
@@ -4192,7 +4192,7 @@ function copyReferralCode(){
 
 
 function openCoixaSwap(){
-  // On-chain Testnet AMT swap / LP via Coixa (not in-app ledger)
+  // On-chain AMT swap / LP via Coixa (not in-app ledger)
   const url = "https://app.coixa.xyz?ref=exe5LLq";
   try{
     if(window.Pi && typeof Pi.openUrlInSystemBrowser === "function"){
