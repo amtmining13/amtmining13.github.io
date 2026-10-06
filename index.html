@@ -2107,7 +2107,7 @@ SELECT 180D
     <button class="secondary" style="margin:0;flex:1;min-width:70px" onclick="loadGearShop('weapon')">Weapons</button>
     <button class="secondary" style="margin:0;flex:1;min-width:70px" onclick="loadGearShop('armor')">Armor</button>
     <button class="secondary" style="margin:0;flex:1;min-width:70px" onclick="loadGearShop('all')">All</button>
-    <button class="secondary" style="margin:0;flex:1;min-width:70px" onclick="loadGearInventory()">Backpack</button>
+    <button class="secondary" style="margin:0;flex:1;min-width:70px" onclick="loadGearInventory()">Bag</button>
     <button class="secondary" style="margin:0;flex:1;min-width:70px" onclick="loadMaterialsShop()">Gems/Cores</button>
   </div>
   <div id="gearShopGrid" class="balance-stack"></div>
@@ -6052,14 +6052,27 @@ async function loadMaterialsShop() {
   box.innerHTML = "<div class='muted'>Loading materials...</div>";
   try {
     const d = await api("/api/gear/materials");
+    const owned = d.materials || [];
     const have = {};
-    (d.materials || []).forEach(function(m){ have[m.id] = m.qty; });
-    var html = "<div class='muted' style='font-size:11px;margin-bottom:8px'>Upgrade Core = item +level · Gems = socket on equipped gear (My Pet)</div>";
+    owned.forEach(function(m){ have[m.id] = m.qty; });
+    var html = "";
+    html += "<div class='card-title' style='font-size:13px;margin:8px 0 6px'>YOUR CORES AND GEMS</div>";
+    if (!owned.length) {
+      html += "<div class='muted' style='font-size:11px;margin-bottom:10px'>None yet. Buy below or win battles/boss.</div>";
+    } else {
+      owned.forEach(function(m) {
+        html += "<div class='balance-row'><span class='balance-row-label'>" + (m.name || m.id) +
+          "</span><span class='balance-row-value'>x" + m.qty + "</span></div>";
+      });
+      html += "<div class='muted' style='font-size:10px;margin:8px 0'>Use: My Pet - Upgrade Weapon / Gem sockets</div>";
+    }
+    html += "<div class='card-title' style='font-size:13px;margin:14px 0 6px'>BUY MATERIALS</div>";
     (d.catalog || []).forEach(function(m) {
       var q = have[m.id] || 0;
-      html += "<div class='balance-row' style='flex-wrap:wrap;gap:6px;align-items:center'>" +
-        "<div style='flex:1;min-width:120px'><b>" + m.name + "</b><div class='muted' style='font-size:10px'>" + (m.desc || "") + " · Have " + q + "</div></div>" +
-        "<button class='small-btn' style='width:auto' onclick=\"buyMaterial('" + m.id + "')\">" + m.priceAmt + " AMT</button></div>";
+      html += "<div class='balance-row' style='flex-wrap:wrap;gap:6px;align-items:center'>";
+      html += "<div style='flex:1;min-width:120px'><b>" + m.name + "</b><div class='muted' style='font-size:10px'>";
+      html += (m.desc || "") + " · Have <b>" + q + "</b></div></div>";
+      html += "<button class='small-btn' style='width:auto' onclick=\"buyMaterial('" + m.id + "')\">" + m.priceAmt + " AMT</button></div>";
     });
     box.innerHTML = html;
   } catch (e) {
@@ -6073,9 +6086,11 @@ async function buyMaterial(id) {
       method: "POST",
       body: JSON.stringify({ materialId: id, qty: 1 })
     });
-    showToast(d.message || "Bought");
+    showToast(d.message || "Bought — check Bag");
     await refreshWallet();
     loadMaterialsShop();
+    /* also visible in Bag */
+
   } catch (e) {
     showToast(e.message || "Buy failed", true);
   }
@@ -6174,24 +6189,49 @@ async function loadGearShop(filter) {
 async function loadGearInventory() {
   const box = $("gearShopGrid");
   if (!box) return;
-  box.innerHTML = "<div class='muted'>Loading backpack...</div>";
+  box.innerHTML = "<div class='muted'>Loading bag...</div>";
   try {
     const d = await api("/api/gear/inventory");
     const list = d.items || [];
-    if (!list.length) {
-      box.innerHTML = "<div class='muted'>Backpack empty. Buy gear from Shop.</div>";
-      return;
+    let mats = d.materials || [];
+    if (!mats.length) {
+      try {
+        const md = await api("/api/gear/materials");
+        mats = md.materials || [];
+      } catch (e2) {}
     }
-    box.innerHTML = list.map(function(g) {
-      return '<div class="balance-row" style="flex-wrap:wrap;gap:8px;align-items:center">' +
-        gearIconHtml(g) +
-        '<div style="flex:1"><b>' + g.name + '</b> ×' + g.qty +
-        '<div class="muted" style="font-size:10px">' + g.slot + " · equip from My Pet</div></div></div>";
-    }).join("");
+    var html = "";
+    html += "<div class='card-title' style='font-size:13px;margin:6px 0'>BAG · CORES AND GEMS</div>";
+    if (mats.length) {
+      mats.forEach(function(m) {
+        var icon = m.kind === "core" ? "🔶" : "💎";
+        html += "<div class='balance-row' style='align-items:center'>" +
+          "<span style='font-size:18px;margin-right:8px'>" + icon + "</span>" +
+          "<span class='balance-row-label' style='flex:1'>" + (m.name || m.id) +
+          (m.desc ? "<div class='muted' style='font-size:10px'>" + m.desc + "</div>" : "") +
+          "</span><span class='balance-row-value'>x" + m.qty + "</span></div>";
+      });
+      html += "<div class='muted' style='font-size:10px;margin:8px 0 12px'>Use on My Pet → Upgrade Weapon / Gem1 / Gem2</div>";
+    } else {
+      html += "<div class='muted' style='font-size:11px;margin-bottom:12px'>No cores or gems yet. Tap <b>Gems/Cores</b> to buy, or win battles.</div>";
+    }
+    html += "<div class='card-title' style='font-size:13px;margin:8px 0 6px'>BAG · GEAR</div>";
+    if (!list.length) {
+      html += "<div class='muted'>No gear yet. Buy from Weapons / Armor.</div>";
+    } else {
+      html += list.map(function(g) {
+        return '<div class="balance-row" style="flex-wrap:wrap;gap:8px;align-items:center">' +
+          gearIconHtml(g) +
+          '<div style="flex:1;min-width:120px"><b>' + g.name + '</b> x' + (g.qty || 1) +
+          '<div class="muted" style="font-size:10px">' + g.slot + " · equip from My Pet</div></div></div>";
+      }).join("");
+    }
+    box.innerHTML = html;
   } catch (e) {
     box.innerHTML = "<div class='muted'>" + (e.message || "Failed") + "</div>";
   }
 }
+
 
 async function buyGear(gearId) {
   try {
