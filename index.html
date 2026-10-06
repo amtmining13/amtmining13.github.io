@@ -2085,7 +2085,15 @@ SELECT 180D
 
 <div class="card" id="storySection" style="margin-top:12px">
   <div class="card-title">STORY MODE</div>
-  <div class="muted" style="font-size:11px;margin-bottom:6px">Best for leveling weak pets · 3 clears/day · more EXP under Lv20</div>
+  
+<div class="card" id="dailyBossCard">
+  <div class="card-title">🐉 DAILY BOSS</div>
+  <div id="bossInfo" class="muted" style="font-size:12px;margin-bottom:8px">Loading boss...</div>
+  <div class="muted" style="font-size:11px;margin-bottom:8px">3 attempts/day · element advantage pays more · open a pet first</div>
+  <button class="primary" onclick="fightDailyBoss()">⚔️ FIGHT DAILY BOSS</button>
+  <button class="secondary" style="margin-top:8px" onclick="refreshDailyBoss()">🔄 Refresh Boss</button>
+</div>
+<div class="muted" style="font-size:11px;margin-bottom:6px">Best for leveling weak pets · 3 clears/day · more EXP under Lv20</div>
   <div id="storyInfo" class="notice" style="margin-bottom:8px;font-size:12px">Loading story...</div>
   <div id="storyChapters" class="balance-stack" style="margin-bottom:8px"></div>
   <button class="primary" onclick="playStoryChapter()">📖 PLAY CURRENT CHAPTER</button>
@@ -2228,12 +2236,26 @@ SELECT 180D
 <button class="secondary" style="margin-bottom:8px" onclick="showPetHistory()">📜 OWNERSHIP HISTORY</button>
 <button class="primary" style="margin-bottom:8px" onclick="playStoryFromModal()">📖 PLAY STORY</button>
 
-<button class="secondary" style="margin-bottom:8px" onclick="carePet('feed')">🍖 FEED (0.2 AMT)</button>
-<button class="secondary" style="margin-bottom:8px" onclick="carePet('play')">🎾 PLAY (0.1 AMT)</button>
+<div class="muted" style="font-size:10px;margin:6px 0 4px">Care · gains XP (instant or timed)</div>
+<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
+<button class="secondary" style="margin:0;width:auto;padding:8px 10px;font-size:11px" onclick="carePet('feed',0)">🍖 Feed +XP (0.2)</button>
+<button class="secondary" style="margin:0;width:auto;padding:8px 10px;font-size:11px" onclick="carePet('play',0)">🎾 Play +XP (0.1)</button>
+<button class="secondary" style="margin:0;width:auto;padding:8px 10px;font-size:11px" onclick="carePet('feed',4)">Care 4h (0.3)</button>
+<button class="secondary" style="margin:0;width:auto;padding:8px 10px;font-size:11px" onclick="carePet('feed',12)">Care 12h (0.6)</button>
+<button class="secondary" style="margin:0;width:auto;padding:8px 10px;font-size:11px" onclick="carePet('feed',24)">Care 24h (1.0)</button>
+</div>
 <button class="secondary" style="margin-bottom:8px" onclick="buyEnergyPack('energy')">⚡ ENERGY PACK (1 AMT)</button>
 <button class="secondary" style="margin-bottom:8px" onclick="buyEnergyPack('full')">💖 FULL PACK (3 AMT)</button>
-<button class="secondary" style="margin-bottom:8px" onclick="trainPet('atk')">⚔️ TRAIN ATK (0.5)</button>
-<button class="secondary" style="margin-bottom:8px" onclick="trainPet('hp')">❤️ TRAIN HP (0.5)</button>
+<div class="muted" style="font-size:10px;margin:6px 0 4px">Train · XP + stats</div>
+<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
+<button class="secondary" style="margin:0;width:auto;padding:8px 10px;font-size:11px" onclick="trainPet('atk',0)">⚔️ ATK now (0.5)</button>
+<button class="secondary" style="margin:0;width:auto;padding:8px 10px;font-size:11px" onclick="trainPet('hp',0)">❤️ HP now (0.5)</button>
+<button class="secondary" style="margin:0;width:auto;padding:8px 10px;font-size:11px" onclick="trainPet('atk',8)">Train 8h (1.0)</button>
+<button class="secondary" style="margin:0;width:auto;padding:8px 10px;font-size:11px" onclick="trainPet('atk',12)">Train 12h (1.5)</button>
+<button class="secondary" style="margin:0;width:auto;padding:8px 10px;font-size:11px" onclick="trainPet('atk',24)">Train 24h (2.5)</button>
+</div>
+<button class="primary" style="margin-bottom:8px" onclick="claimPetSession()">✅ CLAIM CARE/TRAIN XP</button>
+<div id="ownedSessionInfo" class="muted" style="font-size:11px;margin-bottom:8px"></div>
 <div class="muted" style="font-size:10px;margin:6px 0 4px">CPU battle tier (scales with your level)</div>
 <div class="grid" style="grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
 <button class="secondary" style="margin:0;padding:10px 6px;font-size:11px" onclick="battlePet('rookie')">⚔️ Rookie</button>
@@ -5260,6 +5282,7 @@ function petStatsRow(pet) {
 }
 
 function petTab(tab) {
+  try{ if(arguments[0]==="shop"||arguments[0]==="owned") refreshDailyBoss(); }catch(e){}
   currentPetTab = tab;
   ["petShopPanel","petOwnedPanel","petEggsPanel","petListingsPanel"].forEach(id => {
     const el = $(id);
@@ -5574,54 +5597,103 @@ function fillOwnedModalFromPet(pet) {
   openOwnedModal(pet.id);
 }
 
-async function carePet(action) {
+async function carePet(action, durationHours) {
   if (!selectedOwned || !selectedOwned.id) {
     showToast("Open a pet first (My Pets → VIEW).", true);
     return;
   }
   const ownedId = Number(selectedOwned.id);
   const petName = selectedOwned.name || "pet";
+  const hours = Number(durationHours || 0);
   try {
-    showToast((action === "play" ? "Playing..." : "Feeding..."));
+    showToast(hours > 0 ? ("Starting " + hours + "h care...") : (action === "play" ? "Playing..." : "Feeding..."));
     const data = await api("/api/pets/care", {
       method: "POST",
-      body: JSON.stringify({ ownedPetId: ownedId, action: action || "feed" })
+      body: JSON.stringify({ ownedPetId: ownedId, action: action || "feed", durationHours: hours })
     });
-    if (!data || !data.pet) throw new Error(data?.error || "Care failed — no pet returned");
-    showToast((action === "feed" ? "Fed " : "Played with ") + petName);
-    fillOwnedModalFromPet(data.pet);
+    if (!data) throw new Error("Care failed");
+    if (hours > 0) {
+      showToast(data.message || (hours + "h care started · claim XP later"));
+    } else {
+      showToast((action === "feed" ? "Fed " : "Played with ") + petName + " · +" + (data.xpGained || 0) + " XP");
+    }
+    if (data.pet) fillOwnedModalFromPet(data.pet);
+    updateOwnedSessionInfo(data.pet || data);
     await refreshWallet();
-    // soft refresh list in background
     loadOwnedPets().catch(() => {});
   } catch (e) {
     showToast(e.message || "Care failed", true);
   }
 }
 
-async function trainPet(stat) {
+async function trainPet(stat, durationHours) {
   if (!selectedOwned || !selectedOwned.id) {
     showToast("Open a pet first (My Pets → VIEW).", true);
     return;
   }
   const ownedId = Number(selectedOwned.id);
+  const hours = Number(durationHours || 0);
   try {
-    showToast("Training " + String(stat || "atk").toUpperCase() + "...");
+    showToast(hours > 0 ? ("Starting " + hours + "h train...") : ("Training " + String(stat || "atk").toUpperCase() + "..."));
     const data = await api("/api/pets/train", {
       method: "POST",
-      body: JSON.stringify({ ownedPetId: ownedId, stat: stat || "atk" })
+      body: JSON.stringify({ ownedPetId: ownedId, stat: stat || "atk", durationHours: hours })
     });
-    if (!data || !data.pet) throw new Error(data?.error || "Train failed — no pet returned");
-    let msg = "Trained " + String(stat).toUpperCase() + " +" + (data.gain || "");
-    if (data.milestones && data.milestones.length) {
-      const b = data.milestones.map(m => "Lv" + m.level + " +" + m.amount).join(", ");
-      msg += " · Milestone " + b + " AMT!";
+    if (!data) throw new Error("Train failed");
+    if (hours > 0) {
+      showToast(data.message || (hours + "h training started · claim later"));
+    } else {
+      let msg = "Trained · +" + (data.xpGained || 0) + " XP";
+      if (data.milestones && data.milestones.length) {
+        const b = data.milestones.map(m => "Lv" + m.level + " +" + m.amount).join(", ");
+        msg += " · Milestone " + b + " AMT!";
+      }
+      showToast(msg);
     }
-    showToast(msg);
-    fillOwnedModalFromPet(data.pet);
+    if (data.pet) fillOwnedModalFromPet(data.pet);
+    updateOwnedSessionInfo(data.pet || data);
     await refreshWallet();
     loadOwnedPets().catch(() => {});
   } catch (e) {
     showToast(e.message || "Train failed", true);
+  }
+}
+
+async function claimPetSession() {
+  if (!selectedOwned || !selectedOwned.id) {
+    showToast("Open a pet first (My Pets → VIEW).", true);
+    return;
+  }
+  try {
+    const data = await api("/api/pets/claim-session", {
+      method: "POST",
+      body: JSON.stringify({ ownedPetId: Number(selectedOwned.id) })
+    });
+    showToast(data.message || ("Claimed +" + (data.xpGained || 0) + " XP"));
+    if (data.pet) fillOwnedModalFromPet(data.pet);
+    if ($("ownedSessionInfo")) $("ownedSessionInfo").textContent = "No active session";
+    await refreshWallet();
+    loadOwnedPets().catch(() => {});
+  } catch (e) {
+    showToast(e.message || "Claim failed", true);
+  }
+}
+
+function updateOwnedSessionInfo(pet) {
+  var el = $("ownedSessionInfo");
+  if (!el) return;
+  if (!pet || !pet.session_ends_at) {
+    el.textContent = "No active care/train session";
+    return;
+  }
+  var ends = new Date(pet.session_ends_at);
+  var left = ends - Date.now();
+  if (left <= 0) {
+    el.textContent = "Session ready · tap CLAIM CARE/TRAIN XP (+" + (pet.session_xp || "?") + " XP)";
+  } else {
+    var h = Math.floor(left / 3600000);
+    var m = Math.floor((left % 3600000) / 60000);
+    el.textContent = (pet.session_type || "Session") + " · " + h + "h " + m + "m left · +" + (pet.session_xp || "?") + " XP pending";
   }
 }
 
@@ -5679,6 +5751,49 @@ async function buyEnergyPack(pack) {
     loadOwnedPets().catch(() => {});
   } catch (e) {
     showToast(e.message || "Pack failed", true);
+  }
+}
+
+
+async function refreshDailyBoss() {
+  try {
+    const d = await api("/api/pets/boss");
+    const el = $("bossInfo");
+    if (!el) return;
+    const b = d.boss || {};
+    el.innerHTML = "<b>" + (b.name || "Boss") + "</b> · " + (b.element || "?") +
+      " · Reward ~" + (b.reward || "?") + " AMT" +
+      "<br>Attempts <b>" + (d.attempts || 0) + "/" + (d.maxAttempts || 3) + "</b>" +
+      (d.defeated ? " · ✅ Defeated today" : "") +
+      (d.hint ? "<br>" + d.hint : "");
+  } catch (e) {
+    if ($("bossInfo")) $("bossInfo").textContent = "Boss: login to load";
+  }
+}
+
+async function fightDailyBoss() {
+  if (!selectedOwned || !selectedOwned.id) {
+    showToast("Open a pet from My Pets first (VIEW), then fight boss", true);
+    return;
+  }
+  const petRef = selectedOwned;
+  const ownedId = Number(petRef.id);
+  try {
+    closeOwnedModal();
+    selectedOwned = petRef;
+    showToast("Daily Boss battle...");
+    const data = await api("/api/pets/boss/fight", {
+      method: "POST",
+      body: JSON.stringify({ ownedPetId: ownedId })
+    });
+    await playBattleArena(data);
+    await refreshWallet();
+    await loadOwnedPets();
+    refreshDailyBoss();
+  } catch (e) {
+    showToast(e.message || "Boss fight failed", true);
+  } finally {
+    selectedOwned = null;
   }
 }
 
@@ -6485,11 +6600,17 @@ async function playBattleArena(data) {
   $("battleResultBadge").textContent = win ? "🏆" : "💀";
   $("battleResultTitle").textContent = win ? "Victory" : "Defeat";
   $("battleResultTitle").style.color = win ? "#ffd54f" : "#ff8899";
+  var extra = "";
+  if (data.elementLabel) extra += " · " + data.elementLabel;
+  if (data.winStreak) extra += " · Streak " + data.winStreak;
+  if (data.streakBonusAmt) extra += " · Streak bonus +" + data.streakBonusAmt;
+  if (data.attemptsLeft != null) extra += " · Boss tries left " + data.attemptsLeft;
   $("battleResultReward").textContent =
     (data.tierLabel ? "[" + data.tierLabel + "] " : "") +
-    (win ? "+" : "+") + (data.reward || 0) + " AMT" +
+    "+" + (data.reward || 0) + " AMT" +
     (data.chargesLeft != null ? " · " + data.chargesLeft + " charges" : "") +
-    (data.chargeBonus ? " · " + data.chargeBonus : "");
+    (data.chargeBonus ? " · " + data.chargeBonus : "") +
+    extra;
   $("battleResultPanel").classList.remove("hidden");
 }
 
