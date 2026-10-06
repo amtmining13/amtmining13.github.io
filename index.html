@@ -2108,6 +2108,7 @@ SELECT 180D
     <button class="secondary" style="margin:0;flex:1;min-width:70px" onclick="loadGearShop('armor')">Armor</button>
     <button class="secondary" style="margin:0;flex:1;min-width:70px" onclick="loadGearShop('all')">All</button>
     <button class="secondary" style="margin:0;flex:1;min-width:70px" onclick="loadGearInventory()">Backpack</button>
+    <button class="secondary" style="margin:0;flex:1;min-width:70px" onclick="loadMaterialsShop()">Gems/Cores</button>
   </div>
   <div id="gearShopGrid" class="balance-stack"></div>
 </div>
@@ -2218,6 +2219,7 @@ SELECT 180D
 <div id="ownedWearPreview" style="text-align:center;margin-bottom:8px"></div>
 <div id="ownedGearPanel" style="margin-bottom:10px"></div>
 <div id="ownedGearBonus" class="muted" style="font-size:11px;margin-bottom:8px"></div>
+<div id="ownedUpgradePanel" style="margin-bottom:10px"></div>
 <div class="grid" style="margin-bottom:10px">
 <div class="stat"><div class="stat-label">Lv</div><div class="stat-value" id="ownedLv">1</div></div>
 <div class="stat"><div class="stat-label">Energy</div><div class="stat-value" id="ownedEnergy">100</div></div>
@@ -2255,7 +2257,9 @@ SELECT 180D
 <button class="secondary" style="margin:0;width:auto;padding:8px 10px;font-size:11px" onclick="trainPet('atk',24)">Train 24h (2.5)</button>
 </div>
 <button class="primary" style="margin-bottom:8px" onclick="claimPetSession()">✅ CLAIM CARE/TRAIN XP</button>
+<button class="secondary" style="margin-bottom:8px" onclick="cancelPetSession()">⏹ CANCEL SESSION</button>
 <div id="ownedSessionInfo" class="muted" style="font-size:11px;margin-bottom:8px"></div>
+<div class="muted" style="font-size:10px;margin-bottom:8px">Timed care/train: wait for timer → Claim. Instant Feed/Play/Train = XP now. Cancel = no XP, no refund.</div>
 <div class="muted" style="font-size:10px;margin:6px 0 4px">CPU battle tier (scales with your level)</div>
 <div class="grid" style="grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
 <button class="secondary" style="margin:0;padding:10px 6px;font-size:11px" onclick="battlePet('rookie')">⚔️ Rookie</button>
@@ -5643,7 +5647,9 @@ async function trainPet(stat, durationHours) {
     if (hours > 0) {
       showToast(data.message || (hours + "h training started · claim later"));
     } else {
-      let msg = "Trained · +" + (data.xpGained || 0) + " XP";
+      var st = String(stat || "atk").toUpperCase();
+      var msg = st + " " + (data.beforeStat != null ? data.beforeStat + "→" + data.afterStat : ("+" + (data.gain || ""))) +
+        " · +" + (data.xpGained || 0) + " XP";
       if (data.milestones && data.milestones.length) {
         const b = data.milestones.map(m => "Lv" + m.level + " +" + m.amount).join(", ");
         msg += " · Milestone " + b + " AMT!";
@@ -5669,7 +5675,7 @@ async function claimPetSession() {
       method: "POST",
       body: JSON.stringify({ ownedPetId: Number(selectedOwned.id) })
     });
-    showToast(data.message || ("Claimed +" + (data.xpGained || 0) + " XP"));
+    showToast(data.message || ("Claimed +" + (data.xpGained || 0) + " XP · Lv" + (data.level || "")));
     if (data.pet) fillOwnedModalFromPet(data.pet);
     if ($("ownedSessionInfo")) $("ownedSessionInfo").textContent = "No active session";
     await refreshWallet();
@@ -5683,17 +5689,41 @@ function updateOwnedSessionInfo(pet) {
   var el = $("ownedSessionInfo");
   if (!el) return;
   if (!pet || !pet.session_ends_at) {
-    el.textContent = "No active care/train session";
+    el.textContent = "No active session · instant Feed/Train gives XP now";
+    el.style.color = "";
     return;
   }
   var ends = new Date(pet.session_ends_at);
   var left = ends - Date.now();
   if (left <= 0) {
-    el.textContent = "Session ready · tap CLAIM CARE/TRAIN XP (+" + (pet.session_xp || "?") + " XP)";
+    el.textContent = "✅ READY · tap CLAIM for +" + (pet.session_xp || "?") + " XP";
+    el.style.color = "#7dffa0";
   } else {
     var h = Math.floor(left / 3600000);
     var m = Math.floor((left % 3600000) / 60000);
-    el.textContent = (pet.session_type || "Session") + " · " + h + "h " + m + "m left · +" + (pet.session_xp || "?") + " XP pending";
+    el.textContent = "⏳ " + (pet.session_type || "Session") + " · " + h + "h " + m + "m left · +" + (pet.session_xp || "?") + " XP when claimed";
+    el.style.color = "#ffd54f";
+  }
+}
+
+async function cancelPetSession() {
+  if (!selectedOwned || !selectedOwned.id) {
+    showToast("Open a pet first", true);
+    return;
+  }
+  try {
+    const data = await api("/api/pets/cancel-session", {
+      method: "POST",
+      body: JSON.stringify({ ownedPetId: Number(selectedOwned.id) })
+    });
+    showToast(data.message || "Session cancelled");
+    if ($("ownedSessionInfo")) {
+      $("ownedSessionInfo").textContent = "No active session · instant Feed/Train gives XP now";
+      $("ownedSessionInfo").style.color = "";
+    }
+    loadOwnedPets().catch(function(){});
+  } catch (e) {
+    showToast(e.message || "Cancel failed", true);
   }
 }
 
@@ -6015,6 +6045,102 @@ function gearIconHtml(g, size) {
     gearSvg(g.shape, g.color) + "</div>";
 }
 
+
+async function loadMaterialsShop() {
+  const box = $("gearShopGrid");
+  if (!box) return;
+  box.innerHTML = "<div class='muted'>Loading materials...</div>";
+  try {
+    const d = await api("/api/gear/materials");
+    const have = {};
+    (d.materials || []).forEach(function(m){ have[m.id] = m.qty; });
+    var html = "<div class='muted' style='font-size:11px;margin-bottom:8px'>Upgrade Core = item +level · Gems = socket on equipped gear (My Pet)</div>";
+    (d.catalog || []).forEach(function(m) {
+      var q = have[m.id] || 0;
+      html += "<div class='balance-row' style='flex-wrap:wrap;gap:6px;align-items:center'>" +
+        "<div style='flex:1;min-width:120px'><b>" + m.name + "</b><div class='muted' style='font-size:10px'>" + (m.desc || "") + " · Have " + q + "</div></div>" +
+        "<button class='small-btn' style='width:auto' onclick=\"buyMaterial('" + m.id + "')\">" + m.priceAmt + " AMT</button></div>";
+    });
+    box.innerHTML = html;
+  } catch (e) {
+    box.innerHTML = "<div class='muted'>" + (e.message || "Failed") + "</div>";
+  }
+}
+
+async function buyMaterial(id) {
+  try {
+    const d = await api("/api/gear/buy-material", {
+      method: "POST",
+      body: JSON.stringify({ materialId: id, qty: 1 })
+    });
+    showToast(d.message || "Bought");
+    await refreshWallet();
+    loadMaterialsShop();
+  } catch (e) {
+    showToast(e.message || "Buy failed", true);
+  }
+}
+
+async function upgradeEquipped(slot) {
+  if (!selectedOwned || !selectedOwned.id) {
+    showToast("Open a pet first", true);
+    return;
+  }
+  try {
+    const d = await api("/api/gear/upgrade", {
+      method: "POST",
+      body: JSON.stringify({ ownedPetId: Number(selectedOwned.id), slot: slot || "weapon" })
+    });
+    showToast(d.message || "Upgraded");
+    await refreshWallet();
+    if (selectedOwned.id) loadOwnedGear(selectedOwned.id);
+  } catch (e) {
+    showToast(e.message || "Upgrade failed", true);
+  }
+}
+
+async function socketGem(slot, gemIndex, materialId) {
+  if (!selectedOwned || !selectedOwned.id) {
+    showToast("Open a pet first", true);
+    return;
+  }
+  try {
+    const d = await api("/api/gear/socket", {
+      method: "POST",
+      body: JSON.stringify({
+        ownedPetId: Number(selectedOwned.id),
+        slot: slot || "weapon",
+        gemIndex: gemIndex,
+        materialId: materialId
+      })
+    });
+    showToast(d.message || "Socketed");
+    if (selectedOwned.id) loadOwnedGear(selectedOwned.id);
+  } catch (e) {
+    showToast(e.message || "Socket failed", true);
+  }
+}
+
+async function pickSocketGem(slot, gemIndex) {
+  try {
+    const d = await api("/api/gear/materials");
+    const gems = (d.materials || []).filter(function(m){ return m.kind === "gem" && m.qty > 0; });
+    if (!gems.length) {
+      showToast("No gems. Buy at Gems/Cores or win battles.", true);
+      return;
+    }
+    // Use first available gem of preferred type - prompt via simple cycle ATK>HP>DEF
+    var pick = gems[0];
+    var prefer = window._socketPrefer || "atk";
+    for (var i = 0; i < gems.length; i++) {
+      if (gems[i].stat === prefer) { pick = gems[i]; break; }
+    }
+    await socketGem(slot, gemIndex, pick.id);
+  } catch (e) {
+    showToast(e.message || "No gems", true);
+  }
+}
+
 async function loadGearShop(filter) {
   const box = $("gearShopGrid");
   if (!box) return;
@@ -6151,7 +6277,20 @@ async function loadOwnedGear(ownedId) {
   } catch (e) {
     panel.innerHTML = "<div class='muted'>" + (e.message || "Gear unavailable") + "</div>";
   }
+
+  try {
+    const panel = $("ownedUpgradePanel");
+    if (panel) {
+      panel.innerHTML = "<div class='muted' style='font-size:10px;margin:6px 0'>Upgrade uses Cores · Gems socket on weapon</div>" +
+        "<button class='secondary' style='margin-bottom:6px' onclick=\"upgradeEquipped('weapon')\">⬆️ UPGRADE WEAPON (+Core)</button>" +
+        "<div style='display:flex;gap:6px;flex-wrap:wrap'>" +
+        "<button class='small-btn' style='width:auto' onclick=\"window._socketPrefer='atk';pickSocketGem('weapon',1)\">💎 Gem1 ATK</button>" +
+        "<button class='small-btn' style='width:auto' onclick=\"window._socketPrefer='hp';pickSocketGem('weapon',2)\">💎 Gem2 HP</button>" +
+        "</div>";
+    }
+  } catch (e) {}
 }
+
 
 async function equipGear(gearId) {
   if (!selectedOwned || !selectedOwned.id) return showToast("No pet selected", true);
@@ -6605,6 +6744,7 @@ async function playBattleArena(data) {
   if (data.winStreak) extra += " · Streak " + data.winStreak;
   if (data.streakBonusAmt) extra += " · Streak bonus +" + data.streakBonusAmt;
   if (data.attemptsLeft != null) extra += " · Boss tries left " + data.attemptsLeft;
+  if (data.drops && data.drops.length) extra += " · Loot: " + data.drops.join(", ");
   $("battleResultReward").textContent =
     (data.tierLabel ? "[" + data.tierLabel + "] " : "") +
     "+" + (data.reward || 0) + " AMT" +
