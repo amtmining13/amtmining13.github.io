@@ -6186,6 +6186,43 @@ async function loadGearShop(filter) {
   }
 }
 
+
+async function useBagMaterial(materialId) {
+  const mid = String(materialId || "");
+  if (!mid) return;
+  // Need a pet open or pick from owned list
+  if (!selectedOwned || !selectedOwned.id) {
+    showToast("Open My Pets → VIEW a pet with equipped weapon, then tap the core/gem again — or use Upgrade/Gem buttons on the pet.");
+    try {
+      if (typeof showSection === "function") showSection("marketSection");
+      if (typeof petTab === "function") petTab("owned");
+    } catch (e) {}
+    return;
+  }
+  const m = mid.indexOf("gem_") === 0 ? "gem" : (mid === "upgrade_core" ? "core" : "other");
+  try {
+    if (m === "core") {
+      showToast("Upgrading weapon...");
+      await upgradeEquipped("weapon");
+      loadGearInventory();
+      return;
+    }
+    if (m === "gem") {
+      // prefer stat from id gem_atk_1 etc
+      if (mid.indexOf("atk") >= 0) window._socketPrefer = "atk";
+      else if (mid.indexOf("hp") >= 0) window._socketPrefer = "hp";
+      else if (mid.indexOf("def") >= 0) window._socketPrefer = "def";
+      showToast("Socketing gem on weapon...");
+      await socketGem("weapon", 1, mid);
+      loadGearInventory();
+      return;
+    }
+    showToast("Unknown material");
+  } catch (e) {
+    showToast((e && e.message) || "Could not use item", true);
+  }
+}
+
 async function loadGearInventory() {
   const box = $("gearShopGrid");
   if (!box) return;
@@ -6205,13 +6242,15 @@ async function loadGearInventory() {
     if (mats.length) {
       mats.forEach(function(m) {
         var icon = m.kind === "core" ? "🔶" : "💎";
-        html += "<div class='balance-row' style='align-items:center'>" +
+        var mid = String(m.id || "").replace(/'/g, "");
+        html += "<div class='balance-row' style='align-items:center;cursor:pointer' onclick=\"useBagMaterial('" + mid + "')\">" +
           "<span style='font-size:18px;margin-right:8px'>" + icon + "</span>" +
           "<span class='balance-row-label' style='flex:1'>" + (m.name || m.id) +
           (m.desc ? "<div class='muted' style='font-size:10px'>" + m.desc + "</div>" : "") +
+          "<div class='muted' style='font-size:10px;color:#ffd54f'>Tap to use</div>" +
           "</span><span class='balance-row-value'>x" + m.qty + "</span></div>";
       });
-      html += "<div class='muted' style='font-size:10px;margin:8px 0 12px'>Use on My Pet → Upgrade Weapon / Gem1 / Gem2</div>";
+      html += "<div class='muted' style='font-size:10px;margin:8px 0 12px'>Tap item · needs equipped gear on a pet (My Pet)</div>";
     } else {
       html += "<div class='muted' style='font-size:11px;margin-bottom:12px'>No cores or gems yet. Tap <b>Gems/Cores</b> to buy, or win battles.</div>";
     }
