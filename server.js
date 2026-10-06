@@ -6868,6 +6868,12 @@ async function ensurePetTables() {
     `ALTER TABLE owned_pets ADD COLUMN IF NOT EXISTS image TEXT`,
     `ALTER TABLE owned_pets ADD COLUMN IF NOT EXISTS level INT NOT NULL DEFAULT 1`,
     `ALTER TABLE owned_pets ADD COLUMN IF NOT EXISTS exp INT NOT NULL DEFAULT 0`,
+    `ALTER TABLE owned_pets ADD COLUMN IF NOT EXISTS session_type TEXT`,
+    `ALTER TABLE owned_pets ADD COLUMN IF NOT EXISTS session_ends_at TIMESTAMPTZ`,
+    `ALTER TABLE owned_pets ADD COLUMN IF NOT EXISTS session_stat TEXT`,
+    `ALTER TABLE owned_pets ADD COLUMN IF NOT EXISTS session_xp INT NOT NULL DEFAULT 0`,
+    `ALTER TABLE owned_pets ADD COLUMN IF NOT EXISTS session_cost NUMERIC(18,8) NOT NULL DEFAULT 0`,
+
     `ALTER TABLE pet_eggs ADD COLUMN IF NOT EXISTS is_listed BOOLEAN NOT NULL DEFAULT FALSE`,
     `ALTER TABLE pet_eggs ADD COLUMN IF NOT EXISTS gen INT NOT NULL DEFAULT 1`,
     `ALTER TABLE pet_listings ADD COLUMN IF NOT EXISTS egg_id BIGINT`,
@@ -7411,11 +7417,20 @@ app.post("/api/pets/energy-pack", requireAuth, async (req, res) => {
 app.post("/api/pets/care", requireAuth, async (req, res) => {
   const ownedId = Number(req.body?.ownedPetId);
   const action = String(req.body?.action || "feed").toLowerCase(); // feed | play
+  const hours = Number(req.body?.durationHours || 0); // 0 instant | 4 | 12 | 24
   if (!Number.isFinite(ownedId) || ownedId < 1) {
     return res.status(400).json({ ok: false, error: "ownedPetId required." });
   }
+  if (![0, 4, 12, 24].includes(hours)) {
+    return res.status(400).json({ ok: false, error: "durationHours must be 0, 4, 12, or 24." });
+  }
 
-  const cost = action === "play" ? 0.1 : 0.2;
+  const baseCost = action === "play" ? 0.1 : 0.2;
+  const cost = hours === 0 ? baseCost : (hours === 4 ? 0.3 : hours === 12 ? 0.6 : 1.0);
+  const xpGain = hours === 0
+    ? (action === "play" ? 12 : 18)
+    : (hours === 4 ? 45 : hours === 12 ? 90 : 160);
+
   const client = await pool.connect();
   try {
     await ensurePetTables();
@@ -7426,9 +7441,13 @@ app.post("/api/pets/care", requireAuth, async (req, res) => {
     );
     if (!pet.rows.length) {
       await client.query("ROLLBACK");
-      return res.status(404).json({
+      return res.status(404).json({ ok: false, error: "Pet not found in your My Pets." });
+    }
+    if (pet.rows[0].session_ends_at && new Date(pet.rows[0].session_ends_at) > new Date()) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({
         ok: false,
-        error: "Pet not found in your My Pets. Buy again or re-open My Pets."
+        error: "Pet is busy (care/train session active). Wait or claim when done."
       });
     }
     const balance = await getBalance(req.member.id, client);
@@ -7445,22 +7464,49 @@ app.post("/api/pets/care", requireAuth, async (req, res) => {
     );
     const energyGain = action === "feed" ? 30 : 15;
     const happyGain = action === "play" ? 30 : 15;
-    const updated = await client.query(
+
+    if (hours === 0) {
+      await client.query(
+        `UPDATE owned_pets SET
+          energy = LEAST(100, COALESCE(energy, 0) + $1),
+          happiness = LEAST(100, COALESCE(happiness, 0) + $2),
+          exp = COALESCE(exp, 0) + $3,
+          session_type = NULL, session_ends_at = NULL, session_xp = 0
+         WHERE id = $4`,
+        [energyGain, happyGain, xpGain, ownedId]
+      );
+      const petAfter = await applyLevelAndRarity(client, ownedId, req.member.id);
+      await client.query("COMMIT");
+      return res.json({
+        ok: true, action, cost, durationHours: 0, xpGained: xpGain,
+        pet: petAfter, level: petAfter && petAfter.level
+      });
+    }
+
+    const ends = new Date(Date.now() + hours * 3600 * 1000);
+    await client.query(
       `UPDATE owned_pets SET
         energy = LEAST(100, COALESCE(energy, 0) + $1),
-        happiness = LEAST(100, COALESCE(happiness, 0) + $2)
-       WHERE id = $3 RETURNING *`,
-      [energyGain, happyGain, ownedId]
+        happiness = LEAST(100, COALESCE(happiness, 0) + $2),
+        session_type = $3,
+        session_ends_at = $4,
+        session_stat = NULL,
+        session_xp = $5,
+        session_cost = $6
+       WHERE id = $7`,
+      [energyGain, happyGain, "care_" + action, ends.toISOString(), xpGain, cost, ownedId]
     );
+    const updated = await client.query(`SELECT * FROM owned_pets WHERE id = $1`, [ownedId]);
     await client.query("COMMIT");
-    res.json({ ok: true, action, cost, pet: updated.rows[0] });
+    res.json({
+      ok: true, action, cost, durationHours: hours, xpPending: xpGain,
+      sessionEndsAt: ends.toISOString(), pet: updated.rows[0],
+      message: "Care started · claim XP after " + hours + "h"
+    });
   } catch (e) {
     try { await client.query("ROLLBACK"); } catch {}
     console.error("CARE ERROR:", e);
-    res.status(500).json({
-      ok: false,
-      error: "Care failed. " + (e.message || "")
-    });
+    res.status(500).json({ ok: false, error: "Care failed. " + (e.message || "") });
   } finally {
     client.release();
   }
@@ -7469,15 +7515,20 @@ app.post("/api/pets/care", requireAuth, async (req, res) => {
 /* ---------- Training ---------- */
 app.post("/api/pets/train", requireAuth, async (req, res) => {
   const ownedId = Number(req.body?.ownedPetId);
-  const stat = String(req.body?.stat || "atk").toLowerCase(); // hp|atk|def|spd
+  const stat = String(req.body?.stat || "atk").toLowerCase();
+  const hours = Number(req.body?.durationHours || 0); // 0 instant | 8 | 12 | 24
   if (!Number.isFinite(ownedId) || ownedId < 1) {
     return res.status(400).json({ ok: false, error: "ownedPetId required." });
   }
   if (!["hp", "atk", "def", "spd"].includes(stat)) {
     return res.status(400).json({ ok: false, error: "Invalid stat." });
   }
+  if (![0, 8, 12, 24].includes(hours)) {
+    return res.status(400).json({ ok: false, error: "durationHours must be 0, 8, 12, or 24." });
+  }
 
-  const cost = 0.5;
+  const cost = hours === 0 ? 0.5 : (hours === 8 ? 1.0 : hours === 12 ? 1.5 : 2.5);
+  const xpGain = hours === 0 ? 28 : (hours === 8 ? 70 : hours === 12 ? 110 : 200);
   const client = await pool.connect();
   try {
     await ensurePetTables();
@@ -7488,9 +7539,13 @@ app.post("/api/pets/train", requireAuth, async (req, res) => {
     );
     if (!pet.rows.length) {
       await client.query("ROLLBACK");
-      return res.status(404).json({
+      return res.status(404).json({ ok: false, error: "Pet not found in your My Pets." });
+    }
+    if (pet.rows[0].session_ends_at && new Date(pet.rows[0].session_ends_at) > new Date()) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({
         ok: false,
-        error: "Pet not found in your My Pets."
+        error: "Pet is busy (care/train session active). Wait or claim when done."
       });
     }
     if (Number(pet.rows[0].energy || 0) < 20) {
@@ -7505,7 +7560,7 @@ app.post("/api/pets/train", requireAuth, async (req, res) => {
       await client.query("ROLLBACK");
       return res.status(400).json({
         ok: false,
-        error: "Insufficient in-app AMT. Need 0.5 (you have " + balance + ")."
+        error: "Insufficient in-app AMT. Need " + cost + " (you have " + balance + ")."
       });
     }
     await client.query(
@@ -7513,38 +7568,50 @@ app.post("/api/pets/train", requireAuth, async (req, res) => {
       [req.member.id, -cost, makeReference("AMT-TRAIN")]
     );
     const gain = stat === "hp" ? 5 : 2;
-    // Stat + energy + exp (level/rarity resolved below)
+
+    if (hours === 0) {
+      await client.query(
+        `UPDATE owned_pets SET
+          ${stat} = COALESCE(${stat}, 0) + $1,
+          energy = GREATEST(0, COALESCE(energy, 0) - 20),
+          exp = COALESCE(exp, 0) + $2,
+          session_type = NULL, session_ends_at = NULL, session_xp = 0
+         WHERE id = $3`,
+        [gain, xpGain, ownedId]
+      );
+      const petAfter = await applyLevelAndRarity(client, ownedId, req.member.id);
+      await client.query("COMMIT");
+      return res.json({
+        ok: true, trained: stat, gain, cost, durationHours: 0, xpGained: xpGain,
+        pet: petAfter, level: petAfter && petAfter.level,
+        milestones: (petAfter && petAfter._milestones) || []
+      });
+    }
+
+    const ends = new Date(Date.now() + hours * 3600 * 1000);
     await client.query(
       `UPDATE owned_pets SET
-        ${stat} = COALESCE(${stat}, 0) + $1,
         energy = GREATEST(0, COALESCE(energy, 0) - 20),
-        exp = COALESCE(exp, 0) + 10
-       WHERE id = $2`,
-      [gain, ownedId]
+        session_type = 'train',
+        session_ends_at = $1,
+        session_stat = $2,
+        session_xp = $3,
+        session_cost = $4
+       WHERE id = $5`,
+      [ends.toISOString(), stat, xpGain, cost, ownedId]
     );
-    const petAfter = await applyLevelAndRarity(
-      client,
-      ownedId,
-      req.member.id
-    );
+    // store stat gain in session_stat as "atk:2" style already session_stat = stat; apply gain on claim
+    const updated = await client.query(`SELECT * FROM owned_pets WHERE id = $1`, [ownedId]);
     await client.query("COMMIT");
     res.json({
-      ok: true,
-      trained: stat,
-      gain,
-      cost,
-      pet: petAfter,
-      rarity: petAfter && petAfter.rarity,
-      level: petAfter && petAfter.level,
-      milestones: (petAfter && petAfter._milestones) || []
+      ok: true, trained: stat, cost, durationHours: hours, xpPending: xpGain,
+      sessionEndsAt: ends.toISOString(), pet: updated.rows[0],
+      message: "Training started · claim XP + stats after " + hours + "h"
     });
   } catch (e) {
     try { await client.query("ROLLBACK"); } catch {}
     console.error("TRAIN ERROR:", e);
-    res.status(500).json({
-      ok: false,
-      error: "Training failed. " + (e.message || "")
-    });
+    res.status(500).json({ ok: false, error: "Train failed. " + (e.message || "") });
   } finally {
     client.release();
   }
@@ -8073,9 +8140,16 @@ function elementMult(atkEl, defEl) {
   if (!atkEl || !defEl) return 1;
   const a = String(atkEl);
   const d = String(defEl);
-  if (ELEMENT_BEATS[a] === d) return 1.15;
-  if (ELEMENT_BEATS[d] === a) return 0.85;
+  if (ELEMENT_BEATS[a] === d) return 1.35;
+  if (ELEMENT_BEATS[d] === a) return 0.72;
   return 1;
+}
+
+function elementRelation(atkEl, defEl) {
+  const m = elementMult(atkEl, defEl);
+  if (m > 1) return { key: "advantage", label: "SUPER EFFECTIVE", mult: m };
+  if (m < 1) return { key: "disadvantage", label: "RESISTED", mult: m };
+  return { key: "neutral", label: "Neutral", mult: 1 };
 }
 
 function pickTier(bodyTier, petLevel) {
@@ -8321,11 +8395,13 @@ app.post("/api/pets/battle", requireAuth, async (req, res) => {
     );
 
     const win = sim.win;
+    const rel = elementRelation(myEl, enEl);
     let reward = 0;
     if (win) {
       reward =
         tier.rewardMin +
         Math.random() * (tier.rewardMax - tier.rewardMin);
+      if (rel.key === "advantage") reward *= 1.15;
       reward = Math.round(reward * 100) / 100;
     } else {
       reward = 0.05;
@@ -8341,6 +8417,16 @@ app.post("/api/pets/battle", requireAuth, async (req, res) => {
       ownedId,
       req.member.id
     );
+    const chargeInfo = await applyBattleWinCharges(client, req.member.id, day, win);
+
+    // Win-streak AMT bonuses (3 / 5 / 7)
+    let streakBonusAmt = 0;
+    let streakMsg = "";
+    if (win && chargeInfo.streak === 3) { streakBonusAmt = 0.35; streakMsg = "🔥 3-win streak +0.35 AMT"; }
+    if (win && chargeInfo.streak === 5) { streakBonusAmt = 0.80; streakMsg = "🔥 5-win streak +0.80 AMT"; }
+    if (win && chargeInfo.streak === 7) { streakBonusAmt = 1.50; streakMsg = "🔥 7-win streak +1.50 AMT"; }
+    reward = Math.round((reward + streakBonusAmt) * 100) / 100;
+
     await client.query(
       `INSERT INTO amt_ledger (member_id, amount, type, reference)
        VALUES ($1,$2,'PET_BATTLE',$3)`,
@@ -8352,7 +8438,6 @@ app.post("/api/pets/battle", requireAuth, async (req, res) => {
        VALUES ($1,$2,$3,$4,$5)`,
       [req.member.id, ownedId, en.name, win ? "WIN" : "LOSS", reward]
     );
-    const chargeInfo = await applyBattleWinCharges(client, req.member.id, day, win);
     const underdog = false;
     const repInfo = await applyBattleRep(client, req.member.id, ownedId, win, tierKey, underdog);
 
@@ -8363,7 +8448,11 @@ app.post("/api/pets/battle", requireAuth, async (req, res) => {
       tierLabel: tier.label,
       chargesLeft: chargeInfo.charges,
       winStreak: chargeInfo.streak,
-      chargeBonus: chargeInfo.message || "",
+      chargeBonus: [chargeInfo.message, streakMsg].filter(Boolean).join(" · "),
+      streakBonusAmt,
+      elementRelation: rel.key,
+      elementLabel: rel.label,
+      elementMult: rel.mult,
       petRepGained: repInfo.petRep,
       ownerRepGained: repInfo.ownerRep,
       petLevel: petAfterBattle && petAfterBattle.level,
@@ -8377,7 +8466,7 @@ app.post("/api/pets/battle", requireAuth, async (req, res) => {
       opponentEmoji:
         ({
           Earth: "🌍", Water: "💧", Nature: "🌿", Ice: "❄️",
-          Fire: "🔥", Wind: "🌬️", Thunder: "⚡"
+          Fire: "🔥", Wind: "🌬️", Thunder: "⚡", Shadow: "🌑", Light: "✨", Cosmic: "🌌"
         }[enEl] || "🐾"),
       petName: pet.name,
       petElement: myEl,
@@ -8929,6 +9018,79 @@ app.get("/api/pets/battle-charges", requireAuth, async (req, res) => {
   }
 });
 
+
+/* ---------- Claim care/train session ---------- */
+app.post("/api/pets/claim-session", requireAuth, async (req, res) => {
+  const ownedId = Number(req.body?.ownedPetId);
+  if (!Number.isFinite(ownedId) || ownedId < 1) {
+    return res.status(400).json({ ok: false, error: "ownedPetId required." });
+  }
+  const client = await pool.connect();
+  try {
+    await ensurePetTables();
+    await client.query("BEGIN");
+    const pet = await client.query(
+      `SELECT * FROM owned_pets WHERE id = $1 AND member_id = $2 FOR UPDATE`,
+      [ownedId, req.member.id]
+    );
+    if (!pet.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ ok: false, error: "Pet not found." });
+    }
+    const row = pet.rows[0];
+    if (!row.session_ends_at) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "No active session." });
+    }
+    if (new Date(row.session_ends_at) > new Date()) {
+      await client.query("ROLLBACK");
+      const left = Math.ceil((new Date(row.session_ends_at) - Date.now()) / 60000);
+      return res.status(400).json({
+        ok: false,
+        error: "Session not finished yet. ~" + left + " min left.",
+        sessionEndsAt: row.session_ends_at
+      });
+    }
+    const xp = Number(row.session_xp) || 0;
+    const st = String(row.session_stat || "");
+    const isTrain = String(row.session_type || "").startsWith("train") || st;
+    if (isTrain && st && ["hp", "atk", "def", "spd"].includes(st)) {
+      const gain = st === "hp" ? 5 : 2;
+      await client.query(
+        `UPDATE owned_pets SET
+          ${st} = COALESCE(${st}, 0) + $1,
+          exp = COALESCE(exp, 0) + $2,
+          session_type = NULL, session_ends_at = NULL, session_stat = NULL,
+          session_xp = 0, session_cost = 0
+         WHERE id = $3`,
+        [gain, xp, ownedId]
+      );
+    } else {
+      await client.query(
+        `UPDATE owned_pets SET
+          exp = COALESCE(exp, 0) + $1,
+          session_type = NULL, session_ends_at = NULL, session_stat = NULL,
+          session_xp = 0, session_cost = 0
+         WHERE id = $2`,
+        [xp, ownedId]
+      );
+    }
+    const petAfter = await applyLevelAndRarity(client, ownedId, req.member.id);
+    await client.query("COMMIT");
+    res.json({
+      ok: true, xpGained: xp, pet: petAfter,
+      level: petAfter && petAfter.level,
+      message: "Session claimed · +" + xp + " XP"
+    });
+  } catch (e) {
+    try { await client.query("ROLLBACK"); } catch {}
+    console.error("CLAIM SESSION:", e);
+    res.status(500).json({ ok: false, error: "Claim failed." });
+  } finally {
+    client.release();
+  }
+});
+
 app.get("/api/pets/skills", requireAuth, async (req, res) => {
   try {
     const element = req.query.element || "Earth";
@@ -9015,6 +9177,198 @@ app.post("/api/pets/squad/set", requireAuth, async (req, res) => {
   } catch (e) {
     console.error("SQUAD SET:", e);
     res.status(500).json({ ok: false, error: "Could not save squad." });
+  } finally {
+    client.release();
+  }
+});
+
+
+/* =========================================================
+   DAILY BOSS
+========================================================= */
+const DAILY_BOSSES = [
+  { id: "ember", name: "Ember Tyrant", element: "Fire", mult: 1.45, reward: 1.8, exp: 55 },
+  { id: "tide", name: "Abyss Leviathan", element: "Water", mult: 1.45, reward: 1.8, exp: 55 },
+  { id: "grove", name: "Elder Grove", element: "Nature", mult: 1.40, reward: 1.6, exp: 50 },
+  { id: "frost", name: "Frost Colossus", element: "Ice", mult: 1.50, reward: 2.0, exp: 60 },
+  { id: "storm", name: "Storm Sovereign", element: "Thunder", mult: 1.50, reward: 2.0, exp: 60 },
+  { id: "stone", name: "Stone Warden", element: "Earth", mult: 1.40, reward: 1.6, exp: 50 },
+  { id: "void", name: "Void Herald", element: "Shadow", mult: 1.55, reward: 2.2, exp: 70 }
+];
+
+function getTodayBoss() {
+  const dayIndex = Math.floor(Date.now() / 86400000);
+  return DAILY_BOSSES[dayIndex % DAILY_BOSSES.length];
+}
+
+async function ensureBossTable() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS pet_boss_daily (
+      member_id BIGINT NOT NULL,
+      boss_date DATE NOT NULL,
+      attempts INT NOT NULL DEFAULT 0,
+      defeated BOOLEAN NOT NULL DEFAULT FALSE,
+      best_damage INT NOT NULL DEFAULT 0,
+      PRIMARY KEY (member_id, boss_date)
+    )
+  `);
+}
+
+app.get("/api/pets/boss", requireAuth, async (req, res) => {
+  try {
+    await ensureBossTable();
+    const boss = getTodayBoss();
+    const day = new Date().toISOString().slice(0, 10);
+    const r = await pool.query(
+      `SELECT attempts, defeated, best_damage FROM pet_boss_daily
+       WHERE member_id = $1 AND boss_date = $2::date`,
+      [req.member.id, day]
+    );
+    const row = r.rows[0] || { attempts: 0, defeated: false, best_damage: 0 };
+    res.json({
+      ok: true,
+      boss: {
+        name: boss.name,
+        element: boss.element,
+        id: boss.id,
+        reward: boss.reward,
+        exp: boss.exp
+      },
+      attempts: Number(row.attempts) || 0,
+      maxAttempts: 3,
+      defeated: !!row.defeated,
+      bestDamage: Number(row.best_damage) || 0,
+      beats: ELEMENT_BEATS[boss.element] || null,
+      hint: "Use element that beats " + boss.element + " for super effective damage"
+    });
+  } catch (e) {
+    console.error("BOSS GET:", e);
+    res.status(500).json({ ok: false, error: "Boss unavailable." });
+  }
+});
+
+app.post("/api/pets/boss/fight", requireAuth, async (req, res) => {
+  const ownedId = Number(req.body?.ownedPetId);
+  if (!Number.isInteger(ownedId)) {
+    return res.status(400).json({ ok: false, error: "ownedPetId required." });
+  }
+  const client = await pool.connect();
+  try {
+    await ensurePetTables();
+    await ensureBossTable();
+    const boss = getTodayBoss();
+    const day = new Date().toISOString().slice(0, 10);
+
+    await client.query("BEGIN");
+    await client.query(
+      `INSERT INTO pet_boss_daily (member_id, boss_date, attempts, defeated, best_damage)
+       VALUES ($1, $2::date, 0, FALSE, 0)
+       ON CONFLICT (member_id, boss_date) DO NOTHING`,
+      [req.member.id, day]
+    );
+    const dayRow = await client.query(
+      `SELECT * FROM pet_boss_daily WHERE member_id = $1 AND boss_date = $2::date FOR UPDATE`,
+      [req.member.id, day]
+    );
+    let attempts = Number(dayRow.rows[0].attempts) || 0;
+    let defeated = !!dayRow.rows[0].defeated;
+    if (attempts >= 3) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "No boss attempts left today (3/3)." });
+    }
+
+    const petRes = await client.query(
+      `SELECT * FROM owned_pets WHERE id = $1 AND member_id = $2 FOR UPDATE`,
+      [ownedId, req.member.id]
+    );
+    if (!petRes.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ ok: false, error: "Pet not found." });
+    }
+    const pet = petRes.rows[0];
+    if (Number(pet.energy) < 18) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Need at least 18 energy for Daily Boss." });
+    }
+
+    const lv = Number(pet.level) || 1;
+    const my = {
+      name: pet.name,
+      level: lv,
+      hp: Number(pet.hp) + lv * 8,
+      maxHp: Number(pet.hp) + lv * 8,
+      atk: Number(pet.atk) + lv * 2,
+      def: Number(pet.def) + Math.floor(lv * 0.8),
+      spd: Number(pet.spd) + Math.floor(lv * 0.5)
+    };
+    const myEl = pet.element || "Earth";
+    const en = {
+      name: boss.name,
+      hp: Math.max(80, Math.round(my.hp * boss.mult * 1.05)),
+      atk: Math.max(12, Math.round(my.atk * boss.mult * 0.92)),
+      def: Math.max(8, Math.round(my.def * boss.mult * 0.9)),
+      spd: Math.max(6, Math.round(my.spd * 0.95)),
+      maxHp: Math.max(80, Math.round(my.hp * boss.mult * 1.05))
+    };
+    const enEl = boss.element;
+    const sim = (typeof simulateBattleWithSkills === "function")
+      ? simulateBattleWithSkills({ ...my, name: pet.name }, { ...en, name: boss.name }, myEl, enEl)
+      : simulateBattle({ ...my, name: pet.name }, { ...en, name: boss.name }, myEl, enEl);
+
+    const win = !!sim.win;
+    attempts += 1;
+    const damage = Math.max(0, (sim.enMax || en.hp) - (sim.rounds && sim.rounds.length ? Number(sim.rounds[sim.rounds.length - 1].enHp) : 0));
+    const best = Math.max(Number(dayRow.rows[0].best_damage) || 0, damage);
+    if (win) defeated = true;
+
+    let reward = win ? boss.reward : Math.round(boss.reward * 0.15 * 100) / 100;
+    const rel = elementRelation(myEl, enEl);
+    if (win && rel.key === "advantage") reward = Math.round(reward * 1.2 * 100) / 100;
+
+    await client.query(
+      `UPDATE owned_pets SET energy = GREATEST(0, energy - 18),
+        exp = COALESCE(exp, 0) + $1 WHERE id = $2`,
+      [win ? boss.exp : Math.floor(boss.exp * 0.25), ownedId]
+    );
+    const petAfter = await applyLevelAndRarity(client, ownedId, req.member.id);
+    await client.query(
+      `INSERT INTO amt_ledger (member_id, amount, type, reference) VALUES ($1,$2,'PET_BOSS',$3)`,
+      [req.member.id, reward, makeReference("AMT-BOSS")]
+    );
+    await client.query(
+      `UPDATE pet_boss_daily SET attempts = $1, defeated = $2, best_damage = $3
+       WHERE member_id = $4 AND boss_date = $5::date`,
+      [attempts, defeated, best, req.member.id, day]
+    );
+    await client.query("COMMIT");
+
+    res.json({
+      ok: true,
+      mode: "boss",
+      result: win ? "WIN" : "LOSS",
+      tierLabel: "Daily Boss",
+      opponent: boss.name,
+      opponentElement: enEl,
+      petName: pet.name,
+      petElement: myEl,
+      elementRelation: rel.key,
+      elementLabel: rel.label,
+      reward,
+      damage,
+      attemptsLeft: Math.max(0, 3 - attempts),
+      defeated,
+      winStreak: null,
+      myMaxHp: sim.myMax || my.hp,
+      enMaxHp: sim.enMax || en.hp,
+      rounds: sim.rounds || [],
+      petLevel: petAfter && petAfter.level,
+      milestones: (petAfter && petAfter._milestones) || [],
+      chargeBonus: win ? "Boss defeated!" : ("Attempts left: " + Math.max(0, 3 - attempts))
+    });
+  } catch (e) {
+    try { await client.query("ROLLBACK"); } catch {}
+    console.error("BOSS FIGHT:", e);
+    res.status(500).json({ ok: false, error: "Boss fight failed." });
   } finally {
     client.release();
   }
@@ -9572,7 +9926,7 @@ app.post("/api/gear/unequip", requireAuth, async (req, res) => {
 });
 
 app.get("/api/pets/:petId", async (req, res) => {
-  const reserved = ["owned", "eggs", "listings", "buy", "care", "train", "breed", "hatch", "list", "battle", "arena", "skills", "squad", "story", "battle-charges"];
+  const reserved = ["owned", "eggs", "listings", "buy", "care", "train", "claim-session", "boss", "breed", "hatch", "list", "battle", "arena", "skills", "squad", "story", "battle-charges"];
   if (reserved.includes(String(req.params.petId || "").toLowerCase())) {
     return res.status(404).json({ ok: false, error: "Not found." });
   }
