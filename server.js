@@ -10016,7 +10016,7 @@ app.post("/api/gear/buy", requireAuth, async (req, res) => {
 
 app.get("/api/pets/:ownedId/equipment", requireAuth, async (req, res) => {
   const ownedId = Number(req.params.ownedId);
-  if (!Number.isInteger(ownedId)) {
+  if (!Number.isFinite(ownedId) || ownedId < 1) {
     return res.status(400).json({ ok: false, error: "Invalid pet." });
   }
   try {
@@ -10051,7 +10051,7 @@ app.post("/api/gear/equip", requireAuth, async (req, res) => {
   const ownedId = Number(req.body?.ownedPetId);
   const gearId = String(req.body?.gearId || "").trim();
   const g = getGearById(gearId);
-  if (!Number.isInteger(ownedId) || !g) {
+  if (!Number.isFinite(ownedId) || ownedId < 1 || !g) {
     return res.status(400).json({ ok: false, error: "ownedPetId and gearId required." });
   }
   const client = await pool.connect();
