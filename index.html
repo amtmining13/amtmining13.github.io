@@ -15,7 +15,7 @@
 html{scroll-behavior:smooth}
 body{margin:0;min-height:100vh;font-family:Arial,Helvetica,sans-serif;color:#fff;background:radial-gradient(circle at 20% 0%,rgba(125,55,255,.22),transparent 35%),radial-gradient(circle at 100% 20%,rgba(255,174,0,.12),transparent 30%),linear-gradient(145deg,#05040b,#10091c 48%,#05040b)}
 button,input,select{font:inherit}button{cursor:pointer}.hidden{display:none!important}
-.app{width:100%;max-width:720px;margin:auto;padding-bottom:105px}
+.app{width:100%;max-width:720px;margin:auto;padding-bottom:140px}
 header{position:sticky;top:0;z-index:50;padding:14px 15px;background:rgba(7,5,14,.88);backdrop-filter:blur(18px);border-bottom:1px solid rgba(255,255,255,.07)}
 .header-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .brand{display:flex;align-items:center;gap:10px}.brand-logo{width:48px;height:48px;border-radius:15px;display:grid;place-items:center;font-size:20px;font-weight:900;color:#ffd95a;background:radial-gradient(circle,#4b1d79,#160b27 65%);border:1px solid rgba(255,215,80,.5);box-shadow:0 0 22px rgba(166,74,255,.4)}
@@ -1566,9 +1566,6 @@ Unlink Pi Wallet
 </button>
 </div>
 
-<div class="card">
-
-
 <div id="pendingPayBanner" class="card" style="display:none;margin-bottom:12px;border:1px solid rgba(255,212,82,.35)">
   <div class="card-title">💳 PENDING PAYMENT</div>
   <div class="muted" style="font-size:12px" id="pendingPayBannerText">You have a pay request from a QR link.</div>
@@ -1590,19 +1587,25 @@ Unlink Pi Wallet
   <button class="primary" style="margin-top:10px" onclick="copyPaymentLink()">📋 COPY PAY LINK</button>
 </div>
 
-<div class="card-title">SEND AMT</div>
-
-<div class="form-group">
-<label>Recipient AMT App Wallet Address</label>
-<input id="sendTo" class="input" placeholder="AMT address or Pi username">
+<div class="card" id="sendAmtCard" style="margin-top:12px;margin-bottom:16px">
+  <div class="card-title">SEND AMT</div>
+  <div class="muted" style="font-size:11px;margin-bottom:10px">In-app ledger transfer</div>
+  <div class="form-group">
+    <label>Recipient AMT App Wallet Address</label>
+    <input id="sendTo" class="input" placeholder="AMT address or Pi username" autocomplete="off">
+  </div>
+  <div class="form-group">
+    <label>Amount</label>
+    <input id="sendAmount" class="input" type="number" min="0" step="0.00000001" placeholder="0.00">
+  </div>
+  <button type="button" class="primary" id="sendAmtBtn" style="width:100%;margin-top:12px;margin-bottom:8px;position:relative;z-index:5" onclick="sendAMT()">💸 SEND AMT</button>
 </div>
 
-<div class="form-group">
-<label>Amount</label>
-<input id="sendAmount" class="input" type="number" min="0" step="0.00000001" placeholder="0.00">
-</div>
-
-<button class="primary" onclick="sendAMT()">SEND AMT</button>
+<div class="card" id="txHistoryCard" style="margin-top:12px;margin-bottom:120px">
+  <div class="card-title">TRANSACTION HISTORY</div>
+  <div class="muted" style="font-size:11px;margin-bottom:8px">In-app AMT send / receive (latest 50)</div>
+  <div id="txHistoryList"><div class="empty">Loading...</div></div>
+  <button type="button" class="secondary" style="margin-top:8px;width:100%" onclick="loadTxHistory()">Refresh history</button>
 </div>
 </section>
 
@@ -2511,7 +2514,7 @@ top:0,
 behavior:"smooth"
 });
 
-if(id==="walletSection")refreshWallet();
+if(id==="walletSection"){ refreshWallet(); try{ loadTxHistory(); }catch(e){} }
 if(id==="airdropSection")loadAirdrop();
 if(id==="referralSection")loadReferral();
   if(id==="walletSection"){ try{ refreshPaymentQr(); }catch(e){} }
@@ -3389,6 +3392,42 @@ async function claimOnchainDeposit(){
    SEND AMT
 ============================================================ */
 
+
+async function loadTxHistory() {
+  const box = $("txHistoryList");
+  if (!box) return;
+  if (!accessToken) {
+    box.innerHTML = '<div class="empty">Login to see history.</div>';
+    return;
+  }
+  box.innerHTML = '<div class="muted">Loading transactions...</div>';
+  try {
+    const d = await api("/api/wallet/transactions");
+    const list = d.transactions || [];
+    if (!list.length) {
+      box.innerHTML = '<div class="empty">No transfers yet. Send or receive AMT to see history.</div>';
+      return;
+    }
+    box.innerHTML = list.map(function(tx) {
+      const dir = tx.direction === "SEND" ? "↑ SEND" : "↓ RECEIVE";
+      const color = tx.direction === "SEND" ? "#ff8a80" : "#69f0ae";
+      const other = tx.direction === "SEND" ? tx.recipientAddress : tx.senderAddress;
+      const when = tx.createdAt ? new Date(tx.createdAt).toLocaleString() : "";
+      const amt = Number(tx.amount);
+      const amtStr = (tx.direction === "SEND" ? "-" : "+") + (isFinite(amt) ? amt : tx.amount);
+      return '<div class="balance-row" style="flex-direction:column;align-items:stretch;gap:4px;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.08)">' +
+        '<div style="display:flex;justify-content:space-between;gap:8px">' +
+        '<span style="color:' + color + ';font-weight:700">' + dir + '</span>' +
+        '<span style="color:' + color + ';font-weight:700">' + amtStr + ' AMT</span></div>' +
+        '<div class="muted" style="font-size:10px;word-break:break-all">To/From: ' + (other || "—") + '</div>' +
+        (tx.memo ? '<div class="muted" style="font-size:10px">Memo: ' + String(tx.memo) + '</div>' : '') +
+        '<div class="muted" style="font-size:10px">' + when + (tx.txId ? " · " + tx.txId : "") + '</div></div>';
+    }).join("");
+  } catch (e) {
+    box.innerHTML = '<div class="empty">' + (e.message || "Failed to load history") + '</div>';
+  }
+}
+
 async function sendAMT(){
 
 const recipient=
@@ -3427,6 +3466,7 @@ $("sendAmount").value="";
 showToast("AMT sent successfully.");
 
 await refreshWallet();
+try { await loadTxHistory(); } catch (e) {}
 
 }catch(error){
 
