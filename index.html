@@ -6190,83 +6190,31 @@ async function loadGearShop(filter) {
 async function useBagMaterial(materialId) {
   const mid = String(materialId || "");
   if (!mid) return;
-  try {
-    // 1) Ensure we have a pet
-    var pet = selectedOwned;
-    if (!pet || !pet.id) {
-      const owned = await api("/api/pets/owned");
-      const list = owned.pets || owned.items || owned || [];
-      const arr = Array.isArray(list) ? list : [];
-      if (!arr.length) {
-        showToast("Walang pet. Bumili muna ng pet sa Market.", true);
-        return;
-      }
-      pet = arr[0];
-      selectedOwned = pet;
-      showToast("Using pet: " + (pet.name || pet.id));
-    }
-    const ownedId = Number(pet.id);
-
-    // 2) Ensure weapon equipped
-    var eq = await api("/api/pets/" + ownedId + "/equipment");
-    var weaponSlot = (eq.slots || []).find(function(s){ return s.slot === "weapon" && s.gear; });
-    if (!weaponSlot) {
-      const inv = await api("/api/gear/inventory");
-      const weapons = (inv.items || []).filter(function(g){ return g.slot === "weapon"; });
-      if (!weapons.length) {
-        showToast("Walang weapon sa bag. Bumili muna sa Weapons tab.", true);
-        return;
-      }
-      showToast("Auto-equipping " + weapons[0].name + "...");
-      await api("/api/gear/equip", {
-        method: "POST",
-        body: JSON.stringify({ ownedPetId: ownedId, gearId: weapons[0].id })
-      });
-      eq = await api("/api/pets/" + ownedId + "/equipment");
-      weaponSlot = (eq.slots || []).find(function(s){ return s.slot === "weapon" && s.gear; });
-    }
-    if (!weaponSlot) {
-      showToast("Failed to equip weapon.", true);
-      return;
-    }
-
-    // 3) Apply core or gem
-    if (mid === "upgrade_core") {
-      showToast("Upgrading " + weaponSlot.gear.name + "...");
-      const d = await api("/api/gear/upgrade", {
-        method: "POST",
-        body: JSON.stringify({ ownedPetId: ownedId, slot: "weapon" })
-      });
-      showToast((d.message || ("Upgraded to +" + d.upgrade_level)) + " · Open My Pet to see +level");
-      await refreshWallet();
-      loadGearInventory();
-      return;
-    }
-    if (mid.indexOf("gem_") === 0) {
-      // pick empty gem slot first
-      var gidx = 1;
-      if (weaponSlot.gem1 && !weaponSlot.gem2) gidx = 2;
-      else if (weaponSlot.gem1 && weaponSlot.gem2) gidx = 1; // replace gem1
-      showToast("Socketing on " + weaponSlot.gear.name + " slot " + gidx + "...");
-      const d = await api("/api/gear/socket", {
-        method: "POST",
-        body: JSON.stringify({
-          ownedPetId: ownedId,
-          slot: "weapon",
-          gemIndex: gidx,
-          materialId: mid
-        })
-      });
-      showToast((d.message || "Gem socketed!") + " · Open My Pet to see gems");
-      loadGearInventory();
-      return;
-    }
-    showToast("Unknown item", true);
-  } catch (e) {
-    showToast((e && e.message) || "Hindi mailagay. Equip weapon sa pet muna.", true);
-  }
+  window._pendingMaterial = mid;
+  showToast("STEP 2: Tap a GEAR below (yellow) to put core/gem on it");
+  loadGearInventory();
 }
 
+async function applyPendingToGear(gearId) {
+  const mid = window._pendingMaterial;
+  if (!mid) {
+    showToast("Tap a Core or Gem first (top of bag)", true);
+    return;
+  }
+  try {
+    showToast("Applying to item...");
+    const d = await api("/api/gear/apply-to-item", {
+      method: "POST",
+      body: JSON.stringify({ materialId: mid, gearId: String(gearId) })
+    });
+    window._pendingMaterial = null;
+    showToast(d.message || "Applied!");
+    try { await refreshWallet(); } catch (e1) {}
+    loadGearInventory();
+  } catch (e) {
+    showToast((e && e.message) || "Failed to apply", true);
+  }
+}
 
 async function loadGearInventory() {
   const box = $("gearShopGrid");
@@ -6283,6 +6231,11 @@ async function loadGearInventory() {
       } catch (e2) {}
     }
     var html = "";
+    var pending = window._pendingMaterial;
+    if (pending) {
+      html += "<div class='notice' style='margin-bottom:10px'><b>Selected:</b> " + pending +
+        " — now TAP a gear below</div>";
+    }
     html += "<div class='card-title' style='font-size:13px;margin:6px 0'>BAG · CORES AND GEMS</div>";
     if (mats.length) {
       mats.forEach(function(m) {
@@ -6292,22 +6245,29 @@ async function loadGearInventory() {
           "<span style='font-size:18px;margin-right:8px'>" + icon + "</span>" +
           "<span class='balance-row-label' style='flex:1'>" + (m.name || m.id) +
           (m.desc ? "<div class='muted' style='font-size:10px'>" + m.desc + "</div>" : "") +
-          "<div class='muted' style='font-size:10px;color:#ffd54f'>Tap to use</div>" +
+          "<div class='muted' style='font-size:10px;color:#ffd54f'>1. Tap gem/core</div>" +
           "</span><span class='balance-row-value'>x" + m.qty + "</span></div>";
       });
-      html += "<div class='muted' style='font-size:10px;margin:8px 0 12px'>Tap item · needs equipped gear on a pet (My Pet)</div>";
     } else {
-      html += "<div class='muted' style='font-size:11px;margin-bottom:12px'>No cores or gems yet. Tap <b>Gems/Cores</b> to buy, or win battles.</div>";
+      html += "<div class='muted' style='font-size:11px;margin-bottom:12px'>No cores/gems. Buy at Gems/Cores.</div>";
     }
-    html += "<div class='card-title' style='font-size:13px;margin:8px 0 6px'>BAG · GEAR</div>";
+    html += "<div class='card-title' style='font-size:13px;margin:8px 0 6px'>BAG · GEAR (2. tap item)</div>";
     if (!list.length) {
-      html += "<div class='muted'>No gear yet. Buy from Weapons / Armor.</div>";
+      html += "<div class='muted'>No gear. Buy from Weapons tab.</div>";
     } else {
       html += list.map(function(g) {
-        return '<div class="balance-row" style="flex-wrap:wrap;gap:8px;align-items:center">' +
+        var up = g.upgrade_level ? (" +" + g.upgrade_level) : "";
+        var gems = "";
+        if (g.gem1 || g.gem2) gems = " · " + (g.gem1 || "-") + " / " + (g.gem2 || "-");
+        var hint = pending
+          ? "<div class='muted' style='font-size:10px;color:#ffd54f'>TAP TO APPLY</div>"
+          : "<div class='muted' style='font-size:10px'>" + g.slot + up + gems + (g.equipped ? " · equipped" : "") + "</div>";
+        return '<div class="balance-row" style="flex-wrap:wrap;gap:8px;align-items:center;cursor:pointer;' +
+          (pending ? "outline:2px solid #ffd54f;" : "") +
+          '" onclick="applyPendingToGear(\'' + g.id + '\')">' +
           gearIconHtml(g) +
-          '<div style="flex:1;min-width:120px"><b>' + g.name + '</b> x' + (g.qty || 1) +
-          '<div class="muted" style="font-size:10px">' + g.slot + " · equip from My Pet</div></div></div>";
+          '<div style="flex:1;min-width:120px"><b>' + g.name + up + '</b> x' + (g.qty || 1) +
+          hint + "</div></div>";
       }).join("");
     }
     box.innerHTML = html;
