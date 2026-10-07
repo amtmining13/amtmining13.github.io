@@ -9958,9 +9958,28 @@ app.get("/api/gear/inventory", requireAuth, async (req, res) => {
       `SELECT gear_id, qty FROM pet_inventory WHERE member_id = $1 AND qty > 0`,
       [req.member.id]
     );
+    // upgrades/gems currently on pets for this member
+    const eq = await pool.query(
+      `SELECT e.gear_id, e.slot, e.upgrade_level, e.gem1, e.gem2, p.name AS pet_name
+       FROM pet_equipment e
+       JOIN owned_pets p ON p.id = e.owned_pet_id
+       WHERE p.member_id = $1`,
+      [req.member.id]
+    );
+    const byGear = {};
+    for (const row of eq.rows) {
+      byGear[row.gear_id] = {
+        upgrade_level: Number(row.upgrade_level) || 0,
+        gem1: row.gem1,
+        gem2: row.gem2,
+        pet_name: row.pet_name,
+        equipped: true
+      };
+    }
     const items = r.rows.map(row => {
       const g = getGearById(row.gear_id) || { id: row.gear_id, name: row.gear_id };
-      return { ...g, qty: row.qty };
+      const extra = byGear[row.gear_id] || {};
+      return { ...g, qty: row.qty, ...extra };
     });
     const mr = await pool.query(
       `SELECT material_id, qty FROM member_materials WHERE member_id = $1 AND qty > 0`,
@@ -10165,6 +10184,131 @@ app.post("/api/gear/buy-material", requireAuth, async (req, res) => {
     client.release();
   }
 });
+
+
+/** Apply core/gem directly to a bag gear piece (auto-equip on first pet if needed) */
+app.post("/api/gear/apply-to-item", requireAuth, async (req, res) => {
+  const materialId = String(req.body?.materialId || "");
+  const gearId = String(req.body?.gearId || "").trim();
+  const m = getMaterial(materialId);
+  const g = getGearById(gearId);
+  if (!m) return res.status(400).json({ ok: false, error: "Unknown material." });
+  if (!g) return res.status(400).json({ ok: false, error: "Unknown gear." });
+
+  const client = await pool.connect();
+  try {
+    await ensureGearTables();
+    await ensurePetTables();
+    await client.query("BEGIN");
+
+    // Must own the gear
+    const inv = await client.query(
+      `SELECT qty FROM pet_inventory WHERE member_id = $1 AND gear_id = $2`,
+      [req.member.id, gearId]
+    );
+    if (!inv.rows.length || Number(inv.rows[0].qty) < 1) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Item not in your bag." });
+    }
+
+    // First pet
+    const pets = await client.query(
+      `SELECT id, name FROM owned_pets WHERE member_id = $1 ORDER BY id ASC LIMIT 1`,
+      [req.member.id]
+    );
+    if (!pets.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Walang pet. Bumili muna ng pet." });
+    }
+    const ownedPetId = Number(pets.rows[0].id);
+    const petName = pets.rows[0].name;
+
+    // Equip this gear on the pet slot
+    await client.query(
+      `INSERT INTO pet_equipment (owned_pet_id, slot, gear_id, upgrade_level)
+       VALUES ($1, $2, $3, 0)
+       ON CONFLICT (owned_pet_id, slot)
+       DO UPDATE SET gear_id = EXCLUDED.gear_id, updated_at = NOW()`,
+      [ownedPetId, g.slot, gearId]
+    );
+
+    const eq = await client.query(
+      `SELECT * FROM pet_equipment WHERE owned_pet_id = $1 AND slot = $2 FOR UPDATE`,
+      [ownedPetId, g.slot]
+    );
+    const row = eq.rows[0];
+
+    if (materialId === "upgrade_core") {
+      const up = Number(row.upgrade_level) || 0;
+      if (up >= 5) {
+        await client.query("ROLLBACK");
+        return res.status(400).json({ ok: false, error: "Max +5 na ang item." });
+      }
+      const coresNeed = up + 1;
+      const fee = Math.round((0.2 + up * 0.15) * 100) / 100;
+      await spendMaterial(client, req.member.id, "upgrade_core", coresNeed);
+      const bal = await getBalance(req.member.id, client);
+      if (bal < fee) {
+        await client.query("ROLLBACK");
+        return res.status(400).json({ ok: false, error: "Need " + fee + " AMT fee." });
+      }
+      await client.query(
+        `INSERT INTO amt_ledger (member_id, amount, type, reference) VALUES ($1,$2,'GEAR_UP',$3)`,
+        [req.member.id, -fee, makeReference("AMT-UP")]
+      );
+      await client.query(
+        `UPDATE pet_equipment SET upgrade_level = $1, updated_at = NOW()
+         WHERE owned_pet_id = $2 AND slot = $3`,
+        [up + 1, ownedPetId, g.slot]
+      );
+      await client.query("COMMIT");
+      return res.json({
+        ok: true,
+        action: "upgrade",
+        gearId,
+        gearName: g.name,
+        upgrade_level: up + 1,
+        petName,
+        message: g.name + " → +" + (up + 1) + " (on " + petName + ")"
+      });
+    }
+
+    if (m.kind === "gem") {
+      await spendMaterial(client, req.member.id, materialId, 1);
+      let gemIndex = 1;
+      let col = "gem1";
+      if (row.gem1 && !row.gem2) { gemIndex = 2; col = "gem2"; }
+      else if (row.gem1 && row.gem2) { gemIndex = 1; col = "gem1"; }
+      const oldGem = row[col];
+      if (oldGem) await addMaterial(client, req.member.id, oldGem, 1);
+      await client.query(
+        `UPDATE pet_equipment SET ${col} = $1, updated_at = NOW()
+         WHERE owned_pet_id = $2 AND slot = $3`,
+        [materialId, ownedPetId, g.slot]
+      );
+      await client.query("COMMIT");
+      return res.json({
+        ok: true,
+        action: "socket",
+        gearId,
+        gearName: g.name,
+        gemIndex,
+        materialId,
+        petName,
+        message: m.name + " → " + g.name + " slot " + gemIndex
+      });
+    }
+
+    await client.query("ROLLBACK");
+    res.status(400).json({ ok: false, error: "Not a core or gem." });
+  } catch (e) {
+    try { await client.query("ROLLBACK"); } catch {}
+    res.status(e.status || 500).json({ ok: false, error: e.message || "Apply failed." });
+  } finally {
+    client.release();
+  }
+});
+
 
 app.post("/api/gear/upgrade", requireAuth, async (req, res) => {
   const ownedPetId = Number(req.body?.ownedPetId);
