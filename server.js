@@ -2645,37 +2645,20 @@ app.get(
       await pool.query(
         `
         SELECT
-
           t.tx_id,
           t.amount,
           t.memo,
           t.status,
           t.created_at,
-
-          sw.wallet_address
-            AS sender_address,
-
-          rw.wallet_address
-            AS recipient_address
-
+          t.sender_member_id,
+          t.recipient_member_id,
+          sw.wallet_address AS sender_address,
+          rw.wallet_address AS recipient_address
         FROM amt_transfers t
-
-        JOIN amt_wallets sw
-          ON sw.member_id =
-             t.sender_member_id
-
-        JOIN amt_wallets rw
-          ON rw.member_id =
-             t.recipient_member_id
-
-        WHERE
-          t.sender_member_id = $1
-          OR
-          t.recipient_member_id = $1
-
-        ORDER BY
-          t.created_at DESC
-
+        JOIN amt_wallets sw ON sw.member_id = t.sender_member_id
+        JOIN amt_wallets rw ON rw.member_id = t.recipient_member_id
+        WHERE t.sender_member_id = $1 OR t.recipient_member_id = $1
+        ORDER BY t.created_at DESC
         LIMIT 50
         `,
         [req.member.id]
@@ -2684,32 +2667,17 @@ app.get(
     const transactions =
       result.rows.map(
         row => ({
-          txId:
-            row.tx_id,
-
-          amount:
-            Number(row.amount),
-
-          memo:
-            row.memo,
-
-          status:
-            row.status,
-
-          createdAt:
-            row.created_at,
-
+          txId: row.tx_id,
+          amount: Number(row.amount),
+          memo: row.memo,
+          status: row.status,
+          createdAt: row.created_at,
           direction:
-            row.sender_address ===
-            req.wallet.wallet_address
+            Number(row.sender_member_id) === Number(req.member.id)
               ? "SEND"
               : "RECEIVE",
-
-          senderAddress:
-            row.sender_address,
-
-          recipientAddress:
-            row.recipient_address
+          senderAddress: row.sender_address,
+          recipientAddress: row.recipient_address
         })
       );
 
