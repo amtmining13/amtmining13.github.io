@@ -2276,6 +2276,8 @@ SELECT 180D
 <input id="sellPrice" class="input" type="number" min="0.1" step="0.1" placeholder="1.0">
 </div>
 <button class="secondary" onclick="listPetForSale()">🏪 PUBLIC SELL</button>
+<button class="secondary" onclick="updatePetSellPrice()">💰 CHANGE PRICE</button>
+<button class="secondary" onclick="cancelPetSell()">🚫 CANCEL SELL</button>
 </div>
 </div>
 </section>
@@ -6855,6 +6857,52 @@ async function playBattleArena(data) {
     (data.chargeBonus ? " · " + data.chargeBonus : "") +
     extra;
   $("battleResultPanel").classList.remove("hidden");
+}
+
+
+
+async function updatePetSellPrice() {
+  if (!selectedOwned || !selectedOwned.id) {
+    showToast("Open a listed pet first", true);
+    return;
+  }
+  const price = Number($("sellPrice") && $("sellPrice").value);
+  if (!(price > 0)) {
+    showToast("Enter new price in the box", true);
+    return;
+  }
+  try {
+    const d = await api("/api/pets/update-listing-price", {
+      method: "POST",
+      body: JSON.stringify({
+        ownedPetId: Number(selectedOwned.id),
+        priceAmt: price
+      })
+    });
+    showToast(d.message || ("Price → " + price + " AMT"));
+    if (typeof loadListings === "function") loadListings();
+  } catch (e) {
+    showToast(e.message || "Update failed", true);
+  }
+}
+
+async function cancelPetSell() {
+  if (!selectedOwned || !selectedOwned.id) {
+    showToast("Open a listed pet from My Pets first", true);
+    return;
+  }
+  try {
+    const d = await api("/api/pets/cancel-listing", {
+      method: "POST",
+      body: JSON.stringify({ ownedPetId: Number(selectedOwned.id) })
+    });
+    showToast(d.message || "Sell cancelled");
+    closeOwnedModal();
+    await loadOwnedPets();
+    if (typeof loadListings === "function") loadListings();
+  } catch (e) {
+    showToast(e.message || "Cancel failed", true);
+  }
 }
 
 async function listPetForSale() {
