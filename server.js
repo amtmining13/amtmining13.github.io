@@ -7930,6 +7930,93 @@ app.post("/api/pets/list", requireAuth, async (req, res) => {
   }
 });
 
+
+
+/* ---------- Update pet sell price ---------- */
+app.post("/api/pets/update-listing-price", requireAuth, async (req, res) => {
+  const ownedId = Number(req.body?.ownedPetId);
+  const price = Number(req.body?.priceAmt);
+  if (!Number.isFinite(ownedId) || ownedId < 1) {
+    return res.status(400).json({ ok: false, error: "ownedPetId required." });
+  }
+  if (!(price > 0)) {
+    return res.status(400).json({ ok: false, error: "Valid priceAmt required." });
+  }
+  const client = await pool.connect();
+  try {
+    await ensurePetTables();
+    await client.query("BEGIN");
+    const pet = await client.query(
+      `SELECT id FROM owned_pets WHERE id = $1 AND member_id = $2`,
+      [ownedId, req.member.id]
+    );
+    if (!pet.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ ok: false, error: "Pet not found." });
+    }
+    const upd = await client.query(
+      `UPDATE pet_listings SET price_amt = $1
+       WHERE owned_pet_id = $2 AND seller_member_id = $3 AND status = 'ACTIVE'
+       RETURNING id, price_amt`,
+      [price, ownedId, req.member.id]
+    );
+    if (!upd.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "No active sell listing. List first." });
+    }
+    await client.query("COMMIT");
+    res.json({
+      ok: true,
+      priceAmt: Number(upd.rows[0].price_amt),
+      message: "Price updated to " + price + " AMT"
+    });
+  } catch (e) {
+    try { await client.query("ROLLBACK"); } catch {}
+    res.status(500).json({ ok: false, error: "Update price failed." });
+  } finally {
+    client.release();
+  }
+});
+
+/* ---------- Cancel pet public sell ---------- */
+app.post("/api/pets/cancel-listing", requireAuth, async (req, res) => {
+  const ownedId = Number(req.body?.ownedPetId);
+  if (!Number.isFinite(ownedId) || ownedId < 1) {
+    return res.status(400).json({ ok: false, error: "ownedPetId required." });
+  }
+  const client = await pool.connect();
+  try {
+    await ensurePetTables();
+    await client.query("BEGIN");
+    const pet = await client.query(
+      `SELECT * FROM owned_pets WHERE id = $1 AND member_id = $2 FOR UPDATE`,
+      [ownedId, req.member.id]
+    );
+    if (!pet.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ ok: false, error: "Pet not found." });
+    }
+    const upd = await client.query(
+      `UPDATE pet_listings SET status = 'CANCELLED'
+       WHERE owned_pet_id = $1 AND seller_member_id = $2 AND status = 'ACTIVE'
+       RETURNING id`,
+      [ownedId, req.member.id]
+    );
+    await client.query(`UPDATE owned_pets SET is_listed = FALSE WHERE id = $1`, [ownedId]);
+    await client.query("COMMIT");
+    res.json({
+      ok: true,
+      cancelled: upd.rows.length,
+      message: upd.rows.length ? "Sell cancelled. Pet back in My Pets." : "No active sell listing."
+    });
+  } catch (e) {
+    try { await client.query("ROLLBACK"); } catch {}
+    res.status(500).json({ ok: false, error: "Cancel sell failed." });
+  } finally {
+    client.release();
+  }
+});
+
 /* ---------- List egg for public sell ---------- */
 app.post("/api/pets/list-egg", requireAuth, async (req, res) => {
   const eggId = Number(req.body?.eggId);
