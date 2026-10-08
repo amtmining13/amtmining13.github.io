@@ -10935,11 +10935,26 @@ app.post(
         });
       }
 
+      const txid = String(
+        req.body?.txid ||
+        req.body?.txId ||
+        ""
+      ).trim();
+
+      console.log("MARKET COMPLETE", {
+        paymentId,
+        txid: txid || "(empty)",
+        productId: payment.product_id,
+        paymentApi: PI_PAYMENT_API_BASE
+      });
+
+      // Pi Platform requires txid for server-side completion
       await piPaymentRequest(
         `/v2/payments/${encodeURIComponent(
           paymentId
         )}/complete`,
-        "POST"
+        "POST",
+        txid ? { txid } : {}
       );
 
       await client.query(
