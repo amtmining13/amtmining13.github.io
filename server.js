@@ -187,7 +187,8 @@ function getReferralTier(count) {
 
 const PI_PAYMENT_API_BASE =
   process.env.PI_PAYMENT_API_BASE ||
-  "https://api.testnet.minepi.com";
+  process.env.PI_API_BASE ||
+  "https://api.minepi.com";
 
 const MARKET_TEST_OWNER_PI_UID =
   process.env.MARKET_TEST_OWNER_PI_UID || "";
@@ -10702,14 +10703,22 @@ app.post(
 
       if (
         !Number.isFinite(amount) ||
-        Math.abs(amount - expectedAmount) > 0.0000001
+        Math.abs(amount - expectedAmount) > 0.001
       ) {
         return res.status(400).json({
           ok: false,
           error:
-            "Invalid price. Expected " + expectedAmount + " PI."
+            "Invalid price. Expected " + expectedAmount + " PI, got " + amount
         });
       }
+
+      console.log("MARKET APPROVE", {
+        paymentId,
+        productId: resolvedProductId,
+        amount,
+        expectedAmount,
+        paymentApi: PI_PAYMENT_API_BASE
+      });
 
       const payment =
         await piPaymentRequest(
@@ -10720,11 +10729,15 @@ app.post(
         );
 
       if (
-        Math.abs(Number(payment.amount) - expectedAmount) > 0.0000001
+        Math.abs(Number(payment.amount) - expectedAmount) > 0.001
       ) {
         return res.status(400).json({
           ok: false,
-          error: "Payment amount does not match product price."
+          error:
+            "Payment amount does not match. Pi=" +
+            payment.amount +
+            " expected=" +
+            expectedAmount
         });
       }
 
