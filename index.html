@@ -2583,18 +2583,25 @@ async function(payment){
   console.log("Incomplete payment:", payment);
   try {
     if (payment && payment.identifier) {
+      var tx =
+        (payment.transaction && (payment.transaction.txid || payment.transaction._id)) ||
+        payment.txid ||
+        "";
+      showToast("Recovering previous PI payment...");
       await api("/api/market/payment/complete", {
         method: "POST",
         body: JSON.stringify({
           paymentId: payment.identifier,
-          txid: payment.transaction?.txid || payment.txid || ""
+          txid: tx
         })
       });
-      showToast("Completed a previous PI payment.");
+      showToast("Previous PI payment completed · check My Pets");
       if (typeof loadOwnedPets === "function") await loadOwnedPets();
+      if (typeof refreshWallet === "function") await refreshWallet();
     }
   } catch (e) {
     console.warn("Incomplete payment recovery:", e);
+    showToast((e && e.message) || "Could not recover payment", true);
   }
 }
 );
@@ -5536,11 +5543,13 @@ async function buySelectedPetWithPi() {
               });
             },
             onReadyForServerCompletion: function(paymentId, txid) {
+              var tx = txid || "";
+              console.log("PI complete callback", paymentId, tx);
               api("/api/market/payment/complete", {
                 method: "POST",
                 body: JSON.stringify({
                   paymentId: paymentId,
-                  txid: txid || ""
+                  txid: tx
                 })
               }).then(function(done) {
                 ok(done);
