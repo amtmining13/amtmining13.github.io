@@ -7181,6 +7181,46 @@ app.get("/api/pets/owned", requireAuth, async (req, res) => {
 });
 
 /* ---------- Buy from market ---------- */
+
+function petPricePi(pet) {
+  if (!pet) return null;
+  const r = String(pet.rarity || "Common").toLowerCase();
+  const map = {
+    common: 0.1,
+    uncommon: 0.25,
+    rare: 0.5,
+    epic: 1.0,
+    legendary: 2.0,
+    mythic: 5.0
+  };
+  return map[r] != null ? map[r] : 0.1;
+}
+
+function parsePetProductId(productId) {
+  const id = String(productId || "").trim();
+  if (id.startsWith("pet:")) {
+    return { kind: "pet", petId: id.slice(4) };
+  }
+  return { kind: "other", productId: id };
+}
+
+
+app.get("/api/pets/pi-price/:petId", requireAuth, async (req, res) => {
+  const pet = getPetById(String(req.params.petId || "").trim());
+  if (!pet) {
+    return res.status(404).json({ ok: false, error: "Pet not found." });
+  }
+  res.json({
+    ok: true,
+    petId: pet.id,
+    name: pet.name,
+    rarity: pet.rarity,
+    priceAmt: pet.priceAmt,
+    pricePi: petPricePi(pet),
+    productId: "pet:" + pet.id
+  });
+});
+
 app.post("/api/pets/buy", requireAuth, async (req, res) => {
   const petId = String(req.body?.petId || "").trim();
   const pet = getPetById(petId);
@@ -10636,31 +10676,39 @@ app.post(
           });
       }
 
-      if (
-        productId !==
-        MARKET_TEST_PRODUCT_ID
-      ) {
-        return res
-          .status(400)
-          .json({
+      const parsed = parsePetProductId(productId);
+      let expectedAmount = null;
+      let resolvedProductId = productId;
+
+      if (parsed.kind === "pet") {
+        const pet = getPetById(parsed.petId);
+        if (!pet) {
+          return res.status(400).json({
             ok: false,
-            error:
-              "Invalid test product."
+            error: "Invalid pet product."
           });
+        }
+        expectedAmount = petPricePi(pet);
+        resolvedProductId = "pet:" + pet.id;
+      } else if (productId === MARKET_TEST_PRODUCT_ID) {
+        expectedAmount = MARKET_TEST_PRICE_PI;
+        resolvedProductId = MARKET_TEST_PRODUCT_ID;
+      } else {
+        return res.status(400).json({
+          ok: false,
+          error: "Invalid product. Use pet:<id> or test product."
+        });
       }
 
       if (
         !Number.isFinite(amount) ||
-        amount !==
-          MARKET_TEST_PRICE_PI
+        Math.abs(amount - expectedAmount) > 0.0000001
       ) {
-        return res
-          .status(400)
-          .json({
-            ok: false,
-            error:
-              "Invalid test price."
-          });
+        return res.status(400).json({
+          ok: false,
+          error:
+            "Invalid price. Expected " + expectedAmount + " PI."
+        });
       }
 
       const payment =
@@ -10672,18 +10720,12 @@ app.post(
         );
 
       if (
-        Number(
-          payment.amount
-        ) !==
-        MARKET_TEST_PRICE_PI
+        Math.abs(Number(payment.amount) - expectedAmount) > 0.0000001
       ) {
-        return res
-          .status(400)
-          .json({
-            ok: false,
-            error:
-              "Payment amount does not match test product."
-          });
+        return res.status(400).json({
+          ok: false,
+          error: "Payment amount does not match product price."
+        });
       }
 
       await piPaymentRequest(
@@ -10725,19 +10767,17 @@ app.post(
           [
             paymentId,
             req.member.id,
-            productId,
+            resolvedProductId,
             amount
           ]
         );
 
       res.json({
         ok: true,
-
-        approved:
-          true,
-
-        payment:
-          saved.rows[0]
+        approved: true,
+        payment: saved.rows[0],
+        productId: resolvedProductId,
+        amount: expectedAmount
       });
 
     } catch (error) {
@@ -10844,21 +10884,15 @@ app.post(
           });
       }
 
-      if (
-        payment.product_id !==
-        MARKET_TEST_PRODUCT_ID
-      ) {
-        await client.query(
-          "ROLLBACK"
-        );
-
-        return res
-          .status(400)
-          .json({
-            ok: false,
-            error:
-              "Invalid marketplace product."
-          });
+      const prodOk =
+        payment.product_id === MARKET_TEST_PRODUCT_ID ||
+        String(payment.product_id || "").startsWith("pet:");
+      if (!prodOk) {
+        await client.query("ROLLBACK");
+        return res.status(400).json({
+          ok: false,
+          error: "Invalid marketplace product."
+        });
       }
 
       if (
@@ -10920,7 +10954,6 @@ app.post(
             $2,
             $3
           )
-
         ON CONFLICT DO NOTHING
         `,
         [
@@ -10930,23 +10963,46 @@ app.post(
         ]
       );
 
+      let deliveredPet = null;
+      const pParsed = parsePetProductId(payment.product_id);
+      if (pParsed.kind === "pet") {
+        await ensurePetTables();
+        const pet = getPetById(pParsed.petId);
+        if (pet) {
+          const ins = await client.query(
+            `INSERT INTO owned_pets
+              (member_id, pet_id, name, element, rarity, hp, atk, def, spd, ability, image, origin)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'pi_payment')
+             RETURNING *`,
+            [
+              req.member.id,
+              pet.id,
+              pet.name,
+              pet.element,
+              pet.rarity,
+              pet.hp,
+              pet.atk,
+              pet.def,
+              pet.spd,
+              pet.ability || "",
+              pet.image || ""
+            ]
+          );
+          deliveredPet = ins.rows[0] || null;
+        }
+      }
+
       await client.query(
         "COMMIT"
       );
 
       res.json({
         ok: true,
-
-        completed:
-          true,
-
+        completed: true,
         paymentId,
-
-        productId:
-          payment.product_id,
-
-        network:
-          "Pi Mainnet"
+        productId: payment.product_id,
+        network: "Pi Mainnet",
+        pet: deliveredPet
       });
 
     } catch (error) {
