@@ -2066,8 +2066,8 @@ SELECT 180D
 <div class="notice" style="margin-bottom:12px"><b>Ability:</b> <span id="modalAbility">—</span></div>
 <div style="font-size:18px;font-weight:900;color:#ffd54f;margin-bottom:12px" id="modalPrice">0 AMT</div>
 <div class="row" style="gap:8px;margin-top:8px;flex-wrap:wrap">
-  <button class="primary" id="buyPetBtn" style="flex:1;min-width:120px" onclick="buySelectedPet()">BUY WITH AMT</button>
-  <button class="secondary" id="buyPetPiBtn" style="flex:1;min-width:120px;border:1px solid rgba(255,214,78,.45)" onclick="buySelectedPetWithPi()">💜 BUY WITH PI</button>
+  <button class="primary" id="buyPetBtn" style="flex:1;min-width:120px;position:relative;z-index:20" onclick="buySelectedPet()">BUY WITH AMT</button>
+  <button class="secondary" id="buyPetPiBtn" style="flex:1;min-width:120px;border:1px solid rgba(255,214,78,.45);position:relative;z-index:20" onclick="buySelectedPetWithPi()">💜 BUY WITH PI</button>
 </div>
 <div class="muted" style="font-size:10px;margin-top:6px">AMT = in-app ledger · PI = real Pi on blockchain (helps Mainnet payment wallet review)</div>
 </div>
@@ -5466,90 +5466,119 @@ function closePetModal() {
 
 
 async function buySelectedPetWithPi() {
-  if (!selectedPet) return;
-  if (!accessToken) {
-    showToast("Login with Pi first before buying.", true);
-    return;
-  }
-  if (typeof Pi === "undefined" || !Pi.createPayment) {
-    showToast("Open this app in Pi Browser to pay with PI.", true);
-    return;
-  }
-  const btn = $("buyPetPiBtn");
   try {
+    showToast("Starting PI payment...");
+    if (!selectedPet || !selectedPet.id) {
+      showToast("Open a pet first, then tap BUY WITH PI.", true);
+      return;
+    }
+    if (!accessToken) {
+      showToast("Login with Pi first (need payments permission).", true);
+      return;
+    }
+    var PiSDK = (typeof window !== "undefined" && window.Pi) ? window.Pi : (typeof Pi !== "undefined" ? Pi : null);
+    if (!PiSDK || typeof PiSDK.createPayment !== "function") {
+      showToast("Pi Wallet SDK not found. Open in Pi Browser (not Chrome/outside).", true);
+      return;
+    }
+
+    var btn = $("buyPetPiBtn");
     if (btn) {
       btn.disabled = true;
       btn.textContent = "PREPARING...";
     }
-    const priceInfo = await api("/api/pets/pi-price/" + encodeURIComponent(selectedPet.id));
-    const pricePi = Number(priceInfo.pricePi);
-    const productId = priceInfo.productId || ("pet:" + selectedPet.id);
+
+    var priceInfo = await api("/api/pets/pi-price/" + encodeURIComponent(selectedPet.id));
+    var pricePi = Number(priceInfo.pricePi);
+    var productId = priceInfo.productId || ("pet:" + selectedPet.id);
     if (!Number.isFinite(pricePi) || pricePi <= 0) {
       throw new Error("Invalid PI price for this pet.");
     }
+    showToast("Pay " + pricePi + " PI for " + (selectedPet.name || "pet") + "...");
 
-    await new Promise(function(resolve, reject) {
-      Pi.createPayment(
-        {
-          amount: pricePi,
-          memo: "AMT pet: " + (selectedPet.name || selectedPet.id),
-          metadata: {
-            productId: productId,
-            petId: selectedPet.id,
-            type: "pet_purchase"
-          }
-        },
-        {
-          onReadyForServerApproval: async function(paymentId) {
-            try {
-              await api("/api/market/payment/approve", {
+    var paymentResult = await new Promise(function(resolve, reject) {
+      var settled = false;
+      function fail(err) {
+        if (settled) return;
+        settled = true;
+        var msg = (err && (err.message || err.msg)) || String(err || "Payment failed");
+        reject(new Error(msg));
+      }
+      function ok(data) {
+        if (settled) return;
+        settled = true;
+        resolve(data);
+      }
+      try {
+        PiSDK.createPayment(
+          {
+            amount: pricePi,
+            memo: "AMT pet " + (selectedPet.name || selectedPet.id).slice(0, 28),
+            metadata: {
+              productId: productId,
+              petId: selectedPet.id,
+              type: "pet_purchase"
+            }
+          },
+          {
+            onReadyForServerApproval: function(paymentId) {
+              api("/api/market/payment/approve", {
                 method: "POST",
                 body: JSON.stringify({
                   paymentId: paymentId,
                   productId: productId,
                   amount: pricePi
                 })
+              }).then(function() {
+                /* approved — user can confirm in Pi Wallet */
+              }).catch(function(e) {
+                fail(e);
               });
-            } catch (e) {
-              reject(e);
-            }
-          },
-          onReadyForServerCompletion: async function(paymentId, txid) {
-            try {
-              const done = await api("/api/market/payment/complete", {
+            },
+            onReadyForServerCompletion: function(paymentId, txid) {
+              api("/api/market/payment/complete", {
                 method: "POST",
                 body: JSON.stringify({
                   paymentId: paymentId,
-                  txid: txid
+                  txid: txid || ""
                 })
+              }).then(function(done) {
+                ok(done);
+              }).catch(function(e) {
+                fail(e);
               });
-              resolve(done);
-            } catch (e) {
-              reject(e);
+            },
+            onCancel: function() {
+              fail(new Error("Payment cancelled."));
+            },
+            onError: function(err) {
+              var m = (err && (err.message || err.msg)) || "Pi payment error";
+              if (String(m).toLowerCase().indexOf("wallet") >= 0) {
+                m = m + " — App wallet may still be in review.";
+              }
+              fail(new Error(m));
             }
-          },
-          onCancel: function() {
-            reject(new Error("Payment cancelled."));
-          },
-          onError: function(err) {
-            reject(err || new Error("Payment failed."));
           }
-        }
-      );
+        );
+      } catch (e) {
+        fail(e);
+      }
     });
 
     showToast("Paid with PI · " + selectedPet.name + " saved to My Pets");
     closePetModal();
     await refreshWallet();
-    petTab("owned");
+    if (typeof petTab === "function") petTab("owned");
     await new Promise(function(ok) { setTimeout(ok, 400); });
-    await loadOwnedPets();
+    if (typeof loadOwnedPets === "function") await loadOwnedPets();
   } catch (e) {
+    console.error("BUY WITH PI error:", e);
     showToast((e && e.message) || "PI payment failed", true);
   } finally {
-    if (btn) {
-      btn.disabled = false;
-      btn.textContent = "💜 BUY WITH PI";
+    var btn2 = $("buyPetPiBtn");
+    if (btn2) {
+      btn2.disabled = false;
+      btn2.textContent = "💜 BUY WITH PI";
     }
   }
 }
