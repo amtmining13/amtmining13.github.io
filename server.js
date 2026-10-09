@@ -6849,6 +6849,18 @@ function getPetById(petId) {
   return AMT_PETS.find(p => p.id === petId) || null;
 }
 
+
+function makeCertificateId(origin) {
+  const crypto = require("crypto");
+  const prefix =
+    origin === "pi_payment"
+      ? "AMT-MINT"
+      : origin === "shop"
+        ? "AMT-OWN"
+        : "AMT-PET";
+  return prefix + "-" + crypto.randomBytes(5).toString("hex").toUpperCase();
+}
+
 async function ensurePetTables() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS owned_pets (
@@ -6940,7 +6952,8 @@ async function ensurePetTables() {
     `ALTER TABLE owned_pets ADD COLUMN IF NOT EXISTS rep INT NOT NULL DEFAULT 0`,
     `ALTER TABLE owned_pets ADD COLUMN IF NOT EXISTS wins INT NOT NULL DEFAULT 0`,
     `ALTER TABLE owned_pets ADD COLUMN IF NOT EXISTS losses INT NOT NULL DEFAULT 0`,
-    `ALTER TABLE owned_pets ADD COLUMN IF NOT EXISTS origin TEXT DEFAULT 'shop'`
+    `ALTER TABLE owned_pets ADD COLUMN IF NOT EXISTS origin TEXT DEFAULT 'shop'`,
+    `ALTER TABLE owned_pets ADD COLUMN IF NOT EXISTS certificate_id TEXT`
   ];
   for (const q of alts) {
     try {
@@ -7262,8 +7275,8 @@ app.post("/api/pets/buy", requireAuth, async (req, res) => {
     );
     const ins = await client.query(
       `INSERT INTO owned_pets
-        (member_id, pet_id, name, element, rarity, hp, atk, def, spd, ability, image, origin)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'shop')
+        (member_id, pet_id, name, element, rarity, hp, atk, def, spd, ability, image, origin, certificate_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'shop',$12)
        RETURNING *`,
       [
         req.member.id,
@@ -7276,7 +7289,8 @@ app.post("/api/pets/buy", requireAuth, async (req, res) => {
         pet.def,
         pet.spd,
         pet.ability,
-        pet.image
+        pet.image,
+        makeCertificateId("shop")
       ]
     );
     try {
@@ -8188,6 +8202,7 @@ app.get("/api/pets/listings", async (req, res) => {
       SELECT l.id, l.price_amt, l.created_at, l.status,
              'PET' AS listing_type,
              p.name, p.element, p.rarity, p.hp, p.atk, p.def, p.spd, p.ability, p.image, p.level,
+             p.origin, p.rep, p.wins, p.losses, p.certificate_id,
              m.username AS seller_username,
              NULL::BIGINT AS egg_id,
              NULL::TIMESTAMPTZ AS hatch_at,
@@ -10813,6 +10828,68 @@ app.post(
   }
 );
 
+
+/* =========================================================
+OWNERSHIP CERTIFICATE
+========================================================= */
+app.get("/api/pets/owned/:id/certificate", requireAuth, async (req, res) => {
+  try {
+    await ensurePetTables();
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) {
+      return res.status(400).json({ ok: false, error: "Invalid pet id." });
+    }
+    const r = await pool.query(
+      `SELECT o.*, m.username AS owner_username
+       FROM owned_pets o
+       LEFT JOIN members m ON m.id = o.member_id
+       WHERE o.id = $1 AND o.member_id = $2
+       LIMIT 1`,
+      [id, req.member.id]
+    );
+    if (!r.rows.length) {
+      return res.status(404).json({ ok: false, error: "Pet not found." });
+    }
+    const pet = r.rows[0];
+    let cert = pet.certificate_id;
+    if (!cert) {
+      cert = makeCertificateId(pet.origin || "shop");
+      await pool.query(
+        `UPDATE owned_pets SET certificate_id = $1 WHERE id = $2 AND certificate_id IS NULL`,
+        [cert, id]
+      );
+      pet.certificate_id = cert;
+    }
+    const mintedWithPi = String(pet.origin || "") === "pi_payment";
+    res.json({
+      ok: true,
+      certificate: {
+        certificateId: pet.certificate_id,
+        ownedPetId: pet.id,
+        petName: pet.name,
+        petId: pet.pet_id,
+        element: pet.element,
+        rarity: pet.rarity,
+        level: pet.level,
+        ownerUsername: pet.owner_username || req.member.username || "Pioneer",
+        origin: pet.origin || "shop",
+        mintedWithPi,
+        mintLabel: mintedWithPi ? "Minted with PI (Mainnet)" : "App ownership certificate",
+        purchasedAt: pet.purchased_at,
+        reputation: {
+          rep: Number(pet.rep) || 0,
+          wins: Number(pet.wins) || 0,
+          losses: Number(pet.losses) || 0
+        },
+        network: mintedWithPi ? "Pi Mainnet" : "AMT App Ledger"
+      }
+    });
+  } catch (e) {
+    console.error("CERTIFICATE ERROR:", e);
+    res.status(500).json({ ok: false, error: e.message || "Certificate failed." });
+  }
+});
+
 /* =========================================================
 MARKETPLACE PAYMENT COMPLETE
 ========================================================= */
@@ -10997,10 +11074,11 @@ app.post(
         await ensurePetTables();
         const pet = getPetById(pParsed.petId);
         if (pet) {
+          const certId = makeCertificateId("pi_payment");
           const ins = await client.query(
             `INSERT INTO owned_pets
-              (member_id, pet_id, name, element, rarity, hp, atk, def, spd, ability, image, origin)
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'pi_payment')
+              (member_id, pet_id, name, element, rarity, hp, atk, def, spd, ability, image, origin, certificate_id)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'pi_payment',$12)
              RETURNING *`,
             [
               req.member.id,
@@ -11013,7 +11091,8 @@ app.post(
               pet.def,
               pet.spd,
               pet.ability || "",
-              pet.image || ""
+              pet.image || "",
+              certId
             ]
           );
           deliveredPet = ins.rows[0] || null;
