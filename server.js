@@ -3462,9 +3462,15 @@ app.get("/api/daily/status", requireAuth, async (req, res) => {
       }
     }
 
-    const nextStreak = claimedToday
-      ? streak
-      : Math.min(DAILY_MAX_STREAK, (streak || 0) + 1);
+    let nextStreak;
+    if (claimedToday) {
+      nextStreak = streak;
+    } else if ((streak || 0) >= DAILY_MAX_STREAK) {
+      // Finished 7-day cycle — next claim starts Day 1
+      nextStreak = 1;
+    } else {
+      nextStreak = Math.min(DAILY_MAX_STREAK, (streak || 0) + 1);
+    }
     const nextAmount = dailyAmountForStreak(nextStreak);
 
     // Next claim available at next UTC midnight if already claimed
@@ -3539,11 +3545,15 @@ app.post("/api/daily/claim", requireAuth, async (req, res) => {
       [req.member.id]
     );
     const pastDates = hist.rows.map((r) => asYmd(r.claim_date));
-    // After today's insert, streak ends at today; before insert use yesterday chain + 1
+    // After full 7-day cycle, reset to Day 1 (not permanent max reward)
     let streak = 1;
     if (pastDates.includes(yesterday)) {
-      const prior = streakFromClaimDates(pastDates, yesterday);
-      streak = Math.min(DAILY_MAX_STREAK, (prior || 1) + 1);
+      const prior = streakFromClaimDates(pastDates, yesterday) || 1;
+      if (prior >= DAILY_MAX_STREAK) {
+        streak = 1;
+      } else {
+        streak = Math.min(DAILY_MAX_STREAK, prior + 1);
+      }
     } else {
       streak = 1;
     }
@@ -12059,7 +12069,8 @@ app.post(
       const dayKey = new Date()
         .toISOString()
         .slice(0, 10);
-      const ref = "AD-MINING-" + dayKey;
+      // reference must be globally unique (amt_ledger_reference_key)
+      const ref = "AD-MINING-" + req.member.id + "-" + dayKey;
 
       const exists = await pool.query(
         `SELECT id FROM amt_ledger
@@ -12078,11 +12089,26 @@ app.post(
         });
       }
 
-      await pool.query(
-        `INSERT INTO amt_ledger (member_id, amount, type, reference)
-         VALUES ($1, $2, 'AD_MINING_BONUS', $3)`,
-        [req.member.id, bonus, ref]
-      );
+      try {
+        await pool.query(
+          `INSERT INTO amt_ledger (member_id, amount, type, reference)
+           VALUES ($1, $2, 'AD_MINING_BONUS', $3)`,
+          [req.member.id, bonus, ref]
+        );
+      } catch (insErr) {
+        // Race: unique reference or double-click
+        if (insErr && insErr.code === "23505") {
+          const bal = await getBalance(req.member.id);
+          return res.json({
+            ok: true,
+            credited: false,
+            amount: 0,
+            balance: bal,
+            message: "Ad bonus already claimed today."
+          });
+        }
+        throw insErr;
+      }
       const bal = await getBalance(req.member.id);
       return res.json({
         ok: true,
