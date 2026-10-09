@@ -2242,6 +2242,13 @@ SELECT 180D
 <div class="card-title" style="font-size:12px;margin:8px 0 4px">Skills</div>
 <div id="ownedSkills" class="muted" style="font-size:11px;margin-bottom:10px">—</div>
 <div id="ownedRepLine" class="muted" style="font-size:11px;margin-bottom:6px">Rep: —</div>
+<div id="ownedMintBadge" class="hidden" style="display:none;margin:6px 0;padding:8px 10px;border-radius:10px;background:linear-gradient(135deg,rgba(167,139,250,.25),rgba(255,214,78,.12));border:1px solid rgba(167,139,250,.45);font-size:12px;font-weight:700;color:#e9d5ff">💜 Minted with PI · Mainnet</div>
+<div id="ownedCertBox" class="muted" style="font-size:11px;margin:8px 0;padding:10px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08)">
+  <div style="font-weight:700;color:#ffd64e;margin-bottom:4px">Ownership Certificate</div>
+  <div id="ownedCertId" style="font-family:monospace;font-size:11px;word-break:break-all">—</div>
+  <div id="ownedCertMeta" style="margin-top:4px;font-size:10px">—</div>
+  <button class="secondary" style="margin-top:8px;width:100%;padding:8px" onclick="showOwnershipCertificate()">📜 VIEW FULL CERTIFICATE</button>
+</div>
 <button class="secondary" style="margin-bottom:8px" onclick="showPetHistory()">📜 OWNERSHIP HISTORY</button>
 <button class="primary" style="margin-bottom:8px" onclick="playStoryFromModal()">📖 PLAY STORY</button>
 
@@ -5696,7 +5703,11 @@ async function loadOwnedPets() {
           <div class="pet-card-name">${esc(pet.name)}</div>
           <div class="pet-card-sub">${esc(pet.rarity || "Common")} · ⚡${
           pet.energy ?? 100
-        } · 😊${pet.happiness ?? 100}</div>
+        } · 😊${pet.happiness ?? 100}${
+          String(pet.origin || "") === "pi_payment"
+            ? " · <span style=\"color:#c4b5fd\">💜 PI Mint</span>"
+            : ""
+        }</div>
           ${petStatsRow(pet)}
           <div class="pet-card-footer">
             <button class="small-btn" onclick="event.stopPropagation();openOwnedModal(${pid})">VIEW / CARE / BATTLE</button>
@@ -5715,6 +5726,49 @@ async function loadOwnedPets() {
       '<div class="empty">Unable to load My Pets. ' +
       esc(e.message || "Check login / server.") +
       '<br><button class="small-btn" style="margin-top:10px" onclick="loadOwnedPets()">Retry</button></div>';
+  }
+}
+
+
+async function showOwnershipCertificate() {
+  try {
+    if (!selectedOwned || !selectedOwned.id) {
+      showToast("Open a pet first.", true);
+      return;
+    }
+    showToast("Loading certificate...");
+    const data = await api("/api/pets/owned/" + selectedOwned.id + "/certificate");
+    const c = data.certificate || {};
+    const lines = [
+      "AMT OWNERSHIP CERTIFICATE",
+      "────────────────────",
+      "ID: " + (c.certificateId || "—"),
+      "Pet: " + (c.petName || "—"),
+      "Element: " + (c.element || "—") + " · " + (c.rarity || "—"),
+      "Level: " + (c.level != null ? c.level : "—"),
+      "Owner: @" + (c.ownerUsername || "Pioneer"),
+      "Mint: " + (c.mintLabel || "—"),
+      "Network: " + (c.network || "—"),
+      "Rep: " + ((c.reputation && c.reputation.rep) || 0) +
+        " · W" + ((c.reputation && c.reputation.wins) || 0) +
+        "/L" + ((c.reputation && c.reputation.losses) || 0),
+      "Date: " + (c.purchasedAt ? new Date(c.purchasedAt).toLocaleString() : "—")
+    ];
+    if ($("ownedCertId")) $("ownedCertId").textContent = c.certificateId || "—";
+    if ($("ownedCertMeta")) {
+      $("ownedCertMeta").textContent = (c.mintLabel || "") + " · " + (c.network || "");
+    }
+    if (c.certificateId && selectedOwned) {
+      selectedOwned.certificate_id = c.certificateId;
+      if (window._ownedMap) {
+        window._ownedMap[selectedOwned.id] = selectedOwned;
+        window._ownedMap[String(selectedOwned.id)] = selectedOwned;
+      }
+    }
+    alert(lines.join("\n"));
+    showToast(c.mintedWithPi ? "💜 PI-minted certificate ready" : "Certificate ready");
+  } catch (e) {
+    showToast((e && e.message) || "Certificate failed", true);
   }
 }
 
@@ -5748,6 +5802,25 @@ function openOwnedModal(id) {
     else if (rep >= 120) badge = "Veteran";
     else if (rep >= 40) badge = "Fighter";
     $("ownedRepLine").textContent = badge + " · Rep " + rep + " · W" + wins + "/L" + losses;
+  }
+  const mintedPi = String(pet.origin || "") === "pi_payment";
+  const mintEl = $("ownedMintBadge");
+  if (mintEl) {
+    if (mintedPi) {
+      mintEl.style.display = "block";
+      mintEl.classList.remove("hidden");
+    } else {
+      mintEl.style.display = "none";
+      mintEl.classList.add("hidden");
+    }
+  }
+  if ($("ownedCertId")) {
+    $("ownedCertId").textContent = pet.certificate_id || ("Will assign on view · #" + pet.id);
+  }
+  if ($("ownedCertMeta")) {
+    $("ownedCertMeta").textContent = mintedPi
+      ? "Payment-backed mint · Pi Mainnet"
+      : ("Origin: " + (pet.origin || "shop"));
   }
   if ($("ownedSkills")) {
     $("ownedSkills").textContent = "Loading skills...";
@@ -7519,10 +7592,26 @@ async function loadListings() {
           rarity: L.rarity,
           level: L.level
         };
+        const isPiMint = String(L.origin || "") === "pi_payment";
+        const rep = Number(L.rep) || 0;
+        const wins = Number(L.wins) || 0;
+        const losses = Number(L.losses) || 0;
+        let repBadge = "Rookie";
+        if (rep >= 500) repBadge = "Mythic Ace";
+        else if (rep >= 250) repBadge = "Legend";
+        else if (rep >= 120) repBadge = "Veteran";
+        else if (rep >= 40) repBadge = "Fighter";
+        const mintLine = isPiMint
+          ? `<div style="margin-top:4px;font-size:11px;font-weight:700;color:#c4b5fd">💜 PI Mint · Mainnet</div>`
+          : "";
+        const repLine = `<div class="muted" style="font-size:10px;margin-top:3px">${repBadge} · Rep ${rep} · W${wins}/L${losses}</div>`;
+        const certLine = L.certificate_id
+          ? `<div class="muted" style="font-size:9px;margin-top:2px;font-family:monospace">${esc(String(L.certificate_id).slice(0, 18))}…</div>`
+          : "";
         return `<div class="pet-card ${elClass}">
         <div class="pet-card-top">
           <span class="pet-card-element">${esc(L.element || "")}</span>
-          <span class="pet-card-badge">PET</span>
+          <span class="pet-card-badge">${isPiMint ? "PI MINT" : "PET"}</span>
           ${petArtHtml(pet, 120)}
         </div>
         <div class="pet-card-body">
@@ -7531,7 +7620,10 @@ async function loadListings() {
           <div class="muted" style="font-size:10px;margin-top:4px">Lv ${L.level || 1} · ${esc(
           L.rarity || "Common"
         )}</div>
-          <div class="muted" style="font-size:10px">Seller: ${esc(L.seller_username || "?")}</div>
+          ${mintLine}
+          ${repLine}
+          ${certLine}
+          <div class="muted" style="font-size:10px;margin-top:3px">Seller: ${esc(L.seller_username || "?")}</div>
           <div class="pet-card-footer">
             <button class="small-btn" onclick="buyListing(${L.id})">BUY PET</button>
           </div>
