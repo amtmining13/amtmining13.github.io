@@ -1328,7 +1328,7 @@ KYC may be required for applicable Mainnet functions.
 <div class="row" style="align-items:flex-start">
 <div>
 <div class="card-title" style="margin:0">🎁 DAILY REWARD</div>
-<div class="muted" style="margin-top:4px">1 claim per day · Streak bonus up to Day 7</div>
+<div class="muted" style="margin-top:4px">1 claim per day · 7-day streak then reset</div>
 </div>
 <div class="streak-badge" id="dailyStreakBadge">🔥 0</div>
 </div>
@@ -1345,7 +1345,7 @@ KYC may be required for applicable Mainnet functions.
 <button id="dailyClaimBtn" class="primary" onclick="claimDailyReward()" disabled>
 CLAIM DAILY REWARD
 </button>
-<div class="daily-schedule muted" id="dailyScheduleHint">Day 1: 2 · Day 7: 12 AMT</div>
+<div class="daily-schedule muted" id="dailyScheduleHint">Day 1: 2 · … · Day 7: 12 AMT · then reset</div>
 </div>
 
 <!-- MINING SESSION -->
@@ -6378,7 +6378,7 @@ async function upgradeEquipped(slot) {
 
 async function socketGem(slot, gemIndex, materialId) {
   if (!selectedOwned || !selectedOwned.id) {
-    showToast("Open a pet first", true);
+    showToast("Open My Pets → VIEW pet first, then socket gem on equipped gear.", true);
     return;
   }
   try {
@@ -6460,14 +6460,16 @@ async function useBagMaterial(materialId) {
 async function applyPendingToGear(gearId) {
   const mid = window._pendingMaterial;
   if (!mid) {
-    showToast("Tap a Core or Gem first (top of bag)", true);
+    showToast("STEP 1: Tap a Core or Gem first (yellow list)", true);
     return;
   }
   try {
     showToast("Applying to item...");
+    var body = { materialId: mid, gearId: String(gearId) };
+    if (selectedOwned && selectedOwned.id) body.ownedPetId = Number(selectedOwned.id);
     const d = await api("/api/gear/apply-to-item", {
       method: "POST",
-      body: JSON.stringify({ materialId: mid, gearId: String(gearId) })
+      body: JSON.stringify(body)
     });
     window._pendingMaterial = null;
     showToast(d.message || "Applied!");
