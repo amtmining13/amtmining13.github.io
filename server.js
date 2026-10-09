@@ -6752,8 +6752,10 @@ async function ensureGearTables() {
   `);
 }
 
+const GEAR_MAX_UPGRADE = 15;
+
 const AMT_MATERIALS = {
-  upgrade_core: { id: "upgrade_core", name: "Upgrade Core", kind: "core", priceAmt: 0.5, desc: "Upgrade weapon/armor +1" },
+  upgrade_core: { id: "upgrade_core", name: "Upgrade Core", kind: "core", priceAmt: 0.5, desc: "Upgrade weapon/armor +1 (max +15)" },
   gem_atk_1: { id: "gem_atk_1", name: "Attack Gem Lv1", kind: "gem", stat: "atk", bonus: 2, level: 1, priceAmt: 0.4, desc: "+2 ATK when socketed" },
   gem_atk_2: { id: "gem_atk_2", name: "Attack Gem Lv2", kind: "gem", stat: "atk", bonus: 5, level: 2, priceAmt: 1.2, desc: "+5 ATK when socketed" },
   gem_atk_3: { id: "gem_atk_3", name: "Attack Gem Lv3", kind: "gem", stat: "atk", bonus: 10, level: 3, priceAmt: 3.0, desc: "+10 ATK when socketed" },
@@ -10332,17 +10334,31 @@ app.post("/api/gear/apply-to-item", requireAuth, async (req, res) => {
       return res.status(400).json({ ok: false, error: "Item not in your bag." });
     }
 
-    // First pet
-    const pets = await client.query(
-      `SELECT id, name FROM owned_pets WHERE member_id = $1 ORDER BY id ASC LIMIT 1`,
-      [req.member.id]
-    );
-    if (!pets.rows.length) {
-      await client.query("ROLLBACK");
-      return res.status(400).json({ ok: false, error: "Walang pet. Bumili muna ng pet." });
+    // Prefer pet from body, else first owned pet
+    let ownedPetId = Number(req.body?.ownedPetId);
+    let petName = "";
+    if (Number.isFinite(ownedPetId)) {
+      const one = await client.query(
+        `SELECT id, name FROM owned_pets WHERE id = $1 AND member_id = $2`,
+        [ownedPetId, req.member.id]
+      );
+      if (!one.rows.length) {
+        await client.query("ROLLBACK");
+        return res.status(400).json({ ok: false, error: "Pet not found." });
+      }
+      petName = one.rows[0].name;
+    } else {
+      const pets = await client.query(
+        `SELECT id, name FROM owned_pets WHERE member_id = $1 ORDER BY id ASC LIMIT 1`,
+        [req.member.id]
+      );
+      if (!pets.rows.length) {
+        await client.query("ROLLBACK");
+        return res.status(400).json({ ok: false, error: "Walang pet. Bumili muna ng pet, then equip gear." });
+      }
+      ownedPetId = Number(pets.rows[0].id);
+      petName = pets.rows[0].name;
     }
-    const ownedPetId = Number(pets.rows[0].id);
-    const petName = pets.rows[0].name;
 
     // Equip this gear on the pet slot
     await client.query(
@@ -10361,12 +10377,12 @@ app.post("/api/gear/apply-to-item", requireAuth, async (req, res) => {
 
     if (materialId === "upgrade_core") {
       const up = Number(row.upgrade_level) || 0;
-      if (up >= 5) {
+      if (up >= GEAR_MAX_UPGRADE) {
         await client.query("ROLLBACK");
-        return res.status(400).json({ ok: false, error: "Max +5 na ang item." });
+        return res.status(400).json({ ok: false, error: "Max +" + GEAR_MAX_UPGRADE + " na ang item." });
       }
-      const coresNeed = up + 1;
-      const fee = Math.round((0.2 + up * 0.15) * 100) / 100;
+      const coresNeed = Math.min(up + 1, 10);
+      const fee = Math.round((0.2 + up * 0.12) * 100) / 100;
       await spendMaterial(client, req.member.id, "upgrade_core", coresNeed);
       const bal = await getBalance(req.member.id, client);
       if (bal < fee) {
@@ -10458,12 +10474,12 @@ app.post("/api/gear/upgrade", requireAuth, async (req, res) => {
       return res.status(400).json({ ok: false, error: "No item equipped in " + slot + "." });
     }
     const up = Number(eq.rows[0].upgrade_level) || 0;
-    if (up >= 5) {
+    if (up >= GEAR_MAX_UPGRADE) {
       await client.query("ROLLBACK");
-      return res.status(400).json({ ok: false, error: "Max upgrade +5." });
+      return res.status(400).json({ ok: false, error: "Max upgrade +" + GEAR_MAX_UPGRADE + "." });
     }
-    const coresNeed = up + 1;
-    const fee = Math.round((0.2 + up * 0.15) * 100) / 100;
+    const coresNeed = Math.min(up + 1, 10);
+    const fee = Math.round((0.2 + up * 0.12) * 100) / 100;
     await spendMaterial(client, req.member.id, "upgrade_core", coresNeed);
     const bal = await getBalance(req.member.id, client);
     if (bal < fee) {
