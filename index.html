@@ -4311,23 +4311,95 @@ function downloadReferralQr(){
     showToast("Login first / generate invite QR", true);
     return;
   }
-  // Always use stable HTTPS QR URL — long-press + open-in-browser works in Pi Browser
+  showToast("Preparing QR with photo…");
+  var size = 400;
+  var canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  var ctx = canvas.getContext("2d");
   var encoded = encodeURIComponent(link);
   var qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=10&ecc=H&format=png&data=" + encoded;
-  showQrSaveSheet(qrUrl, link);
+
+  function openSheet(dataUrl){
+    showQrSaveSheet(dataUrl || qrUrl, link, !!dataUrl);
+  }
+
+  function drawCenter(baseImg, picImg){
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, size, size);
+    try{ ctx.drawImage(baseImg, 0, 0, size, size); }catch(e){}
+    var bw = 84, bh = 84;
+    var bx = (size - bw) / 2, by = (size - bh) / 2;
+    // white pad behind badge so QR stays scannable
+    ctx.fillStyle = "#ffffff";
+    roundRect(ctx, bx - 4, by - 4, bw + 8, bh + 8, 18);
+    ctx.fill();
+    ctx.save();
+    roundRect(ctx, bx, by, bw, bh, 16);
+    ctx.clip();
+    if(picImg){
+      try{ ctx.drawImage(picImg, bx, by, bw, bh); }catch(e){ picImg = null; }
+    }
+    if(!picImg){
+      ctx.fillStyle = "#12081f";
+      ctx.fillRect(bx, by, bw, bh);
+      ctx.fillStyle = "#ffd95a";
+      ctx.font = "bold 22px sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("AMT", size / 2, size / 2);
+    }
+    ctx.restore();
+    ctx.strokeStyle = "#ffd95a";
+    ctx.lineWidth = 4;
+    roundRect(ctx, bx, by, bw, bh, 16);
+    ctx.stroke();
+    try{
+      openSheet(canvas.toDataURL("image/png"));
+    }catch(e){
+      openSheet(null);
+    }
+  }
+
+  function loadPicAndDraw(baseImg){
+    var pic = getProfileImageForQr();
+    if(!pic){
+      drawCenter(baseImg, null);
+      return;
+    }
+    var p = new Image();
+    p.crossOrigin = "anonymous";
+    p.onload = function(){ drawCenter(baseImg, p); };
+    p.onerror = function(){ drawCenter(baseImg, null); };
+    p.src = pic;
+  }
+
+  // Prefer already-loaded on-screen QR (has correct pattern)
+  if(img.complete && img.naturalWidth > 0){
+    loadPicAndDraw(img);
+    return;
+  }
+  var q = new Image();
+  q.crossOrigin = "anonymous";
+  q.onload = function(){ loadPicAndDraw(q); };
+  q.onerror = function(){ openSheet(null); };
+  q.src = qrUrl + "&t=" + Date.now();
 }
 
-function showQrSaveSheet(qrUrl, link){
+function showQrSaveSheet(imgSrc, link, hasPhoto){
   var old = document.getElementById("qrSaveOverlay");
   if(old) old.remove();
   var ov = document.createElement("div");
   ov.id = "qrSaveOverlay";
   ov.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;overflow:auto;";
+  var note = hasPhoto
+    ? "Photo included · Long-press image → Save"
+    : "Long-press image → Save";
   ov.innerHTML =
     '<div style="color:#fff;font-size:14px;margin-bottom:10px;text-align:center;font-weight:700">Save your Invite QR</div>' +
-    '<img id="qrSaveImg" src="'+qrUrl+'" alt="QR" style="max-width:min(90vw,320px);background:#fff;padding:12px;border-radius:16px;-webkit-touch-callout:default;user-select:auto">' +
-    '<div style="color:#ccc;font-size:12px;margin:12px 0;text-align:center">Long-press the image → Save image<br>or use buttons below</div>' +
-    '<button type="button" id="qrOpenBtn" style="width:100%;max-width:320px;padding:14px;border:0;border-radius:14px;background:linear-gradient(90deg,#f0c14b,#a959ff);color:#111;font-weight:800;font-size:15px;margin-bottom:8px">Open image to save</button>' +
+    '<img id="qrSaveImg" src="'+imgSrc+'" alt="QR" style="max-width:min(90vw,320px);background:#fff;padding:8px;border-radius:16px;-webkit-touch-callout:default;user-select:auto">' +
+    '<div style="color:#ccc;font-size:12px;margin:12px 0;text-align:center">'+note+'</div>' +
+    '<button type="button" id="qrShareBtn" style="width:100%;max-width:320px;padding:14px;border:0;border-radius:14px;background:linear-gradient(90deg,#f0c14b,#a959ff);color:#111;font-weight:800;font-size:15px;margin-bottom:8px">Share / Save QR</button>' +
     '<button type="button" id="qrCopyLinkBtn" style="width:100%;max-width:320px;padding:12px;border:0;border-radius:14px;background:#2a2040;color:#fff;font-weight:700;margin-bottom:8px">Copy invite link</button>' +
     '<button type="button" id="qrCloseBtn" style="width:100%;max-width:320px;padding:12px;border:0;border-radius:14px;background:#333;color:#fff">Close</button>';
   document.body.appendChild(ov);
@@ -4338,142 +4410,36 @@ function showQrSaveSheet(qrUrl, link){
       else showCopyModal("Copy invite link", link);
     });
   };
-  ov.querySelector("#qrOpenBtn").onclick = function(){
-    try{
-      if(window.Pi && typeof Pi.openUrlInSystemBrowser === "function"){
-        Pi.openUrlInSystemBrowser(qrUrl);
-      }else{
-        window.open(qrUrl, "_blank");
+  ov.querySelector("#qrShareBtn").onclick = function(){
+    // Share composited image if data URL / try fetch blob
+    var src = imgSrc;
+    function shareBlob(blob){
+      try{
+        var file = new File([blob], "AMT-referral-QR.png", { type: "image/png" });
+        if(navigator.share && navigator.canShare && navigator.canShare({ files: [file] })){
+          navigator.share({ files: [file], title: "AMT Invite QR", text: link })
+            .then(function(){ showToast("Shared — Save from share menu"); })
+            .catch(function(){ showToast("Long-press the QR image to Save", true); });
+          return;
+        }
+      }catch(e){}
+      showToast("Long-press the QR image to Save", true);
+    }
+    if(src.indexOf("data:image") === 0){
+      try{
+        var byte = atob(src.split(",")[1]);
+        var arr = new Uint8Array(byte.length);
+        for(var i=0;i<byte.length;i++) arr[i] = byte.charCodeAt(i);
+        shareBlob(new Blob([arr], { type: "image/png" }));
+      }catch(e){
+        showToast("Long-press the QR image to Save", true);
       }
-      showToast("Save the image from the browser");
-    }catch(e){
-      window.location.href = qrUrl;
+    }else{
+      fetch(src).then(function(r){ return r.blob(); }).then(shareBlob).catch(function(){
+        showToast("Long-press the QR image to Save", true);
+      });
     }
   };
-}
-
-function updatePaymentQr(payload){
-  setQrImage($("paymentQr"), payload);
-}
-
-function buildPaymentLink(amount){
-  var user = (window._referralCode || (currentUser && currentUser.username) || localStorage.getItem("amt_pi_username") || "").trim();
-  if(!user) return "";
-  var url = APP_BASE_URL + "/?pay=" + encodeURIComponent(user);
-  if(amount && Number(amount) > 0){
-    url += "&amt=" + encodeURIComponent(String(amount));
-  }
-  return url;
-}
-
-function refreshPaymentQr(){
-  var amtEl = $("payQrAmount");
-  var amount = amtEl ? amtEl.value : "";
-  var link = buildPaymentLink(amount);
-  if(!link){
-    updatePaymentQr(null);
-    if($("paymentQrHint")) $("paymentQrHint").textContent = "Login first";
-    return;
-  }
-  updatePaymentQr(link);
-  window._paymentLink = link;
-  if($("paymentQrHint")){
-    $("paymentQrHint").textContent = amount && Number(amount) > 0
-      ? ("Pay " + amount + " AMT to you")
-      : "Open link / scan to pay you AMT";
-  }
-}
-
-function copyPaymentLink(){
-  var link = window._paymentLink || buildPaymentLink($("payQrAmount") && $("payQrAmount").value);
-  if(!link) return showToast("Login first", true);
-  if(navigator.clipboard && navigator.clipboard.writeText){
-    navigator.clipboard.writeText(link).then(function(){ showToast("Pay link copied"); }).catch(function(){ showToast(link); });
-  }else{
-    showToast(link);
-  }
-}
-
-
-async function loadReferral(){
-try{
-const data = await api("/api/referrals");
-const code = (data.referralCode || data.code || data.username || "").trim();
-
-if(code && code !== "------"){
-  const fullLink = buildReferralLink(code);
-  if($("referralCode")) $("referralCode").textContent = fullLink;
-  if($("referralCodeOnly")) $("referralCodeOnly").textContent = code;
-  updateReferralQr(fullLink);
-  window._referralLink = fullLink;
-  window._referralCode = code;
-  try{ refreshPaymentQr(); }catch(e){}
-}else{
-  if($("referralCode")) $("referralCode").textContent = "------";
-  if($("referralCodeOnly")) $("referralCodeOnly").textContent = "------";
-  updateReferralQr(null);
-  window._referralLink = "";
-  window._referralCode = "";
-}
-
-const count = Number(data.referralCount ?? data.count ?? 0);
-if($("referralCount")) $("referralCount").textContent = count;
-if($("activeMiners")) $("activeMiners").textContent = data.activeMiners ?? 0;
-
-const tier = data.tier || {};
-if($("tierName")) $("tierName").textContent = tier.name || "Bronze";
-if($("tierReward")) $("tierReward").textContent = tier.rewardPerReferral ?? 0.5;
-
-const milestones = [5, 15, 50];
-let nextMile = null;
-for(const m of milestones){
-  if(count < m){ nextMile = m; break; }
-}
-if($("nextMilestone")) $("nextMilestone").textContent = nextMile ? (nextMile + " refs") : "Max reached";
-
-const tiers = [
-  {name:"Bronze", min:0, max:5},
-  {name:"Silver", min:6, max:15},
-  {name:"Gold", min:16, max:50},
-  {name:"Legend", min:51, max:999999}
-];
-let current = tiers.find(t => count >= t.min && count <= t.max) || tiers[0];
-let nextTier = tiers.find(t => t.min > count);
-let progressPct = 0;
-let progressText = "";
-if(nextTier){
-  const range = Math.max(1, nextTier.min - (current.min || 0));
-  const done = Math.max(0, count - (current.min || 0));
-  progressPct = Math.min(100, Math.round((done / range) * 100));
-  progressText = count + " / " + nextTier.min + " to " + nextTier.name;
-}else{
-  progressPct = 100;
-  progressText = count + " referrals · Legend tier";
-}
-if($("tierProgress")) $("tierProgress").style.width = progressPct + "%";
-if($("tierProgressText")) $("tierProgressText").textContent = progressText;
-}catch(error){
-  console.log("Referral:", error);
-}
-}
-
-function fallbackCopyText(text){
-  try{
-    const ta = document.createElement("textarea");
-    ta.value = text;
-    ta.setAttribute("readonly", "");
-    ta.style.cssText = "position:fixed;left:0;top:0;width:90%;max-width:320px;z-index:100000;padding:12px;font-size:16px;";
-    document.body.appendChild(ta);
-    ta.focus();
-    ta.select();
-    ta.setSelectionRange(0, text.length);
-    var ok = false;
-    try{ ok = document.execCommand("copy"); }catch(e){}
-    document.body.removeChild(ta);
-    return !!ok;
-  }catch(e){
-    return false;
-  }
 }
 
 function showCopyModal(title, text){
