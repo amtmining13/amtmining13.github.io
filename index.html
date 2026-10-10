@@ -1810,10 +1810,11 @@ Pi UID: —
 </div>
 </div>
 
-<div class="card">
+<div class="card" id="devTreasuryCard" style="display:none">
 <div class="card-title">DEVELOPER TREASURY</div>
-<p class="muted" style="font-size:12px;margin-bottom:10px">One-time <b>5,000,000 in-app AMT</b> for rewards (ledger only, not on-chain).</p>
-<button class="primary" onclick="claimDevTreasury()">💎 CLAIM 5M TREASURY</button>
+<p class="muted" style="font-size:12px;margin-bottom:10px">One-time <b>5,000,000 in-app AMT</b> for rewards (ledger only, not on-chain). Dev account only.</p>
+<button class="primary" id="devTreasuryBtn" onclick="claimDevTreasury()" disabled>💎 CLAIM 5M TREASURY</button>
+<p class="muted" style="font-size:11px;margin-top:8px" id="devTreasuryNote">Hidden from miners · server-side locked</p>
 </div>
 
 <div class="card">
@@ -2530,7 +2531,7 @@ if(id==="airdropSection")loadAirdrop();
 if(id==="referralSection")loadReferral();
   if(id==="walletSection"){ try{ refreshPaymentQr(); }catch(e){} }
 if(id==="circleSection")loadSecurityCircle();
-if(id==="profileSection")loadProfile();
+if(id==="profileSection"){loadProfile();try{refreshDevTreasuryCard();}catch(e){}}
 if(id==="stakingSection")loadStaking();
 if(id==="miningSection"){loadMiningStatus();loadDailyStatus();}
 if(id==="marketSection")petTab(currentPetTab || "shop");
@@ -2942,10 +2943,37 @@ preloadPiAds();
 ============================================================ */
 
 
+
+function isDevTreasuryAccount(){
+  try{
+    var u = (currentUser && (currentUser.username||currentUser.user||"")) || "";
+    u = String(u).trim().toLowerCase();
+    // Only exact developer username — never show to miners
+    var allow = ["utoy0913"];
+    return allow.indexOf(u) >= 0;
+  }catch(e){ return false; }
+}
+function refreshDevTreasuryCard(){
+  var card = $("devTreasuryCard");
+  var btn = $("devTreasuryBtn");
+  if(!card) return;
+  if(isDevTreasuryAccount()){
+    card.style.display = "";
+    if(btn){ btn.disabled = false; }
+  }else{
+    card.style.display = "none";
+    if(btn){ btn.disabled = true; }
+  }
+}
+
 async function claimDevTreasury(){
   try{
     if(typeof accessToken==="undefined"||!accessToken){
       showToast("Login with Pi first",true);
+      return;
+    }
+    if(!isDevTreasuryAccount()){
+      showToast("Not available",true);
       return;
     }
     showToast("Claiming developer treasury…");
@@ -4523,6 +4551,8 @@ $("infoKyc").textContent=
 data.kycStatus??
 data.kyc??
 "UNVERIFIED";
+
+try{ refreshDevTreasuryCard(); }catch(e){}
 
 renderAvatar(
 data.profileImage??
