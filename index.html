@@ -4311,121 +4311,45 @@ function downloadReferralQr(){
     showToast("Login first / generate invite QR", true);
     return;
   }
-  showToast("Preparing QR…");
-  var size = 400;
-  var canvas = document.createElement("canvas");
-  canvas.width = size;
-  canvas.height = size;
-  var ctx = canvas.getContext("2d");
+  // Always use stable HTTPS QR URL — long-press + open-in-browser works in Pi Browser
+  var encoded = encodeURIComponent(link);
+  var qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=10&ecc=H&format=png&data=" + encoded;
+  showQrSaveSheet(qrUrl, link);
+}
 
-  function saveBlob(blob){
-    if(!blob){
-      openQrFallback();
-      return;
-    }
-    var file = null;
-    try{ file = new File([blob], "AMT-referral-QR.png", { type: "image/png" }); }catch(e){}
-    if(file && navigator.share && navigator.canShare){
-      try{
-        if(navigator.canShare({ files: [file] })){
-          navigator.share({
-            files: [file],
-            title: "AMT Invite QR",
-            text: link
-          }).then(function(){ showToast("Use Share menu → Save / Download"); })
-           .catch(function(){ tryAnchorDownload(blob); });
-          return;
-        }
-      }catch(e){}
-    }
-    tryAnchorDownload(blob);
-  }
-
-  function tryAnchorDownload(blob){
+function showQrSaveSheet(qrUrl, link){
+  var old = document.getElementById("qrSaveOverlay");
+  if(old) old.remove();
+  var ov = document.createElement("div");
+  ov.id = "qrSaveOverlay";
+  ov.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;overflow:auto;";
+  ov.innerHTML =
+    '<div style="color:#fff;font-size:14px;margin-bottom:10px;text-align:center;font-weight:700">Save your Invite QR</div>' +
+    '<img id="qrSaveImg" src="'+qrUrl+'" alt="QR" style="max-width:min(90vw,320px);background:#fff;padding:12px;border-radius:16px;-webkit-touch-callout:default;user-select:auto">' +
+    '<div style="color:#ccc;font-size:12px;margin:12px 0;text-align:center">Long-press the image → Save image<br>or use buttons below</div>' +
+    '<button type="button" id="qrOpenBtn" style="width:100%;max-width:320px;padding:14px;border:0;border-radius:14px;background:linear-gradient(90deg,#f0c14b,#a959ff);color:#111;font-weight:800;font-size:15px;margin-bottom:8px">Open image to save</button>' +
+    '<button type="button" id="qrCopyLinkBtn" style="width:100%;max-width:320px;padding:12px;border:0;border-radius:14px;background:#2a2040;color:#fff;font-weight:700;margin-bottom:8px">Copy invite link</button>' +
+    '<button type="button" id="qrCloseBtn" style="width:100%;max-width:320px;padding:12px;border:0;border-radius:14px;background:#333;color:#fff">Close</button>';
+  document.body.appendChild(ov);
+  ov.querySelector("#qrCloseBtn").onclick = function(){ ov.remove(); };
+  ov.querySelector("#qrCopyLinkBtn").onclick = function(){
+    copyTextSmart(link).then(function(ok){
+      if(ok) showToast("Link copied");
+      else showCopyModal("Copy invite link", link);
+    });
+  };
+  ov.querySelector("#qrOpenBtn").onclick = function(){
     try{
-      var url = URL.createObjectURL(blob);
-      var a = document.createElement("a");
-      a.href = url;
-      a.download = "AMT-referral-QR.png";
-      a.target = "_blank";
-      a.rel = "noopener";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(function(){
-        showQrPreview(url);
-        showToast("Long-press image → Save to gallery");
-      }, 300);
-      setTimeout(function(){ try{ URL.revokeObjectURL(url); }catch(e){} }, 60000);
+      if(window.Pi && typeof Pi.openUrlInSystemBrowser === "function"){
+        Pi.openUrlInSystemBrowser(qrUrl);
+      }else{
+        window.open(qrUrl, "_blank");
+      }
+      showToast("Save the image from the browser");
     }catch(e){
-      openQrFallback();
+      window.location.href = qrUrl;
     }
-  }
-
-  function openQrFallback(){
-    var encoded = encodeURIComponent(link);
-    var url = "https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=10&ecc=H&format=png&data=" + encoded;
-    showQrPreview(url);
-    showToast("Long-press image → Save to gallery");
-  }
-
-  function showQrPreview(src){
-    var old = document.getElementById("qrSaveOverlay");
-    if(old) old.remove();
-    var ov = document.createElement("div");
-    ov.id = "qrSaveOverlay";
-    ov.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;";
-    ov.innerHTML = '<div style="color:#fff;font-size:14px;margin-bottom:12px;text-align:center">Long-press image → <b>Save</b> / Download</div>' +
-      '<img src="'+src+'" alt="QR" style="max-width:90vw;max-height:60vh;border-radius:16px;background:#fff;padding:12px">' +
-      '<button type="button" style="margin-top:16px;padding:12px 24px;border:0;border-radius:12px;background:linear-gradient(90deg,#f0c14b,#a959ff);color:#111;font-weight:800;font-size:14px">Close</button>';
-    ov.querySelector("button").onclick = function(){ ov.remove(); };
-    ov.addEventListener("click", function(e){ if(e.target === ov) ov.remove(); });
-    document.body.appendChild(ov);
-  }
-
-  function drawBadge(picImg){
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, size, size);
-    try{ ctx.drawImage(img, 0, 0, size, size); }catch(e){}
-    var bw = 80, bh = 80;
-    var bx = (size - bw) / 2, by = (size - bh) / 2;
-    ctx.save();
-    roundRect(ctx, bx, by, bw, bh, 16);
-    ctx.clip();
-    if(picImg){
-      try{ ctx.drawImage(picImg, bx, by, bw, bh); }catch(e){ picImg = null; }
-    }
-    if(!picImg){
-      ctx.fillStyle = "#12081f";
-      ctx.fillRect(bx, by, bw, bh);
-      ctx.fillStyle = "#ffd95a";
-      ctx.font = "bold 22px sans-serif";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText("AMT", size / 2, size / 2);
-    }
-    ctx.restore();
-    ctx.strokeStyle = "#ffd95a";
-    ctx.lineWidth = 4;
-    roundRect(ctx, bx, by, bw, bh, 16);
-    ctx.stroke();
-    try{
-      canvas.toBlob(function(blob){ saveBlob(blob); }, "image/png");
-    }catch(e){
-      openQrFallback();
-    }
-  }
-
-  var pic = getProfileImageForQr();
-  if(pic){
-    var p = new Image();
-    p.crossOrigin = "anonymous";
-    p.onload = function(){ drawBadge(p); };
-    p.onerror = function(){ drawBadge(null); };
-    p.src = pic;
-  }else{
-    drawBadge(null);
-  }
+  };
 }
 
 function updatePaymentQr(payload){
@@ -4538,18 +4462,48 @@ function fallbackCopyText(text){
     const ta = document.createElement("textarea");
     ta.value = text;
     ta.setAttribute("readonly", "");
-    ta.style.cssText = "position:fixed;left:-9999px;top:0;opacity:0;";
+    ta.style.cssText = "position:fixed;left:0;top:0;width:90%;max-width:320px;z-index:100000;padding:12px;font-size:16px;";
     document.body.appendChild(ta);
     ta.focus();
     ta.select();
     ta.setSelectionRange(0, text.length);
-    const ok = document.execCommand("copy");
+    var ok = false;
+    try{ ok = document.execCommand("copy"); }catch(e){}
     document.body.removeChild(ta);
     return !!ok;
   }catch(e){
     return false;
   }
 }
+
+function showCopyModal(title, text){
+  var old = document.getElementById("amtCopyModal");
+  if(old) old.remove();
+  var ov = document.createElement("div");
+  ov.id = "amtCopyModal";
+  ov.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;";
+  ov.innerHTML = '<div style="background:#1a1028;border:1px solid rgba(255,215,80,.35);border-radius:16px;padding:16px;max-width:340px;width:100%">' +
+    '<div style="color:#ffd95a;font-weight:800;margin-bottom:8px">'+title+'</div>' +
+    '<textarea id="amtCopyTa" readonly style="width:100%;min-height:100px;border-radius:10px;padding:10px;font-size:13px;background:#0d0814;color:#fff;border:1px solid #444"></textarea>' +
+    '<button type="button" id="amtCopyBtn" style="margin-top:10px;width:100%;padding:12px;border:0;border-radius:12px;background:linear-gradient(90deg,#f0c14b,#a959ff);color:#111;font-weight:800">Copy</button>' +
+    '<button type="button" id="amtCopyClose" style="margin-top:8px;width:100%;padding:10px;border:0;border-radius:12px;background:#333;color:#fff">Close</button></div>';
+  document.body.appendChild(ov);
+  var ta = ov.querySelector("#amtCopyTa");
+  ta.value = text;
+  ov.querySelector("#amtCopyClose").onclick = function(){ ov.remove(); };
+  ov.querySelector("#amtCopyBtn").onclick = function(){
+    ta.focus(); ta.select();
+    var ok = false;
+    try{ ok = document.execCommand("copy"); }catch(e){}
+    if(!ok && navigator.clipboard){
+      navigator.clipboard.writeText(text).then(function(){ showToast("Copied!"); }).catch(function(){ showToast("Select text → Copy", true); });
+    }else{
+      showToast(ok ? "Copied!" : "Select all text → Copy", !ok);
+    }
+  };
+  setTimeout(function(){ try{ ta.focus(); ta.select(); }catch(e){} }, 100);
+}
+
 
 async function copyTextSmart(text){
   if(!text) return false;
@@ -4568,7 +4522,8 @@ function copyReferral(){
     return showToast("Referral link is not ready. Please login again.", true);
   }
   copyTextSmart(link).then(function(ok){
-    showToast(ok ? "Link copied! Paste sa Messenger / chat." : "Could not copy link.", !ok);
+    if(ok) showToast("Link copied! Paste sa Messenger / chat.");
+    else showCopyModal("Copy invite link", link);
   });
 }
 
@@ -4578,7 +4533,8 @@ function copyReferralCode(){
     return showToast("Referral code not ready. Login first.", true);
   }
   copyTextSmart(code).then(function(ok){
-    showToast(ok ? ("Code copied: " + code) : "Could not copy code.", !ok);
+    if(ok) showToast("Code copied: " + code);
+    else showCopyModal("Copy referral code", code);
   });
 }
 
@@ -4635,7 +4591,7 @@ async function shareReferral(){
   if(ok){
     showToast("Invite copied! Open Messenger / Viber / Telegram → Paste → Send");
   }else{
-    showToast("Copy failed. Use COPY LINK or COPY CODE.", true);
+    showCopyModal("Share invite — copy this text", text);
   }
 }
 
