@@ -4476,33 +4476,30 @@ function showQrSaveSheet(imgSrc, link, hasPhoto){
   var old = document.getElementById("qrSaveOverlay");
   if(old) old.remove();
 
-  // Stash for button handlers (inline onclick)
   window._qrSaveSrc = imgSrc;
   window._qrSaveLink = link || "";
 
   var ov = document.createElement("div");
   ov.id = "qrSaveOverlay";
-  ov.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:2147483646;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:24px 16px 100px;overflow:auto;-webkit-overflow-scrolling:touch;";
+  ov.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.94);z-index:2147483646;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:20px 16px 120px;overflow:auto;-webkit-overflow-scrolling:touch;";
 
   var note = hasPhoto
-    ? "✅ Photo in center · Long-press image → Save to gallery"
-    : "Long-press image → Save to gallery";
+    ? "✅ Photo included"
+    : "QR ready";
 
   ov.innerHTML =
-    '<div style="color:#fff;font-size:15px;margin:8px 0 12px;text-align:center;font-weight:800;flex-shrink:0">Save your Invite QR</div>' +
-    '<img id="qrSaveImg" src="'+imgSrc+'" alt="QR" style="width:min(90vw,300px);height:auto;background:#fff;padding:8px;border-radius:16px;flex-shrink:0;-webkit-touch-callout:default;user-select:auto;pointer-events:auto">' +
-    '<div style="color:#ddd;font-size:12px;margin:12px 0;text-align:center;flex-shrink:0">'+note+'</div>' +
-    '<div style="width:100%;max-width:320px;display:flex;flex-direction:column;gap:10px;flex-shrink:0;position:relative;z-index:2147483647">' +
-      '<button type="button" id="qrShareBtn" onclick="event.stopPropagation();window._qrShareSave&&window._qrShareSave()" style="width:100%;padding:16px;border:0;border-radius:14px;background:linear-gradient(90deg,#f0c14b,#a959ff);color:#111;font-weight:800;font-size:16px;cursor:pointer;pointer-events:auto;touch-action:manipulation">Share / Save QR</button>' +
-      '<button type="button" id="qrCopyLinkBtn" onclick="event.stopPropagation();window._qrCopyInvite&&window._qrCopyInvite()" style="width:100%;padding:14px;border:0;border-radius:14px;background:#2a2040;color:#fff;font-weight:700;font-size:15px;cursor:pointer;pointer-events:auto;touch-action:manipulation">Copy invite link</button>' +
-      '<button type="button" id="qrCloseBtn" onclick="event.stopPropagation();var e=document.getElementById(\'qrSaveOverlay\');if(e)e.remove()" style="width:100%;padding:14px;border:0;border-radius:14px;background:#333;color:#fff;font-size:15px;cursor:pointer;pointer-events:auto;touch-action:manipulation">Close</button>' +
+    '<div style="color:#fff;font-size:15px;margin:8px 0 10px;text-align:center;font-weight:800">Save your Invite QR</div>' +
+    '<img id="qrSaveImg" src="'+imgSrc+'" alt="QR" style="width:min(88vw,300px);height:auto;background:#fff;padding:8px;border-radius:16px">' +
+    '<div style="color:#bbb;font-size:11px;margin:10px 8px 0;text-align:center;line-height:1.4">'+note+'<br>Pi Browser blocks long-press save — use the button below</div>' +
+    '<div style="width:100%;max-width:320px;display:flex;flex-direction:column;gap:10px;margin-top:14px;position:relative;z-index:2147483647">' +
+      '<button type="button" onclick="event.preventDefault();event.stopPropagation();window._qrSaveToPhone&&window._qrSaveToPhone()" style="width:100%;padding:16px;border:0;border-radius:14px;background:linear-gradient(90deg,#f0c14b,#a959ff);color:#111;font-weight:900;font-size:16px;cursor:pointer;touch-action:manipulation">💾 Save to phone</button>' +
+      '<button type="button" onclick="event.preventDefault();event.stopPropagation();window._qrCopyInvite&&window._qrCopyInvite()" style="width:100%;padding:14px;border:0;border-radius:14px;background:#2a2040;color:#fff;font-weight:700;font-size:15px;cursor:pointer;touch-action:manipulation">Copy invite link</button>' +
+      '<button type="button" onclick="event.preventDefault();event.stopPropagation();var e=document.getElementById(\'qrSaveOverlay\');if(e)e.remove()" style="width:100%;padding:14px;border:0;border-radius:14px;background:#333;color:#fff;font-size:15px;cursor:pointer;touch-action:manipulation">Close</button>' +
     '</div>';
 
-  // Prevent clicks on backdrop from blocking — but allow scroll
   ov.addEventListener("click", function(e){
-    if(e.target === ov){ ov.remove(); }
-  }, true);
-
+    if(e.target === ov) ov.remove();
+  });
   document.body.appendChild(ov);
 
   window._qrCopyInvite = function(){
@@ -4514,52 +4511,98 @@ function showQrSaveSheet(imgSrc, link, hasPhoto){
     });
   };
 
-  window._qrShareSave = function(){
-    var src = window._qrSaveSrc || "";
-    var L = window._qrSaveLink || "";
-    function doShare(blob){
+  function srcToBlob(src){
+    return new Promise(function(resolve, reject){
+      if(src.indexOf("data:image") === 0){
+        try{
+          var byte = atob(src.split(",")[1]);
+          var arr = new Uint8Array(byte.length);
+          for(var i=0;i<byte.length;i++) arr[i] = byte.charCodeAt(i);
+          resolve(new Blob([arr], { type: "image/png" }));
+        }catch(e){ reject(e); }
+      }else{
+        fetch(src).then(function(r){ return r.blob(); }).then(resolve).catch(reject);
+      }
+    });
+  }
+
+  window._qrSaveToPhone = function(){
+    showToast("Saving…");
+    srcToBlob(window._qrSaveSrc || "").then(function(blob){
+      var file = null;
+      try{ file = new File([blob], "AMT-referral-QR.png", { type: "image/png" }); }catch(e){}
+
+      // 1) Web Share with file — best on Android (Save to Files / Drive / Photos)
+      if(file && navigator.share){
+        var payload = { files: [file], title: "AMT Invite QR", text: window._qrSaveLink || "AMT Invite" };
+        var can = true;
+        try{
+          if(navigator.canShare) can = navigator.canShare({ files: [file] });
+        }catch(e){ can = false; }
+        if(can){
+          return navigator.share(payload)
+            .then(function(){ showToast("Pick Save / Files / Photos in the share menu"); })
+            .catch(function(err){
+              if(err && err.name === "AbortError") return;
+              return tryClipboardImage(blob).then(function(ok){
+                if(ok) showToast("Image copied — paste in Gallery / chat");
+                else tryAnchor(blob);
+              });
+            });
+        }
+      }
+
+      // 2) Clipboard image
+      return tryClipboardImage(blob).then(function(ok){
+        if(ok) showToast("Image copied — paste in Messenger or Gallery app");
+        else tryAnchor(blob);
+      });
+    }).catch(function(){
+      showToast("Save failed — use Copy invite link", true);
+    });
+  };
+
+  function tryClipboardImage(blob){
+    return new Promise(function(resolve){
       try{
-        var file = new File([blob], "AMT-referral-QR.png", { type: "image/png" });
-        if(navigator.share && navigator.canShare && navigator.canShare({ files: [file] })){
-          navigator.share({ files: [file], title: "AMT Invite QR", text: L })
-            .then(function(){ showToast("Shared — Save from menu"); })
-            .catch(function(){ tryDownload(blob); });
+        if(navigator.clipboard && window.ClipboardItem){
+          var item = new ClipboardItem({ "image/png": blob });
+          navigator.clipboard.write([item]).then(function(){ resolve(true); }).catch(function(){ resolve(false); });
           return;
         }
       }catch(e){}
-      tryDownload(blob);
+      resolve(false);
+    });
+  }
+
+  function tryAnchor(blob){
+    try{
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url;
+      a.download = "AMT-referral-QR.png";
+      a.setAttribute("download", "AMT-referral-QR.png");
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      // Also open blob in same webview as last resort view
+      setTimeout(function(){
+        try{
+          var w = window.open(url, "_blank");
+          if(!w){
+            showToast("Tap Share menu → Save to Files");
+          }else{
+            showToast("Image opened — use browser Save");
+          }
+        }catch(e){
+          showToast("Use Share → Save to Files / Photos");
+        }
+      }, 200);
+      setTimeout(function(){ try{ URL.revokeObjectURL(url); }catch(e){} }, 60000);
+    }catch(e){
+      showToast("Use Copy invite link instead", true);
     }
-    function tryDownload(blob){
-      try{
-        var url = URL.createObjectURL(blob);
-        var a = document.createElement("a");
-        a.href = url;
-        a.download = "AMT-referral-QR.png";
-        a.style.display = "none";
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        showToast("If file did not save: long-press the QR image above");
-        setTimeout(function(){ try{ URL.revokeObjectURL(url); }catch(e){} }, 30000);
-      }catch(e){
-        showToast("Long-press the QR image above to Save");
-      }
-    }
-    if(src.indexOf("data:image") === 0){
-      try{
-        var byte = atob(src.split(",")[1]);
-        var arr = new Uint8Array(byte.length);
-        for(var i=0;i<byte.length;i++) arr[i] = byte.charCodeAt(i);
-        doShare(new Blob([arr], { type: "image/png" }));
-      }catch(e){
-        showToast("Long-press the QR image above to Save");
-      }
-    }else{
-      fetch(src).then(function(r){ return r.blob(); }).then(doShare).catch(function(){
-        showToast("Long-press the QR image above to Save");
-      });
-    }
-  };
+  }
 }
 
 function showCopyModal(title, text){
