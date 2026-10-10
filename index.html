@@ -4311,34 +4311,78 @@ function downloadReferralQr(){
     showToast("Login first / generate invite QR", true);
     return;
   }
+  showToast("Preparing QR…");
   var size = 400;
   var canvas = document.createElement("canvas");
   canvas.width = size;
   canvas.height = size;
   var ctx = canvas.getContext("2d");
-  function finishDownload(){
-    try{
-      canvas.toBlob(function(blob){
-        if(!blob){
-          window.open(img.src, "_blank");
-          showToast("Long-press image to save");
+
+  function saveBlob(blob){
+    if(!blob){
+      openQrFallback();
+      return;
+    }
+    var file = null;
+    try{ file = new File([blob], "AMT-referral-QR.png", { type: "image/png" }); }catch(e){}
+    if(file && navigator.share && navigator.canShare){
+      try{
+        if(navigator.canShare({ files: [file] })){
+          navigator.share({
+            files: [file],
+            title: "AMT Invite QR",
+            text: link
+          }).then(function(){ showToast("Use Share menu → Save / Download"); })
+           .catch(function(){ tryAnchorDownload(blob); });
           return;
         }
-        var a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = "AMT-referral-QR.png";
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        setTimeout(function(){ URL.revokeObjectURL(a.href); }, 2000);
-        showToast("Invite QR downloaded");
-      }, "image/png");
+      }catch(e){}
+    }
+    tryAnchorDownload(blob);
+  }
+
+  function tryAnchorDownload(blob){
+    try{
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url;
+      a.download = "AMT-referral-QR.png";
+      a.target = "_blank";
+      a.rel = "noopener";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(function(){
+        showQrPreview(url);
+        showToast("Long-press image → Save to gallery");
+      }, 300);
+      setTimeout(function(){ try{ URL.revokeObjectURL(url); }catch(e){} }, 60000);
     }catch(e){
-      var encoded = encodeURIComponent(link);
-      window.open("https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=10&ecc=H&format=png&data=" + encoded, "_blank");
-      showToast("QR opened — save image");
+      openQrFallback();
     }
   }
+
+  function openQrFallback(){
+    var encoded = encodeURIComponent(link);
+    var url = "https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=10&ecc=H&format=png&data=" + encoded;
+    showQrPreview(url);
+    showToast("Long-press image → Save to gallery");
+  }
+
+  function showQrPreview(src){
+    var old = document.getElementById("qrSaveOverlay");
+    if(old) old.remove();
+    var ov = document.createElement("div");
+    ov.id = "qrSaveOverlay";
+    ov.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;";
+    ov.innerHTML = '<div style="color:#fff;font-size:14px;margin-bottom:12px;text-align:center">Long-press image → <b>Save</b> / Download</div>' +
+      '<img src="'+src+'" alt="QR" style="max-width:90vw;max-height:60vh;border-radius:16px;background:#fff;padding:12px">' +
+      '<button type="button" style="margin-top:16px;padding:12px 24px;border:0;border-radius:12px;background:linear-gradient(90deg,#f0c14b,#a959ff);color:#111;font-weight:800;font-size:14px">Close</button>';
+    ov.querySelector("button").onclick = function(){ ov.remove(); };
+    ov.addEventListener("click", function(e){ if(e.target === ov) ov.remove(); });
+    document.body.appendChild(ov);
+  }
+
   function drawBadge(picImg){
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, size, size);
@@ -4365,8 +4409,13 @@ function downloadReferralQr(){
     ctx.lineWidth = 4;
     roundRect(ctx, bx, by, bw, bh, 16);
     ctx.stroke();
-    finishDownload();
+    try{
+      canvas.toBlob(function(blob){ saveBlob(blob); }, "image/png");
+    }catch(e){
+      openQrFallback();
+    }
   }
+
   var pic = getProfileImageForQr();
   if(pic){
     var p = new Image();
@@ -7957,4 +8006,4 @@ clearInterval(miningInterval);
 
 </script>
 </body>
-</html>
+</html>.
