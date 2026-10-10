@@ -4304,6 +4304,70 @@ function updateReferralQr(link){
   setQrImage($("referralQr"), link);
 }
 
+async function loadReferral(){
+  try{
+    const data = await api("/api/referrals");
+    const code = (data.referralCode || data.code || data.username || "").trim();
+
+    if(code && code !== "------"){
+      const fullLink = buildReferralLink(code);
+      if($("referralCode")) $("referralCode").textContent = fullLink;
+      if($("referralCodeOnly")) $("referralCodeOnly").textContent = code;
+      updateReferralQr(fullLink);
+      window._referralLink = fullLink;
+      window._referralCode = code;
+      try{ refreshPaymentQr(); }catch(e){}
+    }else{
+      if($("referralCode")) $("referralCode").textContent = "------";
+      if($("referralCodeOnly")) $("referralCodeOnly").textContent = "------";
+      updateReferralQr(null);
+      window._referralLink = "";
+      window._referralCode = "";
+    }
+
+    const count = Number(data.referralCount ?? data.count ?? 0);
+    if($("referralCount")) $("referralCount").textContent = count;
+    if($("activeMiners")) $("activeMiners").textContent = data.activeMiners ?? 0;
+
+    const tier = data.tier || {};
+    if($("tierName")) $("tierName").textContent = tier.name || "Bronze";
+    if($("tierReward")) $("tierReward").textContent = tier.rewardPerReferral ?? 0.5;
+
+    const milestones = [5, 15, 50];
+    let nextMile = null;
+    for(const m of milestones){
+      if(count < m){ nextMile = m; break; }
+    }
+    if($("nextMilestone")) $("nextMilestone").textContent = nextMile ? (nextMile + " refs") : "Max reached";
+
+    const tiers = [
+      {name:"Bronze", min:0, max:5},
+      {name:"Silver", min:6, max:15},
+      {name:"Gold", min:16, max:50},
+      {name:"Legend", min:51, max:999999}
+    ];
+    let current = tiers.find(t => count >= t.min && count <= t.max) || tiers[0];
+    let nextTier = tiers.find(t => t.min > count);
+    let progressPct = 0;
+    let progressText = "";
+    if(nextTier){
+      const span = nextTier.min - current.min;
+      const done = count - current.min;
+      progressPct = Math.max(0, Math.min(100, Math.round((done / Math.max(span,1)) * 100)));
+      progressText = count + " / " + nextTier.min + " to " + nextTier.name;
+    }else{
+      progressPct = 100;
+      progressText = count + " · Legend max";
+    }
+    if($("tierProgress")) $("tierProgress").style.width = progressPct + "%";
+    if($("tierProgressText")) $("tierProgressText").textContent = progressText;
+  }catch(error){
+    console.error("loadReferral", error);
+    // keep existing values; don't wipe if soft fail
+  }
+}
+
+
 function downloadReferralQr(){
   var link = window._referralLink || "";
   if(!link){
