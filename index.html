@@ -4305,85 +4305,107 @@ function updateReferralQr(link){
 }
 
 function downloadReferralQr(){
-  var img = $("referralQr");
   var link = window._referralLink || "";
-  if(!link || !img || !img.src || img.src.indexOf("data:image/svg") === 0){
+  if(!link){
     showToast("Login first / generate invite QR", true);
     return;
   }
   showToast("Preparing QR with photo…");
   var size = 400;
-  var canvas = document.createElement("canvas");
-  canvas.width = size;
-  canvas.height = size;
-  var ctx = canvas.getContext("2d");
   var encoded = encodeURIComponent(link);
   var qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=10&ecc=H&format=png&data=" + encoded;
 
-  function openSheet(dataUrl){
-    showQrSaveSheet(dataUrl || qrUrl, link, !!dataUrl);
+  function showFinal(dataUrl){
+    showQrSaveSheet(dataUrl, link, true);
+  }
+  function showPlain(){
+    showQrSaveSheet(qrUrl, link, false);
   }
 
-  function drawCenter(baseImg, picImg){
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, size, size);
-    try{ ctx.drawImage(baseImg, 0, 0, size, size); }catch(e){}
-    var bw = 84, bh = 84;
-    var bx = (size - bw) / 2, by = (size - bh) / 2;
-    // white pad behind badge so QR stays scannable
-    ctx.fillStyle = "#ffffff";
-    roundRect(ctx, bx - 4, by - 4, bw + 8, bh + 8, 18);
-    ctx.fill();
-    ctx.save();
-    roundRect(ctx, bx, by, bw, bh, 16);
-    ctx.clip();
-    if(picImg){
-      try{ ctx.drawImage(picImg, bx, by, bw, bh); }catch(e){ picImg = null; }
-    }
-    if(!picImg){
-      ctx.fillStyle = "#12081f";
-      ctx.fillRect(bx, by, bw, bh);
-      ctx.fillStyle = "#ffd95a";
-      ctx.font = "bold 22px sans-serif";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText("AMT", size / 2, size / 2);
-    }
-    ctx.restore();
-    ctx.strokeStyle = "#ffd95a";
-    ctx.lineWidth = 4;
-    roundRect(ctx, bx, by, bw, bh, 16);
-    ctx.stroke();
+  function composite(qrImg, picImg){
     try{
-      openSheet(canvas.toDataURL("image/png"));
+      var canvas = document.createElement("canvas");
+      canvas.width = size;
+      canvas.height = size;
+      var ctx = canvas.getContext("2d");
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, size, size);
+      ctx.drawImage(qrImg, 0, 0, size, size);
+      var bw = 84, bh = 84;
+      var bx = (size - bw) / 2, by = (size - bh) / 2;
+      ctx.fillStyle = "#ffffff";
+      roundRect(ctx, bx - 6, by - 6, bw + 12, bh + 12, 20);
+      ctx.fill();
+      ctx.save();
+      roundRect(ctx, bx, by, bw, bh, 16);
+      ctx.clip();
+      if(picImg){
+        ctx.drawImage(picImg, bx, by, bw, bh);
+      }else{
+        ctx.fillStyle = "#12081f";
+        ctx.fillRect(bx, by, bw, bh);
+        ctx.fillStyle = "#ffd95a";
+        ctx.font = "bold 22px sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("AMT", size / 2, size / 2);
+      }
+      ctx.restore();
+      ctx.strokeStyle = "#ffd95a";
+      ctx.lineWidth = 4;
+      roundRect(ctx, bx, by, bw, bh, 16);
+      ctx.stroke();
+      showFinal(canvas.toDataURL("image/png"));
     }catch(e){
-      openSheet(null);
+      console.error("QR composite", e);
+      showPlain();
     }
   }
 
-  function loadPicAndDraw(baseImg){
-    var pic = getProfileImageForQr();
-    if(!pic){
-      drawCenter(baseImg, null);
+  function withPic(qrImg){
+    var picUrl = getProfileImageForQr();
+    if(!picUrl){
+      composite(qrImg, null);
       return;
     }
+    // Profile may be data URL (no CORS issue) or http
     var p = new Image();
-    p.crossOrigin = "anonymous";
-    p.onload = function(){ drawCenter(baseImg, p); };
-    p.onerror = function(){ drawCenter(baseImg, null); };
-    p.src = pic;
+    if(picUrl.indexOf("data:") !== 0){
+      try{ p.crossOrigin = "anonymous"; }catch(e){}
+    }
+    p.onload = function(){ composite(qrImg, p); };
+    p.onerror = function(){ composite(qrImg, null); };
+    p.src = picUrl;
   }
 
-  // Prefer already-loaded on-screen QR (has correct pattern)
-  if(img.complete && img.naturalWidth > 0){
-    loadPicAndDraw(img);
-    return;
-  }
-  var q = new Image();
-  q.crossOrigin = "anonymous";
-  q.onload = function(){ loadPicAndDraw(q); };
-  q.onerror = function(){ openSheet(null); };
-  q.src = qrUrl + "&t=" + Date.now();
+  // Fetch QR as blob to avoid tainted canvas (CORS-safe)
+  fetch(qrUrl, { mode: "cors", cache: "no-store" })
+    .then(function(r){
+      if(!r.ok) throw new Error("qr fetch " + r.status);
+      return r.blob();
+    })
+    .then(function(blob){
+      var obj = URL.createObjectURL(blob);
+      var q = new Image();
+      q.onload = function(){
+        withPic(q);
+        setTimeout(function(){ try{ URL.revokeObjectURL(obj); }catch(e){} }, 5000);
+      };
+      q.onerror = function(){
+        try{ URL.revokeObjectURL(obj); }catch(e){}
+        showPlain();
+      };
+      q.src = obj;
+    })
+    .catch(function(){
+      // last resort: try on-screen image
+      var img = $("referralQr");
+      if(img && img.complete && img.naturalWidth > 0){
+        withPic(img);
+      }else{
+        showPlain();
+      }
+    });
 }
 
 function showQrSaveSheet(imgSrc, link, hasPhoto){
@@ -4393,8 +4415,8 @@ function showQrSaveSheet(imgSrc, link, hasPhoto){
   ov.id = "qrSaveOverlay";
   ov.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;overflow:auto;";
   var note = hasPhoto
-    ? "Photo included · Long-press image → Save"
-    : "Long-press image → Save";
+    ? "✅ Photo in center · Long-press image → Save to gallery"
+    : "Long-press image → Save to gallery";
   ov.innerHTML =
     '<div style="color:#fff;font-size:14px;margin-bottom:10px;text-align:center;font-weight:700">Save your Invite QR</div>' +
     '<img id="qrSaveImg" src="'+imgSrc+'" alt="QR" style="max-width:min(90vw,320px);background:#fff;padding:8px;border-radius:16px;-webkit-touch-callout:default;user-select:auto">' +
@@ -4411,7 +4433,6 @@ function showQrSaveSheet(imgSrc, link, hasPhoto){
     });
   };
   ov.querySelector("#qrShareBtn").onclick = function(){
-    // Share composited image if data URL / try fetch blob
     var src = imgSrc;
     function shareBlob(blob){
       try{
@@ -4419,11 +4440,11 @@ function showQrSaveSheet(imgSrc, link, hasPhoto){
         if(navigator.share && navigator.canShare && navigator.canShare({ files: [file] })){
           navigator.share({ files: [file], title: "AMT Invite QR", text: link })
             .then(function(){ showToast("Shared — Save from share menu"); })
-            .catch(function(){ showToast("Long-press the QR image to Save", true); });
+            .catch(function(){ showToast("Long-press the QR image to Save"); });
           return;
         }
       }catch(e){}
-      showToast("Long-press the QR image to Save", true);
+      showToast("Long-press the QR image to Save");
     }
     if(src.indexOf("data:image") === 0){
       try{
@@ -4432,11 +4453,11 @@ function showQrSaveSheet(imgSrc, link, hasPhoto){
         for(var i=0;i<byte.length;i++) arr[i] = byte.charCodeAt(i);
         shareBlob(new Blob([arr], { type: "image/png" }));
       }catch(e){
-        showToast("Long-press the QR image to Save", true);
+        showToast("Long-press the QR image to Save");
       }
     }else{
       fetch(src).then(function(r){ return r.blob(); }).then(shareBlob).catch(function(){
-        showToast("Long-press the QR image to Save", true);
+        showToast("Long-press the QR image to Save");
       });
     }
   };
