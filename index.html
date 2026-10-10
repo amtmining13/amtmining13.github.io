@@ -4481,25 +4481,22 @@ function showQrSaveSheet(imgSrc, link, hasPhoto){
 
   var ov = document.createElement("div");
   ov.id = "qrSaveOverlay";
-  ov.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.94);z-index:2147483646;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:20px 16px 120px;overflow:auto;-webkit-overflow-scrolling:touch;";
-
-  var note = hasPhoto
-    ? "✅ Photo included"
-    : "QR ready";
+  ov.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:2147483646;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:16px 16px 120px;overflow:auto;-webkit-overflow-scrolling:touch;";
 
   ov.innerHTML =
-    '<div style="color:#fff;font-size:15px;margin:8px 0 10px;text-align:center;font-weight:800">Save your Invite QR</div>' +
+    '<div style="color:#fff;font-size:15px;margin:6px 0 8px;text-align:center;font-weight:800">Save your Invite QR</div>' +
     '<img id="qrSaveImg" src="'+imgSrc+'" alt="QR" style="width:min(88vw,300px);height:auto;background:#fff;padding:8px;border-radius:16px">' +
-    '<div style="color:#bbb;font-size:11px;margin:10px 8px 0;text-align:center;line-height:1.4">'+note+'<br>Pi Browser blocks long-press save — use the button below</div>' +
-    '<div style="width:100%;max-width:320px;display:flex;flex-direction:column;gap:10px;margin-top:14px;position:relative;z-index:2147483647">' +
-      '<button type="button" onclick="event.preventDefault();event.stopPropagation();window._qrSaveToPhone&&window._qrSaveToPhone()" style="width:100%;padding:16px;border:0;border-radius:14px;background:linear-gradient(90deg,#f0c14b,#a959ff);color:#111;font-weight:900;font-size:16px;cursor:pointer;touch-action:manipulation">💾 Save to phone</button>' +
-      '<button type="button" onclick="event.preventDefault();event.stopPropagation();window._qrCopyInvite&&window._qrCopyInvite()" style="width:100%;padding:14px;border:0;border-radius:14px;background:#2a2040;color:#fff;font-weight:700;font-size:15px;cursor:pointer;touch-action:manipulation">Copy invite link</button>' +
-      '<button type="button" onclick="event.preventDefault();event.stopPropagation();var e=document.getElementById(\'qrSaveOverlay\');if(e)e.remove()" style="width:100%;padding:14px;border:0;border-radius:14px;background:#333;color:#fff;font-size:15px;cursor:pointer;touch-action:manipulation">Close</button>' +
+    '<div style="color:#cfc;font-size:12px;margin:12px 10px 0;text-align:center;line-height:1.45;max-width:320px">' +
+      (hasPhoto ? '✅ Photo in center<br>' : '') +
+      'To save with photo: <b>Screenshot</b> (Power + Volume Down)' +
+    '</div>' +
+    '<div style="width:100%;max-width:320px;display:flex;flex-direction:column;gap:10px;margin-top:14px">' +
+      '<button type="button" onclick="event.preventDefault();event.stopPropagation();window._qrSaveCode&&window._qrSaveCode()" style="width:100%;padding:16px;border:0;border-radius:14px;background:linear-gradient(90deg,#f0c14b,#a959ff);color:#111;font-weight:900;font-size:16px;touch-action:manipulation">💾 Save QR code</button>' +
+      '<button type="button" onclick="event.preventDefault();event.stopPropagation();window._qrCopyInvite&&window._qrCopyInvite()" style="width:100%;padding:14px;border:0;border-radius:14px;background:#2a2040;color:#fff;font-weight:700;font-size:15px;touch-action:manipulation">📋 Copy link</button>' +
+      '<button type="button" onclick="event.preventDefault();event.stopPropagation();var e=document.getElementById(\'qrSaveOverlay\');if(e)e.remove()" style="width:100%;padding:14px;border:0;border-radius:14px;background:#333;color:#fff;font-size:14px;touch-action:manipulation">Close</button>' +
     '</div>';
 
-  ov.addEventListener("click", function(e){
-    if(e.target === ov) ov.remove();
-  });
+  ov.addEventListener("click", function(e){ if(e.target === ov) ov.remove(); });
   document.body.appendChild(ov);
 
   window._qrCopyInvite = function(){
@@ -4511,98 +4508,10 @@ function showQrSaveSheet(imgSrc, link, hasPhoto){
     });
   };
 
-  function srcToBlob(src){
-    return new Promise(function(resolve, reject){
-      if(src.indexOf("data:image") === 0){
-        try{
-          var byte = atob(src.split(",")[1]);
-          var arr = new Uint8Array(byte.length);
-          for(var i=0;i<byte.length;i++) arr[i] = byte.charCodeAt(i);
-          resolve(new Blob([arr], { type: "image/png" }));
-        }catch(e){ reject(e); }
-      }else{
-        fetch(src).then(function(r){ return r.blob(); }).then(resolve).catch(reject);
-      }
-    });
-  }
-
-  window._qrSaveToPhone = function(){
-    showToast("Saving…");
-    srcToBlob(window._qrSaveSrc || "").then(function(blob){
-      var file = null;
-      try{ file = new File([blob], "AMT-referral-QR.png", { type: "image/png" }); }catch(e){}
-
-      // 1) Web Share with file — best on Android (Save to Files / Drive / Photos)
-      if(file && navigator.share){
-        var payload = { files: [file], title: "AMT Invite QR", text: window._qrSaveLink || "AMT Invite" };
-        var can = true;
-        try{
-          if(navigator.canShare) can = navigator.canShare({ files: [file] });
-        }catch(e){ can = false; }
-        if(can){
-          return navigator.share(payload)
-            .then(function(){ showToast("Pick Save / Files / Photos in the share menu"); })
-            .catch(function(err){
-              if(err && err.name === "AbortError") return;
-              return tryClipboardImage(blob).then(function(ok){
-                if(ok) showToast("Image copied — paste in Gallery / chat");
-                else tryAnchor(blob);
-              });
-            });
-        }
-      }
-
-      // 2) Clipboard image
-      return tryClipboardImage(blob).then(function(ok){
-        if(ok) showToast("Image copied — paste in Messenger or Gallery app");
-        else tryAnchor(blob);
-      });
-    }).catch(function(){
-      showToast("Save failed — use Copy invite link", true);
-    });
+  window._qrSaveCode = function(){
+    // Pi Browser blocks file download — guide screenshot (keeps center photo)
+    showToast("Screenshot now: Power + Volume Down (keeps photo)");
   };
-
-  function tryClipboardImage(blob){
-    return new Promise(function(resolve){
-      try{
-        if(navigator.clipboard && window.ClipboardItem){
-          var item = new ClipboardItem({ "image/png": blob });
-          navigator.clipboard.write([item]).then(function(){ resolve(true); }).catch(function(){ resolve(false); });
-          return;
-        }
-      }catch(e){}
-      resolve(false);
-    });
-  }
-
-  function tryAnchor(blob){
-    try{
-      var url = URL.createObjectURL(blob);
-      var a = document.createElement("a");
-      a.href = url;
-      a.download = "AMT-referral-QR.png";
-      a.setAttribute("download", "AMT-referral-QR.png");
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      // Also open blob in same webview as last resort view
-      setTimeout(function(){
-        try{
-          var w = window.open(url, "_blank");
-          if(!w){
-            showToast("Tap Share menu → Save to Files");
-          }else{
-            showToast("Image opened — use browser Save");
-          }
-        }catch(e){
-          showToast("Use Share → Save to Files / Photos");
-        }
-      }, 200);
-      setTimeout(function(){ try{ URL.revokeObjectURL(url); }catch(e){} }, 60000);
-    }catch(e){
-      showToast("Use Copy invite link instead", true);
-    }
-  }
 }
 
 function showCopyModal(title, text){
