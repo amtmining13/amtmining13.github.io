@@ -76,6 +76,10 @@ label{display:block;margin:0 0 7px;font-size:11px;color:#aaa1b5}.form-group{marg
 .referral-hero-card{border:1px solid rgba(255,212,82,.2);background:linear-gradient(165deg,rgba(40,28,12,.4),rgba(12,8,20,.98))}
 .qr-wrap{display:flex;justify-content:center;margin:14px 0 4px}
 .qr-img{width:200px;height:200px;border-radius:16px;background:#fff;padding:10px;box-shadow:0 8px 28px rgba(0,0,0,.35);object-fit:contain}
+.qr-brand-wrap{position:relative;display:inline-block;width:200px;height:200px}
+.qr-brand-wrap .qr-img{display:block;width:200px;height:200px;padding:10px;box-sizing:border-box}
+.qr-center-logo{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:48px;height:48px;border-radius:14px;background:linear-gradient(145deg,#2a1248,#12081f);border:2px solid #ffd95a;display:grid;place-items:center;font-size:11px;font-weight:900;color:#ffd95a;letter-spacing:.5px;box-shadow:0 2px 12px rgba(0,0,0,.45);pointer-events:none;z-index:2;overflow:hidden}
+.qr-center-logo img{width:100%;height:100%;object-fit:cover;border-radius:12px}
 .referral-code-box{text-align:center;margin:14px 0 8px;padding:12px;border-radius:14px;background:rgba(255,212,82,.08);border:1px solid rgba(255,212,82,.2)}
 .referral-code-big{font-size:22px;font-weight:900;color:#ffd54f;letter-spacing:1px;word-break:break-all}
 .referral-link-text{font-size:11px;font-weight:700;color:#caa2ff;word-break:break-all;line-height:1.4;text-align:center;padding:0 4px;opacity:.85}
@@ -1576,15 +1580,21 @@ Unlink Pi Wallet
   <div class="card-title">PAYMENT QR</div>
   <div class="muted" style="font-size:11px;margin-bottom:8px">Show this QR so others can pay you AMT (in-app). Scan / open link.</div>
   <div class="qr-wrap">
-    <img id="paymentQr" class="qr-img" alt="Payment QR" width="200" height="200"
-      src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%231a1028' width='200' height='200'/%3E%3Ctext x='50%25' y='50%25' fill='%23958ba3' text-anchor='middle' dy='.3em' font-size='12'%3ELogin for QR%3C/text%3E%3C/svg%3E">
+    <div class="qr-brand-wrap" id="paymentQrWrap">
+      <img id="paymentQr" class="qr-img" alt="Payment QR" width="200" height="200" crossorigin="anonymous"
+        src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%231a1028' width='200' height='200'/%3E%3Ctext x='50%25' y='50%25' fill='%23958ba3' text-anchor='middle' dy='.3em' font-size='12'%3ELogin for QR%3C/text%3E%3C/svg%3E">
+      <div class="qr-center-logo" id="paymentQrLogo" style="display:none">AMT</div>
+    </div>
   </div>
   <div class="muted" id="paymentQrHint" style="font-size:11px;text-align:center;margin:8px 0">Amount optional</div>
   <div class="row" style="gap:8px;margin-top:8px">
     <input id="payQrAmount" type="number" min="0" step="0.01" placeholder="Amount AMT (optional)" style="flex:1">
     <button class="secondary" style="margin:0;width:auto;padding:10px 14px" onclick="refreshPaymentQr()">Update QR</button>
   </div>
-  <button class="primary" style="margin-top:10px" onclick="copyPaymentLink()">📋 COPY PAY LINK</button>
+  <div class="row" style="gap:8px;margin-top:10px">
+    <button class="secondary" style="margin:0;flex:1" onclick="downloadPaymentQr()">⬇️ DOWNLOAD QR</button>
+    <button class="primary" style="margin:0;flex:1" onclick="copyPaymentLink()">📋 COPY LINK</button>
+  </div>
 </div>
 
 <div class="card" id="sendAmtCard" style="margin-top:12px;margin-bottom:16px">
@@ -1650,8 +1660,14 @@ One eligible claim per account. Mainnet app.
 <div class="card referral-hero-card">
 <div class="card-title">YOUR INVITE QR</div>
 <div class="qr-wrap">
-  <img id="referralQr" class="qr-img" alt="Referral QR" width="200" height="200"
-    src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%231a1028' width='200' height='200'/%3E%3Ctext x='50%25' y='50%25' fill='%23958ba3' text-anchor='middle' dy='.3em' font-size='12'%3ELogin for QR%3C/text%3E%3C/svg%3E">
+  <div class="qr-brand-wrap" id="referralQrWrap">
+    <img id="referralQr" class="qr-img" alt="Referral QR" width="200" height="200" crossorigin="anonymous"
+      src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%231a1028' width='200' height='200'/%3E%3Ctext x='50%25' y='50%25' fill='%23958ba3' text-anchor='middle' dy='.3em' font-size='12'%3ELogin for QR%3C/text%3E%3C/svg%3E">
+    <div class="qr-center-logo" id="referralQrLogo" style="display:none;overflow:hidden;padding:0">
+      <img id="referralQrLogoImg" alt="" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:10px">
+      <span id="referralQrLogoText">AMT</span>
+    </div>
+  </div>
 </div>
 <div class="muted" style="text-align:center;margin-top:10px;font-size:11px">Scan to open app with your code</div>
 
@@ -1666,7 +1682,8 @@ One eligible claim per account. Mainnet app.
   <button class="secondary" onclick="copyReferral()">📋 COPY LINK</button>
   <button class="secondary" onclick="copyReferralCode()">📋 COPY CODE</button>
 </div>
-<button class="primary" style="margin-top:10px" id="shareReferralBtn" onclick="shareReferral()">
+<button class="secondary" style="margin-top:10px;width:100%" onclick="downloadReferralQr()">⬇️ DOWNLOAD QR</button>
+<button class="primary" style="margin-top:8px" id="shareReferralBtn" onclick="shareReferral()">
 📤 SHARE INVITE
 </button>
 </div>
@@ -4131,37 +4148,234 @@ function qrPlaceholder(msg){
   );
 }
 
+
+function getProfileImageForQr(){
+  try{
+    if(window._profileImageUrl && String(window._profileImageUrl).indexOf("http") === 0)
+      return window._profileImageUrl;
+    if(window._profileImageUrl && String(window._profileImageUrl).indexOf("data:image") === 0)
+      return window._profileImageUrl;
+    var av = document.querySelector("#avatarBox img, img#avatarBox");
+    if(av && av.src && av.src.indexOf("data:image/svg") < 0 && av.src.length > 20) return av.src;
+  }catch(e){}
+  return "";
+}
+
+function applyQrCenterLogo(qrImgId){
+  if(qrImgId !== "referralQr") return;
+  var logoEl = $("referralQrLogo");
+  var logoImg = $("referralQrLogoImg");
+  var logoText = $("referralQrLogoText");
+  if(!logoEl) return;
+  var pic = getProfileImageForQr();
+  if(pic && logoImg){
+    logoImg.onload = function(){
+      logoImg.style.display = "block";
+      if(logoText) logoText.style.display = "none";
+    };
+    logoImg.onerror = function(){
+      logoImg.style.display = "none";
+      if(logoText) logoText.style.display = "";
+    };
+    logoImg.src = pic;
+  }else{
+    if(logoImg) logoImg.style.display = "none";
+    if(logoText) logoText.style.display = "";
+  }
+}
+
 function setQrImage(img, data){
   if(!img) return;
+  var logoEl = null;
+  if(img.id === "paymentQr") logoEl = $("paymentQrLogo");
+  if(img.id === "referralQr") logoEl = $("referralQrLogo");
   if(!data || data === "------"){
+    img.removeAttribute("crossorigin");
     img.src = qrPlaceholder("Login for QR");
     img.onclick = null;
+    if(logoEl) logoEl.style.display = "none";
     return;
   }
   var encoded = encodeURIComponent(data);
+  // ecc=H supports center logo better
   var sources = [
-    "https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=8&ecc=M&data=" + encoded,
-    "https://quickchart.io/qr?size=220&margin=2&text=" + encoded,
-    "https://cdn.pixabay.com/photo/placeholder" // will fail; last resort handled below
+    "https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=10&ecc=H&data=" + encoded,
+    "https://quickchart.io/qr?size=400&margin=2&ecLevel=H&text=" + encoded,
+    "https://api.qrserver.com/v1/create-qr-code/?size=300x300&ecc=H&data=" + encoded + "&t=" + Date.now()
   ];
-  // real third fallback
-  sources[2] = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" + encoded + "&t=" + Date.now();
   var i = 0;
   function tryNext(){
     if(i >= sources.length){
+      img.removeAttribute("crossorigin");
       img.src = qrPlaceholder("Use Copy Link");
       img.alt = "QR unavailable — use copy link";
+      if(logoEl) logoEl.style.display = "none";
       return;
     }
     img.onerror = function(){ i++; tryNext(); };
-    img.onload = function(){ img.onerror = null; };
+    img.onload = function(){
+      img.onerror = null;
+      if(logoEl) logoEl.style.display = "";
+      try{ applyQrCenterLogo(img.id); }catch(e){}
+    };
+    try{ img.crossOrigin = "anonymous"; }catch(e){}
     img.src = sources[i];
   }
   tryNext();
 }
 
+function downloadPaymentQr(){
+  var img = $("paymentQr");
+  var link = window._paymentLink || buildPaymentLink($("payQrAmount") && $("payQrAmount").value);
+  if(!link || !img || !img.src || img.src.indexOf("data:image/svg") === 0){
+    showToast("Login first / generate QR", true);
+    return;
+  }
+  try{
+    var size = 400;
+    var canvas = document.createElement("canvas");
+    canvas.width = size;
+    canvas.height = size;
+    var ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, size, size);
+    // draw QR
+    ctx.drawImage(img, 0, 0, size, size);
+    // center AMT badge
+    var bw = 72, bh = 72;
+    var bx = (size - bw) / 2, by = (size - bh) / 2;
+    ctx.fillStyle = "#12081f";
+    roundRect(ctx, bx, by, bw, bh, 14);
+    ctx.fill();
+    ctx.strokeStyle = "#ffd95a";
+    ctx.lineWidth = 3;
+    roundRect(ctx, bx, by, bw, bh, 14);
+    ctx.stroke();
+    ctx.fillStyle = "#ffd95a";
+    ctx.font = "bold 22px sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("AMT", size / 2, size / 2);
+    canvas.toBlob(function(blob){
+      if(!blob){
+        // fallback: open QR image
+        window.open(img.src, "_blank");
+        showToast("Long-press image to save");
+        return;
+      }
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "AMT-payment-QR.png";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(function(){ URL.revokeObjectURL(a.href); }, 2000);
+      showToast("QR downloaded");
+    }, "image/png");
+  }catch(e){
+    // CORS fallback — direct high-res QR without logo composite
+    var encoded = encodeURIComponent(link);
+    var url = "https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=10&ecc=H&format=png&data=" + encoded;
+    var a = document.createElement("a");
+    a.href = url;
+    a.target = "_blank";
+    a.rel = "noopener";
+    a.download = "AMT-payment-QR.png";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    showToast("QR opened — save image");
+  }
+}
+
+function roundRect(ctx, x, y, w, h, r){
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+
 function updateReferralQr(link){
   setQrImage($("referralQr"), link);
+}
+
+function downloadReferralQr(){
+  var img = $("referralQr");
+  var link = window._referralLink || "";
+  if(!link || !img || !img.src || img.src.indexOf("data:image/svg") === 0){
+    showToast("Login first / generate invite QR", true);
+    return;
+  }
+  var size = 400;
+  var canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  var ctx = canvas.getContext("2d");
+  function finishDownload(){
+    try{
+      canvas.toBlob(function(blob){
+        if(!blob){
+          window.open(img.src, "_blank");
+          showToast("Long-press image to save");
+          return;
+        }
+        var a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "AMT-referral-QR.png";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(function(){ URL.revokeObjectURL(a.href); }, 2000);
+        showToast("Invite QR downloaded");
+      }, "image/png");
+    }catch(e){
+      var encoded = encodeURIComponent(link);
+      window.open("https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=10&ecc=H&format=png&data=" + encoded, "_blank");
+      showToast("QR opened — save image");
+    }
+  }
+  function drawBadge(picImg){
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, size, size);
+    try{ ctx.drawImage(img, 0, 0, size, size); }catch(e){}
+    var bw = 80, bh = 80;
+    var bx = (size - bw) / 2, by = (size - bh) / 2;
+    ctx.save();
+    roundRect(ctx, bx, by, bw, bh, 16);
+    ctx.clip();
+    if(picImg){
+      try{ ctx.drawImage(picImg, bx, by, bw, bh); }catch(e){ picImg = null; }
+    }
+    if(!picImg){
+      ctx.fillStyle = "#12081f";
+      ctx.fillRect(bx, by, bw, bh);
+      ctx.fillStyle = "#ffd95a";
+      ctx.font = "bold 22px sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("AMT", size / 2, size / 2);
+    }
+    ctx.restore();
+    ctx.strokeStyle = "#ffd95a";
+    ctx.lineWidth = 4;
+    roundRect(ctx, bx, by, bw, bh, 16);
+    ctx.stroke();
+    finishDownload();
+  }
+  var pic = getProfileImageForQr();
+  if(pic){
+    var p = new Image();
+    p.crossOrigin = "anonymous";
+    p.onload = function(){ drawBadge(p); };
+    p.onerror = function(){ drawBadge(null); };
+    p.src = pic;
+  }else{
+    drawBadge(null);
+  }
 }
 
 function updatePaymentQr(payload){
@@ -4600,7 +4814,7 @@ const box=
 $("avatarBox");
 
 if(!url){
-
+window._profileImageUrl = "";
 box.className=
 "avatar avatar-placeholder";
 
@@ -4610,11 +4824,13 @@ box.textContent=
 return;
 }
 
+window._profileImageUrl = url;
 box.outerHTML=
 '<img id="avatarBox" class="avatar" src="'+
 esc(url)+
 '" alt="AMT Profile Picture">';
 
+try{ applyQrCenterLogo("referralQr"); }catch(e){}
 }
 
 async function compressImageToDataUrl(file, maxSize){
