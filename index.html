@@ -50,6 +50,24 @@ label{display:block;margin:0 0 7px;font-size:11px;color:#aaa1b5}.form-group{marg
 .profile-name{margin-top:11px;font-size:21px;font-weight:900}
 .nav{position:fixed;left:50%;bottom:0;transform:translateX(-50%);width:min(720px,100%);z-index:100;padding:8px 8px calc(8px + env(safe-area-inset-bottom));background:rgba(8,6,14,.94);backdrop-filter:blur(20px);border-top:1px solid rgba(255,255,255,.08)}
 .nav-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}.nav-btn{min-width:0;border:0;padding:9px 3px;border-radius:13px;color:#82798c;background:transparent;font-size:10px;font-weight:800}.nav-btn .icon{display:block;font-size:19px;margin-bottom:3px}.nav-btn.active{color:#ffd64e;background:rgba(170,79,255,.13)}
+.spin-wrap{display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:8px}
+.spin-wheel-box{position:relative;width:240px;height:240px;margin:8px auto}
+.spin-wheel{width:240px;height:240px;border-radius:50%;border:6px solid #ffd54a;box-shadow:0 0 28px rgba(181,84,255,.35),inset 0 0 20px rgba(0,0,0,.5);background:conic-gradient(
+#7c3aed 0deg 45deg,
+#2563eb 45deg 90deg,
+#059669 90deg 135deg,
+#d97706 135deg 180deg,
+#dc2626 180deg 225deg,
+#db2777 225deg 270deg,
+#4f46e5 270deg 315deg,
+#0d9488 315deg 360deg
+);transition:transform 4s cubic-bezier(.15,.85,.25,1)}
+.spin-pointer{position:absolute;top:-6px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:12px solid transparent;border-right:12px solid transparent;border-top:22px solid #ffd54a;z-index:5;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5))}
+.spin-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:56px;height:56px;border-radius:50%;background:radial-gradient(circle,#2a1540,#12081f);border:3px solid #ffd54a;display:grid;place-items:center;font-weight:900;font-size:12px;color:#ffd54a;z-index:4}
+.spin-labels{position:absolute;inset:0;border-radius:50%;pointer-events:none}
+.spin-labels span{position:absolute;width:70px;text-align:center;font-size:9px;font-weight:800;color:#fff;text-shadow:0 1px 3px #000}
+.spin-result{min-height:22px;text-align:center;font-weight:800;color:#ffd64e;font-size:14px}
+
 .toast{position:fixed;left:50%;bottom:95px;transform:translate(-50%,20px);width:calc(100% - 32px);max-width:650px;padding:13px 15px;border-radius:15px;background:#17101f;border:1px solid rgba(255,255,255,.1);box-shadow:0 12px 35px rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:.25s;z-index:200;font-size:12px}.toast.show{opacity:1;transform:translate(-50%,0)}.toast.success{border-color:rgba(65,255,135,.35)}.toast.error{border-color:rgba(255,70,95,.35)}
 .wallet-address{word-break:break-all;font-family:monospace;color:#caa2ff;font-size:11px}
 .market-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
@@ -1648,6 +1666,25 @@ Unlink Pi Wallet
 One eligible claim per account. Mainnet app.
 </div>
 </div>
+
+<div class="card" style="margin-top:14px">
+<div class="card-title">🍀 LUCKY SPIN</div>
+<p class="muted" style="font-size:12px;margin:0 0 8px">Up to <b>3 spins</b> per day · In-app AMT &amp; items</p>
+<div class="spin-wrap">
+  <div class="spin-wheel-box">
+    <div class="spin-pointer"></div>
+    <div id="luckyWheel" class="spin-wheel"></div>
+    <div class="spin-center">SPIN</div>
+  </div>
+  <div id="spinResult" class="spin-result">Good luck!</div>
+  <div class="grid" style="width:100%">
+    <div class="stat"><div class="stat-label">Spins left</div><div id="spinLeft" class="stat-value">-</div></div>
+    <div class="stat"><div class="stat-label">Today</div><div id="spinUsed" class="stat-value">-</div></div>
+  </div>
+  <button id="spinBtn" class="primary" onclick="doLuckySpin()">🎰 SPIN NOW</button>
+  <div class="notice" style="margin:0;width:100%">Prizes: 5–50 AMT · Free Egg · Battle Charge · JACKPOT 100 AMT · 3 spins/day.</div>
+</div>
+</div>
 </section>
 
 <section id="referralSection" class="section">
@@ -2550,7 +2587,7 @@ if(id==="walletSection"){
   setTimeout(function(){ try{ refreshPaymentQr(); }catch(e){} }, 300);
   setTimeout(function(){ try{ refreshPaymentQr(); }catch(e){} }, 1200);
 }
-if(id==="airdropSection")loadAirdrop();
+if(id==="airdropSection"){loadAirdrop();try{loadSpinStatus()}catch(e){}}
 if(id==="referralSection")loadReferral();
   if(id==="walletSection"){ try{ refreshPaymentQr(); }catch(e){} }
 if(id==="circleSection")loadSecurityCircle();
@@ -2802,6 +2839,35 @@ async function preloadPiAds(){
   }
 }
 
+function piAdResultOk(res){
+  if(res==null) return false;
+  if(res===true) return true;
+  var r = "";
+  try{ r = String((res && res.result) || res || "").toUpperCase(); }catch(e){}
+  if(!r) return true; // some builds return empty on success
+  return (
+    r.indexOf("LOADED") >= 0 ||
+    r.indexOf("READY") >= 0 ||
+    r.indexOf("REWARD") >= 0 ||
+    r.indexOf("CLOSED") >= 0 ||
+    r.indexOf("DISPLAY") >= 0 ||
+    r.indexOf("SHOWN") >= 0 ||
+    r === "OK"
+  );
+}
+function piAdResultBlocked(res){
+  var r = "";
+  try{ r = String((res && res.result) || res || "").toUpperCase(); }catch(e){}
+  return (
+    r.indexOf("NOT_LOADED") >= 0 ||
+    r.indexOf("UNAVAILABLE") >= 0 ||
+    r.indexOf("NO_FILL") >= 0 ||
+    r.indexOf("FAILED") >= 0 ||
+    r.indexOf("ERROR") >= 0 ||
+    r.indexOf("DENIED") >= 0
+  );
+}
+
 async function watchRewardedAd(){
   try{
     if(!window.Pi||!Pi.Ads){
@@ -2813,20 +2879,42 @@ async function watchRewardedAd(){
       return;
     }
     showToast("Loading ad…");
-    let ready=await Pi.Ads.isAdReady("rewarded");
-    if(!(ready&&(ready.ready===true||ready===true))){
-      const req=await Pi.Ads.requestAd("rewarded");
-      if(req&&req.result&&req.result!=="AD_LOADED"){
-        showToast("Ad not available right now. Try again later.",true);
+    // Always request; don't hard-fail on isAdReady shape differences
+    try{
+      var ready = await Pi.Ads.isAdReady("rewarded");
+      console.log("isAdReady rewarded", ready);
+    }catch(e){}
+    var req = null;
+    try{ req = await Pi.Ads.requestAd("rewarded"); console.log("requestAd rewarded", req); }catch(e){ console.warn(e); }
+    // Only abort if Pi explicitly says unavailable
+    if(req && piAdResultBlocked(req) && !piAdResultOk(req)){
+      // try interstitial as fallback
+      try{
+        var req2 = await Pi.Ads.requestAd("interstitial");
+        console.log("requestAd interstitial", req2);
+        if(req2 && piAdResultBlocked(req2) && !piAdResultOk(req2)){
+          showToast("No ad fill right now ("+String((req&&req.result)||(req2&&req2.result)||"empty")+"). Try again later.", true);
+          return;
+        }
+        var resI = await Pi.Ads.showAd("interstitial");
+        console.log("showAd interstitial", resI);
+        if(piAdResultOk(resI) || (resI && resI.result)){
+          await claimMiningAdBonus();
+        }
+        preloadPiAds();
+        return;
+      }catch(e2){
+        showToast("Ad not available right now.", true);
         return;
       }
     }
-    const res=await Pi.Ads.showAd("rewarded");
-    if(res&&(res.result==="AD_REWARDED"||res.result==="AD_CLOSED")){
+    var res = await Pi.Ads.showAd("rewarded");
+    console.log("showAd rewarded", res);
+    if(piAdResultOk(res) || (res && res.result)){
       await claimMiningAdBonus();
       preloadPiAds();
     }else{
-      showToast("Ad finished or unavailable.",true);
+      showToast("Ad: "+String((res&&res.result)||"unavailable"), true);
     }
   }catch(e){
     console.warn(e);
@@ -2838,11 +2926,7 @@ async function maybeShowInterstitial(){
   try{
     if(!window.Pi||!Pi.Ads)return;
     if(!ensurePiInit())return;
-    let ready=await Pi.Ads.isAdReady("interstitial");
-    if(!(ready&&(ready.ready===true||ready===true))){
-      const req=await Pi.Ads.requestAd("interstitial");
-      if(req&&req.result&&req.result!=="AD_LOADED")return;
-    }
+    try{ await Pi.Ads.requestAd("interstitial"); }catch(e){}
     await Pi.Ads.showAd("interstitial");
     preloadPiAds();
   }catch(e){
@@ -2859,7 +2943,7 @@ function miningAdCooldownOk(){
   try{
     const last=Number(localStorage.getItem("amt_mining_ad_ts")||0);
     // 2 min cooldown so rapid re-clicks don't spam
-    return Date.now()-last>2*60*1000;
+    return Date.now()-last>30*1000;
   }catch(e){return true;}
 }
 function markMiningAdAttempt(){
@@ -2884,18 +2968,20 @@ async function claimMiningAdBonus(){
 }
 
 async function waitAdLoaded(type, tries){
-  tries=tries||4;
+  tries = tries || 5;
   for(let i=0;i<tries;i++){
     try{
-      let ready=await Pi.Ads.isAdReady(type);
-      if(ready&&(ready.ready===true||ready===true))return true;
-      const req=await Pi.Ads.requestAd(type);
-      if(req&&(req.result==="AD_LOADED"||req.result==="ADS_LOADED"))return true;
-      // ADS_NOT_LOADED / ADS_UNAVAILABLE — short wait then retry
-      await new Promise(r=>setTimeout(r,600+i*400));
+      let ready = await Pi.Ads.isAdReady(type);
+      console.log("waitAdLoaded isAdReady", type, ready);
+      if(ready === true || (ready && (ready.ready === true || ready.ready === "true"))) return true;
+      const req = await Pi.Ads.requestAd(type);
+      console.log("waitAdLoaded requestAd", type, req);
+      if(piAdResultOk(req)) return true;
+      if(req && !piAdResultBlocked(req) && !req.result) return true;
+      await new Promise(r => setTimeout(r, 500 + i * 350));
     }catch(e){
-      console.warn("waitAdLoaded",type,e);
-      await new Promise(r=>setTimeout(r,500));
+      console.warn("waitAdLoaded", type, e);
+      await new Promise(r => setTimeout(r, 400));
     }
   }
   return false;
@@ -2919,28 +3005,47 @@ async function showDailyMiningAd(){
     showToast("Loading mining ad…");
     markMiningAdAttempt();
 
-    // Prefer rewarded, then interstitial — with retries
-    let type="rewarded";
-    let ok=await waitAdLoaded("rewarded",4);
+    // Prefer rewarded, then interstitial — softer checks (pending apps used to get fill)
+    let type = "rewarded";
+    let ok = await waitAdLoaded("rewarded", 5);
     if(!ok){
-      type="interstitial";
-      ok=await waitAdLoaded("interstitial",4);
+      type = "interstitial";
+      ok = await waitAdLoaded("interstitial", 5);
     }
-    if(!ok){
-      showToast("No ad inventory right now. If Ads not approved yet on develop.pi, ads stay empty. Try WATCH AD later.",true);
-      preloadPiAds();
-      return;
-    }
-
-    const res=await Pi.Ads.showAd(type);
-    console.log("Mining ad result:",res);
-    const result=res&&res.result?String(res.result):"";
-    if(result==="AD_REWARDED"||result==="AD_CLOSED"||result==="AD_DISPLAYED"||result==="AD_SHOWN"){
-      markMiningAdSuccessToday();
-      await claimMiningAdBonus();
-      showToast("Thanks for watching!");
-    }else if(result){
-      showToast("Ad: "+result);
+    // Even if waitAdLoaded false, still try showAd once (some SDK builds report ready late)
+    try{
+      const res = await Pi.Ads.showAd(type);
+      console.log("Mining ad result:", type, res);
+      const result = res && res.result ? String(res.result) : "";
+      if(piAdResultOk(res) || result === "AD_REWARDED" || result === "AD_CLOSED" || result === "AD_DISPLAYED" || result === "AD_SHOWN"){
+        markMiningAdSuccessToday();
+        await claimMiningAdBonus();
+        showToast("Thanks for watching!");
+      }else if(result && piAdResultBlocked(res)){
+        // try the other type once
+        var other = type === "rewarded" ? "interstitial" : "rewarded";
+        try{
+          await Pi.Ads.requestAd(other);
+          const res2 = await Pi.Ads.showAd(other);
+          console.log("Mining ad fallback:", other, res2);
+          if(piAdResultOk(res2)){
+            markMiningAdSuccessToday();
+            await claimMiningAdBonus();
+            showToast("Thanks for watching!");
+          }else{
+            showToast("No ad fill ("+String((res2&&res2.result)||result||"empty")+"). Try WATCH AD later.", true);
+          }
+        }catch(e3){
+          showToast("No ad fill right now. Try WATCH AD later.", true);
+        }
+      }else if(result){
+        showToast("Ad: "+result);
+      }else if(!ok){
+        showToast("No ad inventory right now. Try WATCH AD later.", true);
+      }
+    }catch(showErr){
+      console.warn(showErr);
+      showToast((showErr&&showErr.message)||"Ad could not show. Try WATCH AD.", true);
     }
     preloadPiAds();
   }catch(e){
@@ -3074,6 +3179,7 @@ refreshWallet(),
 loadMiningStatus(),
 loadDailyStatus(),
 loadAirdrop(),
+(typeof loadSpinStatus==='function'?loadSpinStatus():Promise.resolve()),
 loadReferral(),
 loadSecurityCircle(),
 loadProfile(),
@@ -3936,6 +4042,74 @@ button.disabled=false;
 /* ============================================================
    AIRDROP
 ============================================================ */
+
+
+/* ========== Lucky Spin (3x/day) ========== */
+var _spinBusy = false;
+var _spinTurns = 0;
+
+async function loadSpinStatus(){
+  try{
+    const data = await api("/api/spin/status");
+    if($("spinLeft")) $("spinLeft").textContent = String(data.spinsLeft != null ? data.spinsLeft : 0);
+    if($("spinUsed")) $("spinUsed").textContent = String((data.usedToday != null ? data.usedToday : 0) + " / 3");
+    if($("spinBtn")) $("spinBtn").disabled = !data.canSpin;
+    if(data.canSpin){
+      if($("spinResult")) $("spinResult").textContent = "Tap SPIN — good luck!";
+    }else if($("spinResult") && !$("spinResult").dataset.locked){
+      $("spinResult").textContent = "Come back tomorrow (UTC)";
+    }
+  }catch(e){
+    console.warn("spin status", e);
+  }
+}
+
+async function doLuckySpin(){
+  if(_spinBusy) return;
+  try{
+    _spinBusy = true;
+    if($("spinBtn")) $("spinBtn").disabled = true;
+    if($("spinResult")) $("spinResult").textContent = "Spinning…";
+
+    const data = await api("/api/spin/claim", { method:"POST", body: JSON.stringify({}) });
+    if(!data || !data.ok){
+      showToast((data && data.error) || "Spin failed", true);
+      _spinBusy = false;
+      loadSpinStatus();
+      return;
+    }
+
+    // Animate wheel
+    const wheel = $("luckyWheel");
+    const prizeIndex = Number(data.prizeIndex || 0);
+    // 8 segments, pointer at top; stop so segment center is at top
+    const seg = 360 / 8;
+    const target = 360 * 6 + (360 - (prizeIndex * seg + seg/2));
+    _spinTurns = (_spinTurns || 0) + target;
+    if(wheel){
+      wheel.style.transition = "transform 4s cubic-bezier(.15,.85,.25,1)";
+      wheel.style.transform = "rotate(" + _spinTurns + "deg)";
+    }
+
+    await new Promise(r => setTimeout(r, 4200));
+
+    const label = data.prizeLabel || data.prize || "Prize";
+    if($("spinResult")){
+      $("spinResult").textContent = "🎉 " + label;
+      $("spinResult").dataset.locked = "1";
+      setTimeout(function(){ try{ delete $("spinResult").dataset.locked; }catch(e){} }, 2000);
+    }
+    showToast(label);
+    if(typeof refreshWallet === "function") refreshWallet().catch(function(){});
+    loadSpinStatus();
+  }catch(e){
+    showToast((e && e.message) || "Spin failed", true);
+    loadSpinStatus();
+  }finally{
+    _spinBusy = false;
+  }
+}
+
 
 async function loadAirdrop(){
 
