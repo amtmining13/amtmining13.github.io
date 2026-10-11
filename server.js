@@ -12064,6 +12064,166 @@ app.use(
 
 
 
+
+/* =========================================================
+   LUCKY SPIN — 3 spins per UTC day per member
+   GET  /api/spin/status
+   POST /api/spin/claim
+========================================================= */
+
+const SPIN_MAX_PER_DAY = 3;
+// 8 segments — richer in-app rewards + rare 100 AMT jackpot
+const SPIN_PRIZES = [
+  { key: "amt_5",    label: "+5 AMT",     type: "amt", amount: 5,    weight: 18 },
+  { key: "amt_10",   label: "+10 AMT",    type: "amt", amount: 10,   weight: 16 },
+  { key: "amt_25",   label: "+25 AMT",    type: "amt", amount: 25,   weight: 12 },
+  { key: "egg",      label: "Free Egg!",  type: "egg", amount: 0,    weight: 12 },
+  { key: "charge",   label: "+1 Battle Charge", type: "charge", amount: 1, weight: 12 },
+  { key: "amt_50",   label: "+50 AMT",    type: "amt", amount: 50,   weight: 8 },
+  { key: "jackpot",  label: "JACKPOT +100 AMT!", type: "amt", amount: 100, weight: 3 },
+  { key: "amt_15",   label: "+15 AMT",    type: "amt", amount: 15,   weight: 19 }
+];
+
+function pickSpinPrize(){
+  const total = SPIN_PRIZES.reduce((a, p) => a + p.weight, 0);
+  let r = Math.random() * total;
+  for (let i = 0; i < SPIN_PRIZES.length; i++){
+    r -= SPIN_PRIZES[i].weight;
+    if (r <= 0) return { prize: SPIN_PRIZES[i], index: i };
+  }
+  return { prize: SPIN_PRIZES[0], index: 0 };
+}
+
+async function ensureSpinTable(){
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS lucky_spins (
+      id SERIAL PRIMARY KEY,
+      member_id INTEGER NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+      spin_date DATE NOT NULL,
+      prize_key TEXT NOT NULL,
+      prize_label TEXT,
+      amount NUMERIC(18,6) DEFAULT 0,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_lucky_spins_member_date
+    ON lucky_spins(member_id, spin_date)
+  `);
+}
+
+app.get("/api/spin/status", requireAuth, async (req, res) => {
+  try {
+    await ensureSpinTable();
+    const today = new Date().toISOString().slice(0, 10);
+    const q = await pool.query(
+      `SELECT COUNT(*)::int AS c FROM lucky_spins
+       WHERE member_id = $1 AND spin_date = $2`,
+      [req.member.id, today]
+    );
+    const used = q.rows[0] ? q.rows[0].c : 0;
+    const left = Math.max(0, SPIN_MAX_PER_DAY - used);
+    res.json({
+      ok: true,
+      usedToday: used,
+      spinsLeft: left,
+      maxPerDay: SPIN_MAX_PER_DAY,
+      canSpin: left > 0
+    });
+  } catch (e) {
+    console.error("SPIN STATUS:", e);
+    res.status(500).json({ ok: false, error: "Spin status failed." });
+  }
+});
+
+app.post("/api/spin/claim", requireAuth, async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await ensureSpinTable();
+    await client.query("BEGIN");
+    await client.query(`SELECT id FROM members WHERE id = $1 FOR UPDATE`, [req.member.id]);
+
+    const today = new Date().toISOString().slice(0, 10);
+    const q = await client.query(
+      `SELECT COUNT(*)::int AS c FROM lucky_spins
+       WHERE member_id = $1 AND spin_date = $2`,
+      [req.member.id, today]
+    );
+    const used = q.rows[0] ? q.rows[0].c : 0;
+    if (used >= SPIN_MAX_PER_DAY) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({
+        ok: false,
+        error: "No spins left today. Come back after UTC midnight."
+      });
+    }
+
+    const { prize, index } = pickSpinPrize();
+
+    await client.query(
+      `INSERT INTO lucky_spins (member_id, spin_date, prize_key, prize_label, amount)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [req.member.id, today, prize.key, prize.label, prize.amount || 0]
+    );
+
+    // Credit rewards
+    if (prize.type === "amt" && prize.amount > 0) {
+      const ref = "SPIN-" + req.member.id + "-" + today + "-" + (used + 1);
+      try {
+        await client.query(
+          `INSERT INTO amt_ledger (member_id, amount, type, reference)
+           VALUES ($1, $2, 'LUCKY_SPIN', $3)`,
+          [req.member.id, prize.amount, ref]
+        );
+      } catch (insErr) {
+        if (!(insErr && insErr.code === "23505")) throw insErr;
+      }
+    }
+    // egg / charge: best-effort flags on member or skip if no table
+    if (prize.type === "egg") {
+      try {
+        await client.query(
+          `INSERT INTO pet_eggs (member_id, status, hatch_at, created_at)
+           VALUES ($1, 'incubating', NOW() + INTERVAL '24 hours', NOW())`,
+          [req.member.id]
+        );
+      } catch (eggErr) {
+        console.warn("spin egg grant:", eggErr.message);
+      }
+    }
+    if (prize.type === "charge") {
+      try {
+        await client.query(
+          `UPDATE members SET battle_charges = COALESCE(battle_charges,0) + 1
+           WHERE id = $1`,
+          [req.member.id]
+        );
+      } catch (chErr) {
+        console.warn("spin charge grant:", chErr.message);
+      }
+    }
+
+    await client.query("COMMIT");
+    const left = Math.max(0, SPIN_MAX_PER_DAY - used - 1);
+    res.json({
+      ok: true,
+      prize: prize.key,
+      prizeLabel: prize.label,
+      prizeIndex: index,
+      amount: prize.amount || 0,
+      spinsLeft: left,
+      usedToday: used + 1
+    });
+  } catch (e) {
+    try { await client.query("ROLLBACK"); } catch (_) {}
+    console.error("SPIN CLAIM:", e);
+    res.status(500).json({ ok: false, error: e.message || "Spin failed." });
+  } finally {
+    client.release();
+  }
+});
+
+
 /* =========================================================
 DAILY MINING AD BONUS (in-app AMT · 1x per UTC day per member)
 POST /api/ads/mining-bonus  (authenticated)
