@@ -1682,7 +1682,7 @@ One eligible claim per account. Mainnet app.
     <div class="stat"><div class="stat-label">Today</div><div id="spinUsed" class="stat-value">-</div></div>
   </div>
   <button id="spinBtn" class="primary" onclick="doLuckySpin()">🎰 SPIN NOW</button>
-  <div class="notice" style="margin:0;width:100%">Prizes: 5–50 AMT · Free Egg · Battle Charge · JACKPOT 100 AMT · 3 spins/day.</div>
+  <div class="notice" style="margin:0;width:100%">Prizes: 5–50 AMT · Free Egg · FREE SPIN · JACKPOT 100 AMT · 3 spins/day (+ free spin wins).</div>
 </div>
 </div>
 </section>
@@ -4113,7 +4113,11 @@ async function doLuckySpin(){
       $("spinResult").dataset.locked = "1";
       setTimeout(function(){ try{ delete $("spinResult").dataset.locked; }catch(e){} }, 2000);
     }
-    showToast(label);
+    if(data.freeSpin){
+      showToast("FREE SPIN! +1 extra spin today 🎡");
+    } else {
+      showToast(label);
+    }
     if(typeof refreshWallet === "function") refreshWallet().catch(function(){});
     if(typeof loadTxHistory === "function") loadTxHistory().catch(function(){});
     loadSpinStatus();
