@@ -1631,7 +1631,7 @@ Unlink Pi Wallet
 
 <div class="card" id="txHistoryCard" style="margin-top:12px;margin-bottom:120px">
   <div class="card-title">TRANSACTION HISTORY</div>
-  <div class="muted" style="font-size:11px;margin-bottom:8px">In-app AMT send / receive (latest 50)</div>
+  <div class="muted" style="font-size:11px;margin-bottom:8px">In-app AMT: transfers + rewards (spin, daily, airdrop…)</div>
   <div id="txHistoryList"><div class="empty">Loading...</div></div>
   <button type="button" class="secondary" style="margin-top:8px;width:100%" onclick="loadTxHistory()">Refresh history</button>
 </div>
@@ -2402,7 +2402,7 @@ Open Coixa to swap and add liquidity for on-chain AMT pairs. In-app mining AMT i
 <div class="nav-grid" style="margin-top:4px">
 
 <button class="nav-btn" data-section="airdropSection" onclick="showSection('airdropSection',this)">
-<span class="icon">🎁</span>Airdrop
+<span class="icon">🎡</span>Airdrop
 </button>
 
 <button class="nav-btn" data-section="referralSection" onclick="showSection('referralSection',this)">
@@ -3595,22 +3595,36 @@ async function loadTxHistory() {
     const d = await api("/api/wallet/transactions");
     const list = d.transactions || [];
     if (!list.length) {
-      box.innerHTML = '<div class="empty">No transfers yet. Send or receive AMT to see history.</div>';
+      box.innerHTML = '<div class="empty">No activity yet. Spin, daily claim, send/receive will show here.</div>';
       return;
     }
     box.innerHTML = list.map(function(tx) {
-      const dir = tx.direction === "SEND" ? "↑ SEND" : "↓ RECEIVE";
-      const color = tx.direction === "SEND" ? "#ff8a80" : "#69f0ae";
+      const kind = (tx.kind || tx.direction || "").toUpperCase();
+      const isOut = kind === "SEND" || (Number(tx.amount) < 0 && kind !== "RECEIVE");
+      const isReward = kind === "REWARD" || kind === "LUCKY_SPIN" || kind === "DAILY" || kind === "AIRDROP" || (tx.type && String(tx.type).indexOf("SPIN") >= 0);
+      let dir, color;
+      if (isReward || kind === "REWARD") {
+        dir = "🎁 " + (tx.label || tx.type || "REWARD");
+        color = "#ffd64e";
+      } else if (isOut || kind === "SEND") {
+        dir = "↑ SEND";
+        color = "#ff8a80";
+      } else {
+        dir = "↓ RECEIVE";
+        color = "#69f0ae";
+      }
+      const amt = Number(tx.amount);
+      const sign = amt < 0 || kind === "SEND" ? "" : (amt > 0 ? "+" : "");
+      const amtStr = sign + (isFinite(amt) ? Math.abs(amt) : tx.amount);
+      const amtColor = (amt < 0 || kind === "SEND") ? "#ff8a80" : "#69f0ae";
       const other = tx.direction === "SEND" ? tx.recipientAddress : tx.senderAddress;
       const when = tx.createdAt ? new Date(tx.createdAt).toLocaleString() : "";
-      const amt = Number(tx.amount);
-      const amtStr = (tx.direction === "SEND" ? "-" : "+") + (isFinite(amt) ? amt : tx.amount);
       return '<div class="balance-row" style="flex-direction:column;align-items:stretch;gap:4px;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.08)">' +
         '<div style="display:flex;justify-content:space-between;gap:8px">' +
         '<span style="color:' + color + ';font-weight:700">' + dir + '</span>' +
-        '<span style="color:' + color + ';font-weight:700">' + amtStr + ' AMT</span></div>' +
-        '<div class="muted" style="font-size:10px;word-break:break-all">To/From: ' + (other || "—") + '</div>' +
-        (tx.memo ? '<div class="muted" style="font-size:10px">Memo: ' + String(tx.memo) + '</div>' : '') +
+        '<span style="color:' + amtColor + ';font-weight:700">' + amtStr + ' AMT</span></div>' +
+        (other ? '<div class="muted" style="font-size:10px;word-break:break-all">To/From: ' + other + '</div>' : '') +
+        (tx.memo ? '<div class="muted" style="font-size:10px">' + String(tx.memo) + '</div>' : '') +
         '<div class="muted" style="font-size:10px">' + when + (tx.txId ? " · " + tx.txId : "") + '</div></div>';
     }).join("");
   } catch (e) {
@@ -4101,6 +4115,7 @@ async function doLuckySpin(){
     }
     showToast(label);
     if(typeof refreshWallet === "function") refreshWallet().catch(function(){});
+    if(typeof loadTxHistory === "function") loadTxHistory().catch(function(){});
     loadSpinStatus();
   }catch(e){
     showToast((e && e.message) || "Spin failed", true);
