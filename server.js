@@ -12120,16 +12120,16 @@ app.use(
 ========================================================= */
 
 const SPIN_MAX_PER_DAY = 3;
-// 8 segments — richer in-app rewards + rare 100 AMT jackpot
+// 8 segments — AMT rewards + free spin + rare 100 jackpot
 const SPIN_PRIZES = [
-  { key: "amt_5",    label: "+5 AMT",     type: "amt", amount: 5,    weight: 18 },
-  { key: "amt_10",   label: "+10 AMT",    type: "amt", amount: 10,   weight: 16 },
-  { key: "amt_25",   label: "+25 AMT",    type: "amt", amount: 25,   weight: 12 },
-  { key: "egg",      label: "Free Egg!",  type: "egg", amount: 0,    weight: 12 },
-  { key: "charge",   label: "+1 Battle Charge", type: "charge", amount: 1, weight: 12 },
-  { key: "amt_50",   label: "+50 AMT",    type: "amt", amount: 50,   weight: 8 },
+  { key: "amt_5",    label: "+5 AMT",     type: "amt", amount: 5,    weight: 16 },
+  { key: "amt_10",   label: "+10 AMT",    type: "amt", amount: 10,   weight: 14 },
+  { key: "amt_25",   label: "+25 AMT",    type: "amt", amount: 25,   weight: 11 },
+  { key: "egg",      label: "Free Egg!",  type: "egg", amount: 0,    weight: 10 },
+  { key: "free_spin", label: "FREE SPIN!", type: "free_spin", amount: 0, weight: 14 },
+  { key: "amt_50",   label: "+50 AMT",    type: "amt", amount: 50,   weight: 7 },
   { key: "jackpot",  label: "JACKPOT +100 AMT!", type: "amt", amount: 100, weight: 3 },
-  { key: "amt_15",   label: "+15 AMT",    type: "amt", amount: 15,   weight: 19 }
+  { key: "amt_15",   label: "+15 AMT",    type: "amt", amount: 15,   weight: 15 }
 ];
 
 function pickSpinPrize(){
@@ -12165,15 +12165,21 @@ app.get("/api/spin/status", requireAuth, async (req, res) => {
     await ensureSpinTable();
     const today = new Date().toISOString().slice(0, 10);
     const q = await pool.query(
-      `SELECT COUNT(*)::int AS c FROM lucky_spins
+      `SELECT
+         COUNT(*)::int AS c,
+         COUNT(*) FILTER (WHERE prize_key = 'free_spin')::int AS bonus
+       FROM lucky_spins
        WHERE member_id = $1 AND spin_date = $2`,
       [req.member.id, today]
     );
     const used = q.rows[0] ? q.rows[0].c : 0;
-    const left = Math.max(0, SPIN_MAX_PER_DAY - used);
+    const bonus = q.rows[0] ? q.rows[0].bonus : 0;
+    // Free-spin wins grant +1 extra spin for the day
+    const left = Math.max(0, SPIN_MAX_PER_DAY + bonus - used);
     res.json({
       ok: true,
       usedToday: used,
+      bonusSpins: bonus,
       spinsLeft: left,
       maxPerDay: SPIN_MAX_PER_DAY,
       canSpin: left > 0
@@ -12193,12 +12199,17 @@ app.post("/api/spin/claim", requireAuth, async (req, res) => {
 
     const today = new Date().toISOString().slice(0, 10);
     const q = await client.query(
-      `SELECT COUNT(*)::int AS c FROM lucky_spins
+      `SELECT
+         COUNT(*)::int AS c,
+         COUNT(*) FILTER (WHERE prize_key = 'free_spin')::int AS bonus
+       FROM lucky_spins
        WHERE member_id = $1 AND spin_date = $2`,
       [req.member.id, today]
     );
     const used = q.rows[0] ? q.rows[0].c : 0;
-    if (used >= SPIN_MAX_PER_DAY) {
+    const bonus = q.rows[0] ? q.rows[0].bonus : 0;
+    const leftBefore = Math.max(0, SPIN_MAX_PER_DAY + bonus - used);
+    if (leftBefore <= 0) {
       await client.query("ROLLBACK");
       return res.status(400).json({
         ok: false,
@@ -12255,7 +12266,9 @@ app.post("/api/spin/claim", requireAuth, async (req, res) => {
     }
 
     await client.query("COMMIT");
-    const left = Math.max(0, SPIN_MAX_PER_DAY - used - 1);
+    const newUsed = used + 1;
+    const newBonus = bonus + (prize.type === "free_spin" ? 1 : 0);
+    const left = Math.max(0, SPIN_MAX_PER_DAY + newBonus - newUsed);
     res.json({
       ok: true,
       prize: prize.key,
@@ -12263,7 +12276,9 @@ app.post("/api/spin/claim", requireAuth, async (req, res) => {
       prizeIndex: index,
       amount: prize.amount || 0,
       spinsLeft: left,
-      usedToday: used + 1
+      usedToday: newUsed,
+      bonusSpins: newBonus,
+      freeSpin: prize.type === "free_spin"
     });
   } catch (e) {
     try { await client.query("ROLLBACK"); } catch (_) {}
