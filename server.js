@@ -2642,8 +2642,9 @@ app.get(
   "/api/wallet/transactions",
   requireAuth,
   async (req, res) => {
-    const result =
-      await pool.query(
+    try {
+      // Peer transfers
+      const result = await pool.query(
         `
         SELECT
           t.tx_id,
@@ -2665,27 +2666,74 @@ app.get(
         [req.member.id]
       );
 
-    const transactions =
-      result.rows.map(
-        row => ({
-          txId: row.tx_id,
-          amount: Number(row.amount),
-          memo: row.memo,
-          status: row.status,
-          createdAt: row.created_at,
-          direction:
-            Number(row.sender_member_id) === Number(req.member.id)
-              ? "SEND"
-              : "RECEIVE",
-          senderAddress: row.sender_address,
-          recipientAddress: row.recipient_address
-        })
-      );
+      const transfers = result.rows.map((row) => ({
+        kind: "TRANSFER",
+        txId: row.tx_id,
+        amount: Number(row.amount),
+        memo: row.memo,
+        status: row.status,
+        createdAt: row.created_at,
+        direction:
+          Number(row.sender_member_id) === Number(req.member.id)
+            ? "SEND"
+            : "RECEIVE",
+        senderAddress: row.sender_address,
+        recipientAddress: row.recipient_address
+      }));
 
-    res.json({
-      ok: true,
-      transactions
-    });
+      // Ledger rewards / activity (spin, daily, airdrop, mining, etc.)
+      let rewards = [];
+      try {
+        const led = await pool.query(
+          `
+          SELECT id, amount, type, reference, created_at
+          FROM amt_ledger
+          WHERE member_id = $1
+            AND type IN (
+              'LUCKY_SPIN','DAILY','DAILY_REWARD','AIRDROP',
+              'MINING','MINING_CLAIM','AD_BONUS','REFERRAL'
+            )
+          ORDER BY created_at DESC
+          LIMIT 50
+          `,
+          [req.member.id]
+        );
+        rewards = led.rows.map((row) => {
+          const typ = String(row.type || "REWARD");
+          let label = typ;
+          if (typ === "LUCKY_SPIN") label = "LUCKY SPIN";
+          else if (typ === "DAILY" || typ === "DAILY_REWARD") label = "DAILY REWARD";
+          else if (typ === "AIRDROP") label = "AIRDROP";
+          else if (typ === "AD_BONUS") label = "AD BONUS";
+          else if (typ === "REFERRAL") label = "REFERRAL";
+          else if (typ === "MINING" || typ === "MINING_CLAIM") label = "MINING";
+          return {
+            kind: "REWARD",
+            type: typ,
+            label: label,
+            txId: row.reference || ("LEDGER-" + row.id),
+            amount: Number(row.amount),
+            memo: label + (row.reference ? " · " + row.reference : ""),
+            status: "OK",
+            createdAt: row.created_at,
+            direction: Number(row.amount) >= 0 ? "RECEIVE" : "SEND"
+          };
+        });
+      } catch (ledErr) {
+        console.warn("ledger history:", ledErr.message);
+      }
+
+      const merged = transfers.concat(rewards).sort((a, b) => {
+        const ta = new Date(a.createdAt || 0).getTime();
+        const tb = new Date(b.createdAt || 0).getTime();
+        return tb - ta;
+      }).slice(0, 50);
+
+      res.json({ ok: true, transactions: merged });
+    } catch (e) {
+      console.error("TX HISTORY:", e);
+      res.status(500).json({ ok: false, error: "Unable to load transactions." });
+    }
   }
 );
 
@@ -12169,14 +12217,17 @@ app.post("/api/spin/claim", requireAuth, async (req, res) => {
     // Credit rewards
     if (prize.type === "amt" && prize.amount > 0) {
       const ref = "SPIN-" + req.member.id + "-" + today + "-" + (used + 1);
-      try {
+      // Always credit balance via ledger (idempotent on reference)
+      const exists = await client.query(
+        `SELECT id FROM amt_ledger WHERE member_id = $1 AND reference = $2 LIMIT 1`,
+        [req.member.id, ref]
+      );
+      if (!exists.rows.length) {
         await client.query(
           `INSERT INTO amt_ledger (member_id, amount, type, reference)
            VALUES ($1, $2, 'LUCKY_SPIN', $3)`,
           [req.member.id, prize.amount, ref]
         );
-      } catch (insErr) {
-        if (!(insErr && insErr.code === "23505")) throw insErr;
       }
     }
     // egg / charge: best-effort flags on member or skip if no table
