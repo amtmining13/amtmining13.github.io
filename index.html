@@ -2211,6 +2211,16 @@ SELECT 180D
       <div id="battleMyHpText" style="font-size:11px;color:#b8ffd0">HP</div>
     </div>
   </div>
+  <!-- Skill bar (Pipet-style) -->
+  <div id="battleSkillBar" style="display:flex;justify-content:center;gap:8px;padding:10px 12px 18px;flex-wrap:wrap">
+    <button type="button" class="bskill" data-skill="S1" id="bskillS1" style="min-width:52px;padding:10px 8px;border-radius:14px;border:1px solid rgba(120,180,255,.35);background:rgba(20,40,80,.85);color:#d0e8ff;font-weight:900;font-size:11px">⚔<br>S1</button>
+    <button type="button" class="bskill" data-skill="S2" id="bskillS2" style="min-width:52px;padding:10px 8px;border-radius:14px;border:1px solid rgba(120,180,255,.35);background:rgba(20,40,80,.85);color:#d0e8ff;font-weight:900;font-size:11px">🗡<br>S2</button>
+    <button type="button" class="bskill" data-skill="S3" id="bskillS3" style="min-width:52px;padding:10px 8px;border-radius:14px;border:1px solid rgba(120,180,255,.35);background:rgba(20,40,80,.85);color:#d0e8ff;font-weight:900;font-size:11px">🔪<br>S3</button>
+    <button type="button" class="bskill" data-skill="ULT" id="bskillULT" style="min-width:56px;padding:10px 8px;border-radius:14px;border:2px solid rgba(255,200,60,.55);background:rgba(60,40,10,.9);color:#ffe08a;font-weight:900;font-size:11px">★<br>ULT</button>
+    <button type="button" class="bskill" data-skill="DODGE" id="bskillDODGE" style="min-width:52px;padding:10px 8px;border-radius:14px;border:1px solid rgba(120,255,180,.35);background:rgba(10,50,40,.85);color:#b8ffd0;font-weight:900;font-size:11px">🛡<br>DODGE</button>
+    <button type="button" class="bskill" data-skill="PET" id="bskillPET" style="min-width:52px;padding:10px 8px;border-radius:14px;border:1px solid rgba(255,140,200,.35);background:rgba(50,20,40,.85);color:#ffc0e0;font-weight:900;font-size:11px">⚡<br>PET</button>
+  </div>
+  <div id="battleSkillHint" class="muted" style="text-align:center;font-size:10px;padding:0 12px 8px;color:#9ab">Skills auto-cast · buttons light up when used</div>
   <!-- Result overlay -->
   <div id="battleResultPanel" class="hidden" style="position:absolute;inset:0;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;padding:20px">
     <div style="text-align:center;max-width:300px">
@@ -7601,6 +7611,32 @@ function closeBattleArena() {
   }
 }
 
+
+function clearBattleSkillHighlight(){
+  document.querySelectorAll(".bskill").forEach(function(b){
+    b.style.transform="";
+    b.style.boxShadow="";
+    b.style.filter="";
+  });
+}
+function highlightBattleSkill(skillName, actor){
+  clearBattleSkillHighlight();
+  if(!skillName || actor==="enemy") return;
+  var n=String(skillName).toLowerCase();
+  var id="bskillS1";
+  if(/guard|shield|defend|dodge|armor|veil|tidal guard/.test(n)) id="bskillDODGE";
+  else if(/heal|bloom|bless|restore/.test(n)) id="bskillPET";
+  else if(/inferno|storm|galaxy|burst|nova|ultimate|ult/.test(n)) id="bskillULT";
+  else if(/lash|bolt|tide|spark|ember|strike|pulse/.test(n)) id="bskillS2";
+  else id="bskillS1";
+  var el=$(id);
+  if(el){
+    el.style.transform="scale(1.12)";
+    el.style.boxShadow="0 0 16px rgba(255,200,80,.7)";
+    el.style.filter="brightness(1.25)";
+  }
+}
+
 async function playBattleArena(data) {
   const arena = $("battleArena");
   if (!arena) {
@@ -7636,10 +7672,12 @@ async function playBattleArena(data) {
   $("battleRoundLabel").textContent = "Round 1";
 
   const rounds = data.rounds || [];
+  clearBattleSkillHighlight();
   for (let i = 0; i < rounds.length; i++) {
     const r = rounds[i];
     $("battleRoundLabel").textContent = "Round " + (r.round || i + 1);
     $("battleLog").textContent = r.text || (r.actor === "you" ? "You hit!" : "Enemy hits!");
+    highlightBattleSkill(r.skill || r.text, r.actor);
     const myPct = Math.max(0, Math.min(100, (r.myHp / myMax) * 100));
     const enPct = Math.max(0, Math.min(100, (r.enHp / enMax) * 100));
     $("battleMyHpBar").style.width = myPct + "%";
