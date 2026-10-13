@@ -3511,13 +3511,22 @@ app.get("/api/daily/status", requireAuth, async (req, res) => {
     }
 
     let nextStreak;
+    let displayAmount;
     if (claimedToday) {
-      nextStreak = streak;
+      // Already claimed: streak is today's day; tomorrow continues or resets
+      if ((streak || 0) >= DAILY_MAX_STREAK) {
+        nextStreak = 1; // cycle complete → tomorrow Day 1
+      } else {
+        nextStreak = Math.min(DAILY_MAX_STREAK, (streak || 0) + 1);
+      }
+      displayAmount = lastAmount != null ? lastAmount : dailyAmountForStreak(streak || 1);
     } else if ((streak || 0) >= DAILY_MAX_STREAK) {
-      // Finished 7-day cycle — next claim starts Day 1
+      // Finished 7-day cycle, not yet claimed today — start Day 1
       nextStreak = 1;
+      displayAmount = dailyAmountForStreak(1);
     } else {
       nextStreak = Math.min(DAILY_MAX_STREAK, (streak || 0) + 1);
+      displayAmount = dailyAmountForStreak(nextStreak);
     }
     const nextAmount = dailyAmountForStreak(nextStreak);
 
@@ -3542,6 +3551,8 @@ app.get("/api/daily/status", requireAuth, async (req, res) => {
       streak: claimedToday ? streak : streak,
       nextStreak,
       nextAmount,
+      displayAmount: displayAmount != null ? displayAmount : nextAmount,
+      cycleComplete: claimedToday && (streak || 0) >= DAILY_MAX_STREAK,
       lastClaimDate,
       lastAmount,
       nextClaimAt,
