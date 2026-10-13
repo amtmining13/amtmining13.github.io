@@ -3699,9 +3699,12 @@ async function loadDailyStatus(){
     const streak=Number(data.streak||0);
     const nextStreak=Number(data.nextStreak||1);
     const nextAmt=Number(data.nextAmount||1);
+    const displayAmt=Number(data.displayAmount!=null?data.displayAmount:nextAmt);
     const canClaim=Boolean(data.canClaim);
+    const cycleDone=Boolean(data.cycleComplete);
     if($("dailyStreakBadge")) $("dailyStreakBadge").textContent="🔥 "+(data.claimedToday?streak:Math.max(0,streak));
-    if($("dailyNextAmount")) $("dailyNextAmount").textContent=fmt(nextAmt)+" AMT";
+    // Big number: today's claimed amount if done, else next claim amount
+    if($("dailyNextAmount")) $("dailyNextAmount").textContent=fmt(displayAmt)+" AMT";
     if($("dailyScheduleHint")&&Array.isArray(data.schedule)){
       $("dailyScheduleHint").textContent=
         "Streak: "+data.schedule.map((a,i)=>"D"+(i+1)+":"+a).join(" · ");
@@ -3714,9 +3717,13 @@ async function loadDailyStatus(){
         :"✅ CLAIMED TODAY";
     }
     if($("dailyStatusLabel")){
-      $("dailyStatusLabel").textContent=canClaim
-        ?("Ready · Streak → "+nextStreak+"/"+ (data.maxStreak||7))
-        :("Claimed · Streak "+streak+"/"+(data.maxStreak||7));
+      if(canClaim){
+        $("dailyStatusLabel").textContent="Ready · Day "+nextStreak+"/"+(data.maxStreak||7);
+      }else if(cycleDone){
+        $("dailyStatusLabel").textContent="Cycle done · Next = Day 1 ("+fmt(nextAmt)+" AMT)";
+      }else{
+        $("dailyStatusLabel").textContent="Claimed · Streak "+streak+"/"+(data.maxStreak||7)+" · Next Day "+nextStreak+" ("+fmt(nextAmt)+" AMT)";
+      }
     }
     if(dailyResetInterval){clearInterval(dailyResetInterval);dailyResetInterval=null;}
     if(!canClaim && data.secondsUntilReset>0){
