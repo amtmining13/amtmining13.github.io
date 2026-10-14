@@ -6816,6 +6816,7 @@ async function ensureGearTables() {
 const GEAR_MAX_UPGRADE = 15;
 
 const AMT_MATERIALS = {
+  pet_food: { id: "pet_food", name: "Pet Food", kind: "consumable", priceAmt: 0.2, desc: "Feed pet · restore energy / care" },
   upgrade_core: { id: "upgrade_core", name: "Upgrade Core", kind: "core", priceAmt: 0.5, desc: "Upgrade weapon/armor +1 (max +15)" },
   gem_atk_1: { id: "gem_atk_1", name: "Attack Gem Lv1", kind: "gem", stat: "atk", bonus: 2, level: 1, priceAmt: 0.4, desc: "+2 ATK when socketed" },
   gem_atk_2: { id: "gem_atk_2", name: "Attack Gem Lv2", kind: "gem", stat: "atk", bonus: 5, level: 2, priceAmt: 1.2, desc: "+5 ATK when socketed" },
@@ -7155,6 +7156,45 @@ const STORY_CHAPTERS = [
   { id: 10, name: "Legend Trial", mult: 2.00, exp: 250, reward: 2.00, energy: 18 }
 ];
 
+/* AFK grind map — leave pet on zone, claim later */
+const GRIND_ZONES = [
+  { id: 1, name: "Whispering Forest", minLevel: 1,  emoji: "🌲", expPerHour: 18, energyCostPerHour: 4, foodChance: 0.35, coreChance: 0.08, gemChance: 0.06, amtPerHour: 0.02 },
+  { id: 2, name: "Crystal Cave",      minLevel: 5,  emoji: "💎", expPerHour: 28, energyCostPerHour: 5, foodChance: 0.40, coreChance: 0.10, gemChance: 0.08, amtPerHour: 0.03 },
+  { id: 3, name: "Storm Ridge",       minLevel: 10, emoji: "⛈️", expPerHour: 40, energyCostPerHour: 6, foodChance: 0.42, coreChance: 0.12, gemChance: 0.10, amtPerHour: 0.04 },
+  { id: 4, name: "Ember Peak",        minLevel: 15, emoji: "🌋", expPerHour: 55, energyCostPerHour: 7, foodChance: 0.45, coreChance: 0.14, gemChance: 0.12, amtPerHour: 0.05 },
+  { id: 5, name: "Frozen Hollow",     minLevel: 20, emoji: "❄️", expPerHour: 72, energyCostPerHour: 8, foodChance: 0.48, coreChance: 0.16, gemChance: 0.14, amtPerHour: 0.06 },
+  { id: 6, name: "Thunder Valley",    minLevel: 25, emoji: "⚡", expPerHour: 90, energyCostPerHour: 9, foodChance: 0.50, coreChance: 0.18, gemChance: 0.15, amtPerHour: 0.08 },
+  { id: 7, name: "Shadow Marsh",      minLevel: 30, emoji: "🌫️", expPerHour: 110, energyCostPerHour: 10, foodChance: 0.52, coreChance: 0.20, gemChance: 0.16, amtPerHour: 0.10 },
+  { id: 8, name: "Golden Ruins",      minLevel: 35, emoji: "🏛️", expPerHour: 135, energyCostPerHour: 11, foodChance: 0.55, coreChance: 0.22, gemChance: 0.18, amtPerHour: 0.12 }
+];
+
+const GRIND_DURATIONS = [
+  { hours: 1,  label: "1h" },
+  { hours: 4,  label: "4h" },
+  { hours: 8,  label: "8h" },
+  { hours: 24, label: "24h" }
+];
+
+async function ensureGrindTables() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS pet_grinds (
+      id BIGSERIAL PRIMARY KEY,
+      member_id BIGINT NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+      owned_pet_id BIGINT NOT NULL,
+      zone_id INT NOT NULL,
+      hours INT NOT NULL,
+      energy_cost INT NOT NULL,
+      started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      ends_at TIMESTAMPTZ NOT NULL,
+      claimed_at TIMESTAMPTZ,
+      status TEXT NOT NULL DEFAULT 'active',
+      reward_json TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_pet_grinds_member ON pet_grinds(member_id, status);
+    CREATE INDEX IF NOT EXISTS idx_pet_grinds_pet ON pet_grinds(owned_pet_id, status);
+  `);
+}
+ensureGrindTables().catch(err => console.error("Grind tables:", err.message));
 
 ensurePetTables().catch(err => console.error("Pet tables init:", err.message));
 
@@ -9934,6 +9974,232 @@ app.get("/api/owner/rep", requireAuth, async (req, res) => {
     });
   } catch (e) {
     res.status(500).json({ ok: false, error: "Rep unavailable." });
+  }
+});
+
+
+/* ========== PET GRIND MAP ========== */
+app.get("/api/pets/grind/map", requireAuth, async (req, res) => {
+  try {
+    await ensureGrindTables();
+    const active = await pool.query(
+      `SELECT g.*, op.name AS pet_name, op.level AS pet_level
+       FROM pet_grinds g
+       LEFT JOIN owned_pets op ON op.id = g.owned_pet_id
+       WHERE g.member_id = $1 AND g.status = 'active'
+       ORDER BY g.ends_at ASC`,
+      [req.member.id]
+    );
+    const now = Date.now();
+    const zones = GRIND_ZONES.map(z => ({
+      id: z.id,
+      name: z.name,
+      emoji: z.emoji,
+      minLevel: z.minLevel,
+      expPerHour: z.expPerHour,
+      energyCostPerHour: z.energyCostPerHour,
+      amtPerHour: z.amtPerHour
+    }));
+    res.json({
+      ok: true,
+      zones,
+      durations: GRIND_DURATIONS,
+      maxActive: 3,
+      active: active.rows.map(r => ({
+        id: Number(r.id),
+        ownedPetId: Number(r.owned_pet_id),
+        petName: r.pet_name || ("Pet #" + r.owned_pet_id),
+        petLevel: Number(r.pet_level || 1),
+        zoneId: Number(r.zone_id),
+        zoneName: (GRIND_ZONES.find(z => z.id === Number(r.zone_id)) || {}).name || ("Zone " + r.zone_id),
+        hours: Number(r.hours),
+        startedAt: r.started_at,
+        endsAt: r.ends_at,
+        ready: new Date(r.ends_at).getTime() <= now,
+        msLeft: Math.max(0, new Date(r.ends_at).getTime() - now)
+      }))
+    });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message || "Map load failed." });
+  }
+});
+
+app.post("/api/pets/grind/deploy", requireAuth, async (req, res) => {
+  const ownedPetId = Number(req.body?.ownedPetId);
+  const zoneId = Number(req.body?.zoneId);
+  const hours = Number(req.body?.hours);
+  const zone = GRIND_ZONES.find(z => z.id === zoneId);
+  const dur = GRIND_DURATIONS.find(d => d.hours === hours);
+  if (!ownedPetId || !zone || !dur) {
+    return res.status(400).json({ ok: false, error: "Pick pet, zone, and duration (1/4/8/24h)." });
+  }
+  const client = await pool.connect();
+  try {
+    await ensureGrindTables();
+    await client.query("BEGIN");
+    const petR = await client.query(
+      `SELECT * FROM owned_pets WHERE id = $1 AND member_id = $2 FOR UPDATE`,
+      [ownedPetId, req.member.id]
+    );
+    if (!petR.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ ok: false, error: "Pet not found." });
+    }
+    const pet = petR.rows[0];
+    const level = Number(pet.level || 1);
+    if (level < zone.minLevel) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Need pet level " + zone.minLevel + " for " + zone.name + "." });
+    }
+    const busy = await client.query(
+      `SELECT id FROM pet_grinds WHERE owned_pet_id = $1 AND status = 'active' LIMIT 1`,
+      [ownedPetId]
+    );
+    if (busy.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "This pet is already grinding." });
+    }
+    const countR = await client.query(
+      `SELECT COUNT(*)::int AS c FROM pet_grinds WHERE member_id = $1 AND status = 'active'`,
+      [req.member.id]
+    );
+    if (Number(countR.rows[0].c) >= 3) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Max 3 pets grinding at once." });
+    }
+    const energyCost = Math.ceil(zone.energyCostPerHour * hours);
+    const energy = Number(pet.energy ?? 100);
+    if (energy < energyCost) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Need " + energyCost + " energy (have " + energy + "). Buy Energy Pack or wait." });
+    }
+    await client.query(
+      `UPDATE owned_pets SET energy = GREATEST(0, energy - $1) WHERE id = $2`,
+      [energyCost, ownedPetId]
+    );
+    const ends = new Date(Date.now() + hours * 3600 * 1000);
+    const ins = await client.query(
+      `INSERT INTO pet_grinds (member_id, owned_pet_id, zone_id, hours, energy_cost, ends_at, status)
+       VALUES ($1,$2,$3,$4,$5,$6,'active') RETURNING id, started_at, ends_at`,
+      [req.member.id, ownedPetId, zoneId, hours, energyCost, ends.toISOString()]
+    );
+    await client.query("COMMIT");
+    res.json({
+      ok: true,
+      message: (pet.name || "Pet") + " deployed to " + zone.name + " for " + hours + "h (−" + energyCost + " energy)",
+      grindId: Number(ins.rows[0].id),
+      endsAt: ins.rows[0].ends_at,
+      energyCost
+    });
+  } catch (e) {
+    try { await client.query("ROLLBACK"); } catch {}
+    res.status(500).json({ ok: false, error: e.message || "Deploy failed." });
+  } finally {
+    client.release();
+  }
+});
+
+app.post("/api/pets/grind/claim", requireAuth, async (req, res) => {
+  const grindId = Number(req.body?.grindId);
+  if (!grindId) return res.status(400).json({ ok: false, error: "Missing grindId." });
+  const client = await pool.connect();
+  try {
+    await ensureGrindTables();
+    await client.query("BEGIN");
+    const gR = await client.query(
+      `SELECT * FROM pet_grinds WHERE id = $1 AND member_id = $2 AND status = 'active' FOR UPDATE`,
+      [grindId, req.member.id]
+    );
+    if (!gR.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ ok: false, error: "Grind not found or already claimed." });
+    }
+    const g = gR.rows[0];
+    if (new Date(g.ends_at).getTime() > Date.now()) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Still grinding — wait for timer." });
+    }
+    const zone = GRIND_ZONES.find(z => z.id === Number(g.zone_id)) || GRIND_ZONES[0];
+    const hours = Number(g.hours) || 1;
+    const petR = await client.query(
+      `SELECT * FROM owned_pets WHERE id = $1 AND member_id = $2 FOR UPDATE`,
+      [g.owned_pet_id, req.member.id]
+    );
+    if (!petR.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ ok: false, error: "Pet missing." });
+    }
+    const pet = petR.rows[0];
+    let expGain = Math.round(zone.expPerHour * hours);
+    const amtGain = Math.round(zone.amtPerHour * hours * 1000) / 1000;
+    const loot = [];
+    // food rolls (up to hours times, capped)
+    let foodQty = 0;
+    for (let i = 0; i < hours; i++) {
+      if (Math.random() < zone.foodChance) foodQty++;
+    }
+    if (foodQty > 0) {
+      await addMaterial(client, req.member.id, "pet_food", foodQty);
+      loot.push(foodQty + "x Pet Food");
+    }
+    let cores = 0;
+    for (let i = 0; i < hours; i++) {
+      if (Math.random() < zone.coreChance) cores++;
+    }
+    if (cores > 0) {
+      await addMaterial(client, req.member.id, "upgrade_core", cores);
+      loot.push(cores + "x Upgrade Core");
+    }
+    let gems = 0;
+    const gemPool = ["gem_atk_1", "gem_hp_1", "gem_def_1"];
+    const gotGems = [];
+    for (let i = 0; i < hours; i++) {
+      if (Math.random() < zone.gemChance) {
+        gems++;
+        const gid = gemPool[Math.floor(Math.random() * gemPool.length)];
+        await addMaterial(client, req.member.id, gid, 1);
+        gotGems.push(gid);
+      }
+    }
+    if (gems > 0) loot.push(gems + "x Gem");
+    // apply EXP / level
+    let level = Number(pet.level || 1);
+    let exp = Number(pet.exp || 0) + expGain;
+    const need = (lv) => 40 + lv * 25;
+    while (exp >= need(level) && level < 100) {
+      exp -= need(level);
+      level += 1;
+    }
+    await client.query(
+      `UPDATE owned_pets SET level = $1, exp = $2 WHERE id = $3`,
+      [level, exp, pet.id]
+    );
+    if (amtGain > 0) {
+      await client.query(
+        `INSERT INTO amt_ledger (member_id, amount, type, reference) VALUES ($1,$2,'GRIND_LOOT',$3)`,
+        [req.member.id, amtGain, "GRIND-" + grindId]
+      );
+      loot.push("+" + amtGain + " AMT");
+    }
+    const reward = { expGain, level, amtGain, loot };
+    await client.query(
+      `UPDATE pet_grinds SET status = 'claimed', claimed_at = NOW(), reward_json = $1 WHERE id = $2`,
+      [JSON.stringify(reward), grindId]
+    );
+    await client.query("COMMIT");
+    res.json({
+      ok: true,
+      message: "Claimed from " + zone.name + " · +" + expGain + " EXP" + (loot.length ? " · " + loot.join(", ") : ""),
+      expGain,
+      level,
+      amtGain,
+      loot
+    });
+  } catch (e) {
+    try { await client.query("ROLLBACK"); } catch {}
+    res.status(500).json({ ok: false, error: e.message || "Claim failed." });
+  } finally {
+    client.release();
   }
 });
 
