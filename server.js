@@ -56,7 +56,7 @@ VERSION 2.4.0:
 - NEW: referralCode is now read from the saved referral_code column
 - FIXED: /api/referrals now returns referralCode + activeMiners
   (frontend was calling this endpoint and showing ------)
-- NEW: Referral Tier System (Bronze / Silver / Gold / Legend)
+- NEW: Referral Tier System (Bronze / Silver / Gold / Legend / Mythic)
 - NEW: Per-referral rewards + one-time milestone bonuses
 - NEW: Automatic credit to AMT ledger when referral is linked
 - NEW: AMT Pet Marketplace (70 real Common pets, 7 elements)
@@ -166,13 +166,15 @@ const REFERRAL_TIERS = [
   { name: "Bronze", min: 1, max: 5, rewardPerReferral: 0.5 },
   { name: "Silver", min: 6, max: 15, rewardPerReferral: 1.0 },
   { name: "Gold", min: 16, max: 50, rewardPerReferral: 1.5 },
-  { name: "Legend", min: 51, max: Infinity, rewardPerReferral: 2.0 }
+  { name: "Legend", min: 51, max: 99, rewardPerReferral: 2.0 },
+  { name: "Mythic", min: 100, max: Infinity, rewardPerReferral: 3.0 }
 ];
 
 const REFERRAL_MILESTONES = [
   { count: 5, bonus: 2.0, key: "M5" },
   { count: 15, bonus: 5.0, key: "M15" },
-  { count: 50, bonus: 15.0, key: "M50" }
+  { count: 50, bonus: 15.0, key: "M50" },
+  { count: 100, bonus: 30.0, key: "M100" }
 ];
 
 function getReferralTier(count) {
