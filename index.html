@@ -157,6 +157,37 @@ label{display:block;margin:0 0 7px;font-size:11px;color:#aaa1b5}.form-group{marg
 .baby-sell-row{display:flex;gap:6px;margin-top:8px;align-items:center;width:100%}
 .baby-sell-row input{flex:1;min-width:0;padding:8px;font-size:11px;border-radius:10px}
 .baby-sell-btn{width:auto;padding:8px 10px;font-size:10px;white-space:nowrap;flex-shrink:0}
+
+/* AMT TAG — Coixa-style identity card */
+.amt-tag-wrap{max-width:400px;margin:0 auto 12px}
+.amt-tag-card{
+  position:relative;border-radius:20px;padding:22px 20px 18px;overflow:hidden;
+  background:linear-gradient(135deg,#1a1030 0%,#0d1828 45%,#12102a 100%);
+  border:1px solid rgba(120,160,255,.25);
+  box-shadow:0 16px 40px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.08);
+}
+.amt-tag-card:before{
+  content:"";position:absolute;right:-40px;top:-30px;width:180px;height:180px;border-radius:50%;
+  background:radial-gradient(circle,rgba(100,80,255,.35),transparent 70%);pointer-events:none;
+}
+.amt-tag-card:after{
+  content:"";position:absolute;left:-30px;bottom:-40px;width:140px;height:140px;border-radius:50%;
+  background:radial-gradient(circle,rgba(40,120,255,.2),transparent 70%);pointer-events:none;
+}
+.amt-tag-top{display:flex;justify-content:space-between;align-items:center;position:relative;z-index:1;margin-bottom:18px}
+.amt-tag-brand{font-size:11px;font-weight:900;letter-spacing:2px;color:rgba(200,210,255,.85)}
+.amt-tag-yours{font-size:10px;font-weight:800;padding:5px 10px;border-radius:999px;background:rgba(40,180,255,.15);border:1px solid rgba(80,200,255,.4);color:#7dd3fc}
+.amt-tag-user{position:relative;z-index:1;font-size:28px;font-weight:900;color:#fff;letter-spacing:.5px;margin-bottom:6px;word-break:break-all}
+.amt-tag-user span{color:#38bdf8}
+.amt-tag-link{position:relative;z-index:1;font-size:12px;color:rgba(180,200,255,.65);margin-bottom:14px;display:flex;align-items:center;gap:6px}
+.amt-tag-bal{position:relative;z-index:1;font-size:13px;font-weight:800;color:#ffd54a;margin-bottom:4px}
+.amt-tag-share{margin-top:12px;border-radius:14px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.28);overflow:hidden}
+.amt-tag-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.06)}
+.amt-tag-row:last-child{border-bottom:none}
+.amt-tag-row-label{font-size:10px;font-weight:800;color:rgba(180,190,220,.7);letter-spacing:.5px;margin-bottom:3px}
+.amt-tag-row-val{font-size:12px;font-weight:700;color:#e8ecff;word-break:break-all}
+.amt-tag-copy{flex-shrink:0;width:36px;height:36px;border-radius:10px;border:1px solid rgba(120,180,255,.3);background:rgba(40,80,140,.25);color:#a5d0ff;font-size:14px;display:grid;place-items:center;cursor:pointer}
+
 /* Virtual AMT Visa card */
 /* ===== PREMIUM AMT VIRTUAL CARD ===== */
 .amt-card-scene{perspective:1200px;max-width:380px;margin:0 auto 12px;cursor:default;filter:drop-shadow(0 16px 36px rgba(0,0,0,.55))}
@@ -1450,55 +1481,55 @@ CLAIM DAILY REWARD
 </div>
 </div>
 
-<!-- PREMIUM VIRTUAL AMT CARD (on-chain only) -->
+<!-- AMT TAG + VIRTUAL CARD -->
 <div class="card" style="background:transparent;border:none;padding:0;box-shadow:none">
-<div class="card-title" style="margin-bottom:6px">AMT VIRTUAL CARD</div>
-<div class="muted" style="margin-bottom:14px;font-size:11px">On-chain AMT only · Tap to flip · Sign on back · Virtual (not a real bank card)</div>
+<div class="card-title" style="margin-bottom:6px">AMT TAG</div>
+<div class="muted" style="margin-bottom:12px;font-size:11px">Your identity card · share pay / referral link · virtual only (not a bank card)</div>
 
-<div class="amt-card-scene" id="amtCardScene">
-  <div class="amt-card" id="amtCard">
-    <!-- FRONT — Black Visa -->
-    <div class="amt-card-face amt-card-front">
-      <div class="amt-card-top">
-        <div class="amt-card-brand">
-          <div class="amt-card-logo-badge">AMT</div>
-          <div>
-            <div class="amt-card-logo">AMT BLACK</div>
-            <span class="amt-card-sub">ON-CHAIN · VIRTUAL</span>
-          </div>
-        </div>
-        <div class="amt-card-network">PI MAINNET</div>
+<div class="amt-tag-wrap">
+  <div class="amt-tag-card">
+    <div class="amt-tag-top">
+      <div class="amt-tag-brand">✦ AMT TAG</div>
+      <div class="amt-tag-yours">✓ Yours</div>
+    </div>
+    <div class="amt-tag-user" id="amtTagUser"><span>@</span>pioneer</div>
+    <div class="amt-tag-link" id="amtTagAppLink">🔗 amtmining13.github.io</div>
+    <div class="amt-tag-bal" id="amtCardBalance">— AMT</div>
+    <div class="muted" style="position:relative;z-index:1;font-size:10px">On-chain balance when wallet linked</div>
+  </div>
+
+  <div class="amt-tag-share">
+    <div class="amt-tag-row">
+      <div style="min-width:0;flex:1">
+        <div class="amt-tag-row-label">YOUR INVITE / PAY LINK</div>
+        <div class="amt-tag-row-val" id="amtTagPayLink">https://amtmining13.github.io</div>
       </div>
-      <div class="amt-card-chip-row">
-        <div class="amt-card-chip" aria-hidden="true"></div>
-        <div class="amt-card-contactless" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="1.6">
-            <path d="M8.5 8.5c2.2-2.2 5.8-2.2 8 0" stroke-linecap="round"/>
-            <path d="M6 6c3.5-3.5 9.5-3.5 13 0" stroke-linecap="round"/>
-            <path d="M11 11c1.1-1.1 2.9-1.1 4 0" stroke-linecap="round"/>
-            <circle cx="13.5" cy="13.5" r="1.2" fill="rgba(255,255,255,.75)" stroke="none"/>
-          </svg>
-        </div>
+      <button type="button" class="amt-tag-copy" onclick="copyAmtTagField('amtTagPayLink')" title="Copy">📋</button>
+    </div>
+    <div class="amt-tag-row">
+      <div style="min-width:0;flex:1">
+        <div class="amt-tag-row-label">AMT LEDGER ADDRESS</div>
+        <div class="amt-tag-row-val" id="amtTagLedger">—</div>
       </div>
-      <div class="amt-card-number" id="amtCardNumber">•••• •••• •••• 0000</div>
-      <div class="amt-card-balance-label">ON-CHAIN BALANCE</div>
-      <div class="amt-card-balance" id="amtCardBalance">— AMT</div>
-      <div class="amt-card-bottom">
-        <div>
-          <div class="amt-card-label">CARDHOLDER</div>
-          <div class="amt-card-holder" id="amtCardHolder">PIONEER</div>
-        </div>
-        <div>
-          <div class="amt-card-label">VALID</div>
-          <div class="amt-card-holder" id="amtCardValid">∞ / ∞</div>
-        </div>
-        <div class="amt-visa-mark">VISA</div>
+      <button type="button" class="amt-tag-copy" onclick="copyAmtTagField('amtTagLedger')" title="Copy">📋</button>
+    </div>
+    <div class="amt-tag-row">
+      <div style="min-width:0;flex:1">
+        <div class="amt-tag-row-label">CARD MASK · ON-CHAIN REF</div>
+        <div class="amt-tag-row-val" id="amtCardNumber">•••• •••• •••• 0000</div>
       </div>
+      <button type="button" class="amt-tag-copy" onclick="copyAmtTagField('amtCardNumber')" title="Copy">📋</button>
     </div>
   </div>
 </div>
+
+<!-- Hidden legacy holders for JS compatibility -->
+<span id="amtCardHolder" class="hidden">PIONEER</span>
+<span id="amtCardValid" class="hidden">∞ / ∞</span>
+<span id="amtCardCvv" class="hidden">•••</span>
+
 <button type="button" class="secondary amt-flip-btn" id="amtSignOpenBtn" onclick="openAmtSignModal()">✍️ SIGN FIRST &amp; LAST NAME</button>
-<div class="muted" style="text-align:center;font-size:10px;margin-top:6px">Card stays fixed · Sign opens in a stable pad · Virtual only</div>
+<div class="muted" style="text-align:center;font-size:10px;margin-top:6px">Optional signature · device only · not a real Visa / bank card</div>
 </div>
 
 <!-- Fixed signature modal — card does not move -->
@@ -2387,6 +2418,7 @@ SELECT 180D
 <div class="form-group" style="margin-top:10px">
 <label>Sell Price (AMT)</label>
 <input id="sellPrice" class="input" type="number" min="0.1" step="0.1" placeholder="1.0">
+<div id="sellPriceGuide" class="muted" style="font-size:10px;margin-top:4px">Guide by level · not a floor · market decides</div>
 </div>
 <button class="secondary" onclick="listPetForSale()">🏪 PUBLIC SELL</button>
 <button class="secondary" onclick="updatePetSellPrice()">💰 CHANGE PRICE</button>
@@ -3321,10 +3353,17 @@ const amtAddr =
   null;
 
 if(amtAddr){
-  $("amtWalletAddress").textContent = amtAddr;
+  if($("amtWalletAddress")) $("amtWalletAddress").textContent = amtAddr;
+  if($("walletAddress")) $("walletAddress").textContent = amtAddr;
+  window._amtLedgerAddress = amtAddr;
 }else{
-  $("amtWalletAddress").textContent = "Not connected";
+  if($("amtWalletAddress")) $("amtWalletAddress").textContent = "Not connected";
 }
+try{
+  if(typeof updateAmtVisaCard === "function"){
+    updateAmtVisaCard(null, false, amtAddr || window._amtLedgerAddress || "");
+  }
+}catch(e){}
 
 // Pi Wallet Address (verified from Pi API)
 const piAddr =
@@ -3410,6 +3449,29 @@ function updateAmtVisaCard(onchainAmt, linked, walletAddr){
   const numEl = $("amtCardNumber");
   const holderEl = $("amtCardHolder");
   const cvvEl = $("amtCardCvv");
+  const name = (currentUser && currentUser.username) ||
+    localStorage.getItem("amt_pi_username") ||
+    "pioneer";
+  const uname = String(name).replace(/^@/, "");
+  if($("amtTagUser")){
+    $("amtTagUser").innerHTML = "<span>@</span>" + esc(uname);
+  }
+  // Invite / pay link with referral code when available
+  var appBase = (typeof APP_BASE_URL === "string" && APP_BASE_URL) ? APP_BASE_URL.replace(/\/$/, "") : "https://amtmining13.github.io";
+  var payLink = appBase + "/?ref=" + encodeURIComponent(uname);
+  if($("amtTagPayLink")) $("amtTagPayLink").textContent = payLink;
+  if($("amtTagAppLink")) $("amtTagAppLink").textContent = "🔗 " + appBase.replace(/^https?:\/\//, "");
+  // Ledger from wallet UI if present
+  var ledger = "";
+  if($("walletAddress") && $("walletAddress").textContent){
+    ledger = String($("walletAddress").textContent).trim();
+  }
+  if((!ledger || ledger.indexOf("AMT-") < 0) && window._amtLedgerAddress){
+    ledger = window._amtLedgerAddress;
+  }
+  if($("amtTagLedger")){
+    $("amtTagLedger").textContent = (ledger && ledger.indexOf("AMT-") === 0) ? ledger : (ledger || "Login to load ledger");
+  }
   if(balEl){
     if(linked && onchainAmt != null && !isNaN(Number(onchainAmt))){
       balEl.textContent = Number(onchainAmt).toFixed(4) + " AMT";
@@ -3421,17 +3483,15 @@ function updateAmtVisaCard(onchainAmt, linked, walletAddr){
     let last4 = "0000";
     if(walletAddr && String(walletAddr).length >= 4){
       last4 = String(walletAddr).replace(/[^A-Za-z0-9]/g,"").slice(-4).toUpperCase();
+    } else if(ledger && ledger.length >= 4){
+      last4 = ledger.replace(/[^A-Za-z0-9]/g,"").slice(-4).toUpperCase();
     }
     numEl.textContent = "•••• •••• •••• " + last4;
   }
   if(holderEl){
-    const name = (currentUser && currentUser.username) ||
-      localStorage.getItem("amt_pi_username") ||
-      "PIONEER";
-    holderEl.textContent = String(name).toUpperCase().slice(0, 18);
+    holderEl.textContent = uname.toUpperCase().slice(0, 18);
   }
   if(cvvEl){
-    // Cosmetic only — not a real CVV
     if(walletAddr && String(walletAddr).length >= 3){
       let n = 0;
       const s = String(walletAddr);
@@ -3439,6 +3499,35 @@ function updateAmtVisaCard(onchainAmt, linked, walletAddr){
       cvvEl.textContent = String(n).padStart(3, "0");
     }else{
       cvvEl.textContent = "•••";
+    }
+  }
+}
+
+function copyAmtTagField(id){
+  var el = $(id);
+  if(!el) return;
+  var text = (el.textContent || "").replace(/^🔗\s*/, "").trim();
+  if(!text || text === "—" || text.indexOf("Login") === 0){
+    showToast("Nothing to copy yet", true);
+    return;
+  }
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(function(){
+      showToast("Copied");
+    }).catch(function(){
+      showToast("Copy failed", true);
+    });
+  }else{
+    try{
+      var ta = document.createElement("textarea");
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      showToast("Copied");
+    }catch(e){
+      showToast("Copy failed", true);
     }
   }
 }
@@ -6449,6 +6538,21 @@ function openOwnedModal(id) {
     else if (rep >= 40) badge = "Fighter";
     $("ownedRepLine").textContent = badge + " · Rep " + rep + " · W" + wins + "/L" + losses;
   }
+  if ($("sellPriceGuide")) {
+    var _lv = Number(pet.level) || 1;
+    var _sMin = 0.5, _sMax = 2;
+    if (_lv >= 40) { _sMin = 8; _sMax = 25; }
+    else if (_lv >= 30) { _sMin = 5; _sMax = 15; }
+    else if (_lv >= 20) { _sMin = 3; _sMax = 10; }
+    else if (_lv >= 10) { _sMin = 1.5; _sMax = 6; }
+    else if (_lv >= 5) { _sMin = 1; _sMax = 4; }
+    var _pi = String(pet.origin || "") === "pi_payment";
+    if (_pi) { _sMin *= 1.25; _sMax *= 1.35; }
+    $("sellPriceGuide").textContent = "Guide ~" + _sMin.toFixed(1) + "–" + _sMax.toFixed(0) + " AMT · Lv" + _lv + (_pi ? " · PI PAID" : "") + " · not a floor";
+  }
+  if ($("ownedRepLine") && false) {
+    $("ownedRepLine").textContent = badge + " · Rep " + rep + " · W" + wins + "/L" + losses;
+  }
   const mintedPi = String(pet.origin || "") === "pi_payment";
   const mintEl = $("ownedMintBadge");
   if (mintEl) {
@@ -8349,32 +8453,45 @@ async function loadListings() {
         const rep = Number(L.rep) || 0;
         const wins = Number(L.wins) || 0;
         const losses = Number(L.losses) || 0;
+        const lv = Number(L.level) || 1;
         let repBadge = "Rookie";
         if (rep >= 500) repBadge = "Mythic Ace";
         else if (rep >= 250) repBadge = "Legend";
         else if (rep >= 120) repBadge = "Veteran";
         else if (rep >= 40) repBadge = "Fighter";
+        // Soft guide only — not a floor price
+        let suggestMin = 0.5, suggestMax = 2;
+        if (lv >= 40) { suggestMin = 8; suggestMax = 25; }
+        else if (lv >= 30) { suggestMin = 5; suggestMax = 15; }
+        else if (lv >= 20) { suggestMin = 3; suggestMax = 10; }
+        else if (lv >= 10) { suggestMin = 1.5; suggestMax = 6; }
+        else if (lv >= 5) { suggestMin = 1; suggestMax = 4; }
+        if (isPiMint) { suggestMin *= 1.25; suggestMax *= 1.35; }
         const mintLine = isPiMint
-          ? `<div style="margin-top:4px;font-size:11px;font-weight:700;color:#c4b5fd">💜 PI Mint · Mainnet</div>`
+          ? `<div style="margin-top:5px;padding:4px 8px;border-radius:8px;background:rgba(120,80,255,.25);border:1px solid rgba(180,140,255,.5);font-size:11px;font-weight:800;color:#e0d0ff">💜 PI PAID · MAINNET</div>`
           : "";
-        const repLine = `<div class="muted" style="font-size:10px;margin-top:3px">${repBadge} · Rep ${rep} · W${wins}/L${losses}</div>`;
+        const levelLine = `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
+          <span style="padding:3px 8px;border-radius:999px;background:linear-gradient(90deg,#5b21b6,#7c3aed);font-size:10px;font-weight:900;color:#fff">Lv ${lv}</span>
+          <span style="padding:3px 8px;border-radius:999px;background:rgba(255,200,60,.15);border:1px solid rgba(255,200,60,.35);font-size:10px;font-weight:800;color:#ffd54a">${esc(L.rarity || "Common")}</span>
+        </div>`;
+        const repLine = `<div class="muted" style="font-size:10px;margin-top:4px">${repBadge} · Rep ${rep} · W${wins}/L${losses}</div>`;
+        const guideLine = `<div class="muted" style="font-size:9px;margin-top:3px">Guide ~${suggestMin.toFixed(1)}–${suggestMax.toFixed(0)} AMT (not a floor)</div>`;
         const certLine = L.certificate_id
           ? `<div class="muted" style="font-size:9px;margin-top:2px;font-family:monospace">${esc(String(L.certificate_id).slice(0, 18))}…</div>`
           : "";
         return `<div class="pet-card ${elClass}">
         <div class="pet-card-top">
           <span class="pet-card-element">${esc(L.element || "")}</span>
-          <span class="pet-card-badge">${isPiMint ? "PI MINT" : "PET"}</span>
+          <span class="pet-card-badge" style="${isPiMint ? "color:#c4b5fd;border-color:rgba(180,140,255,.6)" : ""}">${isPiMint ? "PI PAID" : "PET"}</span>
           ${petArtHtml(pet, 120)}
         </div>
         <div class="pet-card-body">
           <div class="pet-card-name">${esc(L.name || "Pet")}</div>
           <div class="pet-card-price">${Number(L.price_amt)} AMT</div>
-          <div class="muted" style="font-size:10px;margin-top:4px">Lv ${L.level || 1} · ${esc(
-          L.rarity || "Common"
-        )}</div>
+          ${levelLine}
           ${mintLine}
           ${repLine}
+          ${guideLine}
           ${certLine}
           <div class="muted" style="font-size:10px;margin-top:3px">Seller: ${esc(L.seller_username || "?")}</div>
           <div class="pet-card-footer">
