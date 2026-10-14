@@ -1779,8 +1779,8 @@ One eligible claim per account. Mainnet app.
 JOIN WITH CODE
 </button>
 <div class="notice">
-Bronze 1–5 (+0.5) · Silver 6–15 (+1.0) · Gold 16–50 (+1.5) · Legend 51+ (+2.0)<br>
-Milestones: 5→+2 · 15→+5 · 50→+15 AMT
+Bronze 1–5 (+0.5) · Silver 6–15 (+1.0) · Gold 16–50 (+1.5) · Legend 51–99 (+2.0) · <b>Mythic 100+</b> (+3.0)<br>
+Milestones: 5→+2 · 15→+5 · 50→+15 · 100→+30 AMT
 </div>
 </div>
 </section>
@@ -4622,7 +4622,7 @@ async function loadReferral(){
     if($("tierName")) $("tierName").textContent = tier.name || "Bronze";
     if($("tierReward")) $("tierReward").textContent = tier.rewardPerReferral ?? 0.5;
 
-    const milestones = [5, 15, 50];
+    const milestones = [5, 15, 50, 100];
     let nextMile = null;
     for(const m of milestones){
       if(count < m){ nextMile = m; break; }
@@ -4633,7 +4633,8 @@ async function loadReferral(){
       {name:"Bronze", min:0, max:5},
       {name:"Silver", min:6, max:15},
       {name:"Gold", min:16, max:50},
-      {name:"Legend", min:51, max:999999}
+      {name:"Legend", min:51, max:99},
+      {name:"Mythic", min:100, max:999999}
     ];
     let current = tiers.find(t => count >= t.min && count <= t.max) || tiers[0];
     let nextTier = tiers.find(t => t.min > count);
@@ -4646,7 +4647,20 @@ async function loadReferral(){
       progressText = count + " / " + nextTier.min + " to " + nextTier.name;
     }else{
       progressPct = 100;
-      progressText = count + " · Legend max";
+      progressText = count + " · Mythic max";
+    }
+    // Mythic glow on tier name
+    if($("tierName")){
+      if((tier.name || current.name) === "Mythic"){
+        $("tierName").style.color = "#ff6bcb";
+        $("tierName").style.textShadow = "0 0 16px rgba(255,100,200,.55)";
+      }else if((tier.name || current.name) === "Legend"){
+        $("tierName").style.color = "#ffd54f";
+        $("tierName").style.textShadow = "0 0 12px rgba(255,200,60,.35)";
+      }else{
+        $("tierName").style.color = "#ffd54f";
+        $("tierName").style.textShadow = "none";
+      }
     }
     if($("tierProgress")) $("tierProgress").style.width = progressPct + "%";
     if($("tierProgressText")) $("tierProgressText").textContent = progressText;
