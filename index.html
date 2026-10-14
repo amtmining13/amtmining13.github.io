@@ -50,23 +50,25 @@ label{display:block;margin:0 0 7px;font-size:11px;color:#aaa1b5}.form-group{marg
 .profile-name{margin-top:11px;font-size:21px;font-weight:900}
 .nav{position:fixed;left:50%;bottom:0;transform:translateX(-50%);width:min(720px,100%);z-index:100;padding:8px 8px calc(8px + env(safe-area-inset-bottom));background:rgba(8,6,14,.94);backdrop-filter:blur(20px);border-top:1px solid rgba(255,255,255,.08)}
 .nav-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}.nav-btn{min-width:0;border:0;padding:9px 3px;border-radius:13px;color:#82798c;background:transparent;font-size:10px;font-weight:800}.nav-btn .icon{display:block;font-size:19px;margin-bottom:3px}.nav-btn.active{color:#ffd64e;background:rgba(170,79,255,.13)}
-.spin-wrap{display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:8px}
-.spin-wheel-box{position:relative;width:240px;height:240px;margin:8px auto}
-.spin-wheel{width:240px;height:240px;border-radius:50%;border:6px solid #ffd54a;box-shadow:0 0 28px rgba(181,84,255,.35),inset 0 0 20px rgba(0,0,0,.5);background:conic-gradient(
-#7c3aed 0deg 45deg,
-#2563eb 45deg 90deg,
-#059669 90deg 135deg,
-#d97706 135deg 180deg,
-#dc2626 180deg 225deg,
-#db2777 225deg 270deg,
-#4f46e5 270deg 315deg,
-#0d9488 315deg 360deg
-);transition:transform 4s cubic-bezier(.15,.85,.25,1)}
-.spin-pointer{position:absolute;top:-6px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:12px solid transparent;border-right:12px solid transparent;border-top:22px solid #ffd54a;z-index:5;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5))}
-.spin-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:56px;height:56px;border-radius:50%;background:radial-gradient(circle,#2a1540,#12081f);border:3px solid #ffd54a;display:grid;place-items:center;font-weight:900;font-size:12px;color:#ffd54a;z-index:4}
-.spin-labels{position:absolute;inset:0;border-radius:50%;pointer-events:none}
-.spin-labels span{position:absolute;width:70px;text-align:center;font-size:9px;font-weight:800;color:#fff;text-shadow:0 1px 3px #000}
-.spin-result{min-height:22px;text-align:center;font-weight:800;color:#ffd64e;font-size:14px}
+.spin-wrap{display:flex;flex-direction:column;align-items:center;gap:16px;margin-top:8px;padding-bottom:8px}
+.spin-title-glow{font-size:28px;font-weight:900;letter-spacing:.08em;background:linear-gradient(180deg,#fff6a8,#ffd54a 45%,#c9a227);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 0 24px rgba(255,200,60,.35);margin:0 0 4px}
+.spin-wheel-box{position:relative;width:min(360px,92vw);height:min(360px,92vw);margin:8px auto 4px}
+.spin-wheel{width:100%;height:100%;border-radius:50%;border:10px solid #f5c542;box-shadow:0 0 50px rgba(255,200,60,.55),0 0 100px rgba(181,84,255,.28),inset 0 0 32px rgba(0,0,0,.6);background:conic-gradient(
+#1a1408 0deg 45deg,
+#d4af37 45deg 90deg,
+#12100a 90deg 135deg,
+#f0d060 135deg 180deg,
+#1a1408 180deg 225deg,
+#c9a227 225deg 270deg,
+#12100a 270deg 315deg,
+#ffe08a 315deg 360deg
+);transition:transform 4.2s cubic-bezier(.12,.85,.2,1)}
+.spin-pointer{position:absolute;top:-14px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:16px solid transparent;border-right:16px solid transparent;border-top:32px solid #ffd54a;z-index:5;filter:drop-shadow(0 4px 8px rgba(0,0,0,.6))}
+.spin-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:76px;height:76px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#5a4020,#1a1008);border:5px solid #ffd54a;display:grid;place-items:center;font-weight:900;font-size:14px;color:#ffd54a;z-index:4;box-shadow:0 0 20px rgba(255,200,60,.5);cursor:pointer}
+.spin-labels{position:absolute;inset:0;border-radius:50%;pointer-events:none;z-index:3}
+.spin-labels span{position:absolute;left:50%;top:50%;width:90px;margin-left:-45px;margin-top:-10px;text-align:center;font-size:11px;font-weight:900;color:#fff;text-shadow:0 1px 5px #000,0 0 8px rgba(0,0,0,.8);transform-origin:center center}
+.spin-result{min-height:28px;text-align:center;font-weight:900;color:#ffd64e;font-size:18px;text-shadow:0 0 12px rgba(255,200,60,.4)}
+.spin-btn-big{width:100%;max-width:360px;padding:16px 20px!important;font-size:18px!important;font-weight:900!important;letter-spacing:.06em;border-radius:16px!important;box-shadow:0 8px 28px rgba(255,180,40,.35)}
 
 .toast{position:fixed;left:50%;bottom:95px;transform:translate(-50%,20px);width:calc(100% - 32px);max-width:650px;padding:13px 15px;border-radius:15px;background:#17101f;border:1px solid rgba(255,255,255,.1);box-shadow:0 12px 35px rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:.25s;z-index:200;font-size:12px}.toast.show{opacity:1;transform:translate(-50%,0)}.toast.success{border-color:rgba(65,255,135,.35)}.toast.error{border-color:rgba(255,70,95,.35)}
 .wallet-address{word-break:break-all;font-family:monospace;color:#caa2ff;font-size:11px}
@@ -1668,21 +1670,32 @@ One eligible claim per account. Mainnet app.
 </div>
 
 <div class="card" style="margin-top:14px">
-<div class="card-title">🍀 LUCKY SPIN</div>
-<p class="muted" style="font-size:12px;margin:0 0 8px">Up to <b>3 spins</b> per day · In-app AMT &amp; items</p>
 <div class="spin-wrap">
+  <div class="spin-title-glow">SPIN IT</div>
+  <p class="muted" style="font-size:12px;margin:0;text-align:center">Up to <b>3 spins</b> / day · AMT · Egg · Jackpot</p>
   <div class="spin-wheel-box">
     <div class="spin-pointer"></div>
-    <div id="luckyWheel" class="spin-wheel"></div>
-    <div class="spin-center">SPIN</div>
+    <div id="luckyWheel" class="spin-wheel">
+      <div class="spin-labels" id="spinLabels">
+        <span style="transform:rotate(22.5deg) translateY(-118px)">5 AMT</span>
+        <span style="transform:rotate(67.5deg) translateY(-118px)">25 AMT</span>
+        <span style="transform:rotate(112.5deg) translateY(-118px)">EGG</span>
+        <span style="transform:rotate(157.5deg) translateY(-118px)">10 AMT</span>
+        <span style="transform:rotate(202.5deg) translateY(-118px)">FREE</span>
+        <span style="transform:rotate(247.5deg) translateY(-118px)">50 AMT</span>
+        <span style="transform:rotate(292.5deg) translateY(-118px)">15 AMT</span>
+        <span style="transform:rotate(337.5deg) translateY(-118px)">100 ⭐</span>
+      </div>
+    </div>
+    <div class="spin-center" onclick="doLuckySpin()">SPIN</div>
   </div>
   <div id="spinResult" class="spin-result">Good luck!</div>
-  <div class="grid" style="width:100%">
+  <div class="grid" style="width:100%;max-width:360px">
     <div class="stat"><div class="stat-label">Spins left</div><div id="spinLeft" class="stat-value">-</div></div>
     <div class="stat"><div class="stat-label">Today</div><div id="spinUsed" class="stat-value">-</div></div>
   </div>
-  <button id="spinBtn" class="primary" onclick="doLuckySpin()">🎰 SPIN NOW</button>
-  <div class="notice" style="margin:0;width:100%">Prizes: 5–50 AMT · Free Egg · FREE SPIN · JACKPOT 100 AMT · 3 spins/day (+ free spin wins).</div>
+  <button id="spinBtn" class="primary spin-btn-big" onclick="doLuckySpin()">🎰 SPIN NOW</button>
+  <div class="notice" style="margin:0;width:100%;max-width:360px">Prizes: 5–50 AMT · Free Egg · FREE SPIN · JACKPOT 100 AMT · 3/day (+ free spin).</div>
 </div>
 </div>
 </section>
@@ -2184,10 +2197,10 @@ SELECT 180D
 
 <!-- BATTLE ARENA (visual rounds) -->
 <div id="battleArena" class="hidden" style="position:fixed;inset:0;z-index:400;background:linear-gradient(180deg,#0a1628 0%,#122038 40%,#1a2840 100%);display:flex;flex-direction:column;align-items:stretch">
-  <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px">
-    <button class="small-btn" style="width:auto;padding:8px 14px;background:rgba(255,60,60,.25);border-color:rgba(255,80,80,.4)" onclick="closeBattleArena()">Exit</button>
+  <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;position:relative;z-index:460">
+    <button type="button" id="battleExitBtn" style="width:auto;padding:12px 18px;border-radius:12px;background:rgba(220,40,50,.95);border:2px solid rgba(255,120,120,.8);color:#fff;font-weight:900;font-size:14px;z-index:460;position:relative;box-shadow:0 4px 16px rgba(0,0,0,.5)" onclick="closeBattleArena()">← EXIT</button>
     <div id="battleRoundLabel" style="font-weight:900;font-size:13px;color:#c8d8f0">Round 1</div>
-    <div style="width:60px"></div>
+    <div style="width:72px"></div>
   </div>
   <div style="flex:1;display:flex;flex-direction:column;justify-content:space-around;padding:8px 16px 20px;position:relative">
     <!-- Enemy -->
@@ -2212,7 +2225,7 @@ SELECT 180D
     </div>
   </div>
   <!-- Skill bar (Pipet-style) -->
-  <div id="battleSkillBar" style="display:flex;justify-content:center;gap:8px;padding:10px 12px 18px;flex-wrap:wrap">
+  <div id="battleSkillBar" style="display:flex;justify-content:center;gap:6px;padding:8px 10px 14px;flex-wrap:nowrap;overflow-x:auto;z-index:10">
     <button type="button" class="bskill" data-skill="S1" id="bskillS1" style="min-width:52px;padding:10px 8px;border-radius:14px;border:1px solid rgba(120,180,255,.35);background:rgba(20,40,80,.85);color:#d0e8ff;font-weight:900;font-size:11px">⚔<br>S1</button>
     <button type="button" class="bskill" data-skill="S2" id="bskillS2" style="min-width:52px;padding:10px 8px;border-radius:14px;border:1px solid rgba(120,180,255,.35);background:rgba(20,40,80,.85);color:#d0e8ff;font-weight:900;font-size:11px">🗡<br>S2</button>
     <button type="button" class="bskill" data-skill="S3" id="bskillS3" style="min-width:52px;padding:10px 8px;border-radius:14px;border:1px solid rgba(120,180,255,.35);background:rgba(20,40,80,.85);color:#d0e8ff;font-weight:900;font-size:11px">🔪<br>S3</button>
@@ -2222,12 +2235,12 @@ SELECT 180D
   </div>
   <div id="battleSkillHint" class="muted" style="text-align:center;font-size:10px;padding:0 12px 8px;color:#9ab">Skills auto-cast · buttons light up when used</div>
   <!-- Result overlay -->
-  <div id="battleResultPanel" class="hidden" style="position:absolute;inset:0;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;padding:20px">
-    <div style="text-align:center;max-width:300px">
+  <div id="battleResultPanel" class="hidden" style="position:absolute;inset:0;z-index:450;background:rgba(0,0,0,.82);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px 16px 32px">
+    <div style="text-align:center;max-width:320px;width:100%">
       <div id="battleResultBadge" style="font-size:72px;margin-bottom:8px">🏆</div>
       <div id="battleResultTitle" style="font-size:28px;font-weight:900;color:#ffd54f;margin-bottom:8px">Victory</div>
-      <div id="battleResultReward" style="font-size:16px;font-weight:800;color:#a0f0c0;margin-bottom:18px">+0.3 AMT</div>
-      <button class="primary" onclick="closeBattleArena()">Close</button>
+      <div id="battleResultReward" style="font-size:16px;font-weight:800;color:#a0f0c0;margin-bottom:22px">+0.3 AMT</div>
+      <button type="button" class="primary" style="min-width:200px;width:100%;max-width:280px;padding:16px 20px;font-size:17px;font-weight:900;border-radius:14px;box-shadow:0 6px 20px rgba(0,0,0,.45)" onclick="closeBattleArena()">← BACK TO PETS</button>
     </div>
   </div>
 </div>
@@ -2286,7 +2299,7 @@ SELECT 180D
 <div class="card" style="max-width:400px;width:100%;max-height:90vh;overflow:auto;margin:0">
 <div class="row">
 <div class="card-title" style="margin:0" id="ownedModalName">My Pet</div>
-<button class="small-btn" style="width:auto;padding:6px 12px" onclick="closeOwnedModal()">✕</button>
+<button class="small-btn" style="width:auto;padding:8px 14px;font-weight:900;background:rgba(255,255,255,.08)" onclick="closeOwnedModal()">← Back</button>
 </div>
 <div id="ownedModalArt" style="text-align:center;margin:12px 0"></div>
 <div id="ownedWearPreview" style="text-align:center;margin-bottom:8px"></div>
