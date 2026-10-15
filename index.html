@@ -1705,8 +1705,36 @@ Unlink Pi Wallet
 </section>
 
 <section id="airdropSection" class="section">
-<!-- Airdrop claim UI removed — more space for spin. Backend claim still available if needed. -->
-<div class="card" style="margin-top:0">
+<div class="hero">
+<h1>AMT <span>AIRDROP</span></h1>
+<p>One-time community reward</p>
+</div>
+
+<div class="card">
+<div class="card-title">AIRDROP STATUS</div>
+
+<div class="grid">
+<div class="stat">
+<div class="stat-label">Reward</div>
+<div class="stat-value">AMT Mainnet</div>
+</div>
+
+<div class="stat">
+<div class="stat-label">Claim</div>
+<div id="airdropStatus" class="stat-value">Checking...</div>
+</div>
+</div>
+
+<button id="airdropBtn" class="primary" style="margin-top:15px" onclick="claimAirdrop()">
+🎁 CLAIM AIRDROP
+</button>
+
+<div class="notice">
+One eligible claim per account. Mainnet app.
+</div>
+</div>
+
+<div class="card" style="margin-top:14px">
 <div class="spin-wrap">
   <div class="spin-title-glow">SPIN IT</div>
   <p class="muted" style="font-size:12px;margin:0;text-align:center">Up to <b>3 spins</b> / day · AMT · Egg · Jackpot</p>
@@ -2477,7 +2505,7 @@ Open Coixa to swap and add liquidity for on-chain AMT pairs. In-app mining AMT i
 <div class="nav-grid" style="margin-top:4px">
 
 <button class="nav-btn" data-section="airdropSection" onclick="showSection('airdropSection',this)">
-<span class="icon">🎡</span>Spin
+<span class="icon">🎡</span>Airdrop
 </button>
 
 <button class="nav-btn" data-section="referralSection" onclick="showSection('referralSection',this)">
@@ -2668,7 +2696,7 @@ if(id==="referralSection")loadReferral();
 if(id==="circleSection")loadSecurityCircle();
 if(id==="profileSection"){loadProfile();try{refreshDevTreasuryCard();}catch(e){}}
 if(id==="stakingSection")loadStaking();
-if(id==="miningSection"){loadMiningStatus();loadDailyStatus();try{preloadPiAds()}catch(e){}}
+if(id==="miningSection"){loadMiningStatus();loadDailyStatus();}
 if(id==="marketSection")petTab(currentPetTab || "shop");
 }
 
@@ -2689,43 +2717,16 @@ async function loginWithPi(){
 
 try{
 
-// Wait briefly for SDK if script still loading
-if(!window.Pi){
-  setLoginStatus("Loading Pi SDK…");
-  for(let i=0;i<20 && !window.Pi;i++){
-    await new Promise(function(r){setTimeout(r,150);});
-  }
-}
 if(!window.Pi){
 throw new Error(
-"Pi SDK is not available. Open this app inside Pi Browser only (not Chrome / Facebook / external browser)."
+"Pi SDK is not available. Open this app inside Pi Browser (not Chrome/Facebook)."
 );
 }
 
 setLoginStatus("Checking backend…");
-// Backend environment check — retry (Render cold start)
+// Backend environment check
 try{
-  let root=null;
-  let lastErr=null;
-  for(let i=0;i<3;i++){
-    try{
-      setLoginStatus(i===0?"Checking backend…":("Waking server… ("+(i+1)+"/3)"));
-      const ctrl=typeof AbortController!=="undefined"?new AbortController():null;
-      const to=ctrl?setTimeout(function(){try{ctrl.abort()}catch(e){}},20000):null;
-      const res=await fetch(API_BASE+"/",{cache:"no-store",signal:ctrl?ctrl.signal:undefined});
-      if(to)clearTimeout(to);
-      if(!res.ok) throw new Error("Server HTTP "+res.status);
-      root=await res.json();
-      lastErr=null;
-      break;
-    }catch(eTry){
-      lastErr=eTry;
-      await new Promise(function(r){setTimeout(r,1500*(i+1));});
-    }
-  }
-  if(!root){
-    throw new Error("Cannot reach AMT server after retries. Open Render dashboard — is amtmining13-github-io Live?");
-  }
+  const root=await fetch(API_BASE+"/",{cache:"no-store"}).then(r=>r.json());
   if(root&&String(root.environment||"").toUpperCase().indexOf("TEST")>=0){
     console.warn("Backend environment:", root.environment, root.version);
   }
@@ -2734,7 +2735,7 @@ try{
   }
 }catch(e){
   console.warn("backend check",e);
-  throw new Error((e&&e.message)||"Cannot reach AMT server. Check Render is Live: amtmining13-github-io.onrender.com");
+  throw new Error("Cannot reach AMT server. Check Render is Live: amtmining13-github-io.onrender.com");
 }
 
 setLoginStatus("Connecting to Pi… approve the popup");
@@ -2765,60 +2766,43 @@ try{
 
 // Timeout so UI does not stick forever
 var authResult;
-function incompletePaymentHandler(payment){
-  console.log("Incomplete payment:", payment);
-  return (async function(){
-    try {
-      if (payment && payment.identifier) {
-        var tx =
-          (payment.transaction && (payment.transaction.txid || payment.transaction._id)) ||
-          payment.txid ||
-          "";
-        showToast("Recovering previous PI payment...");
-        await api("/api/market/payment/complete", {
-          method: "POST",
-          body: JSON.stringify({
-            paymentId: payment.identifier,
-            txid: tx
-          })
-        });
-        showToast("Previous PI payment completed · check My Pets");
-        if (typeof loadOwnedPets === "function") await loadOwnedPets();
-        if (typeof refreshWallet === "function") await refreshWallet();
+try{
+  authResult = await Promise.race([
+    Pi.authenticate(
+      ["username","payments"],
+      async function(payment){
+        console.log("Incomplete payment:", payment);
+        try {
+          if (payment && payment.identifier) {
+            var tx =
+              (payment.transaction && (payment.transaction.txid || payment.transaction._id)) ||
+              payment.txid ||
+              "";
+            showToast("Recovering previous PI payment...");
+            await api("/api/market/payment/complete", {
+              method: "POST",
+              body: JSON.stringify({
+                paymentId: payment.identifier,
+                txid: tx
+              })
+            });
+            showToast("Previous PI payment completed · check My Pets");
+            if (typeof loadOwnedPets === "function") await loadOwnedPets();
+            if (typeof refreshWallet === "function") await refreshWallet();
+          }
+        } catch (e) {
+          console.warn("Incomplete payment recovery:", e);
+          showToast((e && e.message) || "Could not recover payment", true);
+        }
       }
-    } catch (e) {
-      console.warn("Incomplete payment recovery:", e);
-      showToast((e && e.message) || "Could not recover payment", true);
-    }
-  })();
-}
-async function runPiAuth(scopes){
-  setLoginStatus("Pi popup… approve login ("+scopes.join(", ")+")");
-  return Promise.race([
-    Pi.authenticate(scopes, incompletePaymentHandler),
+    ),
     new Promise(function(_, reject){
       setTimeout(function(){
-        reject(new Error("TIMEOUT"));
-      }, 55000);
+        reject(new Error("Pi login timed out (60s). Cancel any stuck popup, hard-refresh, and try again. Domain must be amtmining13.github.io in Pi Developer Portal (Mainnet)."));
+      }, 60000);
     })
   ]);
-}
-try{
-  try{
-    authResult = await runPiAuth(["username","payments"]);
-  }catch(e1){
-    console.warn("Auth with payments failed:", e1);
-    // Fallback: username only (still enough for app login)
-    if(String(e1&&e1.message)==="TIMEOUT"){
-      throw new Error("Pi login timed out. Approve the Pi popup. Domain must be exactly amtmining13.github.io in Mainnet Developer Portal.");
-    }
-    setLoginStatus("Retrying Pi login (username only)…");
-    authResult = await runPiAuth(["username"]);
-  }
 }catch(authErr){
-  if(String(authErr&&authErr.message)==="TIMEOUT"){
-    throw new Error("Pi login timed out. 1) Use Pi Browser 2) Approve popup 3) Portal domain = amtmining13.github.io (Mainnet)");
-  }
   throw authErr;
 }
 
@@ -2984,11 +2968,8 @@ async function preloadPiAds(){
   try{
     if(!window.Pi||!Pi.Ads)return;
     if(!ensurePiInit())return;
-    // Request both; ignore errors (pending approval / no fill)
-    await Promise.all([
-      Pi.Ads.requestAd("rewarded").catch(function(){}),
-      Pi.Ads.requestAd("interstitial").catch(function(){})
-    ]);
+    await Pi.Ads.requestAd("interstitial").catch(()=>{});
+    await Pi.Ads.requestAd("rewarded").catch(()=>{});
   }catch(e){
     console.warn("Pi Ads preload:",e);
   }
@@ -3123,31 +3104,20 @@ async function claimMiningAdBonus(){
 }
 
 async function waitAdLoaded(type, tries){
-  tries = tries || 8;
+  tries = tries || 5;
   for(let i=0;i<tries;i++){
     try{
-      // Request first (fills inventory), then check ready
-      try{
-        const req = await Pi.Ads.requestAd(type);
-        console.log("waitAdLoaded requestAd", type, req);
-        if(piAdResultOk(req)) return true;
-        if(req && piAdResultBlocked(req) && !piAdResultOk(req)){
-          // hard no-fill this type — stop early after 2 tries
-          if(i >= 1) return false;
-        }
-      }catch(eReq){ console.warn("requestAd", type, eReq); }
-      try{
-        let ready = await Pi.Ads.isAdReady(type);
-        console.log("waitAdLoaded isAdReady", type, ready);
-        if(ready === true || ready === "true") return true;
-        if(ready && (ready.ready === true || ready.ready === "true" || ready === 1)) return true;
-        // Some SDKs return { result: "AD_LOADED" }
-        if(ready && piAdResultOk(ready)) return true;
-      }catch(eReady){ console.warn("isAdReady", type, eReady); }
-      await new Promise(r => setTimeout(r, 600 + i * 400));
+      let ready = await Pi.Ads.isAdReady(type);
+      console.log("waitAdLoaded isAdReady", type, ready);
+      if(ready === true || (ready && (ready.ready === true || ready.ready === "true"))) return true;
+      const req = await Pi.Ads.requestAd(type);
+      console.log("waitAdLoaded requestAd", type, req);
+      if(piAdResultOk(req)) return true;
+      if(req && !piAdResultBlocked(req) && !req.result) return true;
+      await new Promise(r => setTimeout(r, 500 + i * 350));
     }catch(e){
       console.warn("waitAdLoaded", type, e);
-      await new Promise(r => setTimeout(r, 500));
+      await new Promise(r => setTimeout(r, 400));
     }
   }
   return false;
@@ -3160,67 +3130,60 @@ async function showDailyMiningAd(){
       return;
     }
     if(!window.Pi||!Pi.Ads){
-      // Silent if outside Pi Browser — mining still works
-      console.warn("Pi.Ads missing");
+      showToast("Pi Ads needs Pi Browser. Open app inside Pi Browser.",true);
       return;
     }
     if(!ensurePiInit()){
-      console.warn("Pi init failed for ads");
+      showToast("Pi SDK init failed. Reopen in Pi Browser.",true);
       return;
     }
 
     showToast("Loading mining ad…");
     markMiningAdAttempt();
 
-    // Pre-request both types
-    try{ await Pi.Ads.requestAd("rewarded"); }catch(e){}
-    try{ await Pi.Ads.requestAd("interstitial"); }catch(e){}
-
+    // Prefer rewarded, then interstitial — softer checks (pending apps used to get fill)
     let type = "rewarded";
-    let ok = await waitAdLoaded("rewarded", 8);
+    let ok = await waitAdLoaded("rewarded", 5);
     if(!ok){
       type = "interstitial";
-      ok = await waitAdLoaded("interstitial", 6);
+      ok = await waitAdLoaded("interstitial", 5);
     }
-
-    async function tryShow(adType){
-      try{
-        try{ await Pi.Ads.requestAd(adType); }catch(e){}
-        await new Promise(r => setTimeout(r, 300));
-        const res = await Pi.Ads.showAd(adType);
-        console.log("Mining ad show:", adType, res);
-        const result = res && res.result ? String(res.result) : "";
-        if(piAdResultOk(res) || /REWARD|CLOSED|DISPLAY|SHOWN|OK/i.test(result)){
-          return true;
+    // Even if waitAdLoaded false, still try showAd once (some SDK builds report ready late)
+    try{
+      const res = await Pi.Ads.showAd(type);
+      console.log("Mining ad result:", type, res);
+      const result = res && res.result ? String(res.result) : "";
+      if(piAdResultOk(res) || result === "AD_REWARDED" || result === "AD_CLOSED" || result === "AD_DISPLAYED" || result === "AD_SHOWN"){
+        markMiningAdSuccessToday();
+        await claimMiningAdBonus();
+        showToast("Thanks for watching!");
+      }else if(result && piAdResultBlocked(res)){
+        // try the other type once
+        var other = type === "rewarded" ? "interstitial" : "rewarded";
+        try{
+          await Pi.Ads.requestAd(other);
+          const res2 = await Pi.Ads.showAd(other);
+          console.log("Mining ad fallback:", other, res2);
+          if(piAdResultOk(res2)){
+            markMiningAdSuccessToday();
+            await claimMiningAdBonus();
+            showToast("Thanks for watching!");
+          }else{
+            showToast("No ad fill ("+String((res2&&res2.result)||result||"empty")+"). Try WATCH AD later.", true);
+          }
+        }catch(e3){
+          showToast("No ad fill right now. Try WATCH AD later.", true);
         }
-        if(piAdResultBlocked(res)) return false;
-        // empty / unknown — treat soft success only if res truthy
-        return !!res && !piAdResultBlocked(res);
-      }catch(err){
-        console.warn("tryShow", adType, err);
-        return false;
+      }else if(result){
+        showToast("Ad: "+result);
+      }else if(!ok){
+        showToast("No ad inventory right now. Try WATCH AD later.", true);
       }
+    }catch(showErr){
+      console.warn(showErr);
+      showToast((showErr&&showErr.message)||"Ad could not show. Try WATCH AD.", true);
     }
-
-    let shown = await tryShow(type);
-    if(!shown){
-      const other = type === "rewarded" ? "interstitial" : "rewarded";
-      shown = await tryShow(other);
-    }
-    // Last chance: opposite type one more request+show
-    if(!shown){
-      shown = await tryShow("rewarded") || await tryShow("interstitial");
-    }
-
-    if(shown){
-      markMiningAdSuccessToday();
-      await claimMiningAdBonus();
-      showToast("Thanks for watching!");
-    }else{
-      showToast("No ad fill right now. Tap WATCH AD later.", true);
-    }
-    // Refill inventory for next time
-    setTimeout(function(){ preloadPiAds(); }, 1500);
+    preloadPiAds();
   }catch(e){
     console.warn("Daily mining ad:",e);
     showToast((e&&e.message)||"Ad could not load. Try WATCH AD FOR BONUS.",true);
@@ -4368,27 +4331,23 @@ async function doLuckySpin(){
 
 
 async function loadAirdrop(){
-// UI removed (spin-only page); keep function for API compatibility
-if(!$("airdropStatus") && !$("airdropBtn")) return;
+
 try{
-const data = await api("/api/airdrop/status");
-const claimed = !!(data.claimed || data.alreadyClaimed);
-const expired = !!(data.expired || data.windowClosed);
-const canClaim = data.canClaim !== false && !claimed && !expired;
+
+const data=
+await api("/api/airdrop/status");
+
+const claimed=Boolean(
+data.claimed??
+data.alreadyClaimed
+);
+const expired=Boolean(data.expired);
+const canClaim=data.canClaim!=null?Boolean(data.canClaim):(!claimed&&!expired);
+
 if(claimed){
-if($("airdropStatus")) $("airdropStatus").textContent="CLAIMED";
-if($("airdropBtn")){ $("airdropBtn").disabled=true; $("airdropBtn").textContent="✅ AIRDROP CLAIMED"; }
-}else if(expired||!canClaim){
-if($("airdropStatus")) $("airdropStatus").textContent="EXPIRED";
-if($("airdropBtn")){ $("airdropBtn").disabled=true; $("airdropBtn").textContent="⏰ WINDOW CLOSED"; }
-}else{
-if($("airdropStatus")) $("airdropStatus").textContent="AVAILABLE";
-if($("airdropBtn")){ $("airdropBtn").disabled=false; $("airdropBtn").textContent="🎁 CLAIM AIRDROP"; }
-}
-}catch(error){
-console.log("Airdrop status:", error);
-if($("airdropStatus")) $("airdropStatus").textContent="ERROR";
-}
+$("airdropStatus").textContent="CLAIMED";
+$("airdropBtn").disabled=true;
+$("airdropBtn").textContent="✅ AIRDROP CLAIMED";
 }else if(expired||!canClaim){
 $("airdropStatus").textContent="EXPIRED";
 $("airdropBtn").disabled=true;
