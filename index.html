@@ -2689,16 +2689,43 @@ async function loginWithPi(){
 
 try{
 
+// Wait briefly for SDK if script still loading
+if(!window.Pi){
+  setLoginStatus("Loading Pi SDK…");
+  for(let i=0;i<20 && !window.Pi;i++){
+    await new Promise(function(r){setTimeout(r,150);});
+  }
+}
 if(!window.Pi){
 throw new Error(
-"Pi SDK is not available. Open this app inside Pi Browser (not Chrome/Facebook)."
+"Pi SDK is not available. Open this app inside Pi Browser only (not Chrome / Facebook / external browser)."
 );
 }
 
 setLoginStatus("Checking backend…");
-// Backend environment check
+// Backend environment check — retry (Render cold start)
 try{
-  const root=await fetch(API_BASE+"/",{cache:"no-store"}).then(r=>r.json());
+  let root=null;
+  let lastErr=null;
+  for(let i=0;i<3;i++){
+    try{
+      setLoginStatus(i===0?"Checking backend…":("Waking server… ("+(i+1)+"/3)"));
+      const ctrl=typeof AbortController!=="undefined"?new AbortController():null;
+      const to=ctrl?setTimeout(function(){try{ctrl.abort()}catch(e){}},20000):null;
+      const res=await fetch(API_BASE+"/",{cache:"no-store",signal:ctrl?ctrl.signal:undefined});
+      if(to)clearTimeout(to);
+      if(!res.ok) throw new Error("Server HTTP "+res.status);
+      root=await res.json();
+      lastErr=null;
+      break;
+    }catch(eTry){
+      lastErr=eTry;
+      await new Promise(function(r){setTimeout(r,1500*(i+1));});
+    }
+  }
+  if(!root){
+    throw new Error("Cannot reach AMT server after retries. Open Render dashboard — is amtmining13-github-io Live?");
+  }
   if(root&&String(root.environment||"").toUpperCase().indexOf("TEST")>=0){
     console.warn("Backend environment:", root.environment, root.version);
   }
@@ -2707,7 +2734,7 @@ try{
   }
 }catch(e){
   console.warn("backend check",e);
-  throw new Error("Cannot reach AMT server. Check Render is Live: amtmining13-github-io.onrender.com");
+  throw new Error((e&&e.message)||"Cannot reach AMT server. Check Render is Live: amtmining13-github-io.onrender.com");
 }
 
 setLoginStatus("Connecting to Pi… approve the popup");
@@ -2738,43 +2765,60 @@ try{
 
 // Timeout so UI does not stick forever
 var authResult;
-try{
-  authResult = await Promise.race([
-    Pi.authenticate(
-      ["username","payments"],
-      async function(payment){
-        console.log("Incomplete payment:", payment);
-        try {
-          if (payment && payment.identifier) {
-            var tx =
-              (payment.transaction && (payment.transaction.txid || payment.transaction._id)) ||
-              payment.txid ||
-              "";
-            showToast("Recovering previous PI payment...");
-            await api("/api/market/payment/complete", {
-              method: "POST",
-              body: JSON.stringify({
-                paymentId: payment.identifier,
-                txid: tx
-              })
-            });
-            showToast("Previous PI payment completed · check My Pets");
-            if (typeof loadOwnedPets === "function") await loadOwnedPets();
-            if (typeof refreshWallet === "function") await refreshWallet();
-          }
-        } catch (e) {
-          console.warn("Incomplete payment recovery:", e);
-          showToast((e && e.message) || "Could not recover payment", true);
-        }
+function incompletePaymentHandler(payment){
+  console.log("Incomplete payment:", payment);
+  return (async function(){
+    try {
+      if (payment && payment.identifier) {
+        var tx =
+          (payment.transaction && (payment.transaction.txid || payment.transaction._id)) ||
+          payment.txid ||
+          "";
+        showToast("Recovering previous PI payment...");
+        await api("/api/market/payment/complete", {
+          method: "POST",
+          body: JSON.stringify({
+            paymentId: payment.identifier,
+            txid: tx
+          })
+        });
+        showToast("Previous PI payment completed · check My Pets");
+        if (typeof loadOwnedPets === "function") await loadOwnedPets();
+        if (typeof refreshWallet === "function") await refreshWallet();
       }
-    ),
+    } catch (e) {
+      console.warn("Incomplete payment recovery:", e);
+      showToast((e && e.message) || "Could not recover payment", true);
+    }
+  })();
+}
+async function runPiAuth(scopes){
+  setLoginStatus("Pi popup… approve login ("+scopes.join(", ")+")");
+  return Promise.race([
+    Pi.authenticate(scopes, incompletePaymentHandler),
     new Promise(function(_, reject){
       setTimeout(function(){
-        reject(new Error("Pi login timed out (60s). Cancel any stuck popup, hard-refresh, and try again. Domain must be amtmining13.github.io in Pi Developer Portal (Mainnet)."));
-      }, 60000);
+        reject(new Error("TIMEOUT"));
+      }, 55000);
     })
   ]);
+}
+try{
+  try{
+    authResult = await runPiAuth(["username","payments"]);
+  }catch(e1){
+    console.warn("Auth with payments failed:", e1);
+    // Fallback: username only (still enough for app login)
+    if(String(e1&&e1.message)==="TIMEOUT"){
+      throw new Error("Pi login timed out. Approve the Pi popup. Domain must be exactly amtmining13.github.io in Mainnet Developer Portal.");
+    }
+    setLoginStatus("Retrying Pi login (username only)…");
+    authResult = await runPiAuth(["username"]);
+  }
 }catch(authErr){
+  if(String(authErr&&authErr.message)==="TIMEOUT"){
+    throw new Error("Pi login timed out. 1) Use Pi Browser 2) Approve popup 3) Portal domain = amtmining13.github.io (Mainnet)");
+  }
   throw authErr;
 }
 
