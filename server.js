@@ -442,15 +442,18 @@ async function verifyPiAccessToken(
     );
   }
 
+  const token = String(accessToken).trim();
+  const base = String(PI_API_BASE || "https://api.minepi.com").replace(/\/$/, "");
+
   const response = await fetch(
-    `${PI_API_BASE}/v2/me`,
+    `${base}/v2/me`,
     {
       method: "GET",
 
       headers: {
         Accept: "application/json",
         Authorization:
-          `Bearer ${accessToken}`
+          `Bearer ${token}`
       }
     }
   );
@@ -463,7 +466,7 @@ async function verifyPiAccessToken(
   try {
     data = JSON.parse(text);
   } catch {
-    data = {};
+    data = { raw: text };
   }
 
   if (
@@ -473,13 +476,19 @@ async function verifyPiAccessToken(
     console.error("AUTH ERROR detail:", {
       status: response.status,
       body: data,
-      tokenPrefix: String(accessToken).slice(0, 12) + "…"
+      apiBase: base,
+      tokenPrefix: String(token).slice(0, 12) + "…",
+      hasApiKey: !!PI_API_KEY
     });
+    const hint =
+      response.status === 401
+        ? " Pi rejected token. Check Render: PI_API_BASE=https://api.minepi.com and Mainnet PI_API_KEY from the same app as domain amtmining13.github.io"
+        : "";
     throw new HttpError(
       401,
-      data?.error ||
+      (data?.error ||
         data?.message ||
-        `Pi authentication failed (${response.status}).`
+        `Pi authentication failed (${response.status}).`) + hint
     );
   }
 
