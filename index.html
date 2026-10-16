@@ -2732,6 +2732,23 @@ try{
   if(root&&String(root.version||"").indexOf("2.5.0")<0&&String(root.version||"").indexOf("mainnet")<0){
     console.warn("Backend version:",root.version,root.network);
   }
+  // Auth config diagnostic
+  try{
+    const cfg=await fetch(API_BASE+"/api/health/auth-config",{cache:"no-store"}).then(function(r){return r.json();});
+    console.log("auth-config", cfg);
+    if(cfg && cfg.hasPiApiKey===false){
+      throw new Error("Server has no PI_API_KEY. Set Mainnet API key on Render Environment, then redeploy.");
+    }
+    if(cfg && cfg.baseOk===false){
+      throw new Error("Wrong PI_API_BASE on Render: "+(cfg.piApiBase||"?")+" — must be https://api.minepi.com");
+    }
+    if(cfg && cfg.hasPiApiKey){
+      setLoginStatus("Server OK · Pi key present · connecting…");
+    }
+  }catch(cfgErr){
+    if(cfgErr && cfgErr.message && cfgErr.message.indexOf("PI_API")>=0) throw cfgErr;
+    console.warn("auth-config", cfgErr);
+  }
 }catch(e){
   console.warn("backend check",e);
   throw new Error((e&&e.message)||"Cannot reach AMT server. Check Render is Live: amtmining13-github-io.onrender.com");
