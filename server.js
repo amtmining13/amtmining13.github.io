@@ -56,7 +56,7 @@ VERSION 2.4.0:
 - NEW: referralCode is now read from the saved referral_code column
 - FIXED: /api/referrals now returns referralCode + activeMiners
   (frontend was calling this endpoint and showing ------)
-- NEW: Referral Tier System (Bronze / Silver / Gold / Legend)
+- NEW: Referral Tier System (Bronze / Silver / Gold / Legend / Mythic)
 - NEW: Per-referral rewards + one-time milestone bonuses
 - NEW: Automatic credit to AMT ledger when referral is linked
 - NEW: AMT Pet Marketplace (70 real Common pets, 7 elements)
@@ -166,13 +166,15 @@ const REFERRAL_TIERS = [
   { name: "Bronze", min: 1, max: 5, rewardPerReferral: 0.5 },
   { name: "Silver", min: 6, max: 15, rewardPerReferral: 1.0 },
   { name: "Gold", min: 16, max: 50, rewardPerReferral: 1.5 },
-  { name: "Legend", min: 51, max: Infinity, rewardPerReferral: 2.0 }
+  { name: "Legend", min: 51, max: 99, rewardPerReferral: 2.0 },
+  { name: "Mythic", min: 100, max: Infinity, rewardPerReferral: 3.0 }
 ];
 
 const REFERRAL_MILESTONES = [
   { count: 5, bonus: 2.0, key: "M5" },
   { count: 15, bonus: 5.0, key: "M15" },
-  { count: 50, bonus: 15.0, key: "M50" }
+  { count: 50, bonus: 15.0, key: "M50" },
+  { count: 100, bonus: 30.0, key: "M100" }
 ];
 
 function getReferralTier(count) {
@@ -440,15 +442,18 @@ async function verifyPiAccessToken(
     );
   }
 
+  const token = String(accessToken).trim();
+  const base = String(PI_API_BASE || "https://api.minepi.com").replace(/\/$/, "");
+
   const response = await fetch(
-    `${PI_API_BASE}/v2/me`,
+    `${base}/v2/me`,
     {
       method: "GET",
 
       headers: {
         Accept: "application/json",
         Authorization:
-          `Bearer ${accessToken}`
+          `Bearer ${token}`
       }
     }
   );
@@ -461,7 +466,7 @@ async function verifyPiAccessToken(
   try {
     data = JSON.parse(text);
   } catch {
-    data = {};
+    data = { raw: text };
   }
 
   if (
@@ -471,13 +476,19 @@ async function verifyPiAccessToken(
     console.error("AUTH ERROR detail:", {
       status: response.status,
       body: data,
-      tokenPrefix: String(accessToken).slice(0, 12) + "…"
+      apiBase: base,
+      tokenPrefix: String(token).slice(0, 12) + "…",
+      hasApiKey: !!PI_API_KEY
     });
+    const hint =
+      response.status === 401
+        ? " Pi rejected token. Check Render: PI_API_BASE=https://api.minepi.com and Mainnet PI_API_KEY from the same app as domain amtmining13.github.io"
+        : "";
     throw new HttpError(
       401,
-      data?.error ||
+      (data?.error ||
         data?.message ||
-        `Pi authentication failed (${response.status}).`
+        `Pi authentication failed (${response.status}).`) + hint
     );
   }
 
@@ -1159,6 +1170,21 @@ async function initializeDatabase() {
 /* =========================================================
 ROOT
 ========================================================= */
+
+
+/* Auth config check (no secrets) — helps debug login 401 */
+app.get("/api/health/auth-config", (req, res) => {
+  const base = String(process.env.PI_API_BASE || PI_API_BASE || "https://api.minepi.com").replace(/\/$/, "");
+  res.json({
+    ok: true,
+    environment: "MAINNET",
+    piApiBase: base,
+    hasPiApiKey: !!(process.env.PI_API_KEY || PI_API_KEY),
+    keyPrefix: (process.env.PI_API_KEY || PI_API_KEY || "").slice(0, 6) || null,
+    expectedBase: "https://api.minepi.com",
+    baseOk: base.indexOf("api.minepi.com") >= 0 && base.indexOf("testnet") < 0
+  });
+});
 
 app.get("/", async (req, res) => {
   res.json({
@@ -2642,8 +2668,9 @@ app.get(
   "/api/wallet/transactions",
   requireAuth,
   async (req, res) => {
-    const result =
-      await pool.query(
+    try {
+      // Peer transfers
+      const result = await pool.query(
         `
         SELECT
           t.tx_id,
@@ -2665,27 +2692,126 @@ app.get(
         [req.member.id]
       );
 
-    const transactions =
-      result.rows.map(
-        row => ({
-          txId: row.tx_id,
-          amount: Number(row.amount),
-          memo: row.memo,
-          status: row.status,
-          createdAt: row.created_at,
-          direction:
-            Number(row.sender_member_id) === Number(req.member.id)
-              ? "SEND"
-              : "RECEIVE",
-          senderAddress: row.sender_address,
-          recipientAddress: row.recipient_address
-        })
-      );
+      const transfers = result.rows.map((row) => ({
+        kind: "TRANSFER",
+        txId: row.tx_id,
+        amount: Number(row.amount),
+        memo: row.memo,
+        status: row.status,
+        createdAt: row.created_at,
+        direction:
+          Number(row.sender_member_id) === Number(req.member.id)
+            ? "SEND"
+            : "RECEIVE",
+        senderAddress: row.sender_address,
+        recipientAddress: row.recipient_address
+      }));
 
-    res.json({
-      ok: true,
-      transactions
-    });
+      // Ledger rewards / activity + pet / market spends
+      let rewards = [];
+      try {
+        const led = await pool.query(
+          `
+          SELECT id, amount, type, reference, created_at
+          FROM amt_ledger
+          WHERE member_id = $1
+            AND type IN (
+              'LUCKY_SPIN','DAILY','DAILY_REWARD','AIRDROP',
+              'MINING','MINING_CLAIM','AD_BONUS','REFERRAL',
+              'PET_PURCHASE','PET_BUY_LISTING','PET_SALE','EGG_BUY','EGG_SALE',
+              'PET_CARE','PET_TRAIN','PET_BREED','PET_BOSS',
+              'GEAR_BUY','GEM_BUY','CORE_BUY','WEAPON_BUY'
+            )
+          ORDER BY created_at DESC
+          LIMIT 80
+          `,
+          [req.member.id]
+        );
+        rewards = led.rows.map((row) => {
+          const typ = String(row.type || "REWARD");
+          let label = typ;
+          let kind = "REWARD";
+          if (typ === "LUCKY_SPIN") label = "LUCKY SPIN";
+          else if (typ === "DAILY" || typ === "DAILY_REWARD") label = "DAILY REWARD";
+          else if (typ === "AIRDROP") label = "AIRDROP";
+          else if (typ === "AD_BONUS") label = "AD BONUS";
+          else if (typ === "REFERRAL") label = "REFERRAL";
+          else if (typ === "MINING" || typ === "MINING_CLAIM") label = "MINING";
+          else if (typ === "PET_PURCHASE") { label = "PET BUY (AMT)"; kind = "PET"; }
+          else if (typ === "PET_BUY_LISTING") { label = "PET BUY LISTING"; kind = "PET"; }
+          else if (typ === "PET_SALE") { label = "PET SALE"; kind = "PET"; }
+          else if (typ === "EGG_BUY") { label = "EGG BUY"; kind = "PET"; }
+          else if (typ === "EGG_SALE") { label = "EGG SALE"; kind = "PET"; }
+          else if (typ === "PET_CARE") { label = "PET CARE"; kind = "PET"; }
+          else if (typ === "PET_TRAIN") { label = "PET TRAIN"; kind = "PET"; }
+          else if (typ === "PET_BREED") { label = "PET BREED"; kind = "PET"; }
+          else if (typ === "PET_BOSS") { label = "BOSS BATTLE"; kind = "PET"; }
+          else if (typ.indexOf("BUY") >= 0 || typ.indexOf("GEAR") >= 0) { label = typ.replace(/_/g, " "); kind = "SHOP"; }
+          return {
+            kind: kind,
+            type: typ,
+            label: label,
+            currency: "AMT",
+            txId: row.reference || ("LEDGER-" + row.id),
+            amount: Number(row.amount),
+            memo: label + (row.reference ? " · " + row.reference : ""),
+            status: "OK",
+            createdAt: row.created_at,
+            direction: Number(row.amount) >= 0 ? "RECEIVE" : "SEND"
+          };
+        });
+      } catch (ledErr) {
+        console.warn("ledger history:", ledErr.message);
+      }
+
+      // Pi marketplace payments (pet buys with real Pi)
+      let piPays = [];
+      try {
+        const pays = await pool.query(
+          `
+          SELECT id, pi_payment_id, product_id, amount, status, created_at, updated_at
+          FROM marketplace_payments
+          WHERE member_id = $1
+          ORDER BY COALESCE(updated_at, created_at) DESC
+          LIMIT 40
+          `,
+          [req.member.id]
+        );
+        piPays = pays.rows.map((row) => {
+          const st = String(row.status || "").toUpperCase();
+          const prod = String(row.product_id || "item");
+          let label = "PI PAYMENT";
+          if (/pet/i.test(prod)) label = "PET BUY (PI)";
+          else if (/egg/i.test(prod)) label = "EGG BUY (PI)";
+          else label = "BUY (PI) · " + prod;
+          return {
+            kind: "PI_PAY",
+            type: "PI_PAYMENT",
+            label: label,
+            currency: "PI",
+            txId: row.pi_payment_id || ("PI-" + row.id),
+            amount: -Math.abs(Number(row.amount) || 0),
+            memo: label + " · " + st + (prod ? " · " + prod : ""),
+            status: st || "OK",
+            createdAt: row.updated_at || row.created_at,
+            direction: "SEND"
+          };
+        });
+      } catch (payErr) {
+        console.warn("pi payment history:", payErr.message);
+      }
+
+      const merged = transfers.concat(rewards).concat(piPays).sort((a, b) => {
+        const ta = new Date(a.createdAt || 0).getTime();
+        const tb = new Date(b.createdAt || 0).getTime();
+        return tb - ta;
+      }).slice(0, 80);
+
+      res.json({ ok: true, transactions: merged });
+    } catch (e) {
+      console.error("TX HISTORY:", e);
+      res.status(500).json({ ok: false, error: "Unable to load transactions." });
+    }
   }
 );
 
@@ -3463,13 +3589,22 @@ app.get("/api/daily/status", requireAuth, async (req, res) => {
     }
 
     let nextStreak;
+    let displayAmount;
     if (claimedToday) {
-      nextStreak = streak;
+      // Already claimed: streak is today's day; tomorrow continues or resets
+      if ((streak || 0) >= DAILY_MAX_STREAK) {
+        nextStreak = 1; // cycle complete → tomorrow Day 1
+      } else {
+        nextStreak = Math.min(DAILY_MAX_STREAK, (streak || 0) + 1);
+      }
+      displayAmount = lastAmount != null ? lastAmount : dailyAmountForStreak(streak || 1);
     } else if ((streak || 0) >= DAILY_MAX_STREAK) {
-      // Finished 7-day cycle — next claim starts Day 1
+      // Finished 7-day cycle, not yet claimed today — start Day 1
       nextStreak = 1;
+      displayAmount = dailyAmountForStreak(1);
     } else {
       nextStreak = Math.min(DAILY_MAX_STREAK, (streak || 0) + 1);
+      displayAmount = dailyAmountForStreak(nextStreak);
     }
     const nextAmount = dailyAmountForStreak(nextStreak);
 
@@ -3494,6 +3629,8 @@ app.get("/api/daily/status", requireAuth, async (req, res) => {
       streak: claimedToday ? streak : streak,
       nextStreak,
       nextAmount,
+      displayAmount: displayAmount != null ? displayAmount : nextAmount,
+      cycleComplete: claimedToday && (streak || 0) >= DAILY_MAX_STREAK,
       lastClaimDate,
       lastAmount,
       nextClaimAt,
@@ -6755,6 +6892,7 @@ async function ensureGearTables() {
 const GEAR_MAX_UPGRADE = 15;
 
 const AMT_MATERIALS = {
+  pet_food: { id: "pet_food", name: "Pet Food", kind: "consumable", priceAmt: 0.2, desc: "Feed pet · restore energy / care" },
   upgrade_core: { id: "upgrade_core", name: "Upgrade Core", kind: "core", priceAmt: 0.5, desc: "Upgrade weapon/armor +1 (max +15)" },
   gem_atk_1: { id: "gem_atk_1", name: "Attack Gem Lv1", kind: "gem", stat: "atk", bonus: 2, level: 1, priceAmt: 0.4, desc: "+2 ATK when socketed" },
   gem_atk_2: { id: "gem_atk_2", name: "Attack Gem Lv2", kind: "gem", stat: "atk", bonus: 5, level: 2, priceAmt: 1.2, desc: "+5 ATK when socketed" },
@@ -7094,6 +7232,45 @@ const STORY_CHAPTERS = [
   { id: 10, name: "Legend Trial", mult: 2.00, exp: 250, reward: 2.00, energy: 18 }
 ];
 
+/* AFK grind map — leave pet on zone, claim later */
+const GRIND_ZONES = [
+  { id: 1, name: "Whispering Forest", minLevel: 1,  emoji: "🌲", expPerHour: 18, energyCostPerHour: 4, foodChance: 0.35, coreChance: 0.08, gemChance: 0.06, amtPerHour: 0.02 },
+  { id: 2, name: "Crystal Cave",      minLevel: 5,  emoji: "💎", expPerHour: 28, energyCostPerHour: 5, foodChance: 0.40, coreChance: 0.10, gemChance: 0.08, amtPerHour: 0.03 },
+  { id: 3, name: "Storm Ridge",       minLevel: 10, emoji: "⛈️", expPerHour: 40, energyCostPerHour: 6, foodChance: 0.42, coreChance: 0.12, gemChance: 0.10, amtPerHour: 0.04 },
+  { id: 4, name: "Ember Peak",        minLevel: 15, emoji: "🌋", expPerHour: 55, energyCostPerHour: 7, foodChance: 0.45, coreChance: 0.14, gemChance: 0.12, amtPerHour: 0.05 },
+  { id: 5, name: "Frozen Hollow",     minLevel: 20, emoji: "❄️", expPerHour: 72, energyCostPerHour: 8, foodChance: 0.48, coreChance: 0.16, gemChance: 0.14, amtPerHour: 0.06 },
+  { id: 6, name: "Thunder Valley",    minLevel: 25, emoji: "⚡", expPerHour: 90, energyCostPerHour: 9, foodChance: 0.50, coreChance: 0.18, gemChance: 0.15, amtPerHour: 0.08 },
+  { id: 7, name: "Shadow Marsh",      minLevel: 30, emoji: "🌫️", expPerHour: 110, energyCostPerHour: 10, foodChance: 0.52, coreChance: 0.20, gemChance: 0.16, amtPerHour: 0.10 },
+  { id: 8, name: "Golden Ruins",      minLevel: 35, emoji: "🏛️", expPerHour: 135, energyCostPerHour: 11, foodChance: 0.55, coreChance: 0.22, gemChance: 0.18, amtPerHour: 0.12 }
+];
+
+const GRIND_DURATIONS = [
+  { hours: 1,  label: "1h" },
+  { hours: 4,  label: "4h" },
+  { hours: 8,  label: "8h" },
+  { hours: 24, label: "24h" }
+];
+
+async function ensureGrindTables() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS pet_grinds (
+      id BIGSERIAL PRIMARY KEY,
+      member_id BIGINT NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+      owned_pet_id BIGINT NOT NULL,
+      zone_id INT NOT NULL,
+      hours INT NOT NULL,
+      energy_cost INT NOT NULL,
+      started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      ends_at TIMESTAMPTZ NOT NULL,
+      claimed_at TIMESTAMPTZ,
+      status TEXT NOT NULL DEFAULT 'active',
+      reward_json TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_pet_grinds_member ON pet_grinds(member_id, status);
+    CREATE INDEX IF NOT EXISTS idx_pet_grinds_pet ON pet_grinds(owned_pet_id, status);
+  `);
+}
+ensureGrindTables().catch(err => console.error("Grind tables:", err.message));
 
 ensurePetTables().catch(err => console.error("Pet tables init:", err.message));
 
@@ -9876,6 +10053,232 @@ app.get("/api/owner/rep", requireAuth, async (req, res) => {
   }
 });
 
+
+/* ========== PET GRIND MAP ========== */
+app.get("/api/pets/grind/map", requireAuth, async (req, res) => {
+  try {
+    await ensureGrindTables();
+    const active = await pool.query(
+      `SELECT g.*, op.name AS pet_name, op.level AS pet_level
+       FROM pet_grinds g
+       LEFT JOIN owned_pets op ON op.id = g.owned_pet_id
+       WHERE g.member_id = $1 AND g.status = 'active'
+       ORDER BY g.ends_at ASC`,
+      [req.member.id]
+    );
+    const now = Date.now();
+    const zones = GRIND_ZONES.map(z => ({
+      id: z.id,
+      name: z.name,
+      emoji: z.emoji,
+      minLevel: z.minLevel,
+      expPerHour: z.expPerHour,
+      energyCostPerHour: z.energyCostPerHour,
+      amtPerHour: z.amtPerHour
+    }));
+    res.json({
+      ok: true,
+      zones,
+      durations: GRIND_DURATIONS,
+      maxActive: 3,
+      active: active.rows.map(r => ({
+        id: Number(r.id),
+        ownedPetId: Number(r.owned_pet_id),
+        petName: r.pet_name || ("Pet #" + r.owned_pet_id),
+        petLevel: Number(r.pet_level || 1),
+        zoneId: Number(r.zone_id),
+        zoneName: (GRIND_ZONES.find(z => z.id === Number(r.zone_id)) || {}).name || ("Zone " + r.zone_id),
+        hours: Number(r.hours),
+        startedAt: r.started_at,
+        endsAt: r.ends_at,
+        ready: new Date(r.ends_at).getTime() <= now,
+        msLeft: Math.max(0, new Date(r.ends_at).getTime() - now)
+      }))
+    });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message || "Map load failed." });
+  }
+});
+
+app.post("/api/pets/grind/deploy", requireAuth, async (req, res) => {
+  const ownedPetId = Number(req.body?.ownedPetId);
+  const zoneId = Number(req.body?.zoneId);
+  const hours = Number(req.body?.hours);
+  const zone = GRIND_ZONES.find(z => z.id === zoneId);
+  const dur = GRIND_DURATIONS.find(d => d.hours === hours);
+  if (!ownedPetId || !zone || !dur) {
+    return res.status(400).json({ ok: false, error: "Pick pet, zone, and duration (1/4/8/24h)." });
+  }
+  const client = await pool.connect();
+  try {
+    await ensureGrindTables();
+    await client.query("BEGIN");
+    const petR = await client.query(
+      `SELECT * FROM owned_pets WHERE id = $1 AND member_id = $2 FOR UPDATE`,
+      [ownedPetId, req.member.id]
+    );
+    if (!petR.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ ok: false, error: "Pet not found." });
+    }
+    const pet = petR.rows[0];
+    const level = Number(pet.level || 1);
+    if (level < zone.minLevel) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Need pet level " + zone.minLevel + " for " + zone.name + "." });
+    }
+    const busy = await client.query(
+      `SELECT id FROM pet_grinds WHERE owned_pet_id = $1 AND status = 'active' LIMIT 1`,
+      [ownedPetId]
+    );
+    if (busy.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "This pet is already grinding." });
+    }
+    const countR = await client.query(
+      `SELECT COUNT(*)::int AS c FROM pet_grinds WHERE member_id = $1 AND status = 'active'`,
+      [req.member.id]
+    );
+    if (Number(countR.rows[0].c) >= 3) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Max 3 pets grinding at once." });
+    }
+    const energyCost = Math.ceil(zone.energyCostPerHour * hours);
+    const energy = Number(pet.energy ?? 100);
+    if (energy < energyCost) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Need " + energyCost + " energy (have " + energy + "). Buy Energy Pack or wait." });
+    }
+    await client.query(
+      `UPDATE owned_pets SET energy = GREATEST(0, energy - $1) WHERE id = $2`,
+      [energyCost, ownedPetId]
+    );
+    const ends = new Date(Date.now() + hours * 3600 * 1000);
+    const ins = await client.query(
+      `INSERT INTO pet_grinds (member_id, owned_pet_id, zone_id, hours, energy_cost, ends_at, status)
+       VALUES ($1,$2,$3,$4,$5,$6,'active') RETURNING id, started_at, ends_at`,
+      [req.member.id, ownedPetId, zoneId, hours, energyCost, ends.toISOString()]
+    );
+    await client.query("COMMIT");
+    res.json({
+      ok: true,
+      message: (pet.name || "Pet") + " deployed to " + zone.name + " for " + hours + "h (−" + energyCost + " energy)",
+      grindId: Number(ins.rows[0].id),
+      endsAt: ins.rows[0].ends_at,
+      energyCost
+    });
+  } catch (e) {
+    try { await client.query("ROLLBACK"); } catch {}
+    res.status(500).json({ ok: false, error: e.message || "Deploy failed." });
+  } finally {
+    client.release();
+  }
+});
+
+app.post("/api/pets/grind/claim", requireAuth, async (req, res) => {
+  const grindId = Number(req.body?.grindId);
+  if (!grindId) return res.status(400).json({ ok: false, error: "Missing grindId." });
+  const client = await pool.connect();
+  try {
+    await ensureGrindTables();
+    await client.query("BEGIN");
+    const gR = await client.query(
+      `SELECT * FROM pet_grinds WHERE id = $1 AND member_id = $2 AND status = 'active' FOR UPDATE`,
+      [grindId, req.member.id]
+    );
+    if (!gR.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ ok: false, error: "Grind not found or already claimed." });
+    }
+    const g = gR.rows[0];
+    if (new Date(g.ends_at).getTime() > Date.now()) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Still grinding — wait for timer." });
+    }
+    const zone = GRIND_ZONES.find(z => z.id === Number(g.zone_id)) || GRIND_ZONES[0];
+    const hours = Number(g.hours) || 1;
+    const petR = await client.query(
+      `SELECT * FROM owned_pets WHERE id = $1 AND member_id = $2 FOR UPDATE`,
+      [g.owned_pet_id, req.member.id]
+    );
+    if (!petR.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ ok: false, error: "Pet missing." });
+    }
+    const pet = petR.rows[0];
+    let expGain = Math.round(zone.expPerHour * hours);
+    const amtGain = Math.round(zone.amtPerHour * hours * 1000) / 1000;
+    const loot = [];
+    // food rolls (up to hours times, capped)
+    let foodQty = 0;
+    for (let i = 0; i < hours; i++) {
+      if (Math.random() < zone.foodChance) foodQty++;
+    }
+    if (foodQty > 0) {
+      await addMaterial(client, req.member.id, "pet_food", foodQty);
+      loot.push(foodQty + "x Pet Food");
+    }
+    let cores = 0;
+    for (let i = 0; i < hours; i++) {
+      if (Math.random() < zone.coreChance) cores++;
+    }
+    if (cores > 0) {
+      await addMaterial(client, req.member.id, "upgrade_core", cores);
+      loot.push(cores + "x Upgrade Core");
+    }
+    let gems = 0;
+    const gemPool = ["gem_atk_1", "gem_hp_1", "gem_def_1"];
+    const gotGems = [];
+    for (let i = 0; i < hours; i++) {
+      if (Math.random() < zone.gemChance) {
+        gems++;
+        const gid = gemPool[Math.floor(Math.random() * gemPool.length)];
+        await addMaterial(client, req.member.id, gid, 1);
+        gotGems.push(gid);
+      }
+    }
+    if (gems > 0) loot.push(gems + "x Gem");
+    // apply EXP / level
+    let level = Number(pet.level || 1);
+    let exp = Number(pet.exp || 0) + expGain;
+    const need = (lv) => 40 + lv * 25;
+    while (exp >= need(level) && level < 100) {
+      exp -= need(level);
+      level += 1;
+    }
+    await client.query(
+      `UPDATE owned_pets SET level = $1, exp = $2 WHERE id = $3`,
+      [level, exp, pet.id]
+    );
+    if (amtGain > 0) {
+      await client.query(
+        `INSERT INTO amt_ledger (member_id, amount, type, reference) VALUES ($1,$2,'GRIND_LOOT',$3)`,
+        [req.member.id, amtGain, "GRIND-" + grindId]
+      );
+      loot.push("+" + amtGain + " AMT");
+    }
+    const reward = { expGain, level, amtGain, loot };
+    await client.query(
+      `UPDATE pet_grinds SET status = 'claimed', claimed_at = NOW(), reward_json = $1 WHERE id = $2`,
+      [JSON.stringify(reward), grindId]
+    );
+    await client.query("COMMIT");
+    res.json({
+      ok: true,
+      message: "Claimed from " + zone.name + " · +" + expGain + " EXP" + (loot.length ? " · " + loot.join(", ") : ""),
+      expGain,
+      level,
+      amtGain,
+      loot
+    });
+  } catch (e) {
+    try { await client.query("ROLLBACK"); } catch {}
+    res.status(500).json({ ok: false, error: e.message || "Claim failed." });
+  } finally {
+    client.release();
+  }
+});
+
 app.get("/api/pets/story", requireAuth, async (req, res) => {
   try {
     await ensurePetTables();
@@ -12064,6 +12467,184 @@ app.use(
 
 
 
+
+/* =========================================================
+   LUCKY SPIN — 3 spins per UTC day per member
+   GET  /api/spin/status
+   POST /api/spin/claim
+========================================================= */
+
+const SPIN_MAX_PER_DAY = 3;
+// 8 segments — AMT rewards + free spin + rare 100 jackpot
+const SPIN_PRIZES = [
+  { key: "amt_5",    label: "+5 AMT",     type: "amt", amount: 5,    weight: 16 },
+  { key: "amt_10",   label: "+10 AMT",    type: "amt", amount: 10,   weight: 14 },
+  { key: "amt_25",   label: "+25 AMT",    type: "amt", amount: 25,   weight: 11 },
+  { key: "egg",      label: "Free Egg!",  type: "egg", amount: 0,    weight: 10 },
+  { key: "free_spin", label: "FREE SPIN!", type: "free_spin", amount: 0, weight: 14 },
+  { key: "amt_50",   label: "+50 AMT",    type: "amt", amount: 50,   weight: 7 },
+  { key: "jackpot",  label: "JACKPOT +100 AMT!", type: "amt", amount: 100, weight: 3 },
+  { key: "amt_15",   label: "+15 AMT",    type: "amt", amount: 15,   weight: 15 }
+];
+
+function pickSpinPrize(){
+  const total = SPIN_PRIZES.reduce((a, p) => a + p.weight, 0);
+  let r = Math.random() * total;
+  for (let i = 0; i < SPIN_PRIZES.length; i++){
+    r -= SPIN_PRIZES[i].weight;
+    if (r <= 0) return { prize: SPIN_PRIZES[i], index: i };
+  }
+  return { prize: SPIN_PRIZES[0], index: 0 };
+}
+
+async function ensureSpinTable(){
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS lucky_spins (
+      id SERIAL PRIMARY KEY,
+      member_id INTEGER NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+      spin_date DATE NOT NULL,
+      prize_key TEXT NOT NULL,
+      prize_label TEXT,
+      amount NUMERIC(18,6) DEFAULT 0,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_lucky_spins_member_date
+    ON lucky_spins(member_id, spin_date)
+  `);
+}
+
+app.get("/api/spin/status", requireAuth, async (req, res) => {
+  try {
+    await ensureSpinTable();
+    const today = new Date().toISOString().slice(0, 10);
+    const q = await pool.query(
+      `SELECT
+         COUNT(*)::int AS c,
+         COUNT(*) FILTER (WHERE prize_key = 'free_spin')::int AS bonus
+       FROM lucky_spins
+       WHERE member_id = $1 AND spin_date = $2`,
+      [req.member.id, today]
+    );
+    const used = q.rows[0] ? q.rows[0].c : 0;
+    const bonus = q.rows[0] ? q.rows[0].bonus : 0;
+    // Free-spin wins grant +1 extra spin for the day
+    const left = Math.max(0, SPIN_MAX_PER_DAY + bonus - used);
+    res.json({
+      ok: true,
+      usedToday: used,
+      bonusSpins: bonus,
+      spinsLeft: left,
+      maxPerDay: SPIN_MAX_PER_DAY,
+      canSpin: left > 0
+    });
+  } catch (e) {
+    console.error("SPIN STATUS:", e);
+    res.status(500).json({ ok: false, error: "Spin status failed." });
+  }
+});
+
+app.post("/api/spin/claim", requireAuth, async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await ensureSpinTable();
+    await client.query("BEGIN");
+    await client.query(`SELECT id FROM members WHERE id = $1 FOR UPDATE`, [req.member.id]);
+
+    const today = new Date().toISOString().slice(0, 10);
+    const q = await client.query(
+      `SELECT
+         COUNT(*)::int AS c,
+         COUNT(*) FILTER (WHERE prize_key = 'free_spin')::int AS bonus
+       FROM lucky_spins
+       WHERE member_id = $1 AND spin_date = $2`,
+      [req.member.id, today]
+    );
+    const used = q.rows[0] ? q.rows[0].c : 0;
+    const bonus = q.rows[0] ? q.rows[0].bonus : 0;
+    const leftBefore = Math.max(0, SPIN_MAX_PER_DAY + bonus - used);
+    if (leftBefore <= 0) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({
+        ok: false,
+        error: "No spins left today. Come back after UTC midnight."
+      });
+    }
+
+    const { prize, index } = pickSpinPrize();
+
+    await client.query(
+      `INSERT INTO lucky_spins (member_id, spin_date, prize_key, prize_label, amount)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [req.member.id, today, prize.key, prize.label, prize.amount || 0]
+    );
+
+    // Credit rewards
+    if (prize.type === "amt" && prize.amount > 0) {
+      const ref = "SPIN-" + req.member.id + "-" + today + "-" + (used + 1);
+      // Always credit balance via ledger (idempotent on reference)
+      const exists = await client.query(
+        `SELECT id FROM amt_ledger WHERE member_id = $1 AND reference = $2 LIMIT 1`,
+        [req.member.id, ref]
+      );
+      if (!exists.rows.length) {
+        await client.query(
+          `INSERT INTO amt_ledger (member_id, amount, type, reference)
+           VALUES ($1, $2, 'LUCKY_SPIN', $3)`,
+          [req.member.id, prize.amount, ref]
+        );
+      }
+    }
+    // egg / charge: best-effort flags on member or skip if no table
+    if (prize.type === "egg") {
+      try {
+        await client.query(
+          `INSERT INTO pet_eggs (member_id, status, hatch_at, created_at)
+           VALUES ($1, 'incubating', NOW() + INTERVAL '24 hours', NOW())`,
+          [req.member.id]
+        );
+      } catch (eggErr) {
+        console.warn("spin egg grant:", eggErr.message);
+      }
+    }
+    if (prize.type === "charge") {
+      try {
+        await client.query(
+          `UPDATE members SET battle_charges = COALESCE(battle_charges,0) + 1
+           WHERE id = $1`,
+          [req.member.id]
+        );
+      } catch (chErr) {
+        console.warn("spin charge grant:", chErr.message);
+      }
+    }
+
+    await client.query("COMMIT");
+    const newUsed = used + 1;
+    const newBonus = bonus + (prize.type === "free_spin" ? 1 : 0);
+    const left = Math.max(0, SPIN_MAX_PER_DAY + newBonus - newUsed);
+    res.json({
+      ok: true,
+      prize: prize.key,
+      prizeLabel: prize.label,
+      prizeIndex: index,
+      amount: prize.amount || 0,
+      spinsLeft: left,
+      usedToday: newUsed,
+      bonusSpins: newBonus,
+      freeSpin: prize.type === "free_spin"
+    });
+  } catch (e) {
+    try { await client.query("ROLLBACK"); } catch (_) {}
+    console.error("SPIN CLAIM:", e);
+    res.status(500).json({ ok: false, error: e.message || "Spin failed." });
+  } finally {
+    client.release();
+  }
+});
+
+
 /* =========================================================
 DAILY MINING AD BONUS (in-app AMT · 1x per UTC day per member)
 POST /api/ads/mining-bonus  (authenticated)
@@ -12413,7 +12994,7 @@ async function startServer() {
         );
 
         console.log(
-          "AMT TESTNET BACKEND ONLINE"
+          "AMT MAINNET BACKEND ONLINE"
         );
 
         console.log(
@@ -12421,15 +13002,15 @@ async function startServer() {
         );
 
         console.log(
-          "Environment: TESTNET"
+          "Environment: MAINNET"
         );
 
         console.log(
-          "Network: Pi Testnet"
+          "Network: Pi Mainnet"
         );
 
         console.log(
-          "Version: 2.4.28"
+          "Version: 2.5.0-mainnet"
         );
 
         console.log(
