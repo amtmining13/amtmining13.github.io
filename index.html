@@ -2851,9 +2851,10 @@ try{
     await api("/api/auth/verify");
   }catch(verErr){
     accessToken=null;
+    var msg = ((verErr&&verErr.message)||(userErr&&userErr.message)||"Auth failed");
     throw new Error(
-      ((verErr&&verErr.message)||(userErr&&userErr.message)||"Auth failed") +
-      " — Render: Mainnet PI_API_KEY + PI_API_BASE=https://api.minepi.com"
+      msg +
+      " | Fix: Render env PI_API_BASE=https://api.minepi.com + Mainnet API key from Developer Portal (same app as amtmining13.github.io). Then redeploy."
     );
   }
 }
