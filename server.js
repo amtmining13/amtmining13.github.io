@@ -1171,6 +1171,21 @@ async function initializeDatabase() {
 ROOT
 ========================================================= */
 
+
+/* Auth config check (no secrets) — helps debug login 401 */
+app.get("/api/health/auth-config", (req, res) => {
+  const base = String(process.env.PI_API_BASE || PI_API_BASE || "https://api.minepi.com").replace(/\/$/, "");
+  res.json({
+    ok: true,
+    environment: "MAINNET",
+    piApiBase: base,
+    hasPiApiKey: !!(process.env.PI_API_KEY || PI_API_KEY),
+    keyPrefix: (process.env.PI_API_KEY || PI_API_KEY || "").slice(0, 6) || null,
+    expectedBase: "https://api.minepi.com",
+    baseOk: base.indexOf("api.minepi.com") >= 0 && base.indexOf("testnet") < 0
+  });
+});
+
 app.get("/", async (req, res) => {
   res.json({
     ok: true,
