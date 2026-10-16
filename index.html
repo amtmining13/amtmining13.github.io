@@ -1705,36 +1705,8 @@ Unlink Pi Wallet
 </section>
 
 <section id="airdropSection" class="section">
-<div class="hero">
-<h1>AMT <span>AIRDROP</span></h1>
-<p>One-time community reward</p>
-</div>
-
-<div class="card">
-<div class="card-title">AIRDROP STATUS</div>
-
-<div class="grid">
-<div class="stat">
-<div class="stat-label">Reward</div>
-<div class="stat-value">AMT Mainnet</div>
-</div>
-
-<div class="stat">
-<div class="stat-label">Claim</div>
-<div id="airdropStatus" class="stat-value">Checking...</div>
-</div>
-</div>
-
-<button id="airdropBtn" class="primary" style="margin-top:15px" onclick="claimAirdrop()">
-🎁 CLAIM AIRDROP
-</button>
-
-<div class="notice">
-One eligible claim per account. Mainnet app.
-</div>
-</div>
-
-<div class="card" style="margin-top:14px">
+<!-- Airdrop claim UI removed — more space for spin. Backend claim still available if needed. -->
+<div class="card" style="margin-top:0">
 <div class="spin-wrap">
   <div class="spin-title-glow">SPIN IT</div>
   <p class="muted" style="font-size:12px;margin:0;text-align:center">Up to <b>3 spins</b> / day · AMT · Egg · Jackpot</p>
@@ -2505,7 +2477,7 @@ Open Coixa to swap and add liquidity for on-chain AMT pairs. In-app mining AMT i
 <div class="nav-grid" style="margin-top:4px">
 
 <button class="nav-btn" data-section="airdropSection" onclick="showSection('airdropSection',this)">
-<span class="icon">🎡</span>Airdrop
+<span class="icon">🎡</span>Spin
 </button>
 
 <button class="nav-btn" data-section="referralSection" onclick="showSection('referralSection',this)">
@@ -2696,7 +2668,7 @@ if(id==="referralSection")loadReferral();
 if(id==="circleSection")loadSecurityCircle();
 if(id==="profileSection"){loadProfile();try{refreshDevTreasuryCard();}catch(e){}}
 if(id==="stakingSection")loadStaking();
-if(id==="miningSection"){loadMiningStatus();loadDailyStatus();}
+if(id==="miningSection"){loadMiningStatus();loadDailyStatus();try{preloadPiAds()}catch(e){}}
 if(id==="marketSection")petTab(currentPetTab || "shop");
 }
 
@@ -2717,25 +2689,69 @@ async function loginWithPi(){
 
 try{
 
+// Wait briefly for SDK if script still loading
+if(!window.Pi){
+  setLoginStatus("Loading Pi SDK…");
+  for(let i=0;i<20 && !window.Pi;i++){
+    await new Promise(function(r){setTimeout(r,150);});
+  }
+}
 if(!window.Pi){
 throw new Error(
-"Pi SDK is not available. Open this app inside Pi Browser (not Chrome/Facebook)."
+"Pi SDK is not available. Open this app inside Pi Browser only (not Chrome / Facebook / external browser)."
 );
 }
 
 setLoginStatus("Checking backend…");
-// Backend environment check
+// Backend environment check — retry (Render cold start)
 try{
-  const root=await fetch(API_BASE+"/",{cache:"no-store"}).then(r=>r.json());
+  let root=null;
+  let lastErr=null;
+  for(let i=0;i<3;i++){
+    try{
+      setLoginStatus(i===0?"Checking backend…":("Waking server… ("+(i+1)+"/3)"));
+      const ctrl=typeof AbortController!=="undefined"?new AbortController():null;
+      const to=ctrl?setTimeout(function(){try{ctrl.abort()}catch(e){}},20000):null;
+      const res=await fetch(API_BASE+"/",{cache:"no-store",signal:ctrl?ctrl.signal:undefined});
+      if(to)clearTimeout(to);
+      if(!res.ok) throw new Error("Server HTTP "+res.status);
+      root=await res.json();
+      lastErr=null;
+      break;
+    }catch(eTry){
+      lastErr=eTry;
+      await new Promise(function(r){setTimeout(r,1500*(i+1));});
+    }
+  }
+  if(!root){
+    throw new Error("Cannot reach AMT server after retries. Open Render dashboard — is amtmining13-github-io Live?");
+  }
   if(root&&String(root.environment||"").toUpperCase().indexOf("TEST")>=0){
     console.warn("Backend environment:", root.environment, root.version);
   }
   if(root&&String(root.version||"").indexOf("2.5.0")<0&&String(root.version||"").indexOf("mainnet")<0){
     console.warn("Backend version:",root.version,root.network);
   }
+  // Auth config diagnostic
+  try{
+    const cfg=await fetch(API_BASE+"/api/health/auth-config",{cache:"no-store"}).then(function(r){return r.json();});
+    console.log("auth-config", cfg);
+    if(cfg && cfg.hasPiApiKey===false){
+      throw new Error("Server has no PI_API_KEY. Set Mainnet API key on Render Environment, then redeploy.");
+    }
+    if(cfg && cfg.baseOk===false){
+      throw new Error("Wrong PI_API_BASE on Render: "+(cfg.piApiBase||"?")+" — must be https://api.minepi.com");
+    }
+    if(cfg && cfg.hasPiApiKey){
+      setLoginStatus("Server OK · Pi key present · connecting…");
+    }
+  }catch(cfgErr){
+    if(cfgErr && cfgErr.message && cfgErr.message.indexOf("PI_API")>=0) throw cfgErr;
+    console.warn("auth-config", cfgErr);
+  }
 }catch(e){
   console.warn("backend check",e);
-  throw new Error("Cannot reach AMT server. Check Render is Live: amtmining13-github-io.onrender.com");
+  throw new Error((e&&e.message)||"Cannot reach AMT server. Check Render is Live: amtmining13-github-io.onrender.com");
 }
 
 setLoginStatus("Connecting to Pi… approve the popup");
@@ -2766,43 +2782,60 @@ try{
 
 // Timeout so UI does not stick forever
 var authResult;
-try{
-  authResult = await Promise.race([
-    Pi.authenticate(
-      ["username","payments"],
-      async function(payment){
-        console.log("Incomplete payment:", payment);
-        try {
-          if (payment && payment.identifier) {
-            var tx =
-              (payment.transaction && (payment.transaction.txid || payment.transaction._id)) ||
-              payment.txid ||
-              "";
-            showToast("Recovering previous PI payment...");
-            await api("/api/market/payment/complete", {
-              method: "POST",
-              body: JSON.stringify({
-                paymentId: payment.identifier,
-                txid: tx
-              })
-            });
-            showToast("Previous PI payment completed · check My Pets");
-            if (typeof loadOwnedPets === "function") await loadOwnedPets();
-            if (typeof refreshWallet === "function") await refreshWallet();
-          }
-        } catch (e) {
-          console.warn("Incomplete payment recovery:", e);
-          showToast((e && e.message) || "Could not recover payment", true);
-        }
+function incompletePaymentHandler(payment){
+  console.log("Incomplete payment:", payment);
+  return (async function(){
+    try {
+      if (payment && payment.identifier) {
+        var tx =
+          (payment.transaction && (payment.transaction.txid || payment.transaction._id)) ||
+          payment.txid ||
+          "";
+        showToast("Recovering previous PI payment...");
+        await api("/api/market/payment/complete", {
+          method: "POST",
+          body: JSON.stringify({
+            paymentId: payment.identifier,
+            txid: tx
+          })
+        });
+        showToast("Previous PI payment completed · check My Pets");
+        if (typeof loadOwnedPets === "function") await loadOwnedPets();
+        if (typeof refreshWallet === "function") await refreshWallet();
       }
-    ),
+    } catch (e) {
+      console.warn("Incomplete payment recovery:", e);
+      showToast((e && e.message) || "Could not recover payment", true);
+    }
+  })();
+}
+async function runPiAuth(scopes){
+  setLoginStatus("Pi popup… approve login ("+scopes.join(", ")+")");
+  return Promise.race([
+    Pi.authenticate(scopes, incompletePaymentHandler),
     new Promise(function(_, reject){
       setTimeout(function(){
-        reject(new Error("Pi login timed out (60s). Cancel any stuck popup, hard-refresh, and try again. Domain must be amtmining13.github.io in Pi Developer Portal (Mainnet)."));
-      }, 60000);
+        reject(new Error("TIMEOUT"));
+      }, 55000);
     })
   ]);
+}
+try{
+  try{
+    authResult = await runPiAuth(["username","payments"]);
+  }catch(e1){
+    console.warn("Auth with payments failed:", e1);
+    // Fallback: username only (still enough for app login)
+    if(String(e1&&e1.message)==="TIMEOUT"){
+      throw new Error("Pi login timed out. Approve the Pi popup. Domain must be exactly amtmining13.github.io in Mainnet Developer Portal.");
+    }
+    setLoginStatus("Retrying Pi login (username only)…");
+    authResult = await runPiAuth(["username"]);
+  }
 }catch(authErr){
+  if(String(authErr&&authErr.message)==="TIMEOUT"){
+    throw new Error("Pi login timed out. 1) Use Pi Browser 2) Approve popup 3) Portal domain = amtmining13.github.io (Mainnet)");
+  }
   throw authErr;
 }
 
@@ -2835,9 +2868,10 @@ try{
     await api("/api/auth/verify");
   }catch(verErr){
     accessToken=null;
+    var msg = ((verErr&&verErr.message)||(userErr&&userErr.message)||"Auth failed");
     throw new Error(
-      ((verErr&&verErr.message)||(userErr&&userErr.message)||"Auth failed") +
-      " — Render: Mainnet PI_API_KEY + PI_API_BASE=https://api.minepi.com"
+      msg +
+      " | Fix: Render env PI_API_BASE=https://api.minepi.com + Mainnet API key from Developer Portal (same app as amtmining13.github.io). Then redeploy."
     );
   }
 }
@@ -2968,8 +3002,11 @@ async function preloadPiAds(){
   try{
     if(!window.Pi||!Pi.Ads)return;
     if(!ensurePiInit())return;
-    await Pi.Ads.requestAd("interstitial").catch(()=>{});
-    await Pi.Ads.requestAd("rewarded").catch(()=>{});
+    // Request both; ignore errors (pending approval / no fill)
+    await Promise.all([
+      Pi.Ads.requestAd("rewarded").catch(function(){}),
+      Pi.Ads.requestAd("interstitial").catch(function(){})
+    ]);
   }catch(e){
     console.warn("Pi Ads preload:",e);
   }
@@ -3104,20 +3141,31 @@ async function claimMiningAdBonus(){
 }
 
 async function waitAdLoaded(type, tries){
-  tries = tries || 5;
+  tries = tries || 8;
   for(let i=0;i<tries;i++){
     try{
-      let ready = await Pi.Ads.isAdReady(type);
-      console.log("waitAdLoaded isAdReady", type, ready);
-      if(ready === true || (ready && (ready.ready === true || ready.ready === "true"))) return true;
-      const req = await Pi.Ads.requestAd(type);
-      console.log("waitAdLoaded requestAd", type, req);
-      if(piAdResultOk(req)) return true;
-      if(req && !piAdResultBlocked(req) && !req.result) return true;
-      await new Promise(r => setTimeout(r, 500 + i * 350));
+      // Request first (fills inventory), then check ready
+      try{
+        const req = await Pi.Ads.requestAd(type);
+        console.log("waitAdLoaded requestAd", type, req);
+        if(piAdResultOk(req)) return true;
+        if(req && piAdResultBlocked(req) && !piAdResultOk(req)){
+          // hard no-fill this type — stop early after 2 tries
+          if(i >= 1) return false;
+        }
+      }catch(eReq){ console.warn("requestAd", type, eReq); }
+      try{
+        let ready = await Pi.Ads.isAdReady(type);
+        console.log("waitAdLoaded isAdReady", type, ready);
+        if(ready === true || ready === "true") return true;
+        if(ready && (ready.ready === true || ready.ready === "true" || ready === 1)) return true;
+        // Some SDKs return { result: "AD_LOADED" }
+        if(ready && piAdResultOk(ready)) return true;
+      }catch(eReady){ console.warn("isAdReady", type, eReady); }
+      await new Promise(r => setTimeout(r, 600 + i * 400));
     }catch(e){
       console.warn("waitAdLoaded", type, e);
-      await new Promise(r => setTimeout(r, 400));
+      await new Promise(r => setTimeout(r, 500));
     }
   }
   return false;
@@ -3130,60 +3178,67 @@ async function showDailyMiningAd(){
       return;
     }
     if(!window.Pi||!Pi.Ads){
-      showToast("Pi Ads needs Pi Browser. Open app inside Pi Browser.",true);
+      // Silent if outside Pi Browser — mining still works
+      console.warn("Pi.Ads missing");
       return;
     }
     if(!ensurePiInit()){
-      showToast("Pi SDK init failed. Reopen in Pi Browser.",true);
+      console.warn("Pi init failed for ads");
       return;
     }
 
     showToast("Loading mining ad…");
     markMiningAdAttempt();
 
-    // Prefer rewarded, then interstitial — softer checks (pending apps used to get fill)
+    // Pre-request both types
+    try{ await Pi.Ads.requestAd("rewarded"); }catch(e){}
+    try{ await Pi.Ads.requestAd("interstitial"); }catch(e){}
+
     let type = "rewarded";
-    let ok = await waitAdLoaded("rewarded", 5);
+    let ok = await waitAdLoaded("rewarded", 8);
     if(!ok){
       type = "interstitial";
-      ok = await waitAdLoaded("interstitial", 5);
+      ok = await waitAdLoaded("interstitial", 6);
     }
-    // Even if waitAdLoaded false, still try showAd once (some SDK builds report ready late)
-    try{
-      const res = await Pi.Ads.showAd(type);
-      console.log("Mining ad result:", type, res);
-      const result = res && res.result ? String(res.result) : "";
-      if(piAdResultOk(res) || result === "AD_REWARDED" || result === "AD_CLOSED" || result === "AD_DISPLAYED" || result === "AD_SHOWN"){
-        markMiningAdSuccessToday();
-        await claimMiningAdBonus();
-        showToast("Thanks for watching!");
-      }else if(result && piAdResultBlocked(res)){
-        // try the other type once
-        var other = type === "rewarded" ? "interstitial" : "rewarded";
-        try{
-          await Pi.Ads.requestAd(other);
-          const res2 = await Pi.Ads.showAd(other);
-          console.log("Mining ad fallback:", other, res2);
-          if(piAdResultOk(res2)){
-            markMiningAdSuccessToday();
-            await claimMiningAdBonus();
-            showToast("Thanks for watching!");
-          }else{
-            showToast("No ad fill ("+String((res2&&res2.result)||result||"empty")+"). Try WATCH AD later.", true);
-          }
-        }catch(e3){
-          showToast("No ad fill right now. Try WATCH AD later.", true);
+
+    async function tryShow(adType){
+      try{
+        try{ await Pi.Ads.requestAd(adType); }catch(e){}
+        await new Promise(r => setTimeout(r, 300));
+        const res = await Pi.Ads.showAd(adType);
+        console.log("Mining ad show:", adType, res);
+        const result = res && res.result ? String(res.result) : "";
+        if(piAdResultOk(res) || /REWARD|CLOSED|DISPLAY|SHOWN|OK/i.test(result)){
+          return true;
         }
-      }else if(result){
-        showToast("Ad: "+result);
-      }else if(!ok){
-        showToast("No ad inventory right now. Try WATCH AD later.", true);
+        if(piAdResultBlocked(res)) return false;
+        // empty / unknown — treat soft success only if res truthy
+        return !!res && !piAdResultBlocked(res);
+      }catch(err){
+        console.warn("tryShow", adType, err);
+        return false;
       }
-    }catch(showErr){
-      console.warn(showErr);
-      showToast((showErr&&showErr.message)||"Ad could not show. Try WATCH AD.", true);
     }
-    preloadPiAds();
+
+    let shown = await tryShow(type);
+    if(!shown){
+      const other = type === "rewarded" ? "interstitial" : "rewarded";
+      shown = await tryShow(other);
+    }
+    // Last chance: opposite type one more request+show
+    if(!shown){
+      shown = await tryShow("rewarded") || await tryShow("interstitial");
+    }
+
+    if(shown){
+      markMiningAdSuccessToday();
+      await claimMiningAdBonus();
+      showToast("Thanks for watching!");
+    }else{
+      showToast("No ad fill right now. Tap WATCH AD later.", true);
+    }
+    // Refill inventory for next time
+    setTimeout(function(){ preloadPiAds(); }, 1500);
   }catch(e){
     console.warn("Daily mining ad:",e);
     showToast((e&&e.message)||"Ad could not load. Try WATCH AD FOR BONUS.",true);
@@ -3793,10 +3848,17 @@ async function loadTxHistory() {
     }
     box.innerHTML = list.map(function(tx) {
       const kind = (tx.kind || tx.direction || "").toUpperCase();
-      const isOut = kind === "SEND" || (Number(tx.amount) < 0 && kind !== "RECEIVE");
+      const cur = (tx.currency || "AMT").toUpperCase();
+      const isOut = kind === "SEND" || kind === "PET" || kind === "SHOP" || kind === "PI_PAY" || (Number(tx.amount) < 0 && kind !== "RECEIVE");
       const isReward = kind === "REWARD" || kind === "LUCKY_SPIN" || kind === "DAILY" || kind === "AIRDROP" || (tx.type && String(tx.type).indexOf("SPIN") >= 0);
       let dir, color;
-      if (isReward || kind === "REWARD") {
+      if (kind === "PET" || kind === "PI_PAY") {
+        dir = "🐾 " + (tx.label || "PET");
+        color = "#c9a0ff";
+      } else if (kind === "SHOP") {
+        dir = "🛒 " + (tx.label || "SHOP");
+        color = "#80d8ff";
+      } else if (isReward || kind === "REWARD") {
         dir = "🎁 " + (tx.label || tx.type || "REWARD");
         color = "#ffd64e";
       } else if (isOut || kind === "SEND") {
@@ -3807,18 +3869,18 @@ async function loadTxHistory() {
         color = "#69f0ae";
       }
       const amt = Number(tx.amount);
-      const sign = amt < 0 || kind === "SEND" ? "" : (amt > 0 ? "+" : "");
+      const sign = amt < 0 || isOut ? "-" : (amt > 0 ? "+" : "");
       const amtStr = sign + (isFinite(amt) ? Math.abs(amt) : tx.amount);
-      const amtColor = (amt < 0 || kind === "SEND") ? "#ff8a80" : "#69f0ae";
+      const amtColor = (amt < 0 || isOut) ? "#ff8a80" : "#69f0ae";
       const other = tx.direction === "SEND" ? tx.recipientAddress : tx.senderAddress;
       const when = tx.createdAt ? new Date(tx.createdAt).toLocaleString() : "";
       return '<div class="balance-row" style="flex-direction:column;align-items:stretch;gap:4px;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.08)">' +
         '<div style="display:flex;justify-content:space-between;gap:8px">' +
         '<span style="color:' + color + ';font-weight:700">' + dir + '</span>' +
-        '<span style="color:' + amtColor + ';font-weight:700">' + amtStr + ' AMT</span></div>' +
+        '<span style="color:' + amtColor + ';font-weight:700">' + amtStr + ' ' + cur + '</span></div>' +
         (other ? '<div class="muted" style="font-size:10px;word-break:break-all">To/From: ' + other + '</div>' : '') +
         (tx.memo ? '<div class="muted" style="font-size:10px">' + String(tx.memo) + '</div>' : '') +
-        '<div class="muted" style="font-size:10px">' + when + (tx.txId ? " · " + tx.txId : "") + '</div></div>';
+        '<div class="muted" style="font-size:10px">' + when + (tx.txId ? " · " + String(tx.txId).slice(0,24) : "") + '</div></div>';
     }).join("");
   } catch (e) {
     box.innerHTML = '<div class="empty">' + (e.message || "Failed to load history") + '</div>';
@@ -4331,23 +4393,27 @@ async function doLuckySpin(){
 
 
 async function loadAirdrop(){
-
+// UI removed (spin-only page); keep function for API compatibility
+if(!$("airdropStatus") && !$("airdropBtn")) return;
 try{
-
-const data=
-await api("/api/airdrop/status");
-
-const claimed=Boolean(
-data.claimed??
-data.alreadyClaimed
-);
-const expired=Boolean(data.expired);
-const canClaim=data.canClaim!=null?Boolean(data.canClaim):(!claimed&&!expired);
-
+const data = await api("/api/airdrop/status");
+const claimed = !!(data.claimed || data.alreadyClaimed);
+const expired = !!(data.expired || data.windowClosed);
+const canClaim = data.canClaim !== false && !claimed && !expired;
 if(claimed){
-$("airdropStatus").textContent="CLAIMED";
-$("airdropBtn").disabled=true;
-$("airdropBtn").textContent="✅ AIRDROP CLAIMED";
+if($("airdropStatus")) $("airdropStatus").textContent="CLAIMED";
+if($("airdropBtn")){ $("airdropBtn").disabled=true; $("airdropBtn").textContent="✅ AIRDROP CLAIMED"; }
+}else if(expired||!canClaim){
+if($("airdropStatus")) $("airdropStatus").textContent="EXPIRED";
+if($("airdropBtn")){ $("airdropBtn").disabled=true; $("airdropBtn").textContent="⏰ WINDOW CLOSED"; }
+}else{
+if($("airdropStatus")) $("airdropStatus").textContent="AVAILABLE";
+if($("airdropBtn")){ $("airdropBtn").disabled=false; $("airdropBtn").textContent="🎁 CLAIM AIRDROP"; }
+}
+}catch(error){
+console.log("Airdrop status:", error);
+if($("airdropStatus")) $("airdropStatus").textContent="ERROR";
+}
 }else if(expired||!canClaim){
 $("airdropStatus").textContent="EXPIRED";
 $("airdropBtn").disabled=true;
@@ -6250,14 +6316,15 @@ async function buySelectedPetWithPi() {
       return;
     }
     if (!accessToken) {
-      showToast("Login with Pi first (need payments permission).", true);
+      showToast("Login with Pi first. Approve payments permission.", true);
       return;
     }
     var PiSDK = (typeof window !== "undefined" && window.Pi) ? window.Pi : (typeof Pi !== "undefined" ? Pi : null);
     if (!PiSDK || typeof PiSDK.createPayment !== "function") {
-      showToast("Pi Wallet SDK not found. Open in Pi Browser (not Chrome/outside).", true);
+      showToast("Pi Wallet SDK not found. Open in Pi Browser only.", true);
       return;
     }
+    try { if (typeof ensurePiInit === "function") ensurePiInit(); } catch (eInit) {}
 
     var btn = $("buyPetPiBtn");
     if (btn) {
@@ -6271,26 +6338,31 @@ async function buySelectedPetWithPi() {
     if (!Number.isFinite(pricePi) || pricePi <= 0) {
       throw new Error("Invalid PI price for this pet.");
     }
-    showToast("Pay " + pricePi + " PI for " + (selectedPet.name || "pet") + "...");
+    showToast("Opening Pi Wallet · " + pricePi + " PI for " + (selectedPet.name || "pet"));
 
     var paymentResult = await new Promise(function(resolve, reject) {
       var settled = false;
+      var timer = setTimeout(function() {
+        fail(new Error("Payment timed out (90s). App wallet may be In Review, or payments permission missing — logout and login again (approve payments)."));
+      }, 90000);
       function fail(err) {
         if (settled) return;
         settled = true;
+        clearTimeout(timer);
         var msg = (err && (err.message || err.msg)) || String(err || "Payment failed");
         reject(new Error(msg));
       }
       function ok(data) {
         if (settled) return;
         settled = true;
+        clearTimeout(timer);
         resolve(data);
       }
       try {
         PiSDK.createPayment(
           {
             amount: pricePi,
-            memo: "AMT pet " + (selectedPet.name || selectedPet.id).slice(0, 28),
+            memo: "AMT pet " + String(selectedPet.name || selectedPet.id).slice(0, 28),
             metadata: {
               productId: productId,
               petId: selectedPet.id,
@@ -6299,6 +6371,8 @@ async function buySelectedPetWithPi() {
           },
           {
             onReadyForServerApproval: function(paymentId) {
+              if (btn) btn.textContent = "APPROVING...";
+              showToast("Approving payment on server…");
               api("/api/market/payment/approve", {
                 method: "POST",
                 body: JSON.stringify({
@@ -6307,12 +6381,14 @@ async function buySelectedPetWithPi() {
                   amount: pricePi
                 })
               }).then(function() {
-                /* approved — user can confirm in Pi Wallet */
+                if (btn) btn.textContent = "CONFIRM IN WALLET…";
+                showToast("Confirm payment in Pi Wallet popup");
               }).catch(function(e) {
                 fail(e);
               });
             },
             onReadyForServerCompletion: function(paymentId, txid) {
+              if (btn) btn.textContent = "COMPLETING...";
               var tx = txid || "";
               console.log("PI complete callback", paymentId, tx);
               api("/api/market/payment/complete", {
@@ -6332,8 +6408,12 @@ async function buySelectedPetWithPi() {
             },
             onError: function(err) {
               var m = (err && (err.message || err.msg)) || "Pi payment error";
-              if (String(m).toLowerCase().indexOf("wallet") >= 0) {
-                m = m + " — App wallet may still be in review.";
+              var low = String(m).toLowerCase();
+              if (low.indexOf("wallet") >= 0 || low.indexOf("review") >= 0) {
+                m = m + " — Developer Portal → App Wallet may still be In Review.";
+              }
+              if (low.indexOf("permission") >= 0 || low.indexOf("scope") >= 0) {
+                m = m + " — Logout, login again, approve payments.";
               }
               fail(new Error(m));
             }
@@ -6347,6 +6427,7 @@ async function buySelectedPetWithPi() {
     showToast("Paid with PI · " + selectedPet.name + " saved to My Pets");
     closePetModal();
     await refreshWallet();
+    try { if (typeof loadTxHistory === "function") await loadTxHistory(); } catch (eH) {}
     if (typeof petTab === "function") petTab("owned");
     await new Promise(function(ok) { setTimeout(ok, 400); });
     if (typeof loadOwnedPets === "function") await loadOwnedPets();
@@ -6385,6 +6466,7 @@ async function buySelectedPet() {
     );
     closePetModal();
     await refreshWallet();
+    try{ if(typeof loadTxHistory==="function") await loadTxHistory(); }catch(e){}
     petTab("owned");
     await new Promise(ok => setTimeout(ok, 500));
     await loadOwnedPets();
