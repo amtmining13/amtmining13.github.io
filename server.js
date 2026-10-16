@@ -1,8626 +1,13040 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta http-equiv="Pragma" content="no-cache">
-<meta http-equiv="Expires" content="0">
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#090711">
-<title>Alberto Marketplace Token • AMT Mainnet</title>
-<script src="https://sdk.minepi.com/pi-sdk.js"></script>
-
-<style>
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html{scroll-behavior:smooth}
-body{margin:0;min-height:100vh;font-family:Arial,Helvetica,sans-serif;color:#fff;background:radial-gradient(circle at 20% 0%,rgba(125,55,255,.22),transparent 35%),radial-gradient(circle at 100% 20%,rgba(255,174,0,.12),transparent 30%),linear-gradient(145deg,#05040b,#10091c 48%,#05040b)}
-button,input,select{font:inherit}button{cursor:pointer}.hidden{display:none!important}
-.app{width:100%;max-width:720px;margin:auto;padding-bottom:140px}
-header{position:sticky;top:0;z-index:50;padding:14px 15px;background:rgba(7,5,14,.88);backdrop-filter:blur(18px);border-bottom:1px solid rgba(255,255,255,.07)}
-.header-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.brand{display:flex;align-items:center;gap:10px}.brand-logo{width:48px;height:48px;border-radius:15px;display:grid;place-items:center;font-size:20px;font-weight:900;color:#ffd95a;background:radial-gradient(circle,#4b1d79,#160b27 65%);border:1px solid rgba(255,215,80,.5);box-shadow:0 0 22px rgba(166,74,255,.4)}
-.brand-title{font-size:16px;font-weight:900;letter-spacing:.8px}.brand-sub{margin-top:3px;font-size:10px;color:#aaa0bb}
-.mainnet-badge{flex-shrink:0;padding:7px 10px;border-radius:999px;color:#8cffb3;border:1px solid rgba(80,255,145,.45);background:rgba(20,120,55,.12);font-size:10px;font-weight:800}
-main{padding:16px}.section{display:none;animation:fade .25s ease}.section.active{display:block}
-@keyframes fade{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
-.hero{position:relative;overflow:hidden;padding:22px;border-radius:27px;margin-bottom:15px;background:radial-gradient(circle at 90% 10%,rgba(255,199,52,.17),transparent 28%),linear-gradient(135deg,rgba(97,30,160,.35),rgba(12,8,24,.96));border:1px solid rgba(184,91,255,.28);box-shadow:0 15px 50px rgba(0,0,0,.3)}
-.hero h1{margin:0;font-size:27px;line-height:1.05}.hero h1 span{color:#ffd34e}.hero p{margin:9px 0 0;color:#aaa2b9;font-size:13px}
-.notice{margin-top:15px;padding:12px;border-radius:15px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.07);color:#c5bdd1;font-size:11px;line-height:1.5}
-.card{padding:18px;margin-bottom:15px;border-radius:23px;background:linear-gradient(145deg,rgba(28,18,45,.95),rgba(10,8,17,.96));border:1px solid rgba(255,255,255,.075);box-shadow:0 12px 35px rgba(0,0,0,.22)}
-.card-title{margin:0 0 13px;font-size:14px;color:#c18cff;letter-spacing:.7px;font-weight:900}
-.big-balance{font-size:34px;font-weight:900;letter-spacing:-1px}.balance-symbol{font-size:13px;color:#ffd452;margin-left:5px}.muted{color:#958ba3;font-size:12px}
-.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:11px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
-.stat{padding:14px 10px;border-radius:17px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06)}.stat-label{font-size:10px;color:#938a9e}.stat-value{margin-top:5px;font-size:15px;font-weight:800}
-.primary{width:100%;border:0;padding:14px 16px;border-radius:16px;color:#100817;font-weight:900;background:linear-gradient(110deg,#ffd54a,#b65cff);box-shadow:0 7px 24px rgba(181,84,255,.25)}
-.secondary{width:100%;border:1px solid rgba(180,99,255,.35);padding:13px 16px;border-radius:16px;color:#fff;font-weight:800;background:rgba(126,53,185,.12)}
-.danger{width:100%;border:1px solid rgba(255,80,100,.3);padding:13px 16px;border-radius:16px;color:#ff7f91;font-weight:800;background:rgba(255,40,70,.08)}
-button:disabled{opacity:.45;cursor:not-allowed}.row{display:flex;align-items:center;justify-content:space-between;gap:10px}.row+.row{margin-top:12px}
-.mining-ring{width:205px;height:205px;margin:18px auto;border-radius:50%;display:grid;place-items:center;position:relative;background:radial-gradient(circle,#160c25 52%,transparent 53%),conic-gradient(from 0deg,#ffdb4d,#a34dff,#45a5ff,#ffdb4d);box-shadow:0 0 30px rgba(169,72,255,.35),inset 0 0 25px rgba(0,0,0,.8);animation:spin 7s linear infinite}
-.mining-ring:before{content:"";position:absolute;inset:8px;border-radius:50%;border:1px solid rgba(255,255,255,.13)}
-.mining-inner{width:180px;height:180px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-direction:column;background:#0b0813;z-index:2}
-@keyframes spin{to{transform:rotate(360deg)}}.mining-time{font-size:25px;font-weight:900}.mining-rate{color:#ffd452;margin-top:6px;font-size:11px}
-.status-pill{display:block;text-align:center;padding:11px;border-radius:999px;margin-bottom:12px;color:#120b17;font-weight:900;background:linear-gradient(100deg,#ffd94d,#b75dff)}
-.progress{height:8px;border-radius:99px;overflow:hidden;background:rgba(255,255,255,.07);margin:14px 0}.progress span{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,#ffd84c,#9c55ff);transition:width .4s}
-.input{width:100%;padding:13px 14px;border-radius:14px;color:#fff;outline:none;border:1px solid rgba(255,255,255,.1);background:#0a0711}.input:focus{border-color:#a95cff}
-label{display:block;margin:0 0 7px;font-size:11px;color:#aaa1b5}.form-group{margin-bottom:12px}.action-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-.pool{padding:15px;border-radius:18px;margin-bottom:10px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.075)}.pool.active{border-color:rgba(190,90,255,.65);box-shadow:0 0 20px rgba(160,70,255,.12)}
-.pool-name{font-weight:900;font-size:15px}.pool-rate{color:#ffd450;font-size:22px;font-weight:900;margin:6px 0}.pool small{color:#968ca1}
-.stake-item{padding:14px;margin-top:10px;border-radius:17px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06)}
-.avatar-wrap{text-align:center;margin-bottom:15px}.avatar{width:105px;height:105px;border-radius:50%;object-fit:cover;display:block;margin:auto;border:3px solid #a959ff;background:#160d23;box-shadow:0 0 30px rgba(175,70,255,.35)}.avatar-placeholder{display:grid;place-items:center;font-size:38px;color:#91889e}
-.profile-name{margin-top:11px;font-size:21px;font-weight:900}
-.nav{position:fixed;left:50%;bottom:0;transform:translateX(-50%);width:min(720px,100%);z-index:100;padding:8px 8px calc(8px + env(safe-area-inset-bottom));background:rgba(8,6,14,.94);backdrop-filter:blur(20px);border-top:1px solid rgba(255,255,255,.08)}
-.nav-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}.nav-btn{min-width:0;border:0;padding:9px 3px;border-radius:13px;color:#82798c;background:transparent;font-size:10px;font-weight:800}.nav-btn .icon{display:block;font-size:19px;margin-bottom:3px}.nav-btn.active{color:#ffd64e;background:rgba(170,79,255,.13)}
-.spin-wrap{display:flex;flex-direction:column;align-items:center;gap:16px;margin-top:8px;padding-bottom:8px}
-.spin-title-glow{font-size:28px;font-weight:900;letter-spacing:.08em;background:linear-gradient(180deg,#fff6a8,#ffd54a 45%,#c9a227);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 0 24px rgba(255,200,60,.35);margin:0 0 4px}
-.spin-wheel-box{position:relative;width:min(360px,92vw);height:min(360px,92vw);margin:8px auto 4px}
-.spin-wheel{width:100%;height:100%;border-radius:50%;border:10px solid #f5c542;box-shadow:0 0 50px rgba(255,200,60,.55),0 0 100px rgba(181,84,255,.28),inset 0 0 32px rgba(0,0,0,.6);background:conic-gradient(
-#1a1408 0deg 45deg,
-#d4af37 45deg 90deg,
-#12100a 90deg 135deg,
-#f0d060 135deg 180deg,
-#1a1408 180deg 225deg,
-#c9a227 225deg 270deg,
-#12100a 270deg 315deg,
-#ffe08a 315deg 360deg
-);transition:transform 4.2s cubic-bezier(.12,.85,.2,1)}
-.spin-pointer{position:absolute;top:-14px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:16px solid transparent;border-right:16px solid transparent;border-top:32px solid #ffd54a;z-index:5;filter:drop-shadow(0 4px 8px rgba(0,0,0,.6))}
-.spin-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:76px;height:76px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#5a4020,#1a1008);border:5px solid #ffd54a;display:grid;place-items:center;font-weight:900;font-size:14px;color:#ffd54a;z-index:4;box-shadow:0 0 20px rgba(255,200,60,.5);cursor:pointer}
-.spin-labels{position:absolute;inset:0;border-radius:50%;pointer-events:none;z-index:3}
-.spin-labels span{position:absolute;left:50%;top:50%;width:90px;margin-left:-45px;margin-top:-10px;text-align:center;font-size:11px;font-weight:900;color:#fff;text-shadow:0 1px 5px #000,0 0 8px rgba(0,0,0,.8);transform-origin:center center}
-.spin-result{min-height:28px;text-align:center;font-weight:900;color:#ffd64e;font-size:18px;text-shadow:0 0 12px rgba(255,200,60,.4)}
-.spin-btn-big{width:100%;max-width:360px;padding:16px 20px!important;font-size:18px!important;font-weight:900!important;letter-spacing:.06em;border-radius:16px!important;box-shadow:0 8px 28px rgba(255,180,40,.35)}
-
-.toast{position:fixed;left:50%;bottom:95px;transform:translate(-50%,20px);width:calc(100% - 32px);max-width:650px;padding:13px 15px;border-radius:15px;background:#17101f;border:1px solid rgba(255,255,255,.1);box-shadow:0 12px 35px rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:.25s;z-index:200;font-size:12px}.toast.show{opacity:1;transform:translate(-50%,0)}.toast.success{border-color:rgba(65,255,135,.35)}.toast.error{border-color:rgba(255,70,95,.35)}
-.wallet-address{word-break:break-all;font-family:monospace;color:#caa2ff;font-size:11px}
-.market-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
-@media (max-width:420px){
-.market-grid{grid-template-columns:1fr 1fr;gap:12px}
-}
-.market-item{padding:0;border-radius:18px;background:linear-gradient(160deg,rgba(30,18,48,.98),rgba(10,7,18,.98));border:1px solid rgba(255,255,255,.08);overflow:hidden;transition:transform .15s,box-shadow .15s}
-.market-item:active{transform:scale(.98)}
-.market-art{height:130px;border-radius:14px;display:grid;place-items:center;margin-bottom:10px;font-size:48px;background:radial-gradient(circle at 50% 30%,rgba(179,80,255,.4),transparent 50%),#10091a}
-.market-name{font-weight:900;font-size:14px}.market-price{color:#ffd34f;margin:5px 0 9px;font-size:13px}.small-btn{border:1px solid rgba(170,80,255,.3);border-radius:10px;padding:10px;width:100%;color:#fff;background:rgba(170,80,255,.1);font-size:12px;font-weight:800}
-.empty{padding:25px 12px;text-align:center;color:#807688;font-size:12px}hr{border:0;border-top:1px solid rgba(255,255,255,.06);margin:15px 0}
-/* Daily reward + pro wallet */
-.daily-card{border:1px solid rgba(255,212,82,.22);background:linear-gradient(165deg,rgba(40,28,12,.55),rgba(12,8,20,.95))}
-.streak-badge{background:rgba(255,140,40,.18);border:1px solid rgba(255,180,60,.35);color:#ffd452;font-weight:900;font-size:14px;padding:8px 12px;border-radius:999px;white-space:nowrap}
-.daily-amount-row{display:flex;justify-content:space-between;align-items:flex-end;margin:14px 0 12px}
-.daily-amount{font-size:28px;font-weight:900;color:#ffd452;letter-spacing:-.5px}
-.daily-schedule{margin-top:10px;font-size:11px;text-align:center}
-.wallet-hero-card{border:1px solid rgba(170,80,255,.25);background:linear-gradient(165deg,rgba(40,20,70,.4),rgba(10,7,18,.98))}
-.balance-stack{display:flex;flex-direction:column;gap:10px}
-.balance-row{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06)}
-.balance-row-label{font-size:12px;color:#958ba3;font-weight:700}
-.balance-row-value{font-size:15px;font-weight:900;color:#fff}
-/* Referral pro */
-.referral-hero-card{border:1px solid rgba(255,212,82,.2);background:linear-gradient(165deg,rgba(40,28,12,.4),rgba(12,8,20,.98))}
-.qr-wrap{display:flex;justify-content:center;margin:14px 0 4px}
-.qr-img{width:200px;height:200px;border-radius:16px;background:#fff;padding:10px;box-shadow:0 8px 28px rgba(0,0,0,.35);object-fit:contain}
-.qr-brand-wrap{position:relative;display:inline-block;width:200px;height:200px}
-.qr-brand-wrap .qr-img{display:block;width:200px;height:200px;padding:10px;box-sizing:border-box}
-.qr-center-logo{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:48px;height:48px;border-radius:14px;background:linear-gradient(145deg,#2a1248,#12081f);border:2px solid #ffd95a;display:grid;place-items:center;font-size:11px;font-weight:900;color:#ffd95a;letter-spacing:.5px;box-shadow:0 2px 12px rgba(0,0,0,.45);pointer-events:none;z-index:2;overflow:hidden}
-.qr-center-logo img{width:100%;height:100%;object-fit:cover;border-radius:12px}
-.referral-code-box{text-align:center;margin:14px 0 8px;padding:12px;border-radius:14px;background:rgba(255,212,82,.08);border:1px solid rgba(255,212,82,.2)}
-.referral-code-big{font-size:22px;font-weight:900;color:#ffd54f;letter-spacing:1px;word-break:break-all}
-.referral-link-text{font-size:11px;font-weight:700;color:#caa2ff;word-break:break-all;line-height:1.4;text-align:center;padding:0 4px;opacity:.85}
-.referral-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
-/* Breed + incubator */
-.breed-card{border:1px solid rgba(255,120,180,.22);background:linear-gradient(165deg,rgba(50,18,40,.4),rgba(12,8,20,.98))}
-.breed-pick-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.breed-slot{flex:1;text-align:center;padding:12px 8px;border-radius:16px;background:rgba(255,255,255,.04);border:1.5px dashed rgba(255,255,255,.15);cursor:pointer;min-height:110px}
-.breed-slot.filled{border-style:solid;border-color:rgba(255,180,220,.35);background:rgba(255,100,160,.08)}
-.breed-slot-label{font-size:10px;font-weight:800;color:#958ba3;letter-spacing:.5px;text-transform:uppercase}
-.breed-slot-art{font-size:36px;margin:8px 0;line-height:1;min-height:40px;display:flex;align-items:center;justify-content:center}
-.breed-slot-art img{width:48px;height:48px;object-fit:contain;border-radius:10px}
-.breed-slot-name{font-size:12px;font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.breed-plus{font-size:20px;flex-shrink:0}
-.egg-card{margin-bottom:12px;border:1px solid rgba(255,212,82,.15);background:linear-gradient(160deg,rgba(30,22,10,.5),rgba(12,8,18,.98))}
-.egg-card.ready{border-color:rgba(80,255,140,.35)}
-.egg-card.hatched{opacity:.65}
-.egg-timer{font-size:20px;font-weight:900;color:#ffd452;letter-spacing:1px;text-align:center;margin:8px 0}
-.egg-progress{height:8px;border-radius:99px;overflow:hidden;background:rgba(255,255,255,.07);margin:8px 0}
-.egg-progress span{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#ffd84c,#ff6bcb);transition:width .4s}
-.egg-emoji{font-size:42px;text-align:center;line-height:1}
-/* PiPet-style Baby Room — full cards */
-.baby-room-title{font-size:15px;font-weight:900;letter-spacing:.6px;margin:0 0 10px;color:#e8d4ff}
-.baby-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
-.baby-card{position:relative;padding:12px 10px 12px;border-radius:18px;background:linear-gradient(165deg,rgba(36,24,58,.98),rgba(12,8,22,.99));border:1px solid rgba(180,100,255,.22);text-align:center;min-height:248px;display:flex;flex-direction:column;align-items:center}
-.baby-card.ready{border-color:rgba(80,255,160,.45);box-shadow:0 0 20px rgba(60,220,120,.15)}
-.baby-card.listed{border-color:rgba(255,200,60,.4)}
-.baby-card.hatched{opacity:.55}
-.baby-gen{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:800;padding:3px 9px;border-radius:999px;background:rgba(140,80,255,.25);border:1px solid rgba(180,120,255,.4);color:#d4b8ff;margin:0 0 6px}
-.baby-name-row{display:flex;align-items:center;justify-content:center;gap:5px;flex-wrap:wrap;margin-bottom:4px;width:100%}
-.baby-lv{font-size:9px;font-weight:900;background:#5b3cff;color:#fff;padding:2px 6px;border-radius:6px;flex-shrink:0}
-.baby-name{font-size:11px;font-weight:800;color:#fff;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.baby-egg-wrap{width:100px;height:100px;margin:4px auto 8px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 50% 40%,rgba(255,255,255,.12),transparent 55%),rgba(8,6,18,.9);border:1px solid rgba(255,255,255,.08)}
-.baby-egg-wrap.ready-glow{animation:eggPulse 1.6s ease-in-out infinite}
-@keyframes eggPulse{0%,100%{box-shadow:0 0 12px rgba(80,255,160,.25)}50%{box-shadow:0 0 24px rgba(80,255,160,.55)}}
-.pipet-egg{width:52px;height:64px;border-radius:50% 50% 48% 48%/58% 58% 42% 42%;position:relative;box-shadow:inset -6px -8px 14px rgba(0,0,0,.25),inset 4px 6px 10px rgba(255,255,255,.35),0 6px 14px rgba(0,0,0,.35)}
-.pipet-egg:before,.pipet-egg:after{content:"";position:absolute;border-radius:50%;background:rgba(0,0,0,.22)}
-.pipet-egg:before{width:12px;height:10px;top:28%;left:18%}
-.pipet-egg:after{width:9px;height:8px;top:48%;right:16%}
-.pipet-egg.earth{background:linear-gradient(145deg,#c4b8a8,#8a7a68)}
-.pipet-egg.water{background:linear-gradient(145deg,#9ad4ff,#3a8fd4)}
-.pipet-egg.nature{background:linear-gradient(145deg,#b8f0a0,#4caf50)}
-.pipet-egg.ice{background:linear-gradient(145deg,#e8f6ff,#7ec8e8)}
-.pipet-egg.fire{background:linear-gradient(145deg,#ffb080,#e85d3a)}
-.pipet-egg.wind{background:linear-gradient(145deg,#e8e0ff,#9b8ad4)}
-.pipet-egg.thunder{background:linear-gradient(145deg,#fff3a0,#f0c020)}
-.pipet-egg.default{background:linear-gradient(145deg,#f5e6c8,#d4b896)}
-.pipet-egg.fire:before,.pipet-egg.fire:after{background:rgba(120,20,10,.35)}
-.pipet-egg.water:before,.pipet-egg.water:after{background:rgba(10,40,100,.3)}
-.pipet-egg.thunder:before,.pipet-egg.thunder:after{background:rgba(100,60,0,.3)}
-.baby-timer-pill{display:inline-block;font-size:11px;font-weight:900;padding:5px 11px;border-radius:999px;background:rgba(180,40,60,.4);border:1px solid rgba(255,100,120,.4);color:#ffb0ba;margin-bottom:8px;font-variant-numeric:tabular-nums;letter-spacing:.3px}
-.baby-timer-pill.ready{background:rgba(30,140,70,.4);border-color:rgba(80,255,140,.5);color:#7dffb0}
-.baby-deliver{width:100%;border:0;padding:10px;border-radius:999px;font-weight:900;font-size:12px;color:#0a1a10;background:linear-gradient(100deg,#5dff9a,#b8ff6a);box-shadow:0 4px 14px rgba(80,255,140,.25);margin-top:auto}
-.baby-deliver:disabled{opacity:.45;cursor:not-allowed;background:rgba(60,55,70,.9);color:#9a94a8;box-shadow:none}
-.baby-sell-row{display:flex;gap:6px;margin-top:8px;align-items:center;width:100%}
-.baby-sell-row input{flex:1;min-width:0;padding:8px;font-size:11px;border-radius:10px}
-.baby-sell-btn{width:auto;padding:8px 10px;font-size:10px;white-space:nowrap;flex-shrink:0}
-
-/* AMT TAG — gold + purple */
-.amt-tag-wrap{max-width:400px;margin:0 auto 12px}
-.amt-tag-card{
-  position:relative;border-radius:20px;padding:22px 20px 18px;overflow:hidden;
-  background:linear-gradient(145deg,#2a1840 0%,#1a0f28 40%,#3d2a12 78%,#1a1020 100%);
-  border:1px solid rgba(212,175,55,.45);
-  box-shadow:0 16px 40px rgba(0,0,0,.5),0 0 28px rgba(140,60,255,.18),inset 0 1px 0 rgba(255,220,120,.12);
-}
-.amt-tag-card:before{
-  content:"";position:absolute;right:-40px;top:-30px;width:190px;height:190px;border-radius:50%;
-  background:radial-gradient(circle,rgba(212,175,55,.28),transparent 68%);pointer-events:none;
-}
-.amt-tag-card:after{
-  content:"";position:absolute;left:-30px;bottom:-40px;width:150px;height:150px;border-radius:50%;
-  background:radial-gradient(circle,rgba(140,60,255,.32),transparent 70%);pointer-events:none;
-}
-.amt-tag-top{display:flex;justify-content:space-between;align-items:center;position:relative;z-index:1;margin-bottom:18px}
-.amt-tag-brand{font-size:11px;font-weight:900;letter-spacing:2px;color:#e8c547}
-.amt-tag-yours{font-size:10px;font-weight:800;padding:5px 10px;border-radius:999px;background:rgba(140,60,255,.22);border:1px solid rgba(180,120,255,.5);color:#e0c8ff}
-.amt-tag-user{position:relative;z-index:1;font-size:28px;font-weight:900;color:#fff;letter-spacing:.5px;margin-bottom:6px;word-break:break-all}
-.amt-tag-user span{color:#ffd54a}
-.amt-tag-link{position:relative;z-index:1;font-size:12px;color:rgba(230,210,255,.7);margin-bottom:14px;display:flex;align-items:center;gap:6px}
-.amt-tag-bal{position:relative;z-index:1;font-size:14px;font-weight:900;color:#ffd54a;margin-bottom:4px;text-shadow:0 0 12px rgba(255,200,60,.35)}
-.amt-tag-share{margin-top:12px;border-radius:14px;border:1px solid rgba(212,175,55,.22);background:rgba(20,10,30,.55);overflow:hidden}
-.amt-tag-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-bottom:1px solid rgba(212,175,55,.1)}
-.amt-tag-row:last-child{border-bottom:none}
-.amt-tag-row-label{font-size:10px;font-weight:800;color:rgba(232,197,71,.75);letter-spacing:.5px;margin-bottom:3px}
-.amt-tag-row-val{font-size:12px;font-weight:700;color:#f0e8ff;word-break:break-all}
-.amt-tag-copy{flex-shrink:0;width:36px;height:36px;border-radius:10px;border:1px solid rgba(212,175,55,.4);background:rgba(80,50,20,.35);color:#ffd54a;font-size:14px;display:grid;place-items:center;cursor:pointer}
-
-/* Virtual AMT Visa card */
-/* ===== PREMIUM AMT VIRTUAL CARD ===== */
-.amt-card-scene{perspective:1200px;max-width:380px;margin:0 auto 12px;cursor:default;filter:drop-shadow(0 16px 36px rgba(0,0,0,.55))}
-.amt-card{width:100%;aspect-ratio:1.586;position:relative;transform-style:preserve-3d;transition:transform .7s cubic-bezier(.22,1,.36,1)}
-.amt-card.flipped{transform:rotateY(180deg)}
-.amt-card-face{position:absolute;inset:0;border-radius:18px;backface-visibility:hidden;-webkit-backface-visibility:hidden;padding:20px 22px;overflow:hidden;border:1px solid rgba(255,255,255,.14)}
-.amt-card-front{background:linear-gradient(160deg,#050505 0%,#141414 40%,#0c0c0c 75%,#000 100%);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 0 0 1px rgba(0,0,0,.6)}
-.amt-card-front:before{content:"";position:absolute;inset:0;background:
-  radial-gradient(ellipse 90% 70% at 88% 0%,rgba(255,255,255,.08),transparent 48%),
-  radial-gradient(ellipse 55% 40% at 8% 100%,rgba(200,200,200,.04),transparent 50%),
-  linear-gradient(115deg,transparent 38%,rgba(255,255,255,.03) 48%,rgba(255,255,255,.08) 50%,rgba(255,255,255,.03) 52%,transparent 62%);
-  background-size:100% 100%,100% 100%,220% 100%;animation:amtShine 6s ease-in-out infinite;pointer-events:none}
-.amt-card-front:after{content:"";position:absolute;inset:0;border-radius:18px;box-shadow:inset 0 0 50px rgba(0,0,0,.45);pointer-events:none}
-@keyframes amtShine{0%,100%{background-position:0 0,0 0,0 0}50%{background-position:0 0,0 0,100% 0}}
-.amt-card-back{background:linear-gradient(160deg,#000,#121212 50%,#080808);transform:rotateY(180deg);color:#fff;display:flex;flex-direction:column;box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
-.amt-card-top{display:flex;justify-content:space-between;align-items:flex-start;position:relative;z-index:2}
-.amt-card-brand{display:flex;align-items:center;gap:8px}
-.amt-card-logo-badge{width:36px;height:36px;border-radius:10px;background:linear-gradient(145deg,#2a2a2a,#0a0a0a);border:1px solid rgba(255,255,255,.25);display:grid;place-items:center;font-size:10px;font-weight:900;color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.12)}
-.amt-card-logo{font-size:15px;font-weight:900;letter-spacing:2px;color:#fff}
-.amt-card-sub{display:block;font-size:8px;font-weight:800;color:rgba(255,255,255,.4);letter-spacing:1.5px;margin-top:2px}
-.amt-card-network{font-size:8px;font-weight:900;padding:5px 10px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.8);letter-spacing:.8px}
-.amt-card-chip-row{display:flex;align-items:center;gap:14px;margin:16px 0 14px;position:relative;z-index:2}
-.amt-card-chip{width:48px;height:36px;border-radius:7px;background:linear-gradient(145deg,#f5e6a8,#c4a03a 35%,#e8d078 60%,#a88420);box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 2px 6px rgba(0,0,0,.3);position:relative;overflow:hidden}
-.amt-card-chip:before{content:"";position:absolute;left:0;right:0;top:33%;height:1px;background:rgba(0,0,0,.18)}
-.amt-card-chip:after{content:"";position:absolute;left:0;right:0;top:66%;height:1px;background:rgba(0,0,0,.18);box-shadow:22px -12px 0 0 rgba(0,0,0,.12),22px 12px 0 0 rgba(0,0,0,.12)}
-.amt-card-contactless{width:28px;height:28px;opacity:.7}
-.amt-card-contactless svg{width:100%;height:100%}
-.amt-card-number{font-family:"SF Mono",ui-monospace,monospace;font-size:18px;font-weight:600;letter-spacing:2.5px;position:relative;z-index:2;margin-bottom:12px;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.4)}
-.amt-card-balance-label{font-size:8px;font-weight:800;letter-spacing:1.5px;color:rgba(255,255,255,.45);position:relative;z-index:2}
-.amt-card-balance{font-size:28px;font-weight:900;color:#fff;letter-spacing:-.5px;position:relative;z-index:2;margin-bottom:14px;text-shadow:0 0 20px rgba(255,255,255,.15)}
-.amt-card-face{border-color:rgba(255,255,255,.12)!important}
-.amt-flip-btn{margin-top:12px;width:100%}
-.amt-sign-pad-wrap{min-height:110px!important}
-#amtSignCanvas{height:110px!important}
-.amt-card-bottom{display:flex;align-items:flex-end;justify-content:space-between;gap:8px;position:relative;z-index:2}
-.amt-card-label{font-size:7px;font-weight:800;letter-spacing:1.2px;color:rgba(255,255,255,.4);margin-bottom:3px}
-.amt-card-holder{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1px;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.amt-visa-mark{font-size:20px;font-weight:900;font-style:italic;letter-spacing:1px;background:linear-gradient(180deg,#fff 30%,#c8c0d8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;filter:drop-shadow(0 1px 1px rgba(0,0,0,.3))}
-.amt-card-hint{position:absolute;bottom:8px;right:16px;font-size:8px;color:rgba(255,255,255,.3);z-index:2;letter-spacing:.3px}
-.amt-card-stripe{height:44px;background:linear-gradient(180deg,#111,#0a0a0a 40%,#1a1a1a);margin:14px -22px 12px;box-shadow:inset 0 3px 6px rgba(0,0,0,.6)}
-.amt-card-cvv-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;padding:0 2px}
-.amt-card-cvv-box{flex:1;height:28px;background:repeating-linear-gradient(-45deg,#eee,#eee 4px,#f8f8f8 4px,#f8f8f8 8px);border-radius:4px}
-.amt-card-cvv{font-family:monospace;font-size:12px;font-weight:800;background:#fff;color:#111;padding:4px 10px;border-radius:4px;letter-spacing:2px}
-.amt-card-back-info{flex:1;padding:0 2px;position:relative;z-index:1;display:flex;flex-direction:column}
-.amt-sign-pad-wrap{background:linear-gradient(180deg,#faf6ee,#f0e8d8);border-radius:8px;margin-top:4px;overflow:hidden;border:1px solid rgba(255,255,255,.2);box-shadow:inset 0 1px 3px rgba(0,0,0,.1);flex:1;min-height:110px}
-#amtSignCanvas{display:block;width:100%;height:110px;touch-action:none;cursor:crosshair}
-.amt-sign-actions{display:flex;gap:8px;margin-top:8px;justify-content:flex-end}
-
-/* ===== PRO PET CARDS (Shop · My Pets · Sell) ===== */
-.pet-card{
-position:relative;
-border-radius:20px;
-overflow:hidden;
-background:linear-gradient(165deg,#1c1230 0%,#0a0712 100%);
-border:1.5px solid rgba(255,255,255,.12);
-box-shadow:0 12px 36px rgba(0,0,0,.42);
-cursor:pointer;
-transition:transform .18s ease,box-shadow .18s ease;
-min-height:300px;
-display:flex;
-flex-direction:column;
-}
-.pet-card:active{transform:scale(.97)}
-.pet-card-top{
-position:relative;
-height:168px;
-flex-shrink:0;
-display:flex;
-align-items:center;
-justify-content:center;
-overflow:hidden;
-background:radial-gradient(circle at 50% 60%,rgba(255,255,255,.04),transparent 70%);
-}
-.pet-card-top::before{
-content:"";
-position:absolute;
-inset:0;
-opacity:.6;
-background:radial-gradient(circle at 50% 40%,var(--pet-glow,rgba(170,80,255,.5)),transparent 65%);
-}
-.pet-card-emoji{
-position:relative;
-z-index:2;
-font-size:72px;
-filter:drop-shadow(0 4px 12px rgba(0,0,0,.45));
-line-height:1;
-}
-.pet-card-img{
-width:140px!important;
-height:140px!important;
-object-fit:contain;
-border-radius:14px;
-position:relative;
-z-index:2;
-filter:drop-shadow(0 10px 20px rgba(0,0,0,.55));
-}
-.pet-card-badge{
-position:absolute;
-top:10px;
-right:10px;
-z-index:3;
-padding:4px 9px;
-border-radius:999px;
-font-size:9px;
-font-weight:900;
-letter-spacing:.4px;
-text-transform:uppercase;
-background:rgba(0,0,0,.6);
-border:1px solid rgba(255,255,255,.18);
-color:#ffd95a;
-}
-.pet-card-badge.r-common{color:#c8c0d0;border-color:rgba(200,200,210,.25)}
-.pet-card-badge.r-uncommon{color:#5dff9a;border-color:rgba(80,255,140,.35)}
-.pet-card-badge.r-rare{color:#5eb0ff;border-color:rgba(80,160,255,.4)}
-.pet-card-badge.r-epic{color:#d4a0ff;border-color:rgba(180,100,255,.45)}
-.pet-card-badge.r-legendary{color:#ffd452;border-color:rgba(255,200,60,.5);box-shadow:0 0 10px rgba(255,200,60,.25)}
-.pet-card-badge.r-mythic{color:#ff6bcb;border-color:rgba(255,100,200,.5);box-shadow:0 0 12px rgba(255,100,200,.3)}
-.pet-card-element{
-position:absolute;
-top:10px;
-left:10px;
-z-index:3;
-padding:4px 9px;
-border-radius:999px;
-font-size:9px;
-font-weight:800;
-letter-spacing:.3px;
-background:rgba(0,0,0,.55);
-border:1px solid var(--pet-border,rgba(170,80,255,.4));
-color:#fff;
-}
-.pet-card-body{padding:12px 12px 14px;flex:1;display:flex;flex-direction:column}
-.pet-card-name{
-font-size:15px;
-font-weight:900;
-letter-spacing:.2px;
-color:#fff;
-white-space:nowrap;
-overflow:hidden;
-text-overflow:ellipsis;
-}
-.pet-card-price{
-margin-top:4px;
-font-size:13px;
-font-weight:800;
-color:#ffd452;
-}
-.pet-card-sub{
-margin-top:3px;
-font-size:10px;
-color:#958ba3;
-font-weight:700;
-}
-.pet-card-stats{
-display:grid;
-grid-template-columns:repeat(4,1fr);
-gap:4px;
-margin-top:8px;
-}
-.pet-stat{
-text-align:center;
-padding:5px 2px;
-border-radius:9px;
-background:rgba(255,255,255,.04);
-border:1px solid rgba(255,255,255,.06);
-}
-.pet-stat b{
-display:block;
-font-size:11px;
-font-weight:900;
-color:#e8dff5;
-}
-.pet-stat span{
-font-size:8px;
-color:#8a8098;
-font-weight:700;
-text-transform:uppercase;
-}
-.pet-card-footer{
-margin-top:auto;
-padding-top:8px;
-}
-.pet-card-footer .small-btn{
-background:linear-gradient(105deg,rgba(255,213,80,.15),rgba(170,80,255,.2));
-border-color:rgba(190,100,255,.35);
-font-weight:900;
-letter-spacing:.4px;
-}
-
-/* Element themes */
-.pet-earth{--pet-glow:rgba(180,140,60,.55);--pet-border:rgba(200,160,70,.5);border-color:rgba(200,160,70,.28)}
-.pet-water{--pet-glow:rgba(50,140,255,.5);--pet-border:rgba(70,160,255,.5);border-color:rgba(70,160,255,.28)}
-.pet-nature{--pet-glow:rgba(60,200,100,.5);--pet-border:rgba(80,220,120,.5);border-color:rgba(80,220,120,.28)}
-.pet-ice{--pet-glow:rgba(140,210,255,.5);--pet-border:rgba(160,220,255,.5);border-color:rgba(160,220,255,.28)}
-.pet-fire{--pet-glow:rgba(255,100,40,.55);--pet-border:rgba(255,120,50,.5);border-color:rgba(255,120,50,.28)}
-.pet-wind{--pet-glow:rgba(160,255,220,.45);--pet-border:rgba(140,240,200,.5);border-color:rgba(140,240,200,.28)}
-.pet-thunder{--pet-glow:rgba(255,220,50,.55);--pet-border:rgba(255,230,80,.55);border-color:rgba(255,230,80,.3)}
-
-/* Modal pet card big */
-.pet-modal-card{
-border-radius:22px;
-overflow:hidden;
-border:1.5px solid rgba(190,100,255,.3);
-background:linear-gradient(165deg,#1c1230,#0b0815);
-margin-bottom:12px;
-}
-.pet-modal-art{
-height:160px;
-display:flex;
-align-items:center;
-justify-content:center;
-position:relative;
-background:radial-gradient(circle at 50% 40%,var(--pet-glow,rgba(170,80,255,.4)),transparent 70%),#0e0a18;
-}
-.pet-modal-art .pet-card-emoji{font-size:72px}
-.pet-modal-stats{
-display:grid;
-grid-template-columns:repeat(4,1fr);
-gap:8px;
-padding:12px;
-}
-.pet-modal-stats .pet-stat{padding:10px 4px;border-radius:12px}
-.pet-modal-stats .pet-stat b{font-size:16px}
-.pet-modal-stats .pet-stat span{font-size:9px}
-
-/* ============================================================
-   CINEMATIC AMT LOGIN SCREEN
-   FRONTEND ONLY — NO BACKEND / API CHANGES
-============================================================ */
-
-.login-cinematic{
-position:relative;
-min-height:calc(100vh - 96px);
-min-height:calc(100svh - 96px);
-margin:-2px -2px 0;
-padding:28px 8px 38px;
-display:flex;
-align-items:center;
-justify-content:center;
-overflow:hidden;
-border-radius:32px;
-background:
-radial-gradient(circle at 50% 34%,rgba(171,78,255,.20),transparent 22%),
-radial-gradient(circle at 50% 52%,rgba(255,211,76,.075),transparent 34%),
-radial-gradient(circle at 10% 90%,rgba(86,47,255,.13),transparent 28%),
-linear-gradient(150deg,#03020a 0%,#0b0615 48%,#04030a 100%);
-border:1px solid rgba(190,105,255,.18);
-box-shadow:0 20px 70px rgba(0,0,0,.38),inset 0 0 80px rgba(140,55,255,.06);
-}
-
-.login-cinematic::before{
-content:"";
-position:absolute;
-inset:0;
-background:
-linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px),
-linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px);
-background-size:38px 38px;
-mask-image:radial-gradient(circle at center,#000,transparent 78%);
-opacity:.45;
-pointer-events:none;
-}
-
-.login-grid{
-position:absolute;
-inset:-30%;
-background:
-linear-gradient(rgba(183,91,255,.035) 1px,transparent 1px),
-linear-gradient(90deg,rgba(183,91,255,.035) 1px,transparent 1px);
-background-size:70px 70px;
-transform:perspective(500px) rotateX(62deg) translateY(20%);
-transform-origin:center;
-animation:loginGridMove 9s linear infinite;
-opacity:.55;
-pointer-events:none;
-}
-
-@keyframes loginGridMove{
-0%{transform:perspective(500px) rotateX(62deg) translateY(20%)}
-100%{transform:perspective(500px) rotateX(62deg) translateY(0%)}
-}
-
-.login-stage{
-position:relative;
-z-index:5;
-width:min(100%,590px);
-text-align:center;
-padding:10px 14px;
-}
-
-.login-top-badge{
-display:inline-flex;
-align-items:center;
-gap:8px;
-padding:7px 12px;
-margin-bottom:16px;
-border-radius:999px;
-font-size:9px;
-font-weight:900;
-letter-spacing:2px;
-color:#bcaeca;
-background:rgba(255,255,255,.035);
-border:1px solid rgba(186,102,255,.22);
-box-shadow:0 0 22px rgba(167,73,255,.08);
-}
-
-.login-top-badge span{
-width:6px;
-height:6px;
-border-radius:50%;
-background:#63ff9b;
-box-shadow:0 0 12px #63ff9b;
-animation:loginPulse 1.5s ease-in-out infinite;
-}
-
-@keyframes loginPulse{
-0%,100%{opacity:.45;transform:scale(.8)}
-50%{opacity:1;transform:scale(1.2)}
-}
-
-.login-core{
-position:relative;
-width:245px;
-height:245px;
-margin:0 auto 13px;
-display:grid;
-place-items:center;
-}
-
-.login-core-ring{
-position:absolute;
-left:50%;
-top:50%;
-border-radius:50%;
-transform:translate(-50%,-50%);
-pointer-events:none;
-}
-
-.login-core-ring-a{
-width:215px;
-height:215px;
-border:1px solid rgba(255,215,75,.22);
-box-shadow:0 0 35px rgba(255,205,70,.06),inset 0 0 25px rgba(165,75,255,.08);
-animation:loginRingA 8s linear infinite;
-}
-
-.login-core-ring-b{
-width:185px;
-height:185px;
-border:1px dashed rgba(176,83,255,.45);
-animation:loginRingB 11s linear infinite reverse;
-}
-
-.login-core-ring-c{
-width:150px;
-height:150px;
-border:1px solid rgba(255,255,255,.08);
-box-shadow:0 0 30px rgba(177,82,255,.16);
-animation:loginRingC 4s ease-in-out infinite;
-}
-
-@keyframes loginRingA{
-to{transform:translate(-50%,-50%) rotate(360deg)}
-}
-
-@keyframes loginRingB{
-to{transform:translate(-50%,-50%) rotate(360deg)}
-}
-
-@keyframes loginRingC{
-0%,100%{transform:translate(-50%,-50%) scale(.96);opacity:.6}
-50%{transform:translate(-50%,-50%) scale(1.05);opacity:1}
-}
-
-.login-core-orbit{
-position:absolute;
-left:50%;
-top:50%;
-width:8px;
-height:8px;
-margin:-4px;
-border-radius:50%;
-z-index:4;
-}
-
-.login-core-orbit-a{
-background:#ffd957;
-box-shadow:0 0 12px #ffd957,0 0 30px rgba(255,215,87,.65);
-animation:loginOrbitA 4.5s linear infinite;
-}
-
-.login-core-orbit-b{
-width:6px;
-height:6px;
-margin:-3px;
-background:#a95cff;
-box-shadow:0 0 12px #a95cff,0 0 28px rgba(169,92,255,.7);
-animation:loginOrbitB 6s linear infinite reverse;
-}
-
-.login-core-orbit-c{
-width:5px;
-height:5px;
-margin:-2.5px;
-background:#63e0ff;
-box-shadow:0 0 10px #63e0ff,0 0 22px rgba(99,224,255,.6);
-animation:loginOrbitC 5.2s linear infinite;
-}
-
-.login-core-orbit-d{
-width:4px;
-height:4px;
-margin:-2px;
-background:#ff7ab8;
-box-shadow:0 0 10px #ff7ab8,0 0 20px rgba(255,122,184,.55);
-animation:loginOrbitD 7s linear infinite reverse;
-}
-
-@keyframes loginOrbitA{
-0%{transform:rotate(0deg) translateX(108px)}
-100%{transform:rotate(360deg) translateX(108px)}
-}
-
-@keyframes loginOrbitB{
-0%{transform:rotate(0deg) translateX(91px)}
-100%{transform:rotate(360deg) translateX(91px)}
-}
-
-@keyframes loginOrbitC{
-0%{transform:rotate(0deg) translateX(100px)}
-100%{transform:rotate(360deg) translateX(100px)}
-}
-
-@keyframes loginOrbitD{
-0%{transform:rotate(0deg) translateX(78px)}
-100%{transform:rotate(360deg) translateX(78px)}
-}
-
-.login-core-logo{
-position:relative;
-z-index:6;
-width:112px;
-height:112px;
-display:flex;
-align-items:center;
-justify-content:center;
-flex-direction:column;
-border-radius:32px;
-color:#ffd958;
-background:
-radial-gradient(circle at 50% 25%,rgba(129,45,185,.9),rgba(31,13,49,.98) 62%),
-#12091e;
-border:1px solid rgba(255,218,92,.72);
-box-shadow:
-0 0 22px rgba(174,79,255,.58),
-0 0 65px rgba(174,79,255,.22),
-inset 0 0 30px rgba(0,0,0,.65);
-animation:loginLogo 2.3s ease-in-out infinite;
-}
-
-.login-core-logo::before{
-content:"";
-position:absolute;
-inset:8px;
-border-radius:25px;
-border:1px solid rgba(255,255,255,.07);
-}
-
-.login-core-logo span{
-position:relative;
-font-size:32px;
-font-weight:1000;
-letter-spacing:3px;
-text-shadow:0 0 18px rgba(255,216,82,.35);
-}
-
-.login-core-logo small{
-position:relative;
-margin-top:3px;
-font-size:7px;
-font-weight:900;
-letter-spacing:4px;
-color:#bbaacb;
-}
-
-@keyframes loginLogo{
-0%,100%{transform:scale(.96);box-shadow:0 0 22px rgba(174,79,255,.58),0 0 65px rgba(174,79,255,.22),inset 0 0 30px rgba(0,0,0,.65)}
-50%{transform:scale(1.035);box-shadow:0 0 30px rgba(255,210,72,.48),0 0 85px rgba(174,79,255,.34),inset 0 0 30px rgba(0,0,0,.65)}
-}
-
-.login-brand{
-margin-top:-4px;
-}
-
-.login-kicker{
-font-size:10px;
-font-weight:900;
-letter-spacing:4px;
-color:#a992bd;
-}
-
-.login-brand h1{
-margin:7px 0 0;
-font-size:clamp(31px,9vw,48px);
-line-height:.98;
-font-weight:1000;
-letter-spacing:3px;
-background:linear-gradient(90deg,#fff,#e9d9ff 42%,#ffd858 85%);
--webkit-background-clip:text;
-background-clip:text;
-color:transparent;
-text-shadow:0 0 25px rgba(176,80,255,.15);
-}
-
-.login-line{
-width:170px;
-height:2px;
-margin:13px auto 10px;
-border-radius:99px;
-background:linear-gradient(90deg,transparent,#ffd653,#ad59ff,transparent);
-box-shadow:0 0 15px rgba(178,86,255,.35);
-}
-
-.login-brand p{
-margin:0;
-font-size:9px;
-font-weight:900;
-letter-spacing:5px;
-color:#796d86;
-}
-
-.login-copy{
-max-width:410px;
-margin:24px auto 16px;
-display:flex;
-flex-direction:column;
-gap:7px;
-}
-
-.login-copy strong{
-font-size:13px;
-letter-spacing:1px;
-color:#eee7f4;
-}
-
-.login-copy span{
-font-size:11px;
-line-height:1.55;
-color:#8f849b;
-}
-
-.login-pi-button{
-position:relative;
-width:min(100%,390px);
-min-height:68px;
-margin:0 auto;
-display:flex;
-align-items:center;
-gap:13px;
-padding:10px 14px;
-border:1px solid rgba(255,215,83,.62);
-border-radius:19px;
-color:#160b20;
-background:linear-gradient(105deg,#ffd955 0%,#ffca42 36%,#b35cff 100%);
-box-shadow:
-0 10px 35px rgba(168,77,255,.28),
-0 0 0 1px rgba(255,255,255,.06) inset,
-0 0 30px rgba(255,207,69,.09);
-transition:transform .2s ease,box-shadow .2s ease,filter .2s ease;
-overflow:hidden;
-}
-
-.login-pi-button::before{
-content:"";
-position:absolute;
-top:0;
-left:-100%;
-width:65%;
-height:100%;
-background:linear-gradient(90deg,transparent,rgba(255,255,255,.38),transparent);
-transform:skewX(-18deg);
-animation:loginButtonShine 3.5s ease-in-out infinite;
-}
-
-@keyframes loginButtonShine{
-0%,45%{left:-100%}
-70%,100%{left:150%}
-}
-
-.login-pi-button:hover{
-transform:translateY(-2px);
-box-shadow:0 14px 42px rgba(168,77,255,.38),0 0 35px rgba(255,207,69,.13);
-filter:saturate(1.08);
-}
-
-.login-pi-button:active{
-transform:translateY(1px) scale(.99);
-}
-
-.login-pi-icon{
-position:relative;
-z-index:2;
-width:45px;
-height:45px;
-flex-shrink:0;
-display:grid;
-place-items:center;
-border-radius:14px;
-font-family:Georgia,serif;
-font-size:28px;
-font-weight:900;
-color:#fff;
-background:rgba(61,24,89,.72);
-border:1px solid rgba(255,255,255,.22);
-box-shadow:0 5px 18px rgba(30,10,50,.25);
-}
-
-.login-pi-button>span:nth-child(2){
-position:relative;
-z-index:2;
-flex:1;
-display:flex;
-flex-direction:column;
-align-items:flex-start;
-text-align:left;
-}
-
-.login-pi-button b{
-font-size:13px;
-letter-spacing:1px;
-}
-
-.login-pi-button small{
-margin-top:3px;
-font-size:7px;
-font-weight:900;
-letter-spacing:1.5px;
-opacity:.65;
-}
-
-.login-pi-arrow{
-position:relative;
-z-index:2;
-font-size:30px;
-font-weight:300;
-line-height:1;
-opacity:.72;
-}
-
-.login-mainnet-note{
-margin-top:15px;
-display:flex;
-align-items:center;
-justify-content:center;
-gap:7px;
-font-size:8px;
-font-weight:900;
-letter-spacing:2px;
-color:#74687f;
-}
-
-.login-mainnet-note span{
-color:#63ff9b;
-font-size:11px;
-text-shadow:0 0 10px #63ff9b;
-}
-
-.login-notice{
-width:min(100%,430px);
-margin:14px auto 0;
-padding:11px 13px;
-display:flex;
-flex-direction:column;
-gap:4px;
-border-radius:15px;
-background:rgba(255,255,255,.025);
-border:1px solid rgba(255,255,255,.055);
-color:#777080;
-font-size:9px;
-line-height:1.45;
-}
-
-.login-notice b{
-color:#aa9cb6;
-font-size:9px;
-letter-spacing:1px;
-}
-
-.login-wave{
-position:absolute;
-left:50%;
-top:42%;
-width:70px;
-height:70px;
-border:1px solid rgba(174,83,255,.48);
-border-radius:50%;
-transform:translate(-50%,-50%) scale(.2);
-opacity:0;
-pointer-events:none;
-animation:loginWave 4.5s ease-out infinite;
-}
-
-.login-wave-2{animation-delay:1.5s}
-.login-wave-3{animation-delay:3s}
-
-@keyframes loginWave{
-0%{transform:translate(-50%,-50%) scale(.2);opacity:.55}
-65%{opacity:.14}
-100%{transform:translate(-50%,-50%) scale(6);opacity:0}
-}
-
-@media(max-width:420px){
-main{padding:12px}
-.hero{padding:18px}
-.grid3{grid-template-columns:1fr 1fr}
-.grid3 .stat:last-child{grid-column:1/-1}
-.big-balance{font-size:29px}
-
-.login-cinematic{
-min-height:calc(100svh - 82px);
-padding:20px 5px 30px;
-border-radius:25px;
-}
-
-.login-stage{padding:6px 8px}
-
-.login-core{
-width:205px;
-height:205px;
-margin-bottom:6px;
-}
-
-.login-core-ring-a{width:180px;height:180px}
-.login-core-ring-b{width:155px;height:155px}
-.login-core-ring-c{width:125px;height:125px}
-
-.login-core-logo{
-width:91px;
-height:91px;
-border-radius:27px;
-}
-
-.login-core-logo span{font-size:26px}
-.login-core-logo small{font-size:6px}
-
-@keyframes loginOrbitA{
-0%{transform:rotate(0deg) translateX(91px)}
-100%{transform:rotate(360deg) translateX(91px)}
-}
-
-@keyframes loginOrbitB{
-0%{transform:rotate(0deg) translateX(77px)}
-100%{transform:rotate(360deg) translateX(77px)}
-}
-
-.login-kicker{font-size:8px;letter-spacing:3px}
-.login-brand h1{font-size:32px;letter-spacing:2px}
-.login-brand p{font-size:7px;letter-spacing:4px}
-.login-copy{margin-top:19px}
-.login-copy strong{font-size:12px}
-.login-copy span{font-size:10px}
-.login-pi-button{min-height:64px}
-.login-mainnet-note{font-size:7px;letter-spacing:1.5px}
-.login-notice{font-size:8px}
-}
-
-/* ============================================================
-   ALBERTO MARKETPLACE ECOSYSTEM LOGIN TRANSITION
-============================================================ */
-
-/* ============================================================
-   PRO MINING CORE FAN — shown on Login with Pi
-============================================================ */
-.ecosystem-loading{
-position:fixed;
-inset:0;
-z-index:9999;
-display:flex;
-align-items:center;
-justify-content:center;
-overflow:hidden;
-background:
-radial-gradient(circle at 50% 45%,rgba(157,69,255,.28),transparent 28%),
-radial-gradient(circle at 50% 50%,rgba(255,203,65,.12),transparent 48%),
-linear-gradient(145deg,#02010a,#0c0618 48%,#010106);
-opacity:1;
-visibility:visible;
-transition:opacity .7s ease,visibility .7s ease;
-}
-.ecosystem-loading.hidden{
-display:flex!important;
-opacity:0;
-visibility:hidden;
-pointer-events:none;
-}
-.ecosystem-loading::before{
-content:"";
-position:absolute;
-inset:-40%;
-background:
-radial-gradient(ellipse at center,transparent 20%,rgba(161,76,255,.1) 42%,transparent 68%);
-animation:ecosystemBackground 5s ease-in-out infinite;
-}
-@keyframes ecosystemBackground{
-0%,100%{transform:scale(.85) rotate(0deg);opacity:.4}
-50%{transform:scale(1.2) rotate(12deg);opacity:1}
-}
-
-/* Big spinning fan / turbine */
-.mc-fan-wrap{
-position:absolute;
-left:50%;
-top:42%;
-width:min(88vw,420px);
-height:min(88vw,420px);
-transform:translate(-50%,-50%);
-z-index:2;
-pointer-events:none;
-}
-.mc-fan{
-position:absolute;
-inset:0;
-border-radius:50%;
-animation:mcFanSpin 8s linear infinite;
-}
-.mc-fan-blade{
-position:absolute;
-left:50%;
-top:50%;
-width:42%;
-height:14%;
-margin-left:-21%;
-margin-top:-7%;
-border-radius:50% 8% 50% 8%;
-background:linear-gradient(90deg,
-transparent 0%,
-rgba(255,215,80,.15) 15%,
-rgba(180,90,255,.55) 45%,
-rgba(255,215,80,.75) 70%,
-rgba(255,255,255,.35) 100%);
-box-shadow:0 0 18px rgba(170,80,255,.35);
-transform-origin:center center;
-}
-.mc-fan-blade:nth-child(1){transform:rotate(0deg)}
-.mc-fan-blade:nth-child(2){transform:rotate(45deg)}
-.mc-fan-blade:nth-child(3){transform:rotate(90deg)}
-.mc-fan-blade:nth-child(4){transform:rotate(135deg)}
-.mc-fan-blade:nth-child(5){transform:rotate(180deg)}
-.mc-fan-blade:nth-child(6){transform:rotate(225deg)}
-.mc-fan-blade:nth-child(7){transform:rotate(270deg)}
-.mc-fan-blade:nth-child(8){transform:rotate(315deg)}
-@keyframes mcFanSpin{
-to{transform:rotate(360deg)}
-}
-.mc-fan-ring{
-position:absolute;
-left:50%;
-top:50%;
-border-radius:50%;
-transform:translate(-50%,-50%);
-border:1px solid rgba(255,215,90,.25);
-box-shadow:0 0 40px rgba(170,80,255,.2),inset 0 0 30px rgba(170,80,255,.12);
-}
-.mc-fan-ring-1{width:100%;height:100%;animation:mcRingPulse 2.5s ease-in-out infinite}
-.mc-fan-ring-2{width:78%;height:78%;border-style:dashed;border-color:rgba(180,90,255,.4);animation:mcRingSpin 12s linear infinite reverse}
-.mc-fan-ring-3{width:58%;height:58%;border-color:rgba(255,215,90,.35);animation:mcRingPulse 2s ease-in-out infinite .4s}
-@keyframes mcRingSpin{to{transform:translate(-50%,-50%) rotate(360deg)}}
-@keyframes mcRingPulse{
-0%,100%{opacity:.55;box-shadow:0 0 25px rgba(170,80,255,.15)}
-50%{opacity:1;box-shadow:0 0 50px rgba(255,210,80,.3)}
-}
-.mc-fan-hub{
-position:absolute;
-left:50%;
-top:50%;
-width:72px;
-height:72px;
-margin:-36px;
-border-radius:50%;
-z-index:4;
-display:grid;
-place-items:center;
-font-size:18px;
-font-weight:1000;
-letter-spacing:1px;
-color:#ffd95a;
-background:radial-gradient(circle at 50% 30%,#7a35b0,#12091f 70%);
-border:2px solid rgba(255,216,90,.8);
-box-shadow:0 0 25px rgba(170,80,255,.6),0 0 60px rgba(255,200,60,.25),inset 0 0 20px rgba(0,0,0,.6);
-animation:ecosystemLogo 1.6s ease-in-out infinite;
-}
-
-.ecosystem-core{
-position:relative;
-z-index:5;
-width:min(92vw,560px);
-text-align:center;
-padding:30px 18px;
-margin-top:min(42vw,210px);
-}
-.ecosystem-orbit{display:none}
-.ecosystem-logo{display:none}
-
-.ecosystem-title{
-margin:0;
-font-size:clamp(22px,6vw,34px);
-font-weight:1000;
-letter-spacing:2px;
-line-height:1.1;
-color:#fff;
-text-shadow:0 0 18px rgba(178,91,255,.55);
-animation:ecosystemTitle 1.5s ease both;
-}
-.ecosystem-title .gold{color:#ffd653}
-.ecosystem-subtitle{
-margin-top:10px;
-font-size:clamp(10px,3vw,13px);
-font-weight:800;
-letter-spacing:4px;
-color:#a99eb8;
-text-transform:uppercase;
-animation:ecosystemSubtitle 1.8s ease both;
-}
-@keyframes ecosystemTitle{
-0%{opacity:0;transform:translateY(18px);letter-spacing:7px}
-100%{opacity:1;transform:translateY(0);letter-spacing:2px}
-}
-@keyframes ecosystemSubtitle{
-0%{opacity:0;transform:translateY(10px)}
-100%{opacity:1;transform:translateY(0)}
-}
-.ecosystem-wave{
-position:absolute;
-left:50%;
-top:42%;
-width:80px;
-height:80px;
-border-radius:50%;
-border:1px solid rgba(178,89,255,.7);
-transform:translate(-50%,-50%) scale(.3);
-opacity:0;
-animation:ecosystemWave 3.2s ease-out infinite;
-}
-.ecosystem-wave:nth-child(2){animation-delay:.7s}
-.ecosystem-wave:nth-child(3){animation-delay:1.4s}
-.ecosystem-wave:nth-child(4){animation-delay:2.1s}
-@keyframes ecosystemWave{
-0%{transform:translate(-50%,-50%) scale(.3);opacity:.75}
-75%{opacity:.15}
-100%{transform:translate(-50%,-50%) scale(6);opacity:0}
-}
-.ecosystem-line{
-position:relative;
-width:min(310px,72vw);
-height:3px;
-margin:22px auto 0;
-overflow:hidden;
-border-radius:99px;
-background:rgba(255,255,255,.07);
-box-shadow:0 0 15px rgba(165,76,255,.15);
-}
-.ecosystem-line::after{
-content:"";
-position:absolute;
-top:0;
-left:-35%;
-width:35%;
-height:100%;
-border-radius:99px;
-background:linear-gradient(90deg,transparent,#ffd653,#b45cff,transparent);
-animation:ecosystemProgress 1.4s ease-in-out infinite;
-}
-@keyframes ecosystemProgress{
-0%{left:-35%}
-100%{left:100%}
-}
-.ecosystem-enter{
-margin-top:12px;
-font-size:9px;
-font-weight:800;
-letter-spacing:3px;
-color:#766b82;
-text-transform:uppercase;
-animation:ecosystemBlink 1s ease-in-out infinite;
-}
-@keyframes ecosystemBlink{
-0%,100%{opacity:.35}
-50%{opacity:1}
-}
-@keyframes ecosystemLogo{
-0%,100%{transform:scale(.94);box-shadow:0 0 25px rgba(170,80,255,.6),0 0 60px rgba(255,200,60,.25),inset 0 0 20px rgba(0,0,0,.6)}
-50%{transform:scale(1.06);box-shadow:0 0 35px rgba(255,210,80,.55),0 0 90px rgba(170,80,255,.4),inset 0 0 20px rgba(0,0,0,.6)}
-}
-
-.gear-icon{width:44px;height:44px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;position:relative;box-shadow:inset 0 0 0 2px rgba(255,255,255,.15),0 4px 12px rgba(0,0,0,.35)}
-.gear-icon svg{width:28px;height:28px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5))}
-.gear-slot{background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:8px;min-height:72px}
-.gear-slot-label{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:#9ab;margin-bottom:4px}
-.pet-wear-wrap{position:relative;display:inline-block;margin:4px auto 12px;width:160px;height:160px}
-.pet-wear-art{position:absolute;inset:18px;display:flex;align-items:center;justify-content:center;z-index:1}
-.pet-wear-art img,.pet-wear-art .pet-card-img{width:110px!important;height:110px!important;object-fit:contain}
-.pet-wear-art .pet-card-emoji{font-size:64px}
-.pet-wear-slot{position:absolute;width:42px;height:42px;border-radius:12px;background:linear-gradient(145deg,rgba(30,40,70,.95),rgba(10,14,28,.98));border:1.5px solid rgba(255,215,120,.45);display:flex;align-items:center;justify-content:center;z-index:6;box-shadow:0 4px 14px rgba(0,0,0,.5),0 0 12px rgba(255,200,80,.15)}
-.pet-wear-slot svg{width:28px;height:28px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.6))}
-.pet-wear-slot.empty-slot{border-style:dashed;border-color:rgba(255,255,255,.2);background:rgba(0,0,0,.25);opacity:.55}
-.pet-wear-weapon{right:0;top:42%}
-.pet-wear-shield{left:0;top:42%}
-.pet-wear-head{left:50%;transform:translateX(-50%);top:0}
-.pet-wear-body{left:50%;transform:translateX(-50%);bottom:8px}
-.pet-wear-boots{right:12px;bottom:0}
-.pet-wear-accessory{left:12px;bottom:0}
-.pet-wear-label{text-align:center;font-size:10px;color:#c9b896;margin-top:2px;font-weight:700}
-
-
-/* Hybrid mining hero — game energy, utility layout */
-.mine-hero-wrap{position:relative;overflow:hidden;border-radius:22px;margin-bottom:14px;padding:18px 16px 16px;background:
-  radial-gradient(circle at 85% 15%,rgba(255,200,60,.18),transparent 32%),
-  radial-gradient(circle at 10% 90%,rgba(140,60,255,.22),transparent 40%),
-  linear-gradient(145deg,#1a1028 0%,#0c0818 55%,#14102a 100%);
-  border:1px solid rgba(212,175,55,.35);box-shadow:0 14px 36px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,220,120,.08)}
-.mine-hero-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:12px}
-.mine-hero-title{margin:0;font-size:24px;font-weight:900;line-height:1.1;color:#fff}
-.mine-hero-title span{color:#ffd54a}
-.mine-hero-sub{margin:6px 0 0;font-size:12px;color:#b8aec8;font-weight:600}
-.mine-hero-badge{flex-shrink:0;font-size:10px;font-weight:800;padding:6px 10px;border-radius:999px;background:rgba(140,60,255,.2);border:1px solid rgba(180,120,255,.45);color:#e0c8ff}
-.mine-hero-actions{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:4px}
-.mine-hero-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:12px 8px;border-radius:14px;border:1px solid rgba(255,215,120,.28);background:rgba(0,0,0,.35);color:#f5e9c8;font-size:11px;font-weight:800;cursor:pointer;text-align:center;transition:transform .15s,border-color .15s}
-.mine-hero-btn:active{transform:scale(.97)}
-.mine-hero-btn .ico{font-size:20px;line-height:1}
-.mine-hero-btn.primary-act{background:linear-gradient(145deg,rgba(255,200,60,.25),rgba(120,60,200,.2));border-color:rgba(255,210,80,.5);color:#ffe9a0}
-.mine-hero-note{margin-top:10px;font-size:11px;color:#9a90a8;line-height:1.35}
-
-</style>
-</head>
-
-<body>
-
-<div id="ecosystemLoading" class="ecosystem-loading hidden" aria-hidden="true">
-<div class="ecosystem-wave"></div>
-<div class="ecosystem-wave"></div>
-<div class="ecosystem-wave"></div>
-<div class="ecosystem-wave"></div>
-
-<!-- Large Mining Core Fan -->
-<div class="mc-fan-wrap">
-  <div class="mc-fan-ring mc-fan-ring-1"></div>
-  <div class="mc-fan-ring mc-fan-ring-2"></div>
-  <div class="mc-fan-ring mc-fan-ring-3"></div>
-  <div class="mc-fan">
-    <div class="mc-fan-blade"></div>
-    <div class="mc-fan-blade"></div>
-    <div class="mc-fan-blade"></div>
-    <div class="mc-fan-blade"></div>
-    <div class="mc-fan-blade"></div>
-    <div class="mc-fan-blade"></div>
-    <div class="mc-fan-blade"></div>
-    <div class="mc-fan-blade"></div>
-  </div>
-  <div class="mc-fan-hub">AMT</div>
-</div>
-
-<div class="ecosystem-core">
-<h1 class="ecosystem-title">ALBERTO <span class="gold">MARKETPLACE</span></h1>
-<div class="ecosystem-subtitle">MINING CORE ONLINE</div>
-<div class="ecosystem-line"></div>
-<div class="ecosystem-enter">ENTERING AMT ECOSYSTEM</div>
-</div>
-</div>
-
-<div class="app">
-
-<header>
-<div class="header-row">
-<div class="brand">
-<div class="brand-logo">AMT</div>
-<div>
-<div class="brand-title">ALBERTO MARKETPLACE</div>
-<div class="brand-sub">TOKEN • MAINNET ECOSYSTEM</div>
-</div>
-</div>
-<div class="mainnet-badge">● PI MAINNET</div>
-</div>
-</header>
-
-<main>
-
-<!-- ============================================================
-     NEW CINEMATIC LOGIN SCREEN
-============================================================ -->
-
-<section id="loginSection" class="section active">
-
-<div class="login-cinematic">
-
-<div class="login-grid"></div>
-
-<div class="login-wave login-wave-1"></div>
-<div class="login-wave login-wave-2"></div>
-<div class="login-wave login-wave-3"></div>
-
-<div class="login-stage">
-
-<div class="login-top-badge">
-<span></span>
-PI MAINNET • AMT CORE
-</div>
-
-<div class="login-core">
-
-<div class="login-core-ring login-core-ring-a"></div>
-<div class="login-core-ring login-core-ring-b"></div>
-<div class="login-core-ring login-core-ring-c"></div>
-
-<div class="login-core-orbit login-core-orbit-a"></div>
-<div class="login-core-orbit login-core-orbit-b"></div>
-<div class="login-core-orbit login-core-orbit-c"></div>
-<div class="login-core-orbit login-core-orbit-d"></div>
-
-<div class="login-core-logo">
-<span>AMT</span>
-<small>CORE</small>
-</div>
-
-</div>
-
-<div class="login-brand">
-
-<div class="login-kicker">
-ALBERTO MARKETPLACE
-</div>
-
-<h1>
-ECOSYSTEM
-</h1>
-
-<div class="login-line"></div>
-
-<p>
-MAINNET MINING CORE
-</p>
-
-</div>
-
-<div class="login-copy">
-
-<strong>
-ENTER THE AMT ECOSYSTEM
-</strong>
-
-<span>
-Connect your Pi account to access mining, wallet,
-rewards and the Alberto Marketplace.
-</span>
-
-</div>
-
-<button
-class="login-pi-button"
-onclick="loginWithPi()"
->
-
-<span class="login-pi-icon">
-π
-</span>
-
-<span>
-<b>LOGIN WITH PI</b>
-<small>SECURE PI AUTHENTICATION</small>
-</span>
-
-<span class="login-pi-arrow">
-›
-</span>
-
-</button>
-
-<div class="login-mainnet-note">
-<span>●</span>
-PI MAINNET • BUILDING FUTURE VALUE
-</div>
-
-<div id="loginStatusBar" class="login-status-bar" style="display:none;margin-top:12px;padding:12px 14px;border-radius:14px;border:1px solid rgba(180,100,255,.35);background:rgba(30,16,48,.9);color:#e8d8ff;font-size:12px;font-weight:700;text-align:center;line-height:1.4"></div>
-
-<div class="login-notice">
-
-<b>
-AMT ECOSYSTEM
-</b>
-
-<span>
-Mine, play, and grow with AMT — utility today, future value ahead.
-</span>
-
-</div>
-
-</div>
-
-</div>
-
-</section>
-
-<section id="miningSection" class="section">
-<div class="mine-hero-wrap">
-  <div class="mine-hero-top">
-    <div>
-      <h1 class="mine-hero-title"><span>AMT</span> MINING</h1>
-      <p class="mine-hero-sub">Mine · Daily · Pets · Market</p>
-    </div>
-    <div class="mine-hero-badge">● PI MAINNET</div>
-  </div>
-  <div class="mine-hero-actions">
-    <button type="button" class="mine-hero-btn primary-act" onclick="document.getElementById('startMiningBtn')&&document.getElementById('startMiningBtn').scrollIntoView({behavior:'smooth',block:'center'})">
-      <span class="ico">⛏️</span>MINE
-    </button>
-    <button type="button" class="mine-hero-btn" onclick="if(typeof showSection==='function'){showSection('marketSection');if(typeof petTab==='function')petTab('owned');}">
-      <span class="ico">🐾</span>PETS
-    </button>
-    <button type="button" class="mine-hero-btn" onclick="if(typeof showSection==='function'){showSection('marketSection');if(typeof petTab==='function')petTab('shop');}">
-      <span class="ico">🛒</span>MARKET
-    </button>
-  </div>
-  <div class="mine-hero-note">Pi KYC is <b>not required</b> for AMT Mainnet mining. KYC may apply to some Mainnet functions.</div>
-</div>
-
-<!-- DAILY REWARD -->
-<div class="card daily-card">
-<div class="row" style="align-items:flex-start">
-<div>
-<div class="card-title" style="margin:0">🎁 DAILY REWARD</div>
-<div class="muted" style="margin-top:4px">1 claim per day · 7-day streak then reset</div>
-</div>
-<div class="streak-badge" id="dailyStreakBadge">🔥 0</div>
-</div>
-<div class="daily-amount-row">
-<div>
-<div class="muted" style="font-size:11px">Today's reward</div>
-<div class="daily-amount" id="dailyNextAmount">— AMT</div>
-</div>
-<div style="text-align:right">
-<div class="muted" style="font-size:11px" id="dailyStatusLabel">Checking…</div>
-<div class="muted" style="font-size:11px;margin-top:4px" id="dailyResetTimer"></div>
-</div>
-</div>
-<button id="dailyClaimBtn" class="primary" onclick="claimDailyReward()" disabled>
-CLAIM DAILY REWARD
-</button>
-<div class="daily-schedule muted" id="dailyScheduleHint">Day 1: 2 · … · Day 7: 12 AMT · then reset</div>
-</div>
-
-<!-- MINING SESSION -->
-<div class="card">
-<div class="card-title">MINING SESSION</div>
-<div class="muted" style="margin-bottom:8px">24h session · <b>0.5 AMT/hr</b> (12 AMT/day) · Claim when timer ends</div>
-
-<div class="mining-ring">
-<div class="mining-inner">
-<div id="miningTimer" class="mining-time">24:00:00</div>
-<div class="mining-rate">0.5 AMT / HOUR</div>
-</div>
-</div>
-
-<div id="miningStatus" class="status-pill">MINING READY</div>
-
-<button id="startMiningBtn" class="primary" onclick="startMining()">
-⛏️ START MINING
-</button>
-
-<button id="claimMiningBtn" class="secondary hidden" style="margin-top:10px" onclick="claimMining()">
-💰 CLAIM MINING REWARD
-</button>
-
-<button id="watchAdBtn" class="secondary" style="margin-top:10px" onclick="watchRewardedAd()">
-📺 WATCH AD FOR BONUS
-</button>
-<div class="muted" style="font-size:11px;margin-top:6px;text-align:center">Optional · Also shows 1x/day when you START MINING · Bonus when Pi Ads approved</div>
-
-<div class="progress"><span id="miningProgress"></span></div>
-
-<div class="row">
-<span class="muted">Current Earned</span>
-<b id="currentEarned">0.00000000 AMT</b>
-</div>
-</div>
-
-<div class="grid3">
-<div class="stat">
-<div class="stat-label">Mining Rate</div>
-<div class="stat-value">0.5 AMT/hr</div>
-</div>
-<div class="stat">
-<div class="stat-label">Status</div>
-<div id="miniMiningStatus" class="stat-value">Ready</div>
-</div>
-<div class="stat">
-<div class="stat-label">Network</div>
-<div class="stat-value">Pi Mainnet</div>
-</div>
-</div>
-</section>
-
-<section id="walletSection" class="section">
-<div class="hero">
-<h1>AMT <span>WALLET</span></h1>
-<p>Your balances · transparent & private</p>
-</div>
-
-<div class="card wallet-hero-card">
-<div class="card-title">IN-APP AMT</div>
-<div class="big-balance">
-<span id="walletBalance">0.00000000</span>
-<span class="balance-symbol">AMT</span>
-</div>
-<div class="muted" style="margin-top:6px">Mining · Daily · Pets · Staking ledger</div>
-<div class="grid" style="margin-top:15px">
-<div class="stat">
-<div class="stat-label">Available</div>
-<div id="availableBalance" class="stat-value">0 AMT</div>
-</div>
-<div class="stat">
-<div class="stat-label">Staked</div>
-<div id="stakedBalance" class="stat-value">0 AMT</div>
-</div>
-</div>
-</div>
-
-<!-- AMT TAG + VIRTUAL CARD -->
-<div class="card" style="background:transparent;border:none;padding:0;box-shadow:none">
-<div class="card-title" style="margin-bottom:6px">AMT TAG</div>
-<div class="muted" style="margin-bottom:12px;font-size:11px">Your identity card · share pay / referral link · virtual only (not a bank card)</div>
-
-<div class="amt-tag-wrap">
-  <div class="amt-tag-card">
-    <div class="amt-tag-top">
-      <div class="amt-tag-brand">✦ AMT TAG</div>
-      <div class="amt-tag-yours">✓ Yours</div>
-    </div>
-    <div class="amt-tag-user" id="amtTagUser"><span>@</span>pioneer</div>
-    <div class="amt-tag-link" id="amtTagAppLink">🔗 amtmining13.github.io</div>
-    <div class="amt-tag-bal" id="amtCardBalance">— AMT</div>
-    <div class="muted" style="position:relative;z-index:1;font-size:10px">On-chain balance when wallet linked</div>
-  </div>
-
-  <div class="amt-tag-share">
-    <div class="amt-tag-row">
-      <div style="min-width:0;flex:1">
-        <div class="amt-tag-row-label">YOUR INVITE / PAY LINK</div>
-        <div class="amt-tag-row-val" id="amtTagPayLink">https://amtmining13.github.io</div>
-      </div>
-      <button type="button" class="amt-tag-copy" onclick="copyAmtTagField('amtTagPayLink')" title="Copy">📋</button>
-    </div>
-    <div class="amt-tag-row">
-      <div style="min-width:0;flex:1">
-        <div class="amt-tag-row-label">AMT LEDGER ADDRESS</div>
-        <div class="amt-tag-row-val" id="amtTagLedger">—</div>
-      </div>
-      <button type="button" class="amt-tag-copy" onclick="copyAmtTagField('amtTagLedger')" title="Copy">📋</button>
-    </div>
-    <div class="amt-tag-row">
-      <div style="min-width:0;flex:1">
-        <div class="amt-tag-row-label">CARD MASK · ON-CHAIN REF</div>
-        <div class="amt-tag-row-val" id="amtCardNumber">•••• •••• •••• 0000</div>
-      </div>
-      <button type="button" class="amt-tag-copy" onclick="copyAmtTagField('amtCardNumber')" title="Copy">📋</button>
-    </div>
-  </div>
-</div>
-
-<!-- Hidden legacy holders for JS compatibility -->
-<span id="amtCardHolder" class="hidden">PIONEER</span>
-<span id="amtCardValid" class="hidden">∞ / ∞</span>
-<span id="amtCardCvv" class="hidden">•••</span>
-
-<button type="button" class="secondary amt-flip-btn" id="amtSignOpenBtn" onclick="openAmtSignModal()">✍️ SIGN FIRST &amp; LAST NAME</button>
-<div class="muted" style="text-align:center;font-size:10px;margin-top:6px">Optional signature · device only · not a real Visa / bank card</div>
-</div>
-
-<!-- Fixed signature modal — card does not move -->
-<div id="amtSignModal" class="hidden" style="position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;padding:16px;touch-action:none">
-  <div class="card" style="max-width:400px;width:100%;margin:0;max-height:90vh;overflow:auto" onclick="event.stopPropagation()">
-    <div class="row">
-      <div class="card-title" style="margin:0">Sign your name</div>
-      <button class="small-btn" style="width:auto;padding:6px 12px" onclick="closeAmtSignModal()">✕</button>
-    </div>
-    <div class="muted" style="font-size:11px;margin:8px 0 10px">Write first name + last name · pad does not scroll the page</div>
-    <div class="amt-sign-pad-wrap" style="min-height:160px;touch-action:none">
-      <canvas id="amtSignCanvas" width="340" height="160" style="height:160px;touch-action:none"></canvas>
-    </div>
-    <div class="amt-sign-actions" style="margin-top:12px">
-      <button type="button" class="secondary" style="width:auto;padding:10px 14px" onclick="clearAmtSignature()">Clear</button>
-      <button type="button" class="primary" style="width:auto;padding:10px 14px" onclick="saveAmtSignature();closeAmtSignModal()">Save sign</button>
-    </div>
-  </div>
-</div>
-
-<div class="card">
-<div class="card-title">ALL BALANCES</div>
-<div class="notice" style="margin-bottom:12px">
-<b>In-app</b> = app ledger · <b>On-chain AMT</b> = token on Pi · <b>Mainnet PI</b> = native Pi on Mainnet. Only your linked wallet is shown.
-</div>
-<div class="balance-stack">
-<div class="balance-row">
-<span class="balance-row-label">In-app AMT</span>
-<span class="balance-row-value" id="balInApp">0</span>
-</div>
-<div class="balance-row">
-<span class="balance-row-label">On-chain AMT</span>
-<span class="balance-row-value" id="balOnchainAmt">—</span>
-</div>
-<div class="balance-row">
-<span class="balance-row-label">Mainnet PI</span>
-<span class="balance-row-value" id="balMainnetPi">—</span>
-</div>
-<div class="balance-row hidden" id="balTestPiRow">
-<span class="balance-row-label">PI (secondary)</span>
-<span class="balance-row-value" id="balTestPi">—</span>
-</div>
-</div>
-<div class="muted" id="onchainStatus" style="margin-top:12px;font-size:11px"></div>
-</div>
-
-<!-- Deposit-to-treasury disabled: single Pioneer wallet only (no shared treasury) -->
-<div class="card hidden" id="onchainDepositCard">
-<div class="card-title">ON-CHAIN AMT → APP (UTILITY)</div>
-<div class="notice" id="depositInstructions">Disabled — no shared treasury wallet.</div>
-</div>
-
-<div class="card">
-<div class="card-title">WALLET ADDRESSES</div>
-
-<div class="notice">
-Your wallets only. Other Pioneers cannot see or use your addresses.
-<br><br>
-• <b>Pi Wallet</b> — your Pi G... address (link manually if Pi does not sync it)
-<br>
-• <b>AMT Ledger</b> — app wallet for mining, pets, staking, transfers
-</div>
-
-<div style="margin-top:14px">
-<div class="muted">Pi Wallet Address (yours only)</div>
-<div id="piWalletAddress" class="wallet-address" style="color:#8cffb3">Not linked</div>
-</div>
-
-<div style="margin-top:14px">
-<div class="muted">AMT Ledger Address (yours only)</div>
-<div id="amtWalletAddress" class="wallet-address">Not connected</div>
-</div>
-
-<hr>
-
-<div class="form-group">
-<label>Link your Pi Mainnet wallet (G... address)</label>
-<input id="linkPiWalletInput" class="input" placeholder="GXXXXXXXX...">
-</div>
-<button class="primary" onclick="linkPiWallet()">
-🔗 LINK MY PI WALLET
-</button>
-<button class="secondary" style="margin-top:8px" onclick="unlinkPiWallet()">
-Unlink Pi Wallet
-</button>
-
-<hr>
-
-<button class="secondary" onclick="refreshWallet()">
-🔄 REFRESH WALLET
-</button>
-</div>
-
-<div id="pendingPayBanner" class="card" style="display:none;margin-bottom:12px;border:1px solid rgba(255,212,82,.35)">
-  <div class="card-title">💳 PENDING PAYMENT</div>
-  <div class="muted" style="font-size:12px" id="pendingPayBannerText">You have a pay request from a QR link.</div>
-  <button class="primary" style="margin-top:10px" onclick="showPayConfirmModal()">Open Pay Screen</button>
-</div>
-
-<div class="card" id="payScanCard" style="margin-top:12px">
-  <div class="card-title">PAYMENT QR</div>
-  <div class="muted" style="font-size:11px;margin-bottom:8px">Show this QR so others can pay you AMT (in-app). Scan / open link.</div>
-  <div class="qr-wrap">
-    <div class="qr-brand-wrap" id="paymentQrWrap">
-      <img id="paymentQr" class="qr-img" alt="Payment QR" width="200" height="200" crossorigin="anonymous"
-        src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%231a1028' width='200' height='200'/%3E%3Ctext x='50%25' y='50%25' fill='%23958ba3' text-anchor='middle' dy='.3em' font-size='12'%3ELogin for QR%3C/text%3E%3C/svg%3E">
-      <div class="qr-center-logo" id="paymentQrLogo" style="display:none">AMT</div>
-    </div>
-  </div>
-  <div class="muted" id="paymentQrHint" style="font-size:11px;text-align:center;margin:8px 0">Amount optional</div>
-  <div class="row" style="gap:8px;margin-top:8px">
-    <input id="payQrAmount" type="number" min="0" step="0.01" placeholder="Amount AMT (optional)" style="flex:1">
-    <button class="secondary" style="margin:0;width:auto;padding:10px 14px" onclick="refreshPaymentQr()">Update QR</button>
-  </div>
-  <div class="row" style="gap:8px;margin-top:10px">
-    <button class="secondary" style="margin:0;flex:1" onclick="downloadPaymentQr()">⬇️ DOWNLOAD QR</button>
-    <button class="primary" style="margin:0;flex:1" onclick="copyPaymentLink()">📋 COPY LINK</button>
-  </div>
-</div>
-
-<div class="card" id="sendAmtCard" style="margin-top:12px;margin-bottom:16px">
-  <div class="card-title">SEND AMT</div>
-  <div class="muted" style="font-size:11px;margin-bottom:10px">In-app ledger transfer</div>
-  <div class="form-group">
-    <label>Recipient AMT App Wallet Address</label>
-    <input id="sendTo" class="input" placeholder="AMT address or Pi username" autocomplete="off">
-  </div>
-  <div class="form-group">
-    <label>Amount</label>
-    <input id="sendAmount" class="input" type="number" min="0" step="0.00000001" placeholder="0.00">
-  </div>
-  <button type="button" class="primary" id="sendAmtBtn" style="width:100%;margin-top:12px;margin-bottom:8px;position:relative;z-index:5" onclick="sendAMT()">💸 SEND AMT</button>
-</div>
-
-<div class="card" id="txHistoryCard" style="margin-top:12px;margin-bottom:120px">
-  <div class="card-title">TRANSACTION HISTORY</div>
-  <div class="muted" style="font-size:11px;margin-bottom:8px">In-app AMT: transfers + rewards (spin, daily, airdrop…)</div>
-  <div id="txHistoryList"><div class="empty">Loading...</div></div>
-  <button type="button" class="secondary" style="margin-top:8px;width:100%" onclick="loadTxHistory()">Refresh history</button>
-</div>
-</section>
-
-<section id="airdropSection" class="section">
-<!-- Airdrop claim UI removed — more space for spin. Backend claim still available if needed. -->
-<div class="card" style="margin-top:0">
-<div class="spin-wrap">
-  <div class="spin-title-glow">SPIN IT</div>
-  <p class="muted" style="font-size:12px;margin:0;text-align:center">Up to <b>3 spins</b> / day · AMT · Egg · Jackpot</p>
-  <div class="spin-wheel-box">
-    <div class="spin-pointer"></div>
-    <div id="luckyWheel" class="spin-wheel">
-      <div class="spin-labels" id="spinLabels">
-        <span style="transform:rotate(22.5deg) translateY(-118px)">5 AMT</span>
-        <span style="transform:rotate(67.5deg) translateY(-118px)">25 AMT</span>
-        <span style="transform:rotate(112.5deg) translateY(-118px)">EGG</span>
-        <span style="transform:rotate(157.5deg) translateY(-118px)">10 AMT</span>
-        <span style="transform:rotate(202.5deg) translateY(-118px)">FREE</span>
-        <span style="transform:rotate(247.5deg) translateY(-118px)">50 AMT</span>
-        <span style="transform:rotate(292.5deg) translateY(-118px)">15 AMT</span>
-        <span style="transform:rotate(337.5deg) translateY(-118px)">100 ⭐</span>
-      </div>
-    </div>
-    <div class="spin-center" onclick="doLuckySpin()">SPIN</div>
-  </div>
-  <div id="spinResult" class="spin-result">Good luck!</div>
-  <div class="grid" style="width:100%;max-width:360px">
-    <div class="stat"><div class="stat-label">Spins left</div><div id="spinLeft" class="stat-value">-</div></div>
-    <div class="stat"><div class="stat-label">Today</div><div id="spinUsed" class="stat-value">-</div></div>
-  </div>
-  <button id="spinBtn" class="primary spin-btn-big" onclick="doLuckySpin()">🎰 SPIN NOW</button>
-  <div class="notice" style="margin:0;width:100%;max-width:360px">Prizes: 5–50 AMT · Free Egg · FREE SPIN · JACKPOT 100 AMT · 3/day (+ free spin).</div>
-</div>
-</div>
-</section>
-
-<section id="referralSection" class="section">
-<div class="hero">
-<h1>AMT <span>REFERRAL</span></h1>
-<p>Invite Pioneers · Earn AMT · Climb tiers</p>
-</div>
-
-<!-- QR + LINK -->
-<div class="card referral-hero-card">
-<div class="card-title">YOUR INVITE QR</div>
-<div class="qr-wrap">
-  <div class="qr-brand-wrap" id="referralQrWrap">
-    <img id="referralQr" class="qr-img" alt="Referral QR" width="200" height="200" crossorigin="anonymous"
-      src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%231a1028' width='200' height='200'/%3E%3Ctext x='50%25' y='50%25' fill='%23958ba3' text-anchor='middle' dy='.3em' font-size='12'%3ELogin for QR%3C/text%3E%3C/svg%3E">
-    <div class="qr-center-logo" id="referralQrLogo" style="display:none;overflow:hidden;padding:0">
-      <img id="referralQrLogoImg" alt="" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:10px">
-      <span id="referralQrLogoText">AMT</span>
-    </div>
-  </div>
-</div>
-<div class="muted" style="text-align:center;margin-top:10px;font-size:11px">Scan to open app with your code</div>
-
-<button class="primary" style="margin-top:12px;width:100%" onclick="downloadReferralQr()">⬇️ DOWNLOAD QR</button>
-
-<div class="referral-code-box">
-  <div class="muted" style="font-size:10px;margin-bottom:4px">YOUR CODE</div>
-  <div id="referralCodeOnly" class="referral-code-big">------</div>
-</div>
-
-<div id="referralCode" class="referral-link-text">------</div>
-
-<div class="referral-actions">
-  <button class="secondary" onclick="copyReferral()">📋 COPY LINK</button>
-  <button class="secondary" onclick="copyReferralCode()">📋 COPY CODE</button>
-</div>
-<button class="secondary" style="margin-top:8px;width:100%" id="shareReferralBtn" onclick="shareReferral()">
-📤 SHARE INVITE
-</button>
-</div>
-
-<div class="grid">
-<div class="stat">
-<div class="stat-label">Referrals</div>
-<div id="referralCount" class="stat-value">0</div>
-</div>
-<div class="stat">
-<div class="stat-label">Active Miners</div>
-<div id="activeMiners" class="stat-value">0</div>
-</div>
-</div>
-
-<!-- TIER -->
-<div class="card" style="margin-top:15px">
-<div class="card-title">YOUR TIER</div>
-<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px">
-  <div>
-    <div id="tierName" style="font-size:22px;font-weight:900;color:#ffd54f">Bronze</div>
-    <div class="muted" style="margin-top:4px;font-size:11px">
-      <span id="tierReward">0.5</span> AMT per successful referral
-    </div>
-  </div>
-  <div style="text-align:right">
-    <div class="muted" style="font-size:10px">Next milestone</div>
-    <div id="nextMilestone" style="font-size:13px;font-weight:800;color:#caa2ff">5 refs</div>
-  </div>
-</div>
-<div class="progress" style="margin:10px 0 6px">
-  <span id="tierProgress" style="width:0%"></span>
-</div>
-<div class="muted" style="font-size:10px" id="tierProgressText">0 / 5 to next tier</div>
-</div>
-
-<!-- JOIN -->
-<div class="card" style="margin-top:15px">
-<div class="card-title">HAVE A CODE?</div>
-<input id="referralInput" class="input" placeholder="Enter pioneer referral code">
-<button class="primary" style="margin-top:10px" onclick="applyReferral()">
-JOIN WITH CODE
-</button>
-<div class="notice">
-Bronze 1–5 (+0.5) · Silver 6–15 (+1.0) · Gold 16–50 (+1.5) · Legend 51–99 (+2.0) · <b>Mythic 100+</b> (+3.0)<br>
-Milestones: 5→+2 · 15→+5 · 50→+15 · 100→+30 AMT
-</div>
-</div>
-</section>
-
-<section id="circleSection" class="section">
-<div class="hero">
-<h1>SECURITY <span>CIRCLE</span></h1>
-<p>Manage your Pi security circle</p>
-</div>
-
-<div class="card">
-<div class="card-title">SECURITY CIRCLE STATUS</div>
-
-<div class="grid">
-<div class="stat">
-<div class="stat-label">Members</div>
-<div id="circleCount" class="stat-value">0</div>
-</div>
-
-<div class="stat">
-<div class="stat-label">Status</div>
-<div id="circleStatus" class="stat-value">Not loaded</div>
-</div>
-</div>
-
-<button class="secondary" style="margin-top:14px" onclick="loadSecurityCircle()">
-🛡️ REFRESH SECURITY CIRCLE
-</button>
-
-<div id="circleList" style="margin-top:12px"></div>
-
-<div class="notice">
-Security Circle information is read from the Pi-authenticated account when available.
-This app does not invent Pi members.
-</div>
-</div>
-</section>
-
-<section id="profileSection" class="section">
-<div class="hero">
-<h1>MY <span>PROFILE</span></h1>
-<p>Manage your AMT account</p>
-</div>
-
-<div class="card">
-<div class="avatar-wrap">
-
-<div id="avatarBox" class="avatar avatar-placeholder">
-👤
-</div>
-
-<div class="profile-name" id="profileUsername">
-Pioneer
-</div>
-
-<div class="muted" id="profileUid">
-Pi UID: —
-</div>
-</div>
-
-<label>Update Profile Picture</label>
-
-<input id="profileImageInput" class="input" type="file" accept="image/png,image/jpeg,image/webp">
-
-<button class="primary" style="margin-top:10px" onclick="uploadProfileImage()">
-📸 UPLOAD PROFILE PICTURE
-</button>
-
-<button id="deletePhotoBtn" class="danger" style="margin-top:10px" onclick="deleteProfileImage()">
-🗑️ REMOVE PROFILE PICTURE
-</button>
-</div>
-
-<div class="card">
-<div class="card-title">ACCOUNT INFORMATION</div>
-
-<div class="row">
-<span class="muted">Username</span>
-<b id="infoUsername">—</b>
-</div>
-
-<div class="row">
-<span class="muted">Pi UID</span>
-<span id="infoUid" class="wallet-address">—</span>
-</div>
-
-<div class="row">
-<span class="muted">KYC</span>
-<b id="infoKyc">UNVERIFIED</b>
-</div>
-
-<div class="row">
-<span class="muted">Network</span>
-<b>Pi Mainnet</b>
-</div>
-</div>
-
-<div class="card" id="devTreasuryCard" style="display:none">
-<div class="card-title">DEVELOPER TREASURY</div>
-<p class="muted" style="font-size:12px;margin-bottom:10px">One-time <b>5,000,000 in-app AMT</b> for rewards (ledger only, not on-chain). Dev account only.</p>
-<button class="primary" id="devTreasuryBtn" onclick="claimDevTreasury()" disabled>💎 CLAIM 5M TREASURY</button>
-<p class="muted" style="font-size:11px;margin-top:8px" id="devTreasuryNote">Hidden from miners · server-side locked</p>
-</div>
-
-<div class="card">
-<div class="card-title">SESSION</div>
-<button class="danger" onclick="logoutPi()">🚪 LOGOUT</button>
-</div>
-</section>
-
-<section id="stakingSection" class="section">
-<div class="hero">
-<h1>AMT <span>STAKING</span></h1>
-<p>Fixed-term staking</p>
-
-</div>
-
-<div class="card">
-<div class="card-title">YOUR STAKING SUMMARY</div>
-
-<div class="grid3">
-<div class="stat">
-<div class="stat-label">Available</div>
-<div id="stakeAvailable" class="stat-value">0 AMT</div>
-</div>
-
-<div class="stat">
-<div class="stat-label">Staked</div>
-<div id="stakePrincipal" class="stat-value">0 AMT</div>
-</div>
-
-<div class="stat">
-<div class="stat-label">Pending Rewards</div>
-<div id="stakeRewards" class="stat-value">0 AMT</div>
-</div>
-</div>
-</div>
-
-<div class="card">
-<div class="card-title">CHOOSE STAKING POOL</div>
-
-<div id="stakingPools">
-
-<div class="pool">
-<div class="pool-name">STARTER • 30 DAYS</div>
-<div class="pool-rate">5%</div>
-<small>Fixed-term reward</small>
-<button class="secondary" style="margin-top:10px" onclick="selectPool('30D')">
-SELECT 30D
-</button>
-</div>
-
-<div class="pool">
-<div class="pool-name">GROWTH • 90 DAYS</div>
-<div class="pool-rate">10%</div>
-<small>Fixed-term reward</small>
-<button class="secondary" style="margin-top:10px" onclick="selectPool('90D')">
-SELECT 90D
-</button>
-</div>
-
-<div class="pool">
-<div class="pool-name">DIAMOND • 180 DAYS</div>
-<div class="pool-rate">15%</div>
-<small>Fixed-term reward</small>
-<button class="secondary" style="margin-top:10px" onclick="selectPool('180D')">
-SELECT 180D
-</button>
-</div>
-
-</div>
-
-<hr>
-
-<label>Selected Pool</label>
-<input id="selectedPool" class="input" value="30D" readonly>
-
-<label style="margin-top:12px">Amount to Stake</label>
-<input id="stakeAmount" class="input" type="number" min="1" step="0.00000001" placeholder="Minimum 1 AMT">
-
-<button class="primary" style="margin-top:12px" onclick="createStake()">
-🔒 STAKE AMT
-</button>
-</div>
-
-<div class="card">
-<div class="card-title">MY ACTIVE STAKES</div>
-<div id="activeStakes">
-<div class="empty">Loading stakes...</div>
-</div>
-</div>
-
-<div class="card">
-<div class="card-title">STAKING HISTORY</div>
-<div id="stakingHistory">
-<div class="empty">No history loaded.</div>
-</div>
-</div>
-</section>
-
-
-<section id="partnersSection" class="section">
-<div class="hero">
-<h1>LOCAL <span>PARTNERS</span></h1>
-<p>Support local · Pay with AMT · Take-out first</p>
-</div>
-
-<div class="card" style="margin-bottom:12px;border:1px solid rgba(255,212,82,.22)">
-  <div class="card-title">📍 ROADMAP</div>
-  <div class="muted" style="font-size:12px;line-height:1.5">
-    AMT partners are local businesses that will accept <b style="color:#ffd64e">AMT</b> for real goods.
-    First model: <b style="color:#fff">carinderia / food cart · take-out only</b>.
-  </div>
-  <div style="margin-top:12px;padding:12px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08)">
-    <div style="font-weight:900;color:#fff;font-size:14px">🍽️ Partner food cart</div>
-    <div class="muted" style="font-size:11px;margin-top:4px">Take-out only · Pioneer-owned carinderia</div>
-    <div style="margin-top:8px;display:inline-block;padding:4px 10px;border-radius:999px;background:rgba(255,214,78,.12);color:#ffd64e;font-size:10px;font-weight:800">COMING 2027</div>
-  </div>
-  <div class="muted" style="font-size:11px;margin-top:12px;line-height:1.45">
-    When live: order with the merchant → pay AMT → settle to cash or PI (agreed rate).
-    Delivery not required for the first pilot.
-  </div>
-</div>
-
-<div class="card">
-  <div class="card-title">HOW IT WORKS</div>
-  <div class="balance-stack">
-    <div class="balance-row"><span class="balance-row-label">1. Earn AMT</span><span class="balance-row-value" style="font-size:12px">Mine · rewards</span></div>
-    <div class="balance-row"><span class="balance-row-label">2. Local partner</span><span class="balance-row-value" style="font-size:12px">Take-out cart</span></div>
-    <div class="balance-row"><span class="balance-row-label">3. Pay with AMT</span><span class="balance-row-value" style="font-size:12px">When value is live</span></div>
-    <div class="balance-row"><span class="balance-row-label">4. Merchant settle</span><span class="balance-row-value" style="font-size:12px">Cash or PI</span></div>
-  </div>
-  <div class="muted" style="font-size:11px;margin-top:12px;text-align:center">Want to become a partner? Message the AMT team.</div>
-</div>
-</section>
-
-<section id="marketSection" class="section">
-<div class="hero">
-<h1>AMT <span>PETS</span></h1>
-<p>Collect • Care • Train • Breed • Battle • Sell</p>
-</div>
-
-<!-- Sub tabs -->
-<div class="card" style="margin-bottom:12px;padding:10px">
-<div style="display:flex;flex-wrap:wrap;gap:6px">
-<button class="small-btn" style="width:auto;padding:8px 12px" onclick="petTab('shop')">🛒 Shop</button>
-<button class="small-btn" style="width:auto;padding:8px 12px" onclick="petTab('owned')">🐾 My Pets</button>
-<button class="small-btn" style="width:auto;padding:8px 12px" onclick="petTab('eggs')">🥚 Eggs</button>
-<button class="small-btn" style="width:auto;padding:8px 12px" onclick="petTab('listings')">🏪 Public Sell</button>
-</div>
-</div>
-
-<!-- SHOP -->
-<div id="petShopPanel">
-<div class="card" id="starterPetCard" style="margin-bottom:12px;border:1px solid rgba(255,212,82,.25)">
-<div class="card-title">🎁 STARTER PET</div>
-<div class="muted" style="font-size:12px;margin-bottom:10px">Free Common pet · once per pioneer · onboarding for the ecosystem</div>
-<button class="primary" id="claimStarterBtn" onclick="claimStarterPet()">CLAIM FREE TERRA</button>
-<div class="muted" id="starterPetHint" style="margin-top:8px;font-size:11px;text-align:center"></div>
-</div>
-<div class="card" style="margin-bottom:12px;padding:12px">
-<div style="display:flex;flex-wrap:wrap;gap:6px" id="elementFilters">
-<button class="small-btn" style="width:auto;padding:8px 12px" onclick="filterPets('')">All</button>
-<button class="small-btn" style="width:auto;padding:8px 12px" onclick="filterPets('Earth')">Earth</button>
-<button class="small-btn" style="width:auto;padding:8px 12px" onclick="filterPets('Water')">Water</button>
-<button class="small-btn" style="width:auto;padding:8px 12px" onclick="filterPets('Nature')">Nature</button>
-<button class="small-btn" style="width:auto;padding:8px 12px" onclick="filterPets('Ice')">Ice</button>
-<button class="small-btn" style="width:auto;padding:8px 12px" onclick="filterPets('Fire')">Fire</button>
-<button class="small-btn" style="width:auto;padding:8px 12px" onclick="filterPets('Wind')">Wind</button>
-<button class="small-btn" style="width:auto;padding:8px 12px" onclick="filterPets('Thunder')">Thunder</button>
-</div>
-</div>
-<div id="petGrid" class="market-grid"><div class="empty">Loading pets...</div></div>
-</div>
-
-<!-- MY PETS -->
-<div id="petOwnedPanel" class="hidden">
-<div class="notice" style="margin-bottom:10px;font-size:11px">
-  Level milestones: <b>Lv10 → +2 AMT</b> · <b>Lv20 → +5</b> · <b>Lv50 Mythic → +15</b> (once per pet)
-</div>
-<div id="ownedPetGrid" class="market-grid"><div class="empty">No pets yet. Claim starter or buy from Shop.</div></div>
-</div>
-
-<!-- EGGS / BREED / INCUBATOR -->
-<div id="petEggsPanel" class="hidden">
-<div class="card breed-card" style="margin-bottom:14px">
-<div class="card-title">🧬 BREED PETS</div>
-<div class="muted" style="margin-bottom:12px;font-size:11px">Select 2 of your pets · Cost 1 AMT · Egg incubates <b>24 hours</b></div>
-<div class="breed-pick-row">
-  <div class="breed-slot" id="breedSlot1" onclick="openBreedPicker(1)">
-    <div class="breed-slot-label">Parent 1</div>
-    <div class="breed-slot-art" id="breedArt1">➕</div>
-    <div class="breed-slot-name" id="breedName1">Tap to select</div>
-  </div>
-  <div class="breed-plus">❤️</div>
-  <div class="breed-slot" id="breedSlot2" onclick="openBreedPicker(2)">
-    <div class="breed-slot-label">Parent 2</div>
-    <div class="breed-slot-art" id="breedArt2">➕</div>
-    <div class="breed-slot-name" id="breedName2">Tap to select</div>
-  </div>
-</div>
-<input type="hidden" id="breedPet1" value="">
-<input type="hidden" id="breedPet2" value="">
-<button class="primary" style="margin-top:14px" id="breedBtn" onclick="breedPets()">🥚 BREED (1 AMT)</button>
-<div class="notice">Same element = same-type egg · Mixed = random parent element</div>
-</div>
-
-<div class="card" style="margin-bottom:10px;padding:12px 14px">
-<div class="baby-room-title">🍼 BABY ROOM · INCUBATOR</div>
-<div class="muted" style="font-size:11px">24h hatch · <b>Deliver baby</b> when ready · Sell eggs on Public Sell</div>
-</div>
-<div id="eggsList" class="baby-grid"></div>
-</div>
-
-<!-- Breed pet picker modal -->
-<div id="breedPickerModal" class="hidden" style="position:fixed;inset:0;z-index:320;background:rgba(0,0,0,.8);display:flex;align-items:flex-end;justify-content:center;padding:0">
-<div class="card" style="max-width:480px;width:100%;max-height:70vh;overflow:auto;margin:0;border-radius:20px 20px 0 0">
-<div class="row">
-<div class="card-title" style="margin:0" id="breedPickerTitle">Select parent</div>
-<button class="small-btn" style="width:auto;padding:6px 12px" onclick="closeBreedPicker()">✕</button>
-</div>
-<div id="breedPickerList" class="market-grid" style="margin-top:12px"></div>
-</div>
-</div>
-
-<!-- PUBLIC SELL — pets + eggs -->
-<div id="petListingsPanel" class="hidden">
-<div class="notice" style="margin-bottom:12px">
-  <b>Pets:</b> My Pets → VIEW → PUBLIC SELL ·
-  <b>Eggs:</b> Eggs tab → set price → SELL EGG ·
-  Pay with <b>in-app AMT</b>
-</div>
-<div id="listingsGrid" class="market-grid"><div class="empty">Loading listings...</div></div>
-</div>
-
-<!-- Pet Detail Modal (Shop buy) -->
-<div id="petModal" class="hidden" style="position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;padding:16px">
-<div class="card" style="max-width:400px;width:100%;max-height:90vh;overflow:auto;margin:0">
-<div class="row">
-<div class="card-title" style="margin:0" id="modalPetName">Pet</div>
-<button class="small-btn" style="width:auto;padding:6px 12px" onclick="closePetModal()">✕</button>
-</div>
-<div id="modalPetArt" style="text-align:center;margin:12px 0"></div>
-<div class="grid" style="margin-bottom:12px">
-<div class="stat"><div class="stat-label">Element</div><div class="stat-value" id="modalElement">—</div></div>
-<div class="stat"><div class="stat-label">Rarity</div><div class="stat-value" id="modalRarity">—</div></div>
-<div class="stat"><div class="stat-label">HP</div><div class="stat-value" id="modalHp">—</div></div>
-<div class="stat"><div class="stat-label">ATK</div><div class="stat-value" id="modalAtk">—</div></div>
-<div class="stat"><div class="stat-label">DEF</div><div class="stat-value" id="modalDef">—</div></div>
-<div class="stat"><div class="stat-label">SPD</div><div class="stat-value" id="modalSpd">—</div></div>
-</div>
-<div class="notice" style="margin-bottom:12px"><b>Ability:</b> <span id="modalAbility">—</span></div>
-<div style="font-size:18px;font-weight:900;color:#ffd54f;margin-bottom:12px" id="modalPrice">0 AMT</div>
-<div class="row" style="gap:8px;margin-top:8px;flex-wrap:wrap">
-  <button class="primary" id="buyPetBtn" style="flex:1;min-width:120px;position:relative;z-index:20" onclick="buySelectedPet()">BUY WITH AMT</button>
-  <button class="secondary" id="buyPetPiBtn" style="flex:1;min-width:120px;border:1px solid rgba(255,214,78,.45);position:relative;z-index:20" onclick="buySelectedPetWithPi()">💜 BUY WITH PI</button>
-</div>
-<div class="muted" style="font-size:10px;margin-top:6px">AMT = in-app ledger · PI = real Pi on blockchain (helps Mainnet payment wallet review)</div>
-</div>
-</div>
-
-
-<div class="card" id="squadSection" style="margin-top:12px">
-  <div class="card-title">SQUAD BATTLE</div>
-  <div id="battleChargesInfo" class="notice" style="margin-bottom:8px;font-size:12px">Charges: — · Win to earn more battles</div>
-  <div class="muted" style="font-size:11px;margin-bottom:8px">Set 3 or 4 pets · skills auto-cast · win = +1 charge (max 15/day)</div>
-  <div class="row" style="gap:8px;margin-bottom:8px">
-    <button class="secondary" style="margin:0;flex:1" onclick="setSquadSize(3)">3v3</button>
-    <button class="secondary" style="margin:0;flex:1" onclick="setSquadSize(4)">4v4</button>
-  </div>
-  <div id="squadSlots" class="balance-stack" style="margin-bottom:8px"></div>
-  <button class="secondary" style="margin-bottom:6px" onclick="saveSquad()">💾 SAVE SQUAD</button>
-  <div class="grid" style="grid-template-columns:1fr 1fr;gap:6px">
-    <button class="secondary" style="margin:0" onclick="squadBattle('hunter')">🗡️ Squad Hunter</button>
-    <button class="secondary" style="margin:0" onclick="squadBattle('elite')">💀 Squad Elite</button>
-  </div>
-</div>
-
-<div class="card" id="storySection" style="margin-top:12px">
-  <div class="card-title">STORY MODE</div>
-  
-<div class="card" id="dailyBossCard">
-  <div class="card-title">🐉 DAILY BOSS</div>
-  <div id="bossInfo" class="muted" style="font-size:12px;margin-bottom:8px">Loading boss...</div>
-  <div class="muted" style="font-size:11px;margin-bottom:8px">3 attempts/day · element advantage pays more · open a pet first</div>
-  <button class="primary" onclick="fightDailyBoss()">⚔️ FIGHT DAILY BOSS</button>
-  <button class="secondary" style="margin-top:8px" onclick="refreshDailyBoss()">🔄 Refresh Boss</button>
-</div>
-<div class="muted" style="font-size:11px;margin-bottom:6px">Best for leveling weak pets · 3 clears/day · more EXP under Lv20</div>
-  <div id="storyInfo" class="notice" style="margin-bottom:8px;font-size:12px">Loading story...</div>
-  <div id="storyChapters" class="balance-stack" style="margin-bottom:8px"></div>
-  <button class="primary" onclick="playStoryChapter()">📖 PLAY CURRENT CHAPTER</button>
-  <div class="muted" style="font-size:10px;margin-top:6px">Open a pet in My Pets (or tap PLAY STORY on the pet). Last opened pet is remembered.</div>
-</div>
-
-<div class="card" id="grindMapSection" style="margin-top:12px">
-  <div class="card-title">🗺️ PET GRIND MAP</div>
-  <p class="muted" style="font-size:12px;margin:0 0 8px">Leave a pet on a zone · AFK grind · claim EXP, Pet Food, cores &amp; gems</p>
-  <div id="grindActiveBox" class="notice" style="margin-bottom:10px;font-size:12px">Loading active grinds...</div>
-  <div id="grindZonesGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px"></div>
-  <div class="muted" style="font-size:11px;margin-bottom:6px">Deploy selected pet from My Pets</div>
-  <div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:8px">
-    <select id="grindHours" class="input" style="flex:1;min-width:90px">
-      <option value="1">1 hour</option>
-      <option value="4">4 hours</option>
-      <option value="8">8 hours</option>
-      <option value="24">24 hours</option>
-    </select>
-    <button class="primary" style="margin:0;flex:1;min-width:120px" onclick="deployGrind()">🚀 DEPLOY PET</button>
-  </div>
-  <div class="muted" style="font-size:10px">Max 3 pets · costs energy · higher zones need higher level · claim when timer done</div>
-</div>
-
-<div class="card" id="gearSection" style="margin-top:12px">
-  <div class="card-title">WEAPON STORE · GEAR</div>
-  <div class="muted" style="font-size:11px;margin-bottom:8px">Buy only · no battle loot yet · equip on My Pet</div>
-  <div class="row" style="gap:6px;margin-bottom:8px;flex-wrap:wrap">
-    <button class="secondary" style="margin:0;flex:1;min-width:70px" onclick="loadGearShop('weapon')">Weapons</button>
-    <button class="secondary" style="margin:0;flex:1;min-width:70px" onclick="loadGearShop('armor')">Armor</button>
-    <button class="secondary" style="margin:0;flex:1;min-width:70px" onclick="loadGearShop('all')">All</button>
-    <button class="secondary" style="margin:0;flex:1;min-width:70px" onclick="loadGearInventory()">Bag</button>
-    <button class="secondary" style="margin:0;flex:1;min-width:70px" onclick="loadMaterialsShop()">Gems/Cores</button>
-  </div>
-  <div id="gearShopGrid" class="balance-stack"></div>
-</div>
-
-<div class="card" id="repSection" style="margin-top:12px">
-  <div class="card-title">REPUTATION</div>
-  <div id="ownerRepInfo" class="muted" style="font-size:12px">Owner rep: —</div>
-</div>
-
-
-<!-- BATTLE ARENA (visual rounds) -->
-<div id="battleArena" class="hidden" style="position:fixed;inset:0;z-index:400;background:linear-gradient(180deg,#0a1628 0%,#122038 40%,#1a2840 100%);display:flex;flex-direction:column;align-items:stretch">
-  <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;position:relative;z-index:460">
-    <button type="button" id="battleExitBtn" style="width:auto;padding:12px 18px;border-radius:12px;background:rgba(220,40,50,.95);border:2px solid rgba(255,120,120,.8);color:#fff;font-weight:900;font-size:14px;z-index:460;position:relative;box-shadow:0 4px 16px rgba(0,0,0,.5)" onclick="closeBattleArena()">← EXIT</button>
-    <div id="battleRoundLabel" style="font-weight:900;font-size:13px;color:#c8d8f0">Round 1</div>
-    <div style="width:72px"></div>
-  </div>
-  <div style="flex:1;display:flex;flex-direction:column;justify-content:space-around;padding:8px 16px 20px;position:relative">
-    <!-- Enemy -->
-    <div style="text-align:center">
-      <div id="battleEnemyName" style="font-size:12px;font-weight:800;color:#ffb0b0;margin-bottom:6px">Enemy</div>
-      <div style="height:10px;background:rgba(0,0,0,.45);border-radius:999px;overflow:hidden;max-width:220px;margin:0 auto 8px;border:1px solid rgba(255,100,100,.3)">
-        <div id="battleEnemyHpBar" style="height:100%;width:100%;background:linear-gradient(90deg,#ff4455,#ff7788);transition:width .4s"></div>
-      </div>
-      <div id="battleEnemyArt" style="font-size:64px;line-height:1;filter:drop-shadow(0 8px 16px rgba(0,0,0,.5))">🌑</div>
-      <div id="battleEnemyHpText" style="font-size:11px;color:#ffc0c0;margin-top:4px">HP</div>
-    </div>
-    <!-- Log -->
-    <div id="battleLog" style="text-align:center;min-height:40px;font-size:13px;font-weight:800;color:#e8f0ff;text-shadow:0 2px 8px rgba(0,0,0,.6)">Get ready...</div>
-    <!-- You -->
-    <div style="text-align:center">
-      <div id="battleMyArt" style="font-size:56px;line-height:1;margin-bottom:6px">🐾</div>
-      <div id="battleMyName" style="font-size:12px;font-weight:800;color:#b0ffd0;margin-bottom:6px">Your Pet</div>
-      <div style="height:10px;background:rgba(0,0,0,.45);border-radius:999px;overflow:hidden;max-width:220px;margin:0 auto 4px;border:1px solid rgba(80,255,140,.3)">
-        <div id="battleMyHpBar" style="height:100%;width:100%;background:linear-gradient(90deg,#22c55e,#4ade80);transition:width .4s"></div>
-      </div>
-      <div id="battleMyHpText" style="font-size:11px;color:#b8ffd0">HP</div>
-    </div>
-  </div>
-  <!-- Skill bar (Pipet-style) -->
-  <div id="battleSkillBar" style="display:flex;justify-content:center;gap:6px;padding:8px 10px 14px;flex-wrap:nowrap;overflow-x:auto;z-index:10">
-    <button type="button" class="bskill" data-skill="S1" id="bskillS1" style="min-width:52px;padding:10px 8px;border-radius:14px;border:1px solid rgba(120,180,255,.35);background:rgba(20,40,80,.85);color:#d0e8ff;font-weight:900;font-size:11px">⚔<br>S1</button>
-    <button type="button" class="bskill" data-skill="S2" id="bskillS2" style="min-width:52px;padding:10px 8px;border-radius:14px;border:1px solid rgba(120,180,255,.35);background:rgba(20,40,80,.85);color:#d0e8ff;font-weight:900;font-size:11px">🗡<br>S2</button>
-    <button type="button" class="bskill" data-skill="S3" id="bskillS3" style="min-width:52px;padding:10px 8px;border-radius:14px;border:1px solid rgba(120,180,255,.35);background:rgba(20,40,80,.85);color:#d0e8ff;font-weight:900;font-size:11px">🔪<br>S3</button>
-    <button type="button" class="bskill" data-skill="ULT" id="bskillULT" style="min-width:56px;padding:10px 8px;border-radius:14px;border:2px solid rgba(255,200,60,.55);background:rgba(60,40,10,.9);color:#ffe08a;font-weight:900;font-size:11px">★<br>ULT</button>
-    <button type="button" class="bskill" data-skill="DODGE" id="bskillDODGE" style="min-width:52px;padding:10px 8px;border-radius:14px;border:1px solid rgba(120,255,180,.35);background:rgba(10,50,40,.85);color:#b8ffd0;font-weight:900;font-size:11px">🛡<br>DODGE</button>
-    <button type="button" class="bskill" data-skill="PET" id="bskillPET" style="min-width:52px;padding:10px 8px;border-radius:14px;border:1px solid rgba(255,140,200,.35);background:rgba(50,20,40,.85);color:#ffc0e0;font-weight:900;font-size:11px">⚡<br>PET</button>
-  </div>
-  <div id="battleSkillHint" class="muted" style="text-align:center;font-size:10px;padding:0 12px 8px;color:#9ab">Skills auto-cast · buttons light up when used</div>
-  <!-- Result overlay -->
-  <div id="battleResultPanel" class="hidden" style="position:absolute;inset:0;z-index:450;background:rgba(0,0,0,.82);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px 16px 32px">
-    <div style="text-align:center;max-width:320px;width:100%">
-      <div id="battleResultBadge" style="font-size:72px;margin-bottom:8px">🏆</div>
-      <div id="battleResultTitle" style="font-size:28px;font-weight:900;color:#ffd54f;margin-bottom:8px">Victory</div>
-      <div id="battleResultReward" style="font-size:16px;font-weight:800;color:#a0f0c0;margin-bottom:22px">+0.3 AMT</div>
-      <button type="button" class="primary" style="min-width:200px;width:100%;max-width:280px;padding:16px 20px;font-size:17px;font-weight:900;border-radius:14px;box-shadow:0 6px 20px rgba(0,0,0,.45)" onclick="closeBattleArena()">← BACK TO PETS</button>
-    </div>
-  </div>
-</div>
-
-
-
-<!-- Pet ownership history -->
-<div id="petHistoryModal" class="hidden" style="position:fixed;inset:0;z-index:380;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;padding:16px">
-  <div class="card" style="max-width:420px;width:100%;max-height:85vh;overflow:auto;margin:0">
-    <div class="row">
-      <div class="card-title" style="margin:0">Ownership history</div>
-      <button class="small-btn" style="width:auto;padding:6px 12px" onclick="closePetHistory()">✕</button>
-    </div>
-    <div id="petHistoryBody" class="muted" style="margin-top:10px;font-size:12px"></div>
-  </div>
-</div>
-<!-- Squad pet picker -->
-<div id="squadPickModal" class="hidden" style="position:fixed;inset:0;z-index:370;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;padding:16px">
-  <div class="card" style="max-width:420px;width:100%;max-height:85vh;overflow:auto;margin:0">
-    <div class="row">
-      <div class="card-title" style="margin:0" id="squadPickTitle">Pick pet</div>
-      <button class="small-btn" style="width:auto;padding:6px 12px" onclick="closeSquadPick()">✕</button>
-    </div>
-    <div class="muted" style="font-size:11px;margin:8px 0">Tap a pet to put in this slot</div>
-    <div id="squadPickList" class="balance-stack"></div>
-  </div>
-</div>
-
-<!-- PvP ARENA LIST -->
-<div id="arenaModal" class="hidden" style="position:fixed;inset:0;z-index:350;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;padding:16px">
-  <div class="card" style="max-width:440px;width:100%;max-height:85vh;overflow:auto;margin:0">
-    <div class="row">
-      <div class="card-title" style="margin:0">PvP Arena</div>
-      <button class="small-btn" style="width:auto;padding:6px 12px" onclick="closeArenaModal()">✕</button>
-    </div>
-    <div class="muted" style="font-size:11px;margin:8px 0">View full stats before fight. Select your fighter in My Pets first.</div>
-    <div id="myArenaBox" style="margin-bottom:12px"></div>
-    <div class="card-title" style="font-size:13px;margin-bottom:8px">Opponents</div>
-    <div id="arenaList" class="balance-stack"></div>
-  </div>
-</div>
-<!-- Opponent preview -->
-<div id="arenaPreviewModal" class="hidden" style="position:fixed;inset:0;z-index:360;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;padding:16px">
-  <div class="card" style="max-width:360px;width:100%;margin:0">
-    <div class="row">
-      <div class="card-title" style="margin:0">Opponent</div>
-      <button class="small-btn" style="width:auto;padding:6px 12px" onclick="closeArenaPreview()">✕</button>
-    </div>
-    <div id="arenaPreviewBody" style="margin-top:10px"></div>
-    <button class="primary" style="margin-top:12px" id="arenaPreviewFightBtn">⚔️ FIGHT THIS PET</button>
-  </div>
-</div>
-
-<!-- Owned Pet Actions Modal -->
-<div id="ownedModal" class="hidden" style="position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;padding:16px">
-<div class="card" style="max-width:400px;width:100%;max-height:90vh;overflow:auto;margin:0">
-<div class="row">
-<div class="card-title" style="margin:0" id="ownedModalName">My Pet</div>
-<button class="small-btn" style="width:auto;padding:8px 14px;font-weight:900;background:rgba(255,255,255,.08)" onclick="closeOwnedModal()">← Back</button>
-</div>
-<div id="ownedModalArt" style="text-align:center;margin:12px 0"></div>
-<div id="ownedWearPreview" style="text-align:center;margin-bottom:8px"></div>
-<div id="ownedGearPanel" style="margin-bottom:10px"></div>
-<div id="ownedGearBonus" class="muted" style="font-size:11px;margin-bottom:8px"></div>
-<div id="ownedUpgradePanel" style="margin-bottom:10px"></div>
-<div class="grid" style="margin-bottom:10px">
-<div class="stat"><div class="stat-label">Lv</div><div class="stat-value" id="ownedLv">1</div></div>
-<div class="stat"><div class="stat-label">Energy</div><div class="stat-value" id="ownedEnergy">100</div></div>
-<div class="stat"><div class="stat-label">Happy</div><div class="stat-value" id="ownedHappy">100</div></div>
-<div class="stat"><div class="stat-label">ID</div><div class="stat-value" id="ownedId" style="font-size:11px">—</div></div>
-</div>
-<div class="grid" style="margin-bottom:12px">
-<div class="stat"><div class="stat-label">HP</div><div class="stat-value" id="ownedHp">—</div></div>
-<div class="stat"><div class="stat-label">ATK</div><div class="stat-value" id="ownedAtk">—</div></div>
-<div class="stat"><div class="stat-label">DEF</div><div class="stat-value" id="ownedDef">—</div></div>
-<div class="stat"><div class="stat-label">SPD</div><div class="stat-value" id="ownedSpd">—</div></div>
-</div>
-<div class="card-title" style="font-size:12px;margin:8px 0 4px">Skills</div>
-<div id="ownedSkills" class="muted" style="font-size:11px;margin-bottom:10px">—</div>
-<div id="ownedRepLine" class="muted" style="font-size:11px;margin-bottom:6px">Rep: —</div>
-<div id="ownedMintBadge" class="hidden" style="display:none;margin:6px 0;padding:8px 10px;border-radius:10px;background:linear-gradient(135deg,rgba(167,139,250,.25),rgba(255,214,78,.12));border:1px solid rgba(167,139,250,.45);font-size:12px;font-weight:700;color:#e9d5ff">💜 Minted with PI · Mainnet</div>
-<div id="ownedCertBox" class="muted" style="font-size:11px;margin:8px 0;padding:10px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08)">
-  <div style="font-weight:700;color:#ffd64e;margin-bottom:4px">Ownership Certificate</div>
-  <div id="ownedCertId" style="font-family:monospace;font-size:11px;word-break:break-all">—</div>
-  <div id="ownedCertMeta" style="margin-top:4px;font-size:10px">—</div>
-  <button class="secondary" style="margin-top:8px;width:100%;padding:8px" onclick="showOwnershipCertificate()">📜 VIEW FULL CERTIFICATE</button>
-</div>
-<button class="secondary" style="margin-bottom:8px" onclick="showPetHistory()">📜 OWNERSHIP HISTORY</button>
-<button class="primary" style="margin-bottom:8px" onclick="playStoryFromModal()">📖 PLAY STORY</button>
-
-<div class="muted" style="font-size:10px;margin:6px 0 4px">Care · gains XP (instant or timed)</div>
-<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
-<button class="secondary" style="margin:0;width:auto;padding:8px 10px;font-size:11px" onclick="carePet('feed',0)">🍖 Feed +XP (0.2)</button>
-<button class="secondary" style="margin:0;width:auto;padding:8px 10px;font-size:11px" onclick="carePet('play',0)">🎾 Play +XP (0.1)</button>
-<button class="secondary" style="margin:0;width:auto;padding:8px 10px;font-size:11px" onclick="carePet('feed',4)">Care 4h (0.3)</button>
-<button class="secondary" style="margin:0;width:auto;padding:8px 10px;font-size:11px" onclick="carePet('feed',12)">Care 12h (0.6)</button>
-<button class="secondary" style="margin:0;width:auto;padding:8px 10px;font-size:11px" onclick="carePet('feed',24)">Care 24h (1.0)</button>
-</div>
-<button class="secondary" style="margin-bottom:8px" onclick="buyEnergyPack('energy')">⚡ ENERGY PACK (1 AMT)</button>
-<button class="secondary" style="margin-bottom:8px" onclick="buyEnergyPack('full')">💖 FULL PACK (3 AMT)</button>
-<div class="muted" style="font-size:10px;margin:6px 0 4px">Train · XP + stats</div>
-<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
-<button class="secondary" style="margin:0;width:auto;padding:8px 10px;font-size:11px" onclick="trainPet('atk',0)">⚔️ ATK now (0.5)</button>
-<button class="secondary" style="margin:0;width:auto;padding:8px 10px;font-size:11px" onclick="trainPet('hp',0)">❤️ HP now (0.5)</button>
-<button class="secondary" style="margin:0;width:auto;padding:8px 10px;font-size:11px" onclick="trainPet('atk',8)">Train 8h (1.0)</button>
-<button class="secondary" style="margin:0;width:auto;padding:8px 10px;font-size:11px" onclick="trainPet('atk',12)">Train 12h (1.5)</button>
-<button class="secondary" style="margin:0;width:auto;padding:8px 10px;font-size:11px" onclick="trainPet('atk',24)">Train 24h (2.5)</button>
-</div>
-<button class="primary" style="margin-bottom:8px" onclick="claimPetSession()">✅ CLAIM CARE/TRAIN XP</button>
-<button class="secondary" style="margin-bottom:8px" onclick="cancelPetSession()">⏹ CANCEL SESSION</button>
-<div id="ownedSessionInfo" class="muted" style="font-size:11px;margin-bottom:8px"></div>
-<div class="muted" style="font-size:10px;margin-bottom:8px">Timed care/train: wait for timer → Claim. Instant Feed/Play/Train = XP now. Cancel = no XP, no refund.</div>
-<div class="muted" style="font-size:10px;margin:6px 0 4px">CPU battle tier (scales with your level)</div>
-<div class="grid" style="grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
-<button class="secondary" style="margin:0;padding:10px 6px;font-size:11px" onclick="battlePet('rookie')">⚔️ Rookie</button>
-<button class="secondary" style="margin:0;padding:10px 6px;font-size:11px" onclick="battlePet('hunter')">🗡️ Hunter</button>
-<button class="secondary" style="margin:0;padding:10px 6px;font-size:11px" onclick="battlePet('elite')">💀 Elite</button>
-<button class="secondary" style="margin:0;padding:10px 6px;font-size:11px" onclick="battlePet('mythic')">🐉 Mythic</button>
-</div>
-<button class="primary" style="margin-bottom:8px" onclick="listPetInArena()">🏟️ LIST IN PvP ARENA</button>
-<button class="secondary" style="margin-bottom:8px" onclick="unlistMyArena()">🚫 UNLIST FROM ARENA</button>
-<button class="secondary" style="margin-bottom:8px" onclick="openArenaModal()">⚔️ OPEN PvP ARENA</button>
-<div class="muted" style="font-size:10px;margin:6px 0 10px;text-align:center">Milestones: Lv10 +2 · Lv20 +5 · Lv50 +15 AMT</div>
-<div class="form-group" style="margin-top:10px">
-<label>Sell Price (AMT)</label>
-<input id="sellPrice" class="input" type="number" min="0.1" step="0.1" placeholder="1.0">
-<div id="sellPriceGuide" class="muted" style="font-size:10px;margin-top:4px">Guide by level · not a floor · market decides</div>
-</div>
-<button class="secondary" onclick="listPetForSale()">🏪 PUBLIC SELL</button>
-<button class="secondary" onclick="updatePetSellPrice()">💰 CHANGE PRICE</button>
-<button class="secondary" onclick="cancelPetSell()">🚫 CANCEL SELL</button>
-</div>
-</div>
-</section>
-
-<section id="swapSection" class="section">
-<div class="hero">
-<h1>AMT <span>SWAP</span></h1>
-<p>Pi Mainnet swap interface</p>
-</div>
-
-<div class="card">
-<div class="card-title">AMT / PI MAINNET</div>
-
-<div class="notice">
-Open Coixa to swap and add liquidity for on-chain AMT pairs. In-app mining AMT is separate from on-chain balances.
-</div>
-
-<button class="secondary" style="margin-top:14px" onclick="openCoixaSwap()">
-🔄 OPEN SWAP
-</button>
-</div>
-</section>
-
-</main>
-
-<nav id="bottomNav" class="nav hidden">
-
-<div class="nav-grid" style="grid-template-columns:repeat(4,1fr)">
-
-<button class="nav-btn active" data-section="miningSection" onclick="showSection('miningSection',this)">
-<span class="icon">⛏️</span>Mining
-</button>
-
-<button class="nav-btn" data-section="walletSection" onclick="showSection('walletSection',this)">
-<span class="icon">👛</span>Wallet
-</button>
-
-<button class="nav-btn" data-section="profileSection" onclick="showSection('profileSection',this)">
-<span class="icon">👤</span>Profile
-</button>
-
-<button class="nav-btn" data-section="stakingSection" onclick="showSection('stakingSection',this)">
-<span class="icon">🔒</span>Staking
-</button>
-
-</div>
-
-<div class="nav-grid" style="margin-top:4px">
-
-<button class="nav-btn" data-section="airdropSection" onclick="showSection('airdropSection',this)">
-<span class="icon">🎡</span>Spin
-</button>
-
-<button class="nav-btn" data-section="referralSection" onclick="showSection('referralSection',this)">
-<span class="icon">👥</span>Referral
-</button>
-
-<button class="nav-btn" data-section="circleSection" onclick="showSection('circleSection',this)">
-<span class="icon">🛡️</span>Circle
-</button>
-
-<button class="nav-btn" data-section="swapSection" onclick="showSection('swapSection',this)">
-<span class="icon">🔄</span>Swap
-</button>
-
-<button class="nav-btn" data-section="partnersSection" onclick="showSection('partnersSection',this)">
-<span class="icon">🏪</span>Partners
-</button>
-
-<button class="nav-btn" onclick="showSection('profileSection',this)">
-<span class="icon">⚙️</span>Account
-</button>
-
-</div>
-</nav>
-
-
-<div id="payConfirmModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.72);align-items:center;justify-content:center;padding:18px">
-  <div class="card" style="max-width:360px;width:100%;margin:0">
-    <div class="card-title">💳 CONFIRM PAYMENT</div>
-    <div class="muted" style="font-size:12px;margin-bottom:10px">In-app AMT ledger transfer</div>
-    <div class="balance-row"><span class="balance-row-label">To</span><span class="balance-row-value" id="payConfirmUser">—</span></div>
-    <div class="balance-row"><span class="balance-row-label">Request</span><span class="balance-row-value" id="payConfirmAmount">—</span></div>
-    <div class="form-group" style="margin-top:12px">
-      <label>Amount AMT</label>
-      <input id="payConfirmInput" class="input" type="number" min="0" step="0.00000001" placeholder="0.00">
-    </div>
-    <button class="primary" onclick="confirmPendingPay()">✅ PAY NOW</button>
-    <button class="secondary" style="margin-top:8px" onclick="dismissPendingPay()">Cancel</button>
-  </div>
-</div>
-
-<div id="toast" class="toast"></div>
-
-<script>
 "use strict";
 
-const API_BASE="https://amtmining13-github-io.onrender.com";
+/*
+============================================================
+ALBERTO MARKETPLACE TOKEN (AMT)
+PI BACKEND (APP LEDGER) — MAINNET
+FULL SERVER VERSION 2.5.0-mainnet
 
-let accessToken=null;
-let currentUser=null;
-let piSdkReady=false;
-let miningInterval=null;
-let selectedStakePool="30D";
+IMPORTANT:
+- MAINNET build — use Mainnet PI_API_KEY + PI_API_BASE=https://api.minepi.com
+- Application ledger backend for AMT mining app
+- Generated AMT- address is NOT a Pi/Stellar blockchain wallet
+- Pi authentication is verified server-side (Mainnet)
+- Mining / airdrop / transfers / staking = application-ledger accounting
+- Pi Payments API depends on PI_API_KEY network (Mainnet key = Mainnet payments)
+- In-app AMT balances are ledger accounting; on-chain Mainnet AMT is separate
+- API root must report: network "Pi Mainnet", version "2.5.0-mainnet"
 
-function $(id){return document.getElementById(id)}
+VERSION 2.5.0-mainnet:
+- Forced Mainnet labels (removed Testnet display strings)
+- Pet gear / weapon store, squad, story, battle charges
+- Premium pets + Shadow/Light/Cosmic
+- Login auth hardened for Mainnet keys
 
-function esc(value){
-return String(value??"")
-.replace(/&/g,"&amp;")
-.replace(/</g,"&lt;")
-.replace(/>/g,"&gt;")
-.replace(/"/g,"&quot;")
-.replace(/'/g,"&#39;");
-}
+VERSION 2.4.3:
+- OLD 1 AMT airdrop claims are cleared → users can claim new 100 AMT airdrop
+- Status treats amount < 100 as NOT claimed
+- Claim endpoint deletes old 1 AMT record then inserts 100 AMT
 
-function num(value){
-const n=Number(value);
-return Number.isFinite(n)?n:0;
-}
+VERSION 2.4.2:
+- Fixed profile picture saving (increased body limit to 10mb, image size to ~2MB)
+- Accepts multiple field names: image, profileImage, photo, profile_image, avatar
+- Better error messages when saving profile photo
+- Staking fully present (pools, status, stake, unstake, history)
 
-function fmt(value){
-return num(value).toFixed(8);
-}
+VERSION 2.4.1:
+- Airdrop amount changed to 100 AMT
+- Airdrop now has 48-hour claim timer (from account creation)
+- Profile picture save endpoints preserved and working
+- All referral system preserved
 
-function showToast(message,error=false){
-const el=$("toast");
-el.textContent=message;
-el.className="toast show "+(error?"error":"success");
-clearTimeout(showToast.timer);
-showToast.timer=setTimeout(()=>{
-el.className="toast";
-},3500);
-}
+VERSION 2.4.0:
+- Preserved all existing Pioneer records
+- Preserved all existing AMT balances
+- Preserved all existing mining sessions
+- Preserved all existing ledger history
+- Preserved reward/mining/staking logic
+- Added verified Pi Mainnet wallet address to auth response
+- Added verified Pi Mainnet wallet address to profile response
+- Added verified Pi Mainnet wallet address to wallet response
+- AMT ledger address remains separate from Pi wallet address
+- FIXED: Explicitly return referralCode (= username) for every Pioneer
+  in /api/auth/verify, /api/profile, /api/wallet, and /api/referral/status
+- NEW: Added referral_code column to members table
+- NEW: On every login, Pi username is permanently saved as referral_code
+- NEW: referralCode is now read from the saved referral_code column
+- FIXED: /api/referrals now returns referralCode + activeMiners
+  (frontend was calling this endpoint and showing ------)
+- NEW: Referral Tier System (Bronze / Silver / Gold / Legend / Mythic)
+- NEW: Per-referral rewards + one-time milestone bonuses
+- NEW: Automatic credit to AMT ledger when referral is linked
+- NEW: AMT Pet Marketplace (70 real Common pets, 7 elements)
+- NEW: Full Pet System - Care, Training, Breeding, Eggs, Hatch
+- NEW: Public Sell / Listings, Battle (PvE)
+============================================================
+*/
 
-/* ============================================================
-   CINEMATIC ECOSYSTEM LOGIN TRANSITION
-============================================================ */
+const express = require("express");
+const cors = require("cors");
+const crypto = require("crypto");
+const { Pool } = require("pg");
 
-function showEcosystemLoading(){
-const el=$("ecosystemLoading");
+const app = express();
 
-if(!el){
-return Promise.resolve();
-}
+/* =========================================================
+CONFIGURATION
+========================================================= */
 
-el.classList.remove("hidden");
-el.setAttribute("aria-hidden","false");
+const PORT = Number(process.env.PORT || 10000);
 
-return new Promise(resolve=>{
-setTimeout(resolve,3200);
-});
-}
+const PI_API_BASE =
+  process.env.PI_API_BASE ||
+  "https://api.minepi.com";
 
-function hideEcosystemLoading(){
-const el=$("ecosystemLoading");
+const PI_API_KEY =
+  process.env.PI_API_KEY || "";
 
-if(!el)return;
+const DATABASE_URL =
+  process.env.DATABASE_URL || "";
 
-el.classList.add("hidden");
-el.setAttribute("aria-hidden","true");
-}
-
-/* ============================================================
-   API
-============================================================ */
-
-async function api(path,options={}){
-const headers={
-...(options.body instanceof FormData?{}:{"Content-Type":"application/json"}),
-...(options.headers||{})
-};
-
-if(accessToken){
-headers.Authorization="Bearer "+accessToken;
-}
-
-const response=await fetch(API_BASE+path,{
-...options,
-headers
-});
-
-let data=null;
-
-try{
-data=await response.json();
-}catch(e){
-data={};
-}
-
-if(!response.ok){
-throw new Error(
-data.message||
-data.error||
-("Request failed: "+response.status)
+/* Testnet mining rate — AMT per hour. Override with env AMT_MINING_RATE */
+const AMT_MINING_RATE = Number(
+  process.env.AMT_MINING_RATE || "0.5"
 );
-}
 
-return data;
-}
+const MINING_DURATION_SECONDS =
+  24 * 60 * 60;
 
-/* ============================================================
-   NAVIGATION
-============================================================ */
-
-function showSection(id,button=null){
-
-document.querySelectorAll(".section")
-.forEach(s=>s.classList.remove("active"));
-
-const section=$(id);
-
-if(section){
-section.classList.add("active");
-}
-
-document.querySelectorAll(".nav-btn").forEach(btn=>{
-btn.classList.remove("active");
-
-if(btn.dataset.section===id){
-btn.classList.add("active");
-}
-});
-
-window.scrollTo({
-top:0,
-behavior:"smooth"
-});
-
-if(id==="walletSection"){
-  refreshWallet();
-  try{ loadTxHistory(); }catch(e){}
-  setTimeout(function(){ try{ refreshPaymentQr(); }catch(e){} }, 300);
-  setTimeout(function(){ try{ refreshPaymentQr(); }catch(e){} }, 1200);
-}
-if(id==="airdropSection"){loadAirdrop();try{loadSpinStatus()}catch(e){}}
-if(id==="referralSection")loadReferral();
-  if(id==="walletSection"){ try{ refreshPaymentQr(); }catch(e){} }
-if(id==="circleSection")loadSecurityCircle();
-if(id==="profileSection"){loadProfile();try{refreshDevTreasuryCard();}catch(e){}}
-if(id==="stakingSection")loadStaking();
-if(id==="miningSection"){loadMiningStatus();loadDailyStatus();try{preloadPiAds()}catch(e){}}
-if(id==="marketSection")petTab(currentPetTab || "shop");
-}
-
-/* ============================================================
-   PI LOGIN
-============================================================ */
-
-function setLoginStatus(msg, isError){
-  var el=$("loginStatusBar");
-  if(!el) return;
-  el.style.display = msg ? "block" : "none";
-  el.textContent = msg || "";
-  el.style.borderColor = isError ? "rgba(255,80,100,.55)" : "rgba(180,100,255,.35)";
-  el.style.color = isError ? "#ffb0b8" : "#e8d8ff";
-}
-
-async function loginWithPi(){
-
-try{
-
-if(!window.Pi){
-throw new Error(
-"Pi SDK is not available. Open this app inside Pi Browser (not Chrome/Facebook)."
+const MAXIMUM_BASE_REWARD = Number(
+  (AMT_MINING_RATE * 24).toFixed(8)
 );
-}
 
-setLoginStatus("Checking backend…");
-// Backend environment check — retry (Render cold start)
-try{
-  let root=null;
-  let lastErr=null;
-  for(let i=0;i<3;i++){
-    try{
-      setLoginStatus(i===0?"Checking backend…":("Waking server… ("+(i+1)+"/3)"));
-      const ctrl=typeof AbortController!=="undefined"?new AbortController():null;
-      const to=ctrl?setTimeout(function(){try{ctrl.abort()}catch(e){}},20000):null;
-      const res=await fetch(API_BASE+"/",{cache:"no-store",signal:ctrl?ctrl.signal:undefined});
-      if(to)clearTimeout(to);
-      if(!res.ok) throw new Error("Server HTTP "+res.status);
-      root=await res.json();
-      lastErr=null;
-      break;
-    }catch(eTry){
-      lastErr=eTry;
-      await new Promise(function(r){setTimeout(r,1500*(i+1));});
+/* Daily login reward — 1 claim per UTC day, streak bonus up to 7 days */
+/* Day1→Day7 — higher to keep miners active */
+const DAILY_REWARD_AMOUNTS = [2, 3, 4, 5, 7, 9, 12]; // index 0 = day 1 streak
+const DAILY_MAX_STREAK = DAILY_REWARD_AMOUNTS.length;
+
+/* Comeback bonus: if no mining claim in 3+ days, +5 AMT on next claim */
+const COMEBACK_BONUS_AMT = Number(
+  process.env.COMEBACK_BONUS_AMT || "5"
+);
+const COMEBACK_IDLE_DAYS = 3;
+
+const AIRDROP_AMOUNT_AMT = Number(
+  process.env.AIRDROP_AMOUNT_AMT || "100"
+);
+
+/* Developer in-app treasury for rewards / payments (one-time ledger credit) */
+const DEV_TREASURY_AMT = Number(
+  process.env.DEV_TREASURY_AMT || "5000000"
+);
+/* Match by Pi username and/or pi_uid (comma-separated). Empty = disabled. */
+const DEV_PI_USERNAMES = String(
+  process.env.DEV_PI_USERNAMES || process.env.DEV_PI_USERNAME || "utoy0913"
+)
+  .split(",")
+  .map(s => s.trim().toLowerCase())
+  .filter(Boolean);
+const DEV_PI_UIDS = String(process.env.DEV_PI_UIDS || process.env.DEV_PI_UID || "")
+  .split(",")
+  .map(s => s.trim())
+  .filter(Boolean);
+/* Developer match: in-app AMT ledger address (AMT-...) — NOT on-chain G... */
+const DEV_LEDGER_ADDRESSES = String(
+  process.env.DEV_LEDGER_ADDRESS ||
+    process.env.DEV_WALLETS ||
+    process.env.DEV_WALLET_ADDRESS ||
+    "AMT-654929D9EBBFAEB52B905BBB2C6A7A859685C092"
+)
+  .split(",")
+  .map(s => s.trim().toUpperCase())
+  .filter(Boolean);
+const DEV_TREASURY_REF = "AMT-DEV-TREASURY-5M";
+
+/* Airdrop claim window (shared campaign). Default: 30 days from campaign start.
+   Override with env: AIRDROP_CAMPAIGN_START, AIRDROP_WINDOW_HOURS */
+const AIRDROP_CLAIM_WINDOW_SECONDS =
+  Number(process.env.AIRDROP_WINDOW_HOURS || "720") * 60 * 60; /* default 30 days */
+
+/* Campaign start — reopen for Mainnet app era. Override via env if needed. */
+const AIRDROP_CAMPAIGN_START_MS =
+  new Date(
+    process.env.AIRDROP_CAMPAIGN_START ||
+    "2026-09-29T00:00:00.000Z"
+  ).getTime();
+
+const MAX_DIRECT_REFERRALS = null;
+
+const MAX_SECURITY_CIRCLE = 5;
+
+/* =========================================================
+REFERRAL TIER SYSTEM
+========================================================= */
+
+const REFERRAL_TIERS = [
+  { name: "Bronze", min: 1, max: 5, rewardPerReferral: 0.5 },
+  { name: "Silver", min: 6, max: 15, rewardPerReferral: 1.0 },
+  { name: "Gold", min: 16, max: 50, rewardPerReferral: 1.5 },
+  { name: "Legend", min: 51, max: 99, rewardPerReferral: 2.0 },
+  { name: "Mythic", min: 100, max: Infinity, rewardPerReferral: 3.0 }
+];
+
+const REFERRAL_MILESTONES = [
+  { count: 5, bonus: 2.0, key: "M5" },
+  { count: 15, bonus: 5.0, key: "M15" },
+  { count: 50, bonus: 15.0, key: "M50" },
+  { count: 100, bonus: 30.0, key: "M100" }
+];
+
+function getReferralTier(count) {
+  const n = Number(count) || 0;
+  for (const tier of REFERRAL_TIERS) {
+    if (n >= tier.min && n <= tier.max) {
+      return tier;
     }
   }
-  if(!root){
-    throw new Error("Cannot reach AMT server after retries. Open Render dashboard — is amtmining13-github-io Live?");
-  }
-  if(root&&String(root.environment||"").toUpperCase().indexOf("TEST")>=0){
-    console.warn("Backend environment:", root.environment, root.version);
-  }
-  if(root&&String(root.version||"").indexOf("2.5.0")<0&&String(root.version||"").indexOf("mainnet")<0){
-    console.warn("Backend version:",root.version,root.network);
-  }
-}catch(e){
-  console.warn("backend check",e);
-  throw new Error((e&&e.message)||"Cannot reach AMT server. Check Render is Live: amtmining13-github-io.onrender.com");
+  return REFERRAL_TIERS[0];
 }
 
-setLoginStatus("Connecting to Pi… approve the popup");
-showToast("Connecting to Pi...");
+const PI_PAYMENT_API_BASE =
+  process.env.PI_PAYMENT_API_BASE ||
+  process.env.PI_API_BASE ||
+  "https://api.minepi.com";
 
-try{
+const MARKET_TEST_OWNER_PI_UID =
+  process.env.MARKET_TEST_OWNER_PI_UID || "";
 
-Pi.init({
-version:"2.0",
-sandbox:false
+const MARKET_TEST_OWNER_USERNAME =
+  process.env.MARKET_TEST_OWNER_USERNAME || "";
+
+const MARKET_TEST_PRICE_PI = Number(
+  process.env.MARKET_TEST_PRICE_PI || "0.10"
+);
+
+const MARKET_TEST_PRODUCT_ID =
+  process.env.MARKET_TEST_PRODUCT_ID ||
+  "amt-test-pet-001";
+
+/* =========================================================
+STAKING CONFIGURATION
+========================================================= */
+
+const STAKING_MIN_AMOUNT_AMT = Number(
+  process.env.STAKING_MIN_AMOUNT_AMT || "0.01"
+);
+
+const STAKING_POOLS = {
+  "30D": {
+    id: "30D",
+    name: "Starter",
+    lockDays: 30,
+    rewardPercent: 5
+  },
+
+  "90D": {
+    id: "90D",
+    name: "Growth",
+    lockDays: 90,
+    rewardPercent: 10
+  },
+
+  "180D": {
+    id: "180D",
+    name: "Legend",
+    lockDays: 180,
+    rewardPercent: 15
+  }
+};
+
+/* =========================================================
+DATABASE
+========================================================= */
+
+if (!DATABASE_URL) {
+  console.error("DATABASE_URL is missing.");
+}
+
+const pool = new Pool({
+  connectionString: DATABASE_URL,
+  ssl: DATABASE_URL
+    ? { rejectUnauthorized: false }
+    : undefined
 });
-piSdkReady=true;
 
-}catch(e){
+/* =========================================================
+EXPRESS
+========================================================= */
 
-console.warn(
-"Pi init failed:",
-e
+app.use(
+  cors({
+    origin: "*",
+    methods: [
+      "GET",
+      "POST",
+      "PUT",
+      "DELETE",
+      "OPTIONS"
+    ],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization"
+    ]
+  })
 );
 
-try{
-  Pi.init({version:"2.0"});
-}catch(e2){
-  throw new Error("Pi.init failed. Use Pi Browser and ensure domain is registered in Pi Developer Portal.");
-}
-
-}
-
-// Timeout so UI does not stick forever
-var authResult;
-try{
-  authResult = await Promise.race([
-    Pi.authenticate(
-      ["username","payments"],
-      async function(payment){
-        console.log("Incomplete payment:", payment);
-        try {
-          if (payment && payment.identifier) {
-            var tx =
-              (payment.transaction && (payment.transaction.txid || payment.transaction._id)) ||
-              payment.txid ||
-              "";
-            showToast("Recovering previous PI payment...");
-            await api("/api/market/payment/complete", {
-              method: "POST",
-              body: JSON.stringify({
-                paymentId: payment.identifier,
-                txid: tx
-              })
-            });
-            showToast("Previous PI payment completed · check My Pets");
-            if (typeof loadOwnedPets === "function") await loadOwnedPets();
-            if (typeof refreshWallet === "function") await refreshWallet();
-          }
-        } catch (e) {
-          console.warn("Incomplete payment recovery:", e);
-          showToast((e && e.message) || "Could not recover payment", true);
-        }
-      }
-    ),
-    new Promise(function(_, reject){
-      setTimeout(function(){
-        reject(new Error("Pi login timed out (60s). 1) Approve the Pi popup 2) Hard-refresh 3) Domain in Pi Developer Portal must be exactly: amtmining13.github.io (Mainnet app)."));
-      }, 60000);
-    })
-  ]);
-}catch(authErr){
-  throw authErr;
-}
-
-if(
-!authResult||
-!authResult.accessToken||
-!authResult.user
-){
-throw new Error(
-"Pi authentication did not return a valid session. Try again inside Pi Browser."
+app.use(
+  express.json({
+    limit: "10mb"
+  })
 );
+
+/* =========================================================
+HELPERS
+========================================================= */
+
+function nowIso() {
+  return new Date().toISOString();
 }
 
-accessToken=authResult.accessToken;
-currentUser=authResult.user;
+function authToken(req) {
+  const header =
+    req.headers.authorization || "";
 
-setLoginStatus("Verifying with AMT server…");
-// Verify token with backend (Mainnet API key required on Render)
-try{
-  await api("/api/users",{
-    method:"POST",
-    body:JSON.stringify({
-      username:currentUser.username,
-      uid:currentUser.uid
-    })
-  });
-}catch(userErr){
-  console.warn("POST /api/users:", userErr);
-  try{
-    await api("/api/auth/verify");
-  }catch(verErr){
-    accessToken=null;
+  if (!header.startsWith("Bearer ")) {
+    return "";
+  }
+
+  return header.slice(7).trim();
+}
+
+function cleanUsername(value) {
+  return String(value || "").trim();
+}
+
+function validAmount(value) {
+  if (
+    value === null ||
+    value === undefined ||
+    value === ""
+  ) {
+    return null;
+  }
+
+  const text = String(value).trim();
+  const n = Number(text);
+
+  if (!Number.isFinite(n) || n <= 0) {
+    return null;
+  }
+
+  if (text.includes(".")) {
+    const decimals =
+      text.split(".")[1].length;
+
+    if (decimals > 8) {
+      return null;
+    }
+  }
+
+  return Number(n.toFixed(8));
+}
+
+function generateLedgerAddress() {
+  return (
+    "AMT-" +
+    crypto
+      .randomBytes(20)
+      .toString("hex")
+      .toUpperCase()
+  );
+}
+
+function makeReference(prefix) {
+  return (
+    prefix +
+    "-" +
+    Date.now()
+      .toString(36)
+      .toUpperCase() +
+    "-" +
+    crypto
+      .randomBytes(6)
+      .toString("hex")
+      .toUpperCase()
+  );
+}
+
+class HttpError extends Error {
+  constructor(
+    status,
+    message,
+    extra = {}
+  ) {
+    super(message);
+    this.status = status;
+    this.extra = extra;
+  }
+}
+
+/* =========================================================
+PI API
+========================================================= */
+
+async function piApiRequest(
+  path,
+  options = {}
+) {
+  if (!PI_API_KEY) {
     throw new Error(
-      ((verErr&&verErr.message)||(userErr&&userErr.message)||"Auth failed") +
-      " — Render: Mainnet PI_API_KEY + PI_API_BASE=https://api.minepi.com"
+      "PI_API_KEY is not configured."
     );
   }
+
+  const response = await fetch(
+    `${PI_API_BASE}${path}`,
+    {
+      ...options,
+
+      headers: {
+        Accept: "application/json",
+        "Content-Type":
+          "application/json",
+        Authorization:
+          `Key ${PI_API_KEY}`,
+        ...(options.headers || {})
+      }
+    }
+  );
+
+  const text =
+    await response.text();
+
+  let data;
+
+  try {
+    data = JSON.parse(text);
+  } catch {
+    data = {
+      raw: text
+    };
+  }
+
+  if (!response.ok) {
+    const error = new Error(
+      data?.error ||
+      data?.message ||
+      `Pi API error ${response.status}`
+    );
+
+    error.status =
+      response.status;
+
+    error.data = data;
+
+    throw error;
+  }
+
+  return data;
 }
 
-localStorage.setItem(
-"amt_pi_access_token",
-accessToken
-);
+/* =========================================================
+PI AUTHENTICATION
+========================================================= */
 
-localStorage.setItem(
-"amt_pi_username",
-currentUser.username||""
-);
+async function verifyPiAccessToken(
+  accessToken
+) {
+  if (!accessToken) {
+    throw new HttpError(
+      401,
+      "Pi access token is required."
+    );
+  }
 
-localStorage.setItem(
-"amt_pi_uid",
-currentUser.uid||""
-);
+  const response = await fetch(
+    `${PI_API_BASE}/v2/me`,
+    {
+      method: "GET",
 
-setLoginStatus("Success · loading…");
-await showEcosystemLoading();
+      headers: {
+        Accept: "application/json",
+        Authorization:
+          `Bearer ${accessToken}`
+      }
+    }
+  );
 
-enterApp();
+  const text =
+    await response.text();
 
-// Apply referral from link (?ref=username) if present
-await tryApplyPendingReferral();
+  let data;
 
-// Payment QR link (?pay=user&amt=)
-capturePendingPaymentFromUrl();
-setTimeout(function(){
-  try{ showPayConfirmModal(); }catch(e){}
-}, 600);
+  try {
+    data = JSON.parse(text);
+  } catch {
+    data = {};
+  }
 
-setTimeout(()=>{
-hideEcosystemLoading();
-},250);
+  if (
+    !response.ok ||
+    !data?.uid
+  ) {
+    console.error("AUTH ERROR detail:", {
+      status: response.status,
+      body: data,
+      tokenPrefix: String(accessToken).slice(0, 12) + "…"
+    });
+    throw new HttpError(
+      401,
+      data?.error ||
+        data?.message ||
+        `Pi authentication failed (${response.status}).`
+    );
+  }
 
-showToast(
-"Welcome, "+(currentUser.username||"Pioneer")+"!"
-);
+  return {
+    uid: String(data.uid),
 
-}catch(error){
+    username: cleanUsername(
+      data.username
+    ),
 
-setLoginStatus((error&&error.message)||"Pi login failed.", true);
-
-console.error(error);
-
-showToast(
-error.message||"Pi login failed.",
-true
-);
-
-hideEcosystemLoading();
-}
-}
-
-/* ============================================================
-   RESTORE SESSION
-============================================================ */
-
-async function restoreSession(){
-
-const savedToken=
-localStorage.getItem("amt_pi_access_token");
-
-if(!savedToken)return;
-
-accessToken=savedToken;
-
-currentUser={
-username:
-localStorage.getItem("amt_pi_username")||
-"Pioneer",
-
-uid:
-localStorage.getItem("amt_pi_uid")||
-""
-};
-
-try{
-
-await api("/api/balance");
-
-enterApp();
-
-// Apply referral from link if present
-await tryApplyPendingReferral();
-
-capturePendingPaymentFromUrl();
-setTimeout(function(){
-  try{ showPayConfirmModal(); }catch(e){}
-}, 800);
-
-}catch(error){
-
-console.log(
-"Saved AMT session expired."
-);
-
-logoutPi(false);
-}
+    /*
+     * This is the VERIFIED Pi wallet address
+     * returned by the Pi API.
+     *
+     * It is NOT the AMT- ledger address.
+     */
+    walletAddress:
+      data.wallet_address || null
+  };
 }
 
-/* ============================================================
-   ENTER APP
-============================================================ */
+/* =========================================================
+AMT LEDGER WALLET
+========================================================= */
 
-/* ========== Pi Ads (Rewarded + Interstitial) ========== */
-function ensurePiInit(){
-  if(!window.Pi)return false;
-  if(piSdkReady)return true;
-  try{
-    Pi.init({version:"2.0",sandbox:false});
-    piSdkReady=true;
-  }catch(e){
-    try{
-      Pi.init({version:"2.0"});
-      piSdkReady=true;
-    }catch(e2){
-      console.warn("Pi.init:",e2);
-      return false;
+async function ensureAmtWallet(
+  memberId,
+  db = pool
+) {
+  let result =
+    await db.query(
+      `
+      SELECT
+        id,
+        member_id,
+        wallet_status,
+        wallet_address
+      FROM amt_wallets
+      WHERE member_id = $1
+      LIMIT 1
+      `,
+      [memberId]
+    );
+
+  if (result.rows.length) {
+    const wallet =
+      result.rows[0];
+
+    if (wallet.wallet_address) {
+      return wallet;
     }
   }
+
+  for (
+    let attempt = 0;
+    attempt < 5;
+    attempt++
+  ) {
+    const address =
+      generateLedgerAddress();
+
+    try {
+      result =
+        await db.query(
+          `
+          INSERT INTO amt_wallets
+            (
+              member_id,
+              wallet_status,
+              wallet_address
+            )
+          VALUES
+            (
+              $1,
+              'LEDGER_ACTIVE',
+              $2
+            )
+          ON CONFLICT (member_id)
+          DO UPDATE SET
+            wallet_status =
+              CASE
+                WHEN amt_wallets.wallet_address IS NULL
+                THEN 'LEDGER_ACTIVE'
+                ELSE amt_wallets.wallet_status
+              END,
+
+            wallet_address =
+              COALESCE(
+                amt_wallets.wallet_address,
+                EXCLUDED.wallet_address
+              ),
+
+            updated_at = NOW()
+
+          RETURNING
+            id,
+            member_id,
+            wallet_status,
+            wallet_address
+          `,
+          [
+            memberId,
+            address
+          ]
+        );
+
+      return result.rows[0];
+
+    } catch (error) {
+      if (
+        error.code === "23505"
+      ) {
+        continue;
+      }
+
+      throw error;
+    }
+  }
+
+  throw new Error(
+    "Unable to create AMT ledger wallet."
+  );
+}
+
+/* =========================================================
+AUTHENTICATED MEMBER
+========================================================= */
+
+async function getAuthenticatedMember(
+  accessToken
+) {
+  const piUser =
+    await verifyPiAccessToken(
+      accessToken
+    );
+
+  /*
+   IMPORTANT:
+   Pi UID is the permanent account key.
+   Existing members are UPDATED, NOT recreated.
+  */
+
+  const result =
+    await pool.query(
+      `
+      INSERT INTO members
+        (
+          pi_uid,
+          username,
+          referral_code,
+          pi_wallet_address
+        )
+      VALUES
+        (
+          $1,
+          $2,
+          $2,
+          $3
+        )
+
+      ON CONFLICT (pi_uid)
+      DO UPDATE SET
+
+        username =
+          CASE
+            WHEN EXCLUDED.username <> ''
+            THEN EXCLUDED.username
+            ELSE members.username
+          END,
+
+        referral_code =
+          CASE
+            WHEN EXCLUDED.username <> ''
+            THEN EXCLUDED.username
+            ELSE COALESCE(
+              members.referral_code,
+              members.username
+            )
+          END,
+
+        /* Sync Pi wallet address whenever Pi API returns one */
+        pi_wallet_address =
+          CASE
+            WHEN EXCLUDED.pi_wallet_address IS NOT NULL
+              AND EXCLUDED.pi_wallet_address <> ''
+            THEN EXCLUDED.pi_wallet_address
+            ELSE members.pi_wallet_address
+          END,
+
+        updated_at = NOW()
+
+      RETURNING *
+      `,
+      [
+        piUser.uid,
+        piUser.username,
+        piUser.walletAddress || null
+      ]
+    );
+
+  const member =
+    result.rows[0];
+
+  /* Always ensure AMT ledger wallet exists on every login */
+  const wallet =
+    await ensureAmtWallet(
+      member.id
+    );
+
+  /* Developer treasury: one-time 5M in-app AMT for rewards / payments */
+  try {
+    await ensureDevTreasury(member, piUser, wallet);
+  } catch (e) {
+    console.error("DEV TREASURY:", e.message || e);
+  }
+
+  return {
+    member,
+    wallet,
+    piUser
+  };
+}
+
+async function ensureDevTreasury(member, piUser, ledgerWallet) {
+  if (!member || !member.id) return;
+  if (DEV_TREASURY_AMT <= 0) return;
+
+  const uname = String(
+    (piUser && piUser.username) || member.username || ""
+  )
+    .trim()
+    .toLowerCase();
+  const uid = String((piUser && piUser.uid) || member.pi_uid || "").trim();
+
+  // In-app ledger address (AMT-...)
+  let ledgerAddr = String(
+    (ledgerWallet && ledgerWallet.wallet_address) || ""
+  )
+    .trim()
+    .toUpperCase();
+  if (!ledgerAddr) {
+    try {
+      const w = await pool.query(
+        `SELECT wallet_address FROM amt_wallets WHERE member_id = $1 LIMIT 1`,
+        [member.id]
+      );
+      ledgerAddr = String(w.rows[0]?.wallet_address || "")
+        .trim()
+        .toUpperCase();
+    } catch (e) {}
+  }
+
+  // Prefix match: env may have short AMT-... if full address was truncated in UI copy
+  const matchUser =
+    DEV_PI_USERNAMES.length > 0 && DEV_PI_USERNAMES.includes(uname);
+  const matchUid =
+    DEV_PI_UIDS.length > 0 && DEV_PI_UIDS.includes(uid);
+  const matchLedger =
+    ledgerAddr &&
+    DEV_LEDGER_ADDRESSES.length > 0 &&
+    DEV_LEDGER_ADDRESSES.some(
+      (a) =>
+        ledgerAddr === a ||
+        ledgerAddr.startsWith(a) ||
+        a.startsWith(ledgerAddr)
+    );
+
+  if (!matchUser && !matchUid && !matchLedger) {
+    if (process.env.DEV_TREASURY_DEBUG === "1") {
+      console.log("DEV TREASURY skip (no match)", {
+        uname,
+        uid,
+        ledgerAddr,
+        envUsers: DEV_PI_USERNAMES,
+        envUids: DEV_PI_UIDS,
+        envLedgers: DEV_LEDGER_ADDRESSES
+      });
+    }
+    return false;
+  }
+
+  const exists = await pool.query(
+    `SELECT id FROM amt_ledger
+     WHERE member_id = $1 AND reference = $2
+     LIMIT 1`,
+    [member.id, DEV_TREASURY_REF]
+  );
+  if (exists.rows.length) {
+    console.log(
+      "DEV TREASURY already credited for member",
+      member.id
+    );
+    return false;
+  }
+
+  await pool.query(
+    `INSERT INTO amt_ledger (member_id, amount, type, reference)
+     VALUES ($1, $2, 'DEV_TREASURY', $3)`,
+    [member.id, DEV_TREASURY_AMT, DEV_TREASURY_REF]
+  );
+  console.log(
+    "DEV TREASURY credited:",
+    DEV_TREASURY_AMT,
+    "AMT → member",
+    member.id,
+    ledgerAddr || uname || uid
+  );
   return true;
 }
 
-async function preloadPiAds(){
-  try{
-    if(!window.Pi||!Pi.Ads)return;
-    if(!ensurePiInit())return;
-    // Request both; ignore errors (pending approval / no fill)
-    await Promise.all([
-      Pi.Ads.requestAd("rewarded").catch(function(){}),
-      Pi.Ads.requestAd("interstitial").catch(function(){})
-    ]);
-  }catch(e){
-    console.warn("Pi Ads preload:",e);
-  }
-}
-
-function piAdResultOk(res){
-  if(res==null) return false;
-  if(res===true) return true;
-  var r = "";
-  try{ r = String((res && res.result) || res || "").toUpperCase(); }catch(e){}
-  if(!r) return true; // some builds return empty on success
-  return (
-    r.indexOf("LOADED") >= 0 ||
-    r.indexOf("READY") >= 0 ||
-    r.indexOf("REWARD") >= 0 ||
-    r.indexOf("CLOSED") >= 0 ||
-    r.indexOf("DISPLAY") >= 0 ||
-    r.indexOf("SHOWN") >= 0 ||
-    r === "OK"
-  );
-}
-function piAdResultBlocked(res){
-  var r = "";
-  try{ r = String((res && res.result) || res || "").toUpperCase(); }catch(e){}
-  return (
-    r.indexOf("NOT_LOADED") >= 0 ||
-    r.indexOf("UNAVAILABLE") >= 0 ||
-    r.indexOf("NO_FILL") >= 0 ||
-    r.indexOf("FAILED") >= 0 ||
-    r.indexOf("ERROR") >= 0 ||
-    r.indexOf("DENIED") >= 0
-  );
-}
-
-async function watchRewardedAd(){
-  try{
-    if(!window.Pi||!Pi.Ads){
-      showToast("Pi Ads only works inside Pi Browser.",true);
-      return;
-    }
-    if(!ensurePiInit()){
-      showToast("Pi SDK init failed. Open in Pi Browser.",true);
-      return;
-    }
-    showToast("Loading ad…");
-    // Always request; don't hard-fail on isAdReady shape differences
-    try{
-      var ready = await Pi.Ads.isAdReady("rewarded");
-      console.log("isAdReady rewarded", ready);
-    }catch(e){}
-    var req = null;
-    try{ req = await Pi.Ads.requestAd("rewarded"); console.log("requestAd rewarded", req); }catch(e){ console.warn(e); }
-    // Only abort if Pi explicitly says unavailable
-    if(req && piAdResultBlocked(req) && !piAdResultOk(req)){
-      // try interstitial as fallback
-      try{
-        var req2 = await Pi.Ads.requestAd("interstitial");
-        console.log("requestAd interstitial", req2);
-        if(req2 && piAdResultBlocked(req2) && !piAdResultOk(req2)){
-          showToast("No ad fill right now ("+String((req&&req.result)||(req2&&req2.result)||"empty")+"). Try again later.", true);
-          return;
-        }
-        var resI = await Pi.Ads.showAd("interstitial");
-        console.log("showAd interstitial", resI);
-        if(piAdResultOk(resI) || (resI && resI.result)){
-          await claimMiningAdBonus();
-        }
-        preloadPiAds();
-        return;
-      }catch(e2){
-        showToast("Ad not available right now.", true);
-        return;
-      }
-    }
-    var res = await Pi.Ads.showAd("rewarded");
-    console.log("showAd rewarded", res);
-    if(piAdResultOk(res) || (res && res.result)){
-      await claimMiningAdBonus();
-      preloadPiAds();
-    }else{
-      showToast("Ad: "+String((res&&res.result)||"unavailable"), true);
-    }
-  }catch(e){
-    console.warn(e);
-    showToast(e.message||"Could not show ad.",true);
-  }
-}
-
-async function maybeShowInterstitial(){
-  try{
-    if(!window.Pi||!Pi.Ads)return;
-    if(!ensurePiInit())return;
-    try{ await Pi.Ads.requestAd("interstitial"); }catch(e){}
-    await Pi.Ads.showAd("interstitial");
-    preloadPiAds();
-  }catch(e){
-    console.warn("Interstitial:",e);
-  }
-}
-
-/** Mining ads: show on START MINING. Bonus still 1x/day (server). */
-function adDayKey(){
-  const d=new Date();
-  return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate();
-}
-function miningAdCooldownOk(){
-  try{
-    const last=Number(localStorage.getItem("amt_mining_ad_ts")||0);
-    // 2 min cooldown so rapid re-clicks don't spam
-    return Date.now()-last>30*1000;
-  }catch(e){return true;}
-}
-function markMiningAdAttempt(){
-  try{localStorage.setItem("amt_mining_ad_ts",String(Date.now()));}catch(e){}
-}
-function markMiningAdSuccessToday(){
-  try{localStorage.setItem("amt_mining_ad_ok_day",adDayKey());}catch(e){}
-}
-
-async function claimMiningAdBonus(){
-  try{
-    const data=await api("/api/ads/mining-bonus",{method:"POST",body:JSON.stringify({})});
-    if(data&&data.credited){
-      showToast("Ad bonus +"+(data.amount||0.5)+" AMT");
-      if(typeof refreshWallet==="function") refreshWallet().catch(()=>{});
-    }else if(data&&data.message){
-      showToast(data.message);
-    }
-  }catch(e){
-    console.warn("Ad bonus API:",e);
-  }
-}
-
-async function waitAdLoaded(type, tries){
-  tries = tries || 8;
-  for(let i=0;i<tries;i++){
-    try{
-      // Request first (fills inventory), then check ready
-      try{
-        const req = await Pi.Ads.requestAd(type);
-        console.log("waitAdLoaded requestAd", type, req);
-        if(piAdResultOk(req)) return true;
-        if(req && piAdResultBlocked(req) && !piAdResultOk(req)){
-          // hard no-fill this type — stop early after 2 tries
-          if(i >= 1) return false;
-        }
-      }catch(eReq){ console.warn("requestAd", type, eReq); }
-      try{
-        let ready = await Pi.Ads.isAdReady(type);
-        console.log("waitAdLoaded isAdReady", type, ready);
-        if(ready === true || ready === "true") return true;
-        if(ready && (ready.ready === true || ready.ready === "true" || ready === 1)) return true;
-        // Some SDKs return { result: "AD_LOADED" }
-        if(ready && piAdResultOk(ready)) return true;
-      }catch(eReady){ console.warn("isAdReady", type, eReady); }
-      await new Promise(r => setTimeout(r, 600 + i * 400));
-    }catch(e){
-      console.warn("waitAdLoaded", type, e);
-      await new Promise(r => setTimeout(r, 500));
-    }
-  }
-  return false;
-}
-
-async function showDailyMiningAd(){
-  try{
-    if(!miningAdCooldownOk()){
-      console.log("Mining ad cooldown");
-      return;
-    }
-    if(!window.Pi||!Pi.Ads){
-      // Silent if outside Pi Browser — mining still works
-      console.warn("Pi.Ads missing");
-      return;
-    }
-    if(!ensurePiInit()){
-      console.warn("Pi init failed for ads");
-      return;
-    }
-
-    showToast("Loading mining ad…");
-    markMiningAdAttempt();
-
-    // Pre-request both types
-    try{ await Pi.Ads.requestAd("rewarded"); }catch(e){}
-    try{ await Pi.Ads.requestAd("interstitial"); }catch(e){}
-
-    let type = "rewarded";
-    let ok = await waitAdLoaded("rewarded", 8);
-    if(!ok){
-      type = "interstitial";
-      ok = await waitAdLoaded("interstitial", 6);
-    }
-
-    async function tryShow(adType){
-      try{
-        try{ await Pi.Ads.requestAd(adType); }catch(e){}
-        await new Promise(r => setTimeout(r, 300));
-        const res = await Pi.Ads.showAd(adType);
-        console.log("Mining ad show:", adType, res);
-        const result = res && res.result ? String(res.result) : "";
-        if(piAdResultOk(res) || /REWARD|CLOSED|DISPLAY|SHOWN|OK/i.test(result)){
-          return true;
-        }
-        if(piAdResultBlocked(res)) return false;
-        // empty / unknown — treat soft success only if res truthy
-        return !!res && !piAdResultBlocked(res);
-      }catch(err){
-        console.warn("tryShow", adType, err);
-        return false;
-      }
-    }
-
-    let shown = await tryShow(type);
-    if(!shown){
-      const other = type === "rewarded" ? "interstitial" : "rewarded";
-      shown = await tryShow(other);
-    }
-    // Last chance: opposite type one more request+show
-    if(!shown){
-      shown = await tryShow("rewarded") || await tryShow("interstitial");
-    }
-
-    if(shown){
-      markMiningAdSuccessToday();
-      await claimMiningAdBonus();
-      showToast("Thanks for watching!");
-    }else{
-      showToast("No ad fill right now. Tap WATCH AD later.", true);
-    }
-    // Refill inventory for next time
-    setTimeout(function(){ preloadPiAds(); }, 1500);
-  }catch(e){
-    console.warn("Daily mining ad:",e);
-    showToast((e&&e.message)||"Ad could not load. Try WATCH AD FOR BONUS.",true);
-  }
-}
-
-function enterApp(){
-
-$("loginSection").classList.remove("active");
-
-$("bottomNav").classList.remove("hidden");
-
-showSection("miningSection");
-
-loadAll();
-preloadPiAds();
-}
-
-/* ============================================================
-   LOGOUT
-============================================================ */
-
-
-
-function isDevTreasuryAccount(){
-  try{
-    var u = (currentUser && (currentUser.username||currentUser.user||"")) || "";
-    u = String(u).trim().toLowerCase();
-    // Only exact developer username — never show to miners
-    var allow = ["utoy0913"];
-    return allow.indexOf(u) >= 0;
-  }catch(e){ return false; }
-}
-function refreshDevTreasuryCard(){
-  var card = $("devTreasuryCard");
-  var btn = $("devTreasuryBtn");
-  if(!card) return;
-  if(isDevTreasuryAccount()){
-    card.style.display = "";
-    if(btn){ btn.disabled = false; }
-  }else{
-    card.style.display = "none";
-    if(btn){ btn.disabled = true; }
-  }
-}
-
-async function claimDevTreasury(){
-  try{
-    if(typeof accessToken==="undefined"||!accessToken){
-      showToast("Login with Pi first",true);
-      return;
-    }
-    if(!isDevTreasuryAccount()){
-      showToast("Not available",true);
-      return;
-    }
-    showToast("Claiming developer treasury…");
-    const data=await api("/api/dev/claim-treasury",{method:"POST",body:JSON.stringify({})});
-    if(data.credited){
-      showToast("5M in-app AMT credited · balance "+(data.balance!=null?data.balance:"OK"));
-    }else{
-      showToast(data.message||"No new credit (already claimed or not matched)");
-    }
-    if(typeof refreshWallet==="function") await refreshWallet();
-  }catch(e){
-    showToast(e.message||"Claim failed",true);
-  }
-}
-
-function logoutPi(showMessage=true){
-
-accessToken=null;
-currentUser=null;
-
-localStorage.removeItem(
-"amt_pi_access_token"
-);
-
-localStorage.removeItem(
-"amt_pi_username"
-);
-
-localStorage.removeItem(
-"amt_pi_uid"
-);
-
-// Virtual card signature + session UI (privacy on logout)
-try{ localStorage.removeItem("amt_card_signature"); }catch(e){}
-_amtSignPadReady = false;
-_amtSignDrawing = false;
-try{
-  const canvas = $("amtSignCanvas");
-  if(canvas){
-    const ctx = canvas.getContext("2d");
-    if(ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
-  }
-  const card = $("amtCard");
-  if(card) card.classList.remove("flipped");
-  if($("amtCardBalance")) $("amtCardBalance").textContent = "— AMT";
-  if($("amtCardNumber")) $("amtCardNumber").textContent = "•••• •••• •••• 0000";
-  if($("amtCardHolder")) $("amtCardHolder").textContent = "PIONEER";
-}catch(e){}
-
-if(miningInterval){
-clearInterval(miningInterval);
-miningInterval=null;
-}
-
-document.querySelectorAll(".section")
-.forEach(s=>s.classList.remove("active"));
-
-$("loginSection").classList.add("active");
-
-$("bottomNav").classList.add("hidden");
-
-if(showMessage){
-showToast("Logged out.");
-}
-}
-
-/* ============================================================
-   LOAD ALL
-============================================================ */
-
-async function loadAll(){
-
-await Promise.allSettled([
-refreshWallet(),
-loadMiningStatus(),
-loadDailyStatus(),
-loadAirdrop(),
-(typeof loadSpinStatus==='function'?loadSpinStatus():Promise.resolve()),
-loadReferral(),
-loadSecurityCircle(),
-loadProfile(),
-loadStaking()
-]);
-try{ refreshPaymentQr(); }catch(e){}
-
-}
-
-/* ============================================================
-   WALLET
-============================================================ */
-
-async function refreshWallet(){
-
-try{
-
-// Prefer full wallet endpoint, fallback to balance
-let data;
-try{
-  data = await api("/api/wallet");
-}catch(e){
-  data = await api("/api/balance");
-}
-
-const balance=num(
-data.balance??
-data.availableBalance??
-data.amount??
-0
-);
-
-const available=num(
-data.availableBalance??
-balance
-);
-
-const staked=num(
-data.stakedPrincipal??
-data.stakedBalance??
-data.staked??
-0
-);
-
-$("walletBalance").textContent=
-fmt(balance);
-
-$("availableBalance").textContent=
-fmt(available)+" AMT";
-
-$("stakedBalance").textContent=
-fmt(staked)+" AMT";
-
-if($("balInApp")){
-  $("balInApp").textContent = fmt(available) + " AMT";
-}
-
-// AMT Ledger Address
-const amtAddr =
-  data.ledgerWalletAddress ||
-  data.walletAddress ||
-  data.wallet?.walletAddress ||
-  null;
-
-if(amtAddr){
-  if($("amtWalletAddress")) $("amtWalletAddress").textContent = amtAddr;
-  if($("walletAddress")) $("walletAddress").textContent = amtAddr;
-  window._amtLedgerAddress = amtAddr;
-}else{
-  if($("amtWalletAddress")) $("amtWalletAddress").textContent = "Not connected";
-}
-try{
-  if(typeof updateAmtVisaCard === "function"){
-    updateAmtVisaCard(null, false, amtAddr || window._amtLedgerAddress || "");
-  }
-}catch(e){}
-
-// Pi Wallet Address (verified from Pi API)
-const piAddr =
-  data.piWalletAddress ||
-  data.piUser?.walletAddress ||
-  null;
-
-if($("piWalletAddress")){
-  if(piAddr){
-    $("piWalletAddress").textContent = piAddr;
-  }else{
-    $("piWalletAddress").textContent = "Not linked — paste your G... address below";
-  }
-}
-
-// On-chain balances (own linked wallet only)
-await refreshOnchainBalances();
-
-}catch(error){
-
-console.log(error);
-
-if(
-error.message.includes("401")||
-error.message.toLowerCase().includes("unauthorized")
-){
-logoutPi(false);
-}
-
-}
-}
-
-async function linkPiWallet(){
-  const input = $("linkPiWalletInput");
-  const address = (input && input.value ? input.value : "").trim();
-
-  if(!address){
-    return showToast("Paste your Pi Mainnet wallet address (starts with G).", true);
-  }
-
-  if(!/^G[A-Z2-7]{55}$/i.test(address)){
-    return showToast("Invalid address. Use your G... wallet from Pi Mainnet.", true);
-  }
-
-  try{
-    const data = await api("/api/wallet/link-pi", {
-      method: "POST",
-      body: JSON.stringify({ piWalletAddress: address })
-    });
-
-    if($("piWalletAddress")){
-      $("piWalletAddress").textContent = data.piWalletAddress || address.toUpperCase();
-    }
-    if(input) input.value = "";
-
-    showToast("Pi wallet linked to your account only.");
-    await refreshWallet();
-  }catch(error){
-    showToast(error.message || "Failed to link wallet.", true);
-  }
-}
-
-async function unlinkPiWallet(){
-  if(!confirm("Unlink your Pi wallet from this account?")) return;
-
-  try{
-    await api("/api/wallet/link-pi", { method: "DELETE" });
-    if($("piWalletAddress")){
-      $("piWalletAddress").textContent = "Not linked — paste your G... address below";
-    }
-    if($("balOnchainAmt")) $("balOnchainAmt").textContent = "—";
-    if($("balMainnetPi")) $("balMainnetPi").textContent = "—";
-    if($("balTestPi")) $("balTestPi").textContent = "—";
-    if($("onchainStatus")) $("onchainStatus").textContent = "Link wallet to see on-chain balances.";
-    showToast("Pi wallet unlinked.");
-  }catch(error){
-    showToast(error.message || "Failed to unlink.", true);
-  }
-}
-
-function updateAmtVisaCard(onchainAmt, linked, walletAddr){
-  const balEl = $("amtCardBalance");
-  const numEl = $("amtCardNumber");
-  const holderEl = $("amtCardHolder");
-  const cvvEl = $("amtCardCvv");
-  const name = (currentUser && currentUser.username) ||
-    localStorage.getItem("amt_pi_username") ||
-    "pioneer";
-  const uname = String(name).replace(/^@/, "");
-  if($("amtTagUser")){
-    $("amtTagUser").innerHTML = "<span>@</span>" + esc(uname);
-  }
-  // Invite / pay link with referral code when available
-  var appBase = (typeof APP_BASE_URL === "string" && APP_BASE_URL) ? APP_BASE_URL.replace(/\/$/, "") : "https://amtmining13.github.io";
-  var payLink = appBase + "/?ref=" + encodeURIComponent(uname);
-  if($("amtTagPayLink")) $("amtTagPayLink").textContent = payLink;
-  if($("amtTagAppLink")) $("amtTagAppLink").textContent = "🔗 " + appBase.replace(/^https?:\/\//, "");
-  // Ledger from wallet UI if present
-  var ledger = "";
-  if($("walletAddress") && $("walletAddress").textContent){
-    ledger = String($("walletAddress").textContent).trim();
-  }
-  if((!ledger || ledger.indexOf("AMT-") < 0) && window._amtLedgerAddress){
-    ledger = window._amtLedgerAddress;
-  }
-  if($("amtTagLedger")){
-    $("amtTagLedger").textContent = (ledger && ledger.indexOf("AMT-") === 0) ? ledger : (ledger || "Login to load ledger");
-  }
-  if(balEl){
-    if(linked && onchainAmt != null && !isNaN(Number(onchainAmt))){
-      balEl.textContent = Number(onchainAmt).toFixed(4) + " AMT";
-    }else{
-      balEl.textContent = "— AMT";
-    }
-  }
-  if(numEl){
-    let last4 = "0000";
-    if(walletAddr && String(walletAddr).length >= 4){
-      last4 = String(walletAddr).replace(/[^A-Za-z0-9]/g,"").slice(-4).toUpperCase();
-    } else if(ledger && ledger.length >= 4){
-      last4 = ledger.replace(/[^A-Za-z0-9]/g,"").slice(-4).toUpperCase();
-    }
-    numEl.textContent = "•••• •••• •••• " + last4;
-  }
-  if(holderEl){
-    holderEl.textContent = uname.toUpperCase().slice(0, 18);
-  }
-  if(cvvEl){
-    if(walletAddr && String(walletAddr).length >= 3){
-      let n = 0;
-      const s = String(walletAddr);
-      for(let i = 0; i < s.length; i++) n = (n + s.charCodeAt(i) * (i + 1)) % 1000;
-      cvvEl.textContent = String(n).padStart(3, "0");
-    }else{
-      cvvEl.textContent = "•••";
-    }
-  }
-}
-
-function copyAmtTagField(id){
-  var el = $(id);
-  if(!el) return;
-  var text = (el.textContent || "").replace(/^🔗\s*/, "").trim();
-  if(!text || text === "—" || text.indexOf("Login") === 0){
-    showToast("Nothing to copy yet", true);
-    return;
-  }
-  if(navigator.clipboard && navigator.clipboard.writeText){
-    navigator.clipboard.writeText(text).then(function(){
-      showToast("Copied");
-    }).catch(function(){
-      showToast("Copy failed", true);
-    });
-  }else{
-    try{
-      var ta = document.createElement("textarea");
-      ta.value = text;
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand("copy");
-      document.body.removeChild(ta);
-      showToast("Copied");
-    }catch(e){
-      showToast("Copy failed", true);
-    }
-  }
-}
-
-let _amtSignDrawing = false;
-let _amtSignPadReady = false;
-
-function openAmtSignModal(){
-  const modal = $("amtSignModal");
-  if(!modal) return;
-  modal.classList.remove("hidden");
-  modal.style.display = "flex";
-  document.body.style.overflow = "hidden";
-  _amtSignPadReady = false;
-  setTimeout(initAmtSignPad, 60);
-}
-
-function closeAmtSignModal(){
-  const modal = $("amtSignModal");
-  if(modal){
-    modal.classList.add("hidden");
-    modal.style.display = "none";
-  }
-  document.body.style.overflow = "";
-}
-
-function initAmtSignPad(){
-  const canvas = $("amtSignCanvas");
-  if(!canvas) return;
-  const ctx = canvas.getContext("2d");
-  if(!ctx) return;
-
-  const rect = canvas.getBoundingClientRect();
-  const dpr = window.devicePixelRatio || 1;
-  const w = Math.max(300, Math.floor(rect.width * dpr));
-  const h = Math.max(140, Math.floor(rect.height * dpr));
-  canvas.width = w;
-  canvas.height = h;
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.scale(dpr, dpr);
-  ctx.strokeStyle = "#111";
-  ctx.lineWidth = 2.4;
-  ctx.lineCap = "round";
-  ctx.lineJoin = "round";
-
-  try{
-    const saved = localStorage.getItem("amt_card_signature");
-    if(saved){
-      const img = new Image();
-      img.onload = () => {
-        ctx.drawImage(img, 0, 0, rect.width, rect.height);
-      };
-      img.src = saved;
-    }
-  }catch(e){}
-
-  if(_amtSignPadReady) return;
-
-  function pos(ev){
-    const r = canvas.getBoundingClientRect();
-    const t = (ev.touches && ev.touches[0]) || (ev.changedTouches && ev.changedTouches[0]) || ev;
-    return { x: t.clientX - r.left, y: t.clientY - r.top };
-  }
-  function start(ev){
-    ev.preventDefault();
-    ev.stopPropagation();
-    _amtSignDrawing = true;
-    const p = pos(ev);
-    ctx.beginPath();
-    ctx.moveTo(p.x, p.y);
-  }
-  function move(ev){
-    if(!_amtSignDrawing) return;
-    ev.preventDefault();
-    ev.stopPropagation();
-    const p = pos(ev);
-    ctx.lineTo(p.x, p.y);
-    ctx.stroke();
-  }
-  function end(ev){
-    if(ev){ ev.preventDefault(); ev.stopPropagation(); }
-    _amtSignDrawing = false;
-  }
-
-  canvas.addEventListener("mousedown", start);
-  canvas.addEventListener("mousemove", move);
-  canvas.addEventListener("mouseup", end);
-  canvas.addEventListener("mouseleave", end);
-  canvas.addEventListener("touchstart", start, { passive: false });
-  canvas.addEventListener("touchmove", move, { passive: false });
-  canvas.addEventListener("touchend", end, { passive: false });
-  _amtSignPadReady = true;
-}
-
-function clearAmtSignature(){
-  const canvas = $("amtSignCanvas");
-  if(!canvas) return;
-  const ctx = canvas.getContext("2d");
-  if(!ctx) return;
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  try{ localStorage.removeItem("amt_card_signature"); }catch(e){}
-  showToast("Signature cleared");
-}
-
-function saveAmtSignature(){
-  const canvas = $("amtSignCanvas");
-  if(!canvas) return;
-  try{
-    const data = canvas.toDataURL("image/png");
-    localStorage.setItem("amt_card_signature", data);
-    showToast("Signature saved on this device");
-  }catch(e){
-    showToast("Could not save signature", true);
-  }
-}
-
-async function refreshOnchainBalances(){
-  try{
-    const data = await api("/api/wallet/onchain");
-
-    if($("balOnchainAmt")){
-      if(data.linked && data.onchainAmtBalance != null){
-        $("balOnchainAmt").textContent = Number(data.onchainAmtBalance).toFixed(4) + " AMT";
-      }else{
-        $("balOnchainAmt").textContent = "—";
-      }
-    }
-
-    if($("balMainnetPi")){
-      const mp = data.mainnetPiBalance != null ? data.mainnetPiBalance : (data.horizon === "mainnet" ? data.testPiBalance : null);
-      if(data.linked && mp != null){
-        $("balMainnetPi").textContent = Number(mp).toFixed(4) + " π";
-      }else{
-        $("balMainnetPi").textContent = "—";
-      }
-    }
-
-    if($("balTestPi")){
-      if(data.linked && data.testPiBalance != null && data.horizon !== "mainnet"){
-        $("balTestPi").textContent = Number(data.testPiBalance).toFixed(4) + " Test-π";
-      }else if(data.linked && data.testPiBalance != null && Number(data.testPiBalance) > 0 && data.mainnetPiBalance != null){
-        $("balTestPi").textContent = Number(data.testPiBalance).toFixed(4) + " Test-π";
-      }else{
-        $("balTestPi").textContent = "—";
-      }
-    }
-
-    // Virtual Visa card — on-chain AMT only
-    updateAmtVisaCard(
-      data.onchainAmtBalance,
-      data.linked,
-      data.walletAddress || data.piWallet || (typeof piWalletAddress !== "undefined" ? null : null)
-    );
-    // Prefer linked address from DOM if API doesn't return it
-    const addrEl = $("piWalletAddress");
-    const addrText = addrEl ? addrEl.textContent.trim() : "";
-    if(addrText && addrText !== "Not linked" && !addrText.startsWith("Not")){
-      updateAmtVisaCard(data.onchainAmtBalance, data.linked, addrText);
-    }
-
-    if($("onchainStatus")){
-      if(!data.linked){
-        $("onchainStatus").textContent = "Link your Pi wallet to load on-chain balances.";
-      }else if(data.accountExists === false){
-        $("onchainStatus").textContent = data.message || "Wallet not found on Pi Mainnet yet.";
-      }else{
-        $("onchainStatus").textContent = "On-chain data from Pi Mainnet · your wallet only";
-      }
-    }
-  }catch(e){
-    console.log("On-chain balances:", e);
-    if($("onchainStatus")){
-      $("onchainStatus").textContent = "Could not load on-chain balances.";
-    }
-    updateAmtVisaCard(null, false, null);
-  }
-
-  await loadDepositInfo();
-}
-
-async function loadDepositInfo(){
-  try{
-    const data = await api("/api/onchain/deposit-info");
-    if($("depositTreasury")){
-      $("depositTreasury").textContent =
-        data.treasuryAddress || "Set AMT_ONCHAIN_TREASURY on server";
-    }
-  }catch(e){
-    console.log("Deposit info:", e);
-  }
-}
-
-async function claimOnchainDeposit(){
-  const input = $("depositTxHash");
-  const txHash = (input && input.value ? input.value : "").trim();
-
-  if(!txHash){
-    return showToast("Paste the transaction hash after sending on-chain AMT.", true);
-  }
-
-  try{
-    showToast("Verifying on-chain payment...");
-    const data = await api("/api/onchain/deposit-claim", {
-      method: "POST",
-      body: JSON.stringify({ txHash })
-    });
-
-    if(input) input.value = "";
-    showToast(data.message || ("Credited " + data.credited + " AMT"));
-    await refreshWallet();
-  }catch(error){
-    showToast(error.message || "Deposit claim failed.", true);
-  }
-}
-
-/* ============================================================
-   SEND AMT
-============================================================ */
-
-
-async function loadTxHistory() {
-  const box = $("txHistoryList");
-  if (!box) return;
-  if (!accessToken) {
-    box.innerHTML = '<div class="empty">Login to see history.</div>';
-    return;
-  }
-  box.innerHTML = '<div class="muted">Loading transactions...</div>';
+async function requireAuth(
+  req,
+  res,
+  next
+) {
   try {
-    const d = await api("/api/wallet/transactions");
-    const list = d.transactions || [];
-    if (!list.length) {
-      box.innerHTML = '<div class="empty">No activity yet. Spin, daily claim, send/receive will show here.</div>';
-      return;
+    const token =
+      authToken(req);
+
+    if (!token) {
+      return res
+        .status(401)
+        .json({
+          ok: false,
+          error:
+            "Pi login required."
+        });
     }
-    box.innerHTML = list.map(function(tx) {
-      const kind = (tx.kind || tx.direction || "").toUpperCase();
-      const isOut = kind === "SEND" || (Number(tx.amount) < 0 && kind !== "RECEIVE");
-      const isReward = kind === "REWARD" || kind === "LUCKY_SPIN" || kind === "DAILY" || kind === "AIRDROP" || (tx.type && String(tx.type).indexOf("SPIN") >= 0);
-      let dir, color;
-      if (isReward || kind === "REWARD") {
-        dir = "🎁 " + (tx.label || tx.type || "REWARD");
-        color = "#ffd64e";
-      } else if (isOut || kind === "SEND") {
-        dir = "↑ SEND";
-        color = "#ff8a80";
-      } else {
-        dir = "↓ RECEIVE";
-        color = "#69f0ae";
-      }
-      const amt = Number(tx.amount);
-      const sign = amt < 0 || kind === "SEND" ? "" : (amt > 0 ? "+" : "");
-      const amtStr = sign + (isFinite(amt) ? Math.abs(amt) : tx.amount);
-      const amtColor = (amt < 0 || kind === "SEND") ? "#ff8a80" : "#69f0ae";
-      const other = tx.direction === "SEND" ? tx.recipientAddress : tx.senderAddress;
-      const when = tx.createdAt ? new Date(tx.createdAt).toLocaleString() : "";
-      return '<div class="balance-row" style="flex-direction:column;align-items:stretch;gap:4px;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.08)">' +
-        '<div style="display:flex;justify-content:space-between;gap:8px">' +
-        '<span style="color:' + color + ';font-weight:700">' + dir + '</span>' +
-        '<span style="color:' + amtColor + ';font-weight:700">' + amtStr + ' AMT</span></div>' +
-        (other ? '<div class="muted" style="font-size:10px;word-break:break-all">To/From: ' + other + '</div>' : '') +
-        (tx.memo ? '<div class="muted" style="font-size:10px">' + String(tx.memo) + '</div>' : '') +
-        '<div class="muted" style="font-size:10px">' + when + (tx.txId ? " · " + tx.txId : "") + '</div></div>';
-    }).join("");
-  } catch (e) {
-    box.innerHTML = '<div class="empty">' + (e.message || "Failed to load history") + '</div>';
+
+    const auth =
+      await getAuthenticatedMember(
+        token
+      );
+
+    req.accessToken =
+      token;
+
+    req.member =
+      auth.member;
+
+    req.wallet =
+      auth.wallet;
+
+    req.piUser =
+      auth.piUser;
+
+    next();
+
+  } catch (error) {
+    console.error(
+      "AUTH ERROR:",
+      error
+    );
+
+    return res
+      .status(
+        error.status || 401
+      )
+      .json({
+        ok: false,
+        error:
+          error.message ||
+          "Authentication failed."
+      });
   }
 }
 
-async function sendAMT(){
+/* =========================================================
+DATABASE INITIALIZATION
+========================================================= */
 
-const recipient=
-$("sendTo").value.trim();
+async function initializeDatabase() {
+  if (!DATABASE_URL) {
+    throw new Error(
+      "DATABASE_URL is required."
+    );
+  }
 
-const amount=
-num($("sendAmount").value);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS members (
+      id BIGSERIAL PRIMARY KEY,
 
-if(!recipient){
-return showToast(
-"Enter the recipient wallet address.",
-true
-);
+      pi_uid TEXT UNIQUE NOT NULL,
+
+      username TEXT NOT NULL
+        DEFAULT '',
+
+      referral_code TEXT,
+
+      kyc_status TEXT NOT NULL
+        DEFAULT 'UNVERIFIED',
+
+      profile_image TEXT,
+
+      created_at TIMESTAMPTZ NOT NULL
+        DEFAULT NOW(),
+
+      updated_at TIMESTAMPTZ NOT NULL
+        DEFAULT NOW()
+    );
+
+    ALTER TABLE members
+      ADD COLUMN IF NOT EXISTS
+      profile_image TEXT;
+
+    ALTER TABLE members
+      ADD COLUMN IF NOT EXISTS
+      referral_code TEXT;
+
+    ALTER TABLE members
+      ADD COLUMN IF NOT EXISTS
+      pi_wallet_address TEXT;
+
+    -- Backfill existing members: set referral_code = username if still null
+    UPDATE members
+    SET referral_code = username
+    WHERE
+      (referral_code IS NULL OR referral_code = '')
+      AND username IS NOT NULL
+      AND username <> '';
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS amt_wallets (
+      id BIGSERIAL PRIMARY KEY,
+
+      member_id BIGINT UNIQUE NOT NULL
+        REFERENCES members(id)
+        ON DELETE CASCADE,
+
+      wallet_status TEXT NOT NULL
+        DEFAULT 'NOT_CONNECTED',
+
+      wallet_address TEXT UNIQUE,
+
+      created_at TIMESTAMPTZ NOT NULL
+        DEFAULT NOW(),
+
+      updated_at TIMESTAMPTZ NOT NULL
+        DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS mining_sessions (
+      id BIGSERIAL PRIMARY KEY,
+
+      member_id BIGINT NOT NULL
+        REFERENCES members(id)
+        ON DELETE CASCADE,
+
+      started_at TIMESTAMPTZ NOT NULL,
+
+      ends_at TIMESTAMPTZ NOT NULL,
+
+      status TEXT NOT NULL
+        DEFAULT 'ACTIVE',
+
+      rate NUMERIC(30,8) NOT NULL,
+
+      claimed_amount NUMERIC(30,8)
+        NOT NULL DEFAULT 0
+    );
+
+    CREATE TABLE IF NOT EXISTS amt_ledger (
+      id BIGSERIAL PRIMARY KEY,
+
+      member_id BIGINT NOT NULL
+        REFERENCES members(id)
+        ON DELETE CASCADE,
+
+      amount NUMERIC(30,8) NOT NULL,
+
+      type TEXT NOT NULL,
+
+      reference TEXT UNIQUE NOT NULL,
+
+      created_at TIMESTAMPTZ NOT NULL
+        DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS referrals (
+      id BIGSERIAL PRIMARY KEY,
+
+      referrer_member_id BIGINT NOT NULL
+        REFERENCES members(id)
+        ON DELETE CASCADE,
+
+      referred_member_id BIGINT UNIQUE NOT NULL
+        REFERENCES members(id)
+        ON DELETE CASCADE,
+
+      status TEXT NOT NULL
+        DEFAULT 'ACTIVE',
+
+      created_at TIMESTAMPTZ NOT NULL
+        DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS security_circle (
+      id BIGSERIAL PRIMARY KEY,
+
+      owner_member_id BIGINT NOT NULL
+        REFERENCES members(id)
+        ON DELETE CASCADE,
+
+      member_id BIGINT NOT NULL
+        REFERENCES members(id)
+        ON DELETE CASCADE,
+
+      status TEXT NOT NULL
+        DEFAULT 'ACTIVE',
+
+      created_at TIMESTAMPTZ NOT NULL
+        DEFAULT NOW(),
+
+      UNIQUE(
+        owner_member_id,
+        member_id
+      )
+    );
+
+    CREATE TABLE IF NOT EXISTS marketplace_payments (
+      id BIGSERIAL PRIMARY KEY,
+
+      pi_payment_id TEXT UNIQUE NOT NULL,
+
+      member_id BIGINT NOT NULL
+        REFERENCES members(id)
+        ON DELETE CASCADE,
+
+      product_id TEXT NOT NULL,
+
+      amount NUMERIC(30,8) NOT NULL,
+
+      status TEXT NOT NULL
+        DEFAULT 'APPROVED',
+
+      created_at TIMESTAMPTZ NOT NULL
+        DEFAULT NOW(),
+
+      completed_at TIMESTAMPTZ
+    );
+
+    CREATE TABLE IF NOT EXISTS marketplace_purchases (
+      id BIGSERIAL PRIMARY KEY,
+
+      payment_id BIGINT NOT NULL
+        REFERENCES marketplace_payments(id)
+        ON DELETE CASCADE,
+
+      member_id BIGINT NOT NULL
+        REFERENCES members(id)
+        ON DELETE CASCADE,
+
+      product_id TEXT NOT NULL,
+
+      created_at TIMESTAMPTZ NOT NULL
+        DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS amt_transfers (
+      id BIGSERIAL PRIMARY KEY,
+
+      tx_id TEXT UNIQUE NOT NULL,
+
+      sender_member_id BIGINT NOT NULL
+        REFERENCES members(id)
+        ON DELETE CASCADE,
+
+      recipient_member_id BIGINT NOT NULL
+        REFERENCES members(id)
+        ON DELETE CASCADE,
+
+      amount NUMERIC(30,8) NOT NULL,
+
+      memo TEXT NOT NULL
+        DEFAULT '',
+
+      status TEXT NOT NULL
+        DEFAULT 'COMPLETED',
+
+      created_at TIMESTAMPTZ NOT NULL
+        DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS amt_airdrops (
+      id BIGSERIAL PRIMARY KEY,
+
+      member_id BIGINT UNIQUE NOT NULL
+        REFERENCES members(id)
+        ON DELETE CASCADE,
+
+      amount NUMERIC(30,8) NOT NULL,
+
+      reference TEXT UNIQUE NOT NULL,
+
+      created_at TIMESTAMPTZ NOT NULL
+        DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS amt_stakes (
+      id BIGSERIAL PRIMARY KEY,
+
+      member_id BIGINT NOT NULL
+        REFERENCES members(id)
+        ON DELETE CASCADE,
+
+      pool_id TEXT NOT NULL,
+
+      principal NUMERIC(30,8) NOT NULL,
+
+      reward_rate NUMERIC(12,8) NOT NULL,
+
+      reward_amount NUMERIC(30,8) NOT NULL,
+
+      started_at TIMESTAMPTZ NOT NULL,
+
+      unlock_at TIMESTAMPTZ NOT NULL,
+
+      status TEXT NOT NULL
+        DEFAULT 'ACTIVE',
+
+      unstaked_at TIMESTAMPTZ,
+
+      created_at TIMESTAMPTZ NOT NULL
+        DEFAULT NOW()
+    );
+  `);
+
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS
+      idx_mining_member
+      ON mining_sessions(member_id);
+
+    CREATE INDEX IF NOT EXISTS
+      idx_ledger_member
+      ON amt_ledger(member_id);
+
+    CREATE INDEX IF NOT EXISTS
+      idx_referrals_referrer
+      ON referrals(referrer_member_id);
+
+    CREATE INDEX IF NOT EXISTS
+      idx_security_owner
+      ON security_circle(owner_member_id);
+
+    CREATE INDEX IF NOT EXISTS
+      idx_transfers_sender
+      ON amt_transfers(sender_member_id);
+
+    CREATE INDEX IF NOT EXISTS
+      idx_transfers_recipient
+      ON amt_transfers(recipient_member_id);
+
+    CREATE INDEX IF NOT EXISTS
+      idx_airdrop_member
+      ON amt_airdrops(member_id);
+
+    CREATE INDEX IF NOT EXISTS
+      idx_stakes_member
+      ON amt_stakes(member_id);
+
+    CREATE INDEX IF NOT EXISTS
+      idx_stakes_active
+      ON amt_stakes(
+        member_id,
+        status
+      );
+
+    CREATE INDEX IF NOT EXISTS
+      idx_stakes_unlock
+      ON amt_stakes(unlock_at);
+  `);
+
+  console.log(
+    "Database initialized."
+  );
 }
 
-if(amount<=0){
-return showToast(
-"Enter a valid AMT amount.",
-true
-);
-}
+/* =========================================================
+ROOT
+========================================================= */
 
-try{
+app.get("/", async (req, res) => {
+  res.json({
+    ok: true,
 
-await api("/api/ledger/send",{
-method:"POST",
-body:JSON.stringify({
-recipient,
-amount
-})
+    service:
+      "Alberto Marketplace Token",
+
+    symbol:
+      "AMT",
+
+    network:
+      "Pi Mainnet",
+
+    environment:
+      "MAINNET",
+
+    version:
+      "2.5.0-mainnet",
+
+    features: [
+      "Pi Login",
+      "AMT Mining",
+      "AMT Wallet",
+      "AMT Transfers",
+      "Airdrop",
+      "Referral",
+      "Security Circle",
+      "Profile",
+      "Marketplace",
+      "Staking"
+    ],
+
+    timestamp:
+      nowIso()
+  });
 });
 
-$("sendTo").value="";
-$("sendAmount").value="";
+/* =========================================================
+HEALTH
+========================================================= */
 
-showToast("AMT sent successfully.");
+async function healthHandler(
+  req,
+  res
+) {
+  let db = "OK";
 
-await refreshWallet();
-try { await loadTxHistory(); } catch (e) {}
+  try {
+    await pool.query(
+      "SELECT 1"
+    );
+  } catch {
+    db = "ERROR";
+  }
 
-}catch(error){
+  res
+    .status(
+      db === "OK"
+        ? 200
+        : 503
+    )
+    .json({
+      ok:
+        db === "OK",
 
-showToast(
-error.message,
-true
+      service:
+        "AMT Mainnet Backend",
+
+      database:
+        db,
+
+      piApiKeyConfigured:
+        Boolean(
+          PI_API_KEY
+        ),
+
+      network:
+        "Pi Mainnet",
+
+      environment:
+        "MAINNET",
+
+      staking:
+        true,
+
+      timestamp:
+        nowIso()
+    });
+}
+
+app.get(
+  "/health",
+  healthHandler
 );
 
-}
-}
+app.get(
+  "/api/health",
+  healthHandler
+);
 
-/* ============================================================
-   MINING
-============================================================ */
+/* =========================================================
+AUTH
+========================================================= */
 
-let dailyResetInterval=null;
+/*
+ * FIX:
+ * Frontend calls GET /api/auth/verify.
+ *
+ * Previous version accepted POST only,
+ * which caused:
+ *
+ * GET /api/auth/verify -> 404
+ *
+ * app.all() safely accepts both GET and POST
+ * without changing the authentication logic.
+ */
 
-async function loadDailyStatus(){
-  try{
-    if(!accessToken){
-      if($("dailyStatusLabel")) $("dailyStatusLabel").textContent="Login to claim";
-      if($("dailyClaimBtn")) $("dailyClaimBtn").disabled=true;
-      return;
+app.all(
+  "/api/auth/verify",
+  requireAuth,
+  async (req, res) => {
+    try {
+      res.json({
+        ok: true,
+
+        /*
+         * Explicit verified Pi wallet address.
+         * This is the address returned by Pi API.
+         */
+        piWalletAddress:
+          req.piUser.walletAddress ||
+          req.member.pi_wallet_address ||
+          null,
+
+        /*
+         * Current frontend can read data.piUser.
+         */
+        piUser: {
+          uid:
+            req.piUser.uid,
+
+          username:
+            req.piUser.username,
+
+          walletAddress:
+            req.piUser.walletAddress ||
+            req.member.pi_wallet_address ||
+            null
+        },
+
+        /*
+         * Existing user object preserved.
+         */
+        user: {
+          uid:
+            req.piUser.uid,
+
+          username:
+            req.piUser.username,
+
+          kycStatus:
+            req.member.kyc_status,
+
+          profileImage:
+            req.member
+              .profile_image || null
+        },
+
+        /*
+         * IMPORTANT:
+         * wallet.walletAddress is still the AMT
+         * application ledger address.
+         */
+        wallet: {
+          walletStatus:
+            req.wallet
+              .wallet_status,
+
+          walletAddress:
+            req.wallet
+              .wallet_address,
+
+          isBlockchainWallet:
+            false,
+
+          walletType:
+            "AMT_MAINNET_LEDGER"
+        },
+
+        network:
+          "Pi Mainnet",
+
+        environment:
+          "MAINNET",
+
+        // Referral code of this Pioneer (saved from Pi username on login)
+        referralCode:
+          req.member.referral_code ||
+          req.member.username ||
+          req.piUser.username ||
+          null
+      });
+
+    } catch (error) {
+      console.error(
+        "AUTH VERIFY RESPONSE ERROR:",
+        error
+      );
+
+      res
+        .status(500)
+        .json({
+          ok: false,
+          error:
+            error.message ||
+            "Unable to verify authentication."
+        });
     }
-    const data=await api("/api/daily/status");
-    const streak=Number(data.streak||0);
-    const nextStreak=Number(data.nextStreak||1);
-    const nextAmt=Number(data.nextAmount||1);
-    const displayAmt=Number(data.displayAmount!=null?data.displayAmount:nextAmt);
-    const canClaim=Boolean(data.canClaim);
-    const cycleDone=Boolean(data.cycleComplete);
-    if($("dailyStreakBadge")) $("dailyStreakBadge").textContent="🔥 "+(data.claimedToday?streak:Math.max(0,streak));
-    // Big number: today's claimed amount if done, else next claim amount
-    if($("dailyNextAmount")) $("dailyNextAmount").textContent=fmt(displayAmt)+" AMT";
-    if($("dailyScheduleHint")&&Array.isArray(data.schedule)){
-      $("dailyScheduleHint").textContent=
-        "Streak: "+data.schedule.map((a,i)=>"D"+(i+1)+":"+a).join(" · ");
-    }
-    const btn=$("dailyClaimBtn");
-    if(btn){
-      btn.disabled=!canClaim;
-      btn.textContent=canClaim
-        ?("🎁 CLAIM "+fmt(nextAmt)+" AMT")
-        :"✅ CLAIMED TODAY";
-    }
-    if($("dailyStatusLabel")){
-      if(canClaim){
-        $("dailyStatusLabel").textContent="Ready · Day "+nextStreak+"/"+(data.maxStreak||7);
-      }else if(cycleDone){
-        $("dailyStatusLabel").textContent="Cycle done · Next = Day 1 ("+fmt(nextAmt)+" AMT)";
-      }else{
-        $("dailyStatusLabel").textContent="Claimed · Streak "+streak+"/"+(data.maxStreak||7)+" · Next Day "+nextStreak+" ("+fmt(nextAmt)+" AMT)";
+  }
+);
+
+/* =========================================================
+PROFILE
+========================================================= */
+
+app.get(
+  "/api/profile",
+  requireAuth,
+  async (req, res) => {
+    res.json({
+      ok: true,
+
+      uid:
+        req.piUser.uid,
+
+      username:
+        req.piUser.username,
+
+      kycStatus:
+        req.member.kyc_status,
+
+      profileImage:
+        req.member
+          .profile_image || null,
+
+      /*
+       * VERIFIED Pi wallet address (live from Pi API, else saved).
+       */
+      piWalletAddress:
+        req.piUser.walletAddress ||
+        req.member.pi_wallet_address ||
+        null,
+
+      walletStatus:
+        req.wallet
+          .wallet_status,
+
+      /*
+       * AMT application ledger address.
+       */
+      walletAddress:
+        req.wallet
+          .wallet_address,
+
+      walletType:
+        "AMT_MAINNET_LEDGER",
+
+      isBlockchainWallet:
+        false,
+
+      network:
+        "Pi Mainnet",
+
+      environment:
+        "MAINNET",
+
+      // Referral code of this Pioneer (saved from Pi username on login)
+      referralCode:
+        req.member.referral_code ||
+        req.member.username ||
+        req.piUser.username ||
+        null
+    });
+  }
+);
+
+app.post(
+  "/api/profile/photo",
+  requireAuth,
+  async (req, res) => {
+    try {
+      // Accept common field names used by different frontends
+      const image =
+        String(
+          req.body?.image ||
+          req.body?.profileImage ||
+          req.body?.photo ||
+          req.body?.profile_image ||
+          req.body?.avatar ||
+          ""
+        ).trim();
+
+      if (!image) {
+        return res
+          .status(400)
+          .json({
+            ok: false,
+            error:
+              "Profile image is required. Send base64 as 'image' or 'profileImage'."
+          });
       }
+
+      if (
+        !image.startsWith(
+          "data:image/"
+        )
+      ) {
+        return res
+          .status(400)
+          .json({
+            ok: false,
+            error:
+              "Invalid image format. Must start with data:image/ (base64)."
+          });
+      }
+
+      // Increased limit: ~3MB base64 (~2.2MB actual image)
+      if (
+        image.length > 4000000
+      ) {
+        return res
+          .status(413)
+          .json({
+            ok: false,
+            error:
+              "Profile image is too large. Max ~2MB."
+          });
+      }
+
+      await pool.query(
+        `
+        UPDATE members
+        SET
+          profile_image = $1,
+          updated_at = NOW()
+        WHERE id = $2
+        `,
+        [
+          image,
+          req.member.id
+        ]
+      );
+
+      res.json({
+        ok: true,
+
+        profileImage:
+          image,
+
+        saved: true
+      });
+
+    } catch (error) {
+      console.error(
+        "PHOTO ERROR:",
+        error
+      );
+
+      res
+        .status(500)
+        .json({
+          ok: false,
+          error:
+            "Unable to save profile image.",
+          detail:
+            error.message || null
+        });
     }
-    if(dailyResetInterval){clearInterval(dailyResetInterval);dailyResetInterval=null;}
-    if(!canClaim && data.secondsUntilReset>0){
-      let left=Number(data.secondsUntilReset);
-      const tick=()=>{
-        if(left<=0){
-          if($("dailyResetTimer")) $("dailyResetTimer").textContent="Refresh for next claim";
-          loadDailyStatus();
-          return;
-        }
-        const h=Math.floor(left/3600);
-        const m=Math.floor((left%3600)/60);
-        const s=Math.floor(left%60);
-        if($("dailyResetTimer"))
-          $("dailyResetTimer").textContent=
-            "Next in "+String(h).padStart(2,"0")+":"+String(m).padStart(2,"0")+":"+String(s).padStart(2,"0")+" UTC";
-        left--;
+  }
+);
+
+app.delete(
+  "/api/profile/photo",
+  requireAuth,
+  async (req, res) => {
+    await pool.query(
+      `
+      UPDATE members
+      SET
+        profile_image = NULL,
+        updated_at = NOW()
+      WHERE id = $1
+      `,
+      [req.member.id]
+    );
+
+    res.json({
+      ok: true,
+      profileImage:
+        null
+    });
+  }
+);
+
+/* =========================================================
+KYC
+========================================================= */
+
+app.get(
+  "/api/kyc/status",
+  requireAuth,
+  async (req, res) => {
+    const verified =
+      String(
+        req.member.kyc_status
+      ).toUpperCase() ===
+      "VERIFIED";
+
+    res.json({
+      ok: true,
+
+      status:
+        req.member
+          .kyc_status,
+
+      miningAllowed:
+        true,
+
+      migrationEligible:
+        verified,
+
+      protectedTransactionsEligible:
+        verified
+    });
+  }
+);
+
+/* =========================================================
+BALANCE HELPERS
+========================================================= */
+
+async function getBalance(
+  memberId,
+  db = pool
+) {
+  const result =
+    await db.query(
+      `
+      SELECT
+        COALESCE(
+          SUM(amount),
+          0
+        )::NUMERIC(30,8)
+        AS balance
+
+      FROM amt_ledger
+
+      WHERE member_id = $1
+      `,
+      [memberId]
+    );
+
+  return Number(
+    result.rows[0]?.balance || 0
+  );
+}
+
+async function getStakingSummary(
+  memberId,
+  db = pool
+) {
+  const result =
+    await db.query(
+      `
+      SELECT
+
+        COALESCE(
+          SUM(
+            CASE
+              WHEN status = 'ACTIVE'
+              THEN principal
+              ELSE 0
+            END
+          ),
+          0
+        )::NUMERIC(30,8)
+        AS staked_principal,
+
+        COALESCE(
+          SUM(
+            CASE
+              WHEN status = 'ACTIVE'
+              THEN reward_amount
+              ELSE 0
+            END
+          ),
+          0
+        )::NUMERIC(30,8)
+        AS pending_rewards
+
+      FROM amt_stakes
+
+      WHERE member_id = $1
+      `,
+      [memberId]
+    );
+
+  const row =
+    result.rows[0];
+
+  return {
+    stakedPrincipal:
+      Number(
+        row?.staked_principal || 0
+      ),
+
+    pendingRewards:
+      Number(
+        row?.pending_rewards || 0
+      )
+  };
+}
+
+/* =========================================================
+WALLET
+========================================================= */
+
+app.get(
+  "/api/wallet",
+  requireAuth,
+  async (req, res) => {
+    const balance =
+      await getBalance(
+        req.member.id
+      );
+
+    const staking =
+      await getStakingSummary(
+        req.member.id
+      );
+
+    const totalBalance =
+      Number(
+        (
+          balance +
+          staking.stakedPrincipal
+        ).toFixed(8)
+      );
+
+    res.json({
+      ok: true,
+
+      symbol:
+        "AMT",
+
+      balance,
+
+      availableBalance:
+        balance,
+
+      stakedBalance:
+        staking.stakedPrincipal,
+
+      pendingStakingRewards:
+        staking.pendingRewards,
+
+      totalBalance,
+
+      network:
+        "Pi Mainnet",
+
+      environment:
+        "MAINNET",
+
+      /*
+       * VERIFIED Pi Testnet wallet (live from Pi API, else saved on login).
+       */
+      piWalletAddress:
+        req.piUser.walletAddress ||
+        req.member.pi_wallet_address ||
+        null,
+
+      /*
+       * AMT application ledger wallet.
+       * Always created on login via ensureAmtWallet.
+       */
+      walletStatus:
+        req.wallet
+          .wallet_status,
+
+      walletAddress:
+        req.wallet
+          .wallet_address,
+
+      /*
+       * Explicit AMT ledger field.
+       */
+      ledgerWalletAddress:
+        req.wallet
+          .wallet_address,
+
+      walletSynced:
+        true,
+
+      isBlockchainWallet:
+        false,
+
+      walletType:
+        "AMT_MAINNET_LEDGER",
+
+      // Referral code of this Pioneer (saved from Pi username on login)
+      referralCode:
+        req.member.referral_code ||
+        req.member.username ||
+        req.piUser.username ||
+        null
+    });
+  }
+);
+
+/* =========================================================
+LINK PI WALLET (own address only — never shared with others)
+========================================================= */
+
+function isValidPiWalletAddress(value) {
+  const addr = String(value || "").trim().toUpperCase();
+  // Stellar/Pi public key: G + 55 base32 chars = 56 total
+  if (!/^G[A-Z2-7]{55}$/.test(addr)) {
+    return null;
+  }
+  return addr;
+}
+
+app.post(
+  "/api/wallet/link-pi",
+  requireAuth,
+  async (req, res) => {
+    try {
+      const raw =
+        req.body?.piWalletAddress ||
+        req.body?.walletAddress ||
+        req.body?.address ||
+        "";
+
+      const address =
+        isValidPiWalletAddress(raw);
+
+      if (!address) {
+        return res.status(400).json({
+          ok: false,
+          error:
+            "Invalid Pi wallet address. Must be a G... address (56 characters)."
+        });
+      }
+
+      /*
+       * IMPORTANT:
+       * Saves ONLY to this authenticated member's row.
+       * Other Pioneers cannot read or use this address.
+       */
+      await pool.query(
+        `
+        UPDATE members
+        SET
+          pi_wallet_address = $1,
+          updated_at = NOW()
+        WHERE id = $2
+        `,
+        [address, req.member.id]
+      );
+
+      res.json({
+        ok: true,
+        linked: true,
+        piWalletAddress: address,
+        message:
+          "Pi wallet linked to your account only."
+      });
+    } catch (error) {
+      console.error("LINK PI WALLET ERROR:", error);
+      res.status(500).json({
+        ok: false,
+        error: "Unable to link Pi wallet."
+      });
+    }
+  }
+);
+
+app.delete(
+  "/api/wallet/link-pi",
+  requireAuth,
+  async (req, res) => {
+    try {
+      await pool.query(
+        `
+        UPDATE members
+        SET
+          pi_wallet_address = NULL,
+          updated_at = NOW()
+        WHERE id = $1
+        `,
+        [req.member.id]
+      );
+
+      res.json({
+        ok: true,
+        linked: false,
+        piWalletAddress: null
+      });
+    } catch (error) {
+      res.status(500).json({
+        ok: false,
+        error: "Unable to unlink Pi wallet."
+      });
+    }
+  }
+);
+
+/* =========================================================
+ON-CHAIN BALANCES (Pi Mainnet Horizon — own wallet only)
+========================================================= */
+
+const PI_HORIZON_MAINNET =
+  process.env.PI_HORIZON_MAINNET ||
+  process.env.PI_HORIZON_BASE ||
+  "https://api.mainnet.minepi.com";
+
+const PI_HORIZON_TESTNET =
+  process.env.PI_HORIZON_TESTNET ||
+  "https://api.testnet.minepi.com";
+
+const PI_HORIZON_TESTNET_2 =
+  process.env.PI_HORIZON_TESTNET_2 ||
+  "https://api.testnet2.minepi.com";
+
+/** Prefer Mainnet PI balance; optional Testnet for on-chain AMT tests */
+async function fetchHorizonAccount(address, preferMainnet = true) {
+  const urls = preferMainnet
+    ? [
+        `${PI_HORIZON_MAINNET}/accounts/${encodeURIComponent(address)}`,
+        `${PI_HORIZON_TESTNET}/accounts/${encodeURIComponent(address)}`,
+        `${PI_HORIZON_TESTNET_2}/accounts/${encodeURIComponent(address)}`
+      ]
+    : [
+        `${PI_HORIZON_TESTNET}/accounts/${encodeURIComponent(address)}`,
+        `${PI_HORIZON_TESTNET_2}/accounts/${encodeURIComponent(address)}`,
+        `${PI_HORIZON_MAINNET}/accounts/${encodeURIComponent(address)}`
+      ];
+
+  let lastError = null;
+  let last404 = null;
+
+  for (const url of urls) {
+    try {
+      const response = await fetch(url, {
+        headers: { Accept: "application/json" }
+      });
+
+      if (response.status === 404) {
+        last404 = { exists: false, balances: [], horizon: horizonLabel(url) };
+        continue;
+      }
+
+      if (!response.ok) {
+        lastError = new Error(`Horizon ${response.status}`);
+        continue;
+      }
+
+      const data = await response.json();
+      return {
+        exists: true,
+        balances: Array.isArray(data.balances) ? data.balances : [],
+        horizon: horizonLabel(url)
       };
-      tick();
-      dailyResetInterval=setInterval(tick,1000);
-    }else if($("dailyResetTimer")){
-      $("dailyResetTimer").textContent=canClaim?"":"";
+    } catch (err) {
+      lastError = err;
     }
-  }catch(e){
-    console.log("Daily status:",e);
-    if($("dailyStatusLabel")) $("dailyStatusLabel").textContent=e.message||"Unavailable";
+  }
+
+  if (last404) return last404;
+  throw lastError || new Error("Horizon unavailable");
+}
+
+function horizonLabel(url) {
+  if (url.includes("mainnet")) return "mainnet";
+  if (url.includes("testnet2")) return "testnet2";
+  return "testnet";
+}
+
+app.get(
+  "/api/wallet/onchain",
+  requireAuth,
+  async (req, res) => {
+    try {
+      const address =
+        req.member.pi_wallet_address ||
+        req.piUser.walletAddress ||
+        null;
+
+      if (!address) {
+        return res.json({
+          ok: true,
+          linked: false,
+          piWalletAddress: null,
+          testPiBalance: null,
+          onchainAmtBalance: null,
+          otherTokens: [],
+          message:
+            "Link your Pi Mainnet wallet (G...) to see Mainnet PI balance."
+        });
+      }
+
+      // Mainnet first → native PI balance for miners
+      const account = await fetchHorizonAccount(address, true);
+
+      if (!account.exists) {
+        return res.json({
+          ok: true,
+          linked: true,
+          piWalletAddress: address,
+          accountExists: false,
+          mainnetPiBalance: 0,
+          testPiBalance: 0,
+          onchainAmtBalance: 0,
+          otherTokens: [],
+          horizon: account.horizon || "mainnet",
+          network: "Pi Mainnet",
+          message:
+            "Wallet not found on Pi Mainnet yet (or not activated)."
+        });
+      }
+
+      let mainnetPiBalance = 0;
+      let testPiBalance = 0;
+      let onchainAmtBalance = 0;
+      const otherTokens = [];
+      const isMainnet = account.horizon === "mainnet";
+
+      for (const b of account.balances) {
+        const amount = Number(b.balance || 0);
+
+        if (b.asset_type === "native") {
+          if (isMainnet) mainnetPiBalance = amount;
+          else testPiBalance = amount;
+          continue;
+        }
+
+        const code = String(b.asset_code || "");
+        const issuer = String(b.asset_issuer || "");
+
+        if (code.toUpperCase() === "AMT") {
+          onchainAmtBalance += amount;
+        } else {
+          otherTokens.push({
+            code,
+            issuer,
+            balance: amount
+          });
+        }
+      }
+
+      // If Mainnet had no AMT, try Testnet for on-chain AMT only (optional)
+      if (isMainnet && onchainAmtBalance === 0) {
+        try {
+          const tn = await fetchHorizonAccount(address, false);
+          if (tn.exists) {
+            for (const b of tn.balances) {
+              const amount = Number(b.balance || 0);
+              if (b.asset_type === "native") {
+                testPiBalance = amount;
+              } else if (String(b.asset_code || "").toUpperCase() === "AMT") {
+                onchainAmtBalance += amount;
+              }
+            }
+          }
+        } catch (e) {
+          /* ignore testnet fallback errors */
+        }
+      }
+
+      res.json({
+        ok: true,
+        linked: true,
+        accountExists: true,
+        piWalletAddress: address,
+        mainnetPiBalance,
+        testPiBalance,
+        onchainAmtBalance,
+        otherTokens,
+        horizon: account.horizon || "mainnet",
+        network: isMainnet ? "Pi Mainnet" : "Pi Mainnet"
+      });
+    } catch (error) {
+      console.error("ONCHAIN BALANCE ERROR:", error);
+      res.status(500).json({
+        ok: false,
+        error:
+          "Unable to fetch on-chain balances from Pi network."
+      });
+    }
+  }
+);
+
+/* =========================================================
+ON-CHAIN AMT DEPOSIT → IN-APP LEDGER (utility bridge)
+Pioneer sends on-chain AMT to app treasury, pastes tx hash,
+we verify on Horizon, credit in-app AMT 1:1 (testnet).
+========================================================= */
+
+const AMT_ONCHAIN_TREASURY =
+  process.env.AMT_ONCHAIN_TREASURY || "";
+
+const AMT_ASSET_CODE =
+  process.env.AMT_ASSET_CODE || "AMT";
+
+async function ensureOnchainDepositTable() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS onchain_deposits (
+      id BIGSERIAL PRIMARY KEY,
+      member_id BIGINT NOT NULL REFERENCES members(id),
+      tx_hash TEXT NOT NULL UNIQUE,
+      amount NUMERIC(24,8) NOT NULL,
+      from_address TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+}
+
+async function fetchHorizonTxOperations(txHash) {
+  const bases = [PI_HORIZON_BASE, PI_HORIZON_BASE_2];
+  for (const base of bases) {
+    try {
+      const url =
+        `${base}/transactions/${encodeURIComponent(txHash)}/operations?limit=50`;
+      const response = await fetch(url, {
+        headers: { Accept: "application/json" }
+      });
+      if (!response.ok) continue;
+      const data = await response.json();
+      const records =
+        data._embedded && data._embedded.records
+          ? data._embedded.records
+          : [];
+      return records;
+    } catch (e) {
+      /* try next */
+    }
+  }
+  return null;
+}
+
+app.get(
+  "/api/onchain/deposit-info",
+  requireAuth,
+  async (req, res) => {
+    try {
+      await ensureOnchainDepositTable();
+
+      res.json({
+        ok: true,
+        enabled: Boolean(AMT_ONCHAIN_TREASURY),
+        treasuryAddress: AMT_ONCHAIN_TREASURY || null,
+        assetCode: AMT_ASSET_CODE,
+        rate: "1 on-chain AMT = 1 in-app AMT",
+        network: "Pi Mainnet",
+        instructions: AMT_ONCHAIN_TREASURY
+          ? [
+              "1. Open Pi Wallet (Testnet)",
+              "2. Send AMT token to the treasury address below",
+              "3. Copy the transaction hash",
+              "4. Paste hash here and claim — in-app AMT credited 1:1"
+            ]
+          : [
+              "Set AMT_ONCHAIN_TREASURY env on server to enable deposits."
+            ],
+        yourPiWallet:
+          req.member.pi_wallet_address ||
+          req.piUser.walletAddress ||
+          null
+      });
+    } catch (error) {
+      res.status(500).json({
+        ok: false,
+        error: "Unable to load deposit info."
+      });
+    }
+  }
+);
+
+app.post(
+  "/api/onchain/deposit-claim",
+  requireAuth,
+  async (req, res) => {
+    const client = await pool.connect();
+
+    try {
+      await ensureOnchainDepositTable();
+
+      if (!AMT_ONCHAIN_TREASURY) {
+        return res.status(503).json({
+          ok: false,
+          error:
+            "On-chain deposit not configured. Set AMT_ONCHAIN_TREASURY."
+        });
+      }
+
+      const txHash = String(
+        req.body?.txHash ||
+          req.body?.transactionHash ||
+          req.body?.hash ||
+          ""
+      )
+        .trim()
+        .toLowerCase();
+
+      if (!/^[a-f0-9]{64}$/.test(txHash)) {
+        return res.status(400).json({
+          ok: false,
+          error:
+            "Invalid transaction hash. Paste the 64-character tx hash."
+        });
+      }
+
+      // Already claimed?
+      const existing = await client.query(
+        `SELECT id FROM onchain_deposits WHERE tx_hash = $1`,
+        [txHash]
+      );
+      if (existing.rows.length > 0) {
+        return res.status(400).json({
+          ok: false,
+          error: "This transaction was already claimed."
+        });
+      }
+
+      const operations = await fetchHorizonTxOperations(txHash);
+      if (!operations) {
+        return res.status(400).json({
+          ok: false,
+          error:
+            "Transaction not found on Pi Mainnet. Check hash and network."
+        });
+      }
+
+      const treasury = AMT_ONCHAIN_TREASURY.toUpperCase();
+      let creditedAmount = 0;
+      let fromAddress = null;
+
+      for (const op of operations) {
+        if (op.type !== "payment" && op.type_i !== 1) continue;
+
+        const to = String(
+          op.to || op.destination || ""
+        ).toUpperCase();
+        const code = String(
+          op.asset_code || ""
+        ).toUpperCase();
+        const assetType = String(op.asset_type || "");
+
+        // Must be AMT (non-native) payment to treasury
+        if (to !== treasury) continue;
+        if (assetType === "native") continue;
+        if (code !== AMT_ASSET_CODE.toUpperCase()) continue;
+
+        const amt = Number(op.amount || 0);
+        if (amt > 0) {
+          creditedAmount += amt;
+          fromAddress = op.from || op.source_account || null;
+        }
+      }
+
+      if (creditedAmount <= 0) {
+        return res.status(400).json({
+          ok: false,
+          error:
+            `No ${AMT_ASSET_CODE} payment to app treasury found in this transaction.`
+        });
+      }
+
+      await client.query("BEGIN");
+
+      await client.query(
+        `
+        INSERT INTO onchain_deposits
+          (member_id, tx_hash, amount, from_address)
+        VALUES ($1, $2, $3, $4)
+        `,
+        [
+          req.member.id,
+          txHash,
+          creditedAmount,
+          fromAddress
+        ]
+      );
+
+      const reference = `ONCHAIN_DEPOSIT:${txHash.slice(0, 16)}`;
+
+      await client.query(
+        `
+        INSERT INTO amt_ledger
+          (member_id, amount, type, reference)
+        VALUES ($1, $2, 'ONCHAIN_DEPOSIT', $3)
+        `,
+        [req.member.id, creditedAmount, reference]
+      );
+
+      await client.query("COMMIT");
+
+      res.json({
+        ok: true,
+        credited: creditedAmount,
+        asset: AMT_ASSET_CODE,
+        txHash,
+        message:
+          `${creditedAmount} on-chain ${AMT_ASSET_CODE} deposited → in-app AMT credited.`
+      });
+    } catch (error) {
+      try {
+        await client.query("ROLLBACK");
+      } catch (e) {}
+      console.error("DEPOSIT CLAIM ERROR:", error);
+
+      if (
+        error &&
+        error.code === "23505"
+      ) {
+        return res.status(400).json({
+          ok: false,
+          error: "This transaction was already claimed."
+        });
+      }
+
+      res.status(500).json({
+        ok: false,
+        error: "Unable to claim deposit."
+      });
+    } finally {
+      client.release();
+    }
+  }
+);
+
+/* =========================================================
+WALLET SEND
+========================================================= */
+
+async function performAmtTransfer(
+  member,
+  recipientAddress,
+  amount,
+  memo
+) {
+  const client =
+    await pool.connect();
+
+  try {
+    await client.query(
+      "BEGIN"
+    );
+
+    await client.query(
+      `
+      SELECT id
+      FROM members
+      WHERE id = $1
+      FOR UPDATE
+      `,
+      [member.id]
+    );
+
+    const senderWallet =
+      await client.query(
+        `
+        SELECT
+          id,
+          member_id,
+          wallet_address
+        FROM amt_wallets
+        WHERE member_id = $1
+        FOR UPDATE
+        `,
+        [member.id]
+      );
+
+    if (
+      !senderWallet.rows.length
+    ) {
+      throw new HttpError(
+        404,
+        "Sender wallet not found."
+      );
+    }
+
+    // Accept AMT-... address OR Pi username / referral_code
+    const rawRecipient = String(recipientAddress || "").trim();
+    const asAddress = rawRecipient.toUpperCase();
+    const asUser = rawRecipient.toLowerCase();
+
+    let recipientWallet = await client.query(
+      `
+      SELECT
+        w.id,
+        w.member_id,
+        w.wallet_address
+      FROM amt_wallets w
+      WHERE UPPER(w.wallet_address) = $1
+      LIMIT 1
+      FOR UPDATE
+      `,
+      [asAddress]
+    );
+
+    if (!recipientWallet.rows.length) {
+      recipientWallet = await client.query(
+        `
+        SELECT
+          w.id,
+          w.member_id,
+          w.wallet_address
+        FROM amt_wallets w
+        JOIN members m ON m.id = w.member_id
+        WHERE LOWER(m.username) = $1
+           OR LOWER(COALESCE(m.referral_code, '')) = $1
+        LIMIT 1
+        FOR UPDATE
+        `,
+        [asUser]
+      );
+    }
+
+    if (
+      !recipientWallet.rows.length
+    ) {
+      throw new HttpError(
+        404,
+        "Recipient not found. Use AMT address or Pi username (must have logged in to AMT app once)."
+      );
+    }
+
+    const recipient =
+      recipientWallet.rows[0];
+
+    if (
+      Number(
+        recipient.member_id
+      ) ===
+      Number(member.id)
+    ) {
+      throw new HttpError(
+        400,
+        "You cannot send AMT to yourself."
+      );
+    }
+
+    const balance =
+      await getBalance(
+        member.id,
+        client
+      );
+
+    if (
+      balance < amount
+    ) {
+      throw new HttpError(
+        400,
+        "Insufficient AMT balance.",
+        {
+          balance,
+          requested:
+            amount
+        }
+      );
+    }
+
+    const txId =
+      makeReference(
+        "AMT-TX"
+      );
+
+    await client.query(
+      `
+      INSERT INTO amt_transfers
+        (
+          tx_id,
+          sender_member_id,
+          recipient_member_id,
+          amount,
+          memo,
+          status
+        )
+      VALUES
+        (
+          $1,
+          $2,
+          $3,
+          $4,
+          $5,
+          'COMPLETED'
+        )
+      `,
+      [
+        txId,
+        member.id,
+        recipient.member_id,
+        amount,
+        memo
+      ]
+    );
+
+    await client.query(
+      `
+      INSERT INTO amt_ledger
+        (
+          member_id,
+          amount,
+          type,
+          reference
+        )
+      VALUES
+        (
+          $1,
+          $2,
+          'SEND',
+          $3
+        )
+      `,
+      [
+        member.id,
+        -amount,
+        txId + ":SEND"
+      ]
+    );
+
+    await client.query(
+      `
+      INSERT INTO amt_ledger
+        (
+          member_id,
+          amount,
+          type,
+          reference
+        )
+      VALUES
+        (
+          $1,
+          $2,
+          'RECEIVE',
+          $3
+        )
+      `,
+      [
+        recipient.member_id,
+        amount,
+        txId + ":RECEIVE"
+      ]
+    );
+
+    await client.query(
+      "COMMIT"
+    );
+
+    const newBalance =
+      await getBalance(
+        member.id
+      );
+
+    return {
+      txId,
+      amount,
+      recipientAddress,
+      memo,
+      balance:
+        newBalance,
+      status:
+        "COMPLETED"
+    };
+
+  } catch (error) {
+    try {
+      await client.query(
+        "ROLLBACK"
+      );
+    } catch {}
+
+    throw error;
+
+  } finally {
+    client.release();
   }
 }
 
-async function claimDailyReward(){
-  const btn=$("dailyClaimBtn");
-  try{
-    if(btn){btn.disabled=true;btn.textContent="CLAIMING…";}
-    const data=await api("/api/daily/claim",{method:"POST",body:JSON.stringify({})});
-    showToast(data.message||("Daily +"+fmt(data.amount||0)+" AMT"));
-    await loadDailyStatus();
-    await refreshWallet();
-  }catch(e){
-    showToast(e.message||"Daily claim failed",true);
-    await loadDailyStatus();
+app.post(
+  "/api/wallet/send",
+  requireAuth,
+  async (req, res) => {
+    const recipientAddress =
+      String(
+        req.body?.recipientAddress ||
+        ""
+      )
+        .trim()
+        .toUpperCase();
+
+    const amount =
+      validAmount(
+        req.body?.amount
+      );
+
+    const memo =
+      String(
+        req.body?.memo || ""
+      )
+        .trim()
+        .slice(0, 160);
+
+    if (!recipientAddress) {
+      return res
+        .status(400)
+        .json({
+          ok: false,
+          error:
+            "Recipient AMT address is required."
+        });
+    }
+
+    if (amount === null) {
+      return res
+        .status(400)
+        .json({
+          ok: false,
+          error:
+            "Invalid amount. Maximum 8 decimal places."
+        });
+    }
+
+    try {
+      const result =
+        await performAmtTransfer(
+          req.member,
+          recipientAddress,
+          amount,
+          memo
+        );
+
+      res.json({
+        ok: true,
+        ...result,
+        network:
+          "Pi Mainnet",
+        walletType:
+          "AMT_MAINNET_LEDGER"
+      });
+
+    } catch (error) {
+      console.error(
+        "SEND AMT ERROR:",
+        error
+      );
+
+      res
+        .status(
+          error.status || 500
+        )
+        .json({
+          ok: false,
+          error:
+            error.message ||
+            "AMT transfer failed.",
+          ...(error.extra || {})
+        });
+    }
   }
-}
-
-async function loadMiningStatus(){
-
-try{
-
-const data=
-await api("/api/mining/status");
-
-const active=Boolean(
-data.active??
-data.isMining??
-data.session
 );
 
-const completed=Boolean(
-data.completed??
-data.claimable??
-data.rewardReady
-);
-
-const earned=num(
-data.earned??
-data.currentEarned??
-0
-);
-
-$("currentEarned").textContent=
-fmt(earned)+" AMT";
-
-if(active&&completed){
-
-$("miningStatus").textContent=
-"REWARD READY";
-
-$("miniMiningStatus").textContent=
-"Reward Ready";
-
-$("startMiningBtn").disabled=true;
-
-$("claimMiningBtn")
-.classList.remove("hidden");
-
-$("miningTimer").textContent=
-"00:00:00";
-
-$("miningProgress").style.width=
-"100%";
-
-
-if(miningInterval){
-
-clearInterval(miningInterval);
-miningInterval=null;
-
-}
-
-return;
-}
-
-if(active){
-
-$("miningStatus").textContent=
-"⛏️ MINING ACTIVE";
-
-$("miniMiningStatus").textContent=
-"Active";
-
-$("startMiningBtn").disabled=true;
-
-$("claimMiningBtn")
-.classList.add("hidden");
-
-
-startMiningClock(data);
-
-return;
-}
-
-$("miningStatus").textContent=
-"MINING READY";
-
-$("miniMiningStatus").textContent=
-"Ready";
-
-$("startMiningBtn").disabled=false;
-
-$("claimMiningBtn")
-.classList.add("hidden");
-
-$("miningTimer").textContent=
-"24:00:00";
-
-$("miningProgress").style.width=
-"0%";
-
-
-if(miningInterval){
-
-clearInterval(miningInterval);
-miningInterval=null;
-
-}
-
-}catch(error){
-
-console.log(
-"Mining status:",
-error
-);
-
-}
-}
-
-/* ============================================================
-   MINING CLOCK
-============================================================ */
-
-function startMiningClock(data){
-
-if(miningInterval){
-
-clearInterval(miningInterval);
-miningInterval=null;
-
-}
-
-let remaining=num(
-data.remainingSeconds??
-data.secondsRemaining??
-86400
-);
-
-const total=86400;
-
-function tick(){
-
-remaining=Math.max(
-0,
-remaining
-);
-
-const h=Math.floor(
-remaining/3600
-);
-
-const m=Math.floor(
-(remaining%3600)/60
-);
-
-const s=Math.floor(
-remaining%60
-);
-
-$("miningTimer").textContent=
-String(h).padStart(2,"0")+
-":"+
-String(m).padStart(2,"0")+
-":"+
-String(s).padStart(2,"0");
-
-$("miningProgress").style.width=
-Math.max(
-0,
-Math.min(
-100,
-((total-remaining)/total)*100
-)
-)+"%";
-
-if(remaining<=0){
-
-$("miningStatus").textContent=
-"REWARD READY";
-
-$("miniMiningStatus").textContent=
-"Reward Ready";
-
-$("startMiningBtn").disabled=true;
-
-$("claimMiningBtn")
-.classList.remove("hidden");
-
-clearInterval(miningInterval);
-
-miningInterval=null;
-
-return;
-}
-
-remaining--;
-
-}
-
-tick();
-
-miningInterval=
-setInterval(tick,1000);
-
-}
-
-/* ============================================================
-   START MINING
-============================================================ */
-
-async function startMining(){
-
-const button=
-$("startMiningBtn");
-
-try{
-
-button.disabled=true;
-
-await api("/api/mining/start",{
-method:"POST",
-body:JSON.stringify({})
-});
-
-showToast(
-"AMT mining started."
-);
-
-await loadMiningStatus();
-
-// Show Pi Ad on mining click (bonus still 1x/day on server)
-try{ await showDailyMiningAd(); }catch(e){ console.warn(e); }
-
-}catch(error){
-
-button.disabled=false;
-
-showToast(
-error.message,
-true
-);
-
-}
-}
-
-/* ============================================================
-   CLAIM MINING
-============================================================ */
-
-async function claimMining(){
-
-const button=
-$("claimMiningBtn");
-
-try{
-
-button.disabled=true;
-
-const data=
-await api("/api/mining/claim",{
-method:"POST",
-body:JSON.stringify({})
-});
-
-const reward=num(
-data.reward??
-data.amount??
-data.claimedAmount??
-0
-);
-
-showToast(
-"Mining reward claimed: "+
-fmt(reward)+
-" AMT"
-);
-
-await loadMiningStatus();
-await refreshWallet();
-
-}catch(error){
-
-console.error(
-"Mining claim:",
-error
-);
-
-showToast(
-error.message||
-"Unable to claim AMT reward.",
-true
-);
-
-}finally{
-
-button.disabled=false;
-
-}
-}
-
-/* ============================================================
-   AIRDROP
-============================================================ */
-
-
-/* ========== Lucky Spin (3x/day) ========== */
-var _spinBusy = false;
-var _spinTurns = 0;
-
-async function loadSpinStatus(){
-  try{
-    const data = await api("/api/spin/status");
-    if($("spinLeft")) $("spinLeft").textContent = String(data.spinsLeft != null ? data.spinsLeft : 0);
-    if($("spinUsed")) $("spinUsed").textContent = String((data.usedToday != null ? data.usedToday : 0) + " / 3");
-    if($("spinBtn")) $("spinBtn").disabled = !data.canSpin;
-    if(data.canSpin){
-      if($("spinResult")) $("spinResult").textContent = "Tap SPIN — good luck!";
-    }else if($("spinResult") && !$("spinResult").dataset.locked){
-      $("spinResult").textContent = "Come back tomorrow (UTC)";
+/* =========================================================
+WALLET TRANSACTIONS
+========================================================= */
+
+app.get(
+  "/api/wallet/transactions",
+  requireAuth,
+  async (req, res) => {
+    try {
+      // Peer transfers
+      const result = await pool.query(
+        `
+        SELECT
+          t.tx_id,
+          t.amount,
+          t.memo,
+          t.status,
+          t.created_at,
+          t.sender_member_id,
+          t.recipient_member_id,
+          sw.wallet_address AS sender_address,
+          rw.wallet_address AS recipient_address
+        FROM amt_transfers t
+        JOIN amt_wallets sw ON sw.member_id = t.sender_member_id
+        JOIN amt_wallets rw ON rw.member_id = t.recipient_member_id
+        WHERE t.sender_member_id = $1 OR t.recipient_member_id = $1
+        ORDER BY t.created_at DESC
+        LIMIT 50
+        `,
+        [req.member.id]
+      );
+
+      const transfers = result.rows.map((row) => ({
+        kind: "TRANSFER",
+        txId: row.tx_id,
+        amount: Number(row.amount),
+        memo: row.memo,
+        status: row.status,
+        createdAt: row.created_at,
+        direction:
+          Number(row.sender_member_id) === Number(req.member.id)
+            ? "SEND"
+            : "RECEIVE",
+        senderAddress: row.sender_address,
+        recipientAddress: row.recipient_address
+      }));
+
+      // Ledger rewards / activity + pet / market spends
+      let rewards = [];
+      try {
+        const led = await pool.query(
+          `
+          SELECT id, amount, type, reference, created_at
+          FROM amt_ledger
+          WHERE member_id = $1
+            AND type IN (
+              'LUCKY_SPIN','DAILY','DAILY_REWARD','AIRDROP',
+              'MINING','MINING_CLAIM','AD_BONUS','REFERRAL',
+              'PET_PURCHASE','PET_BUY_LISTING','PET_SALE','EGG_BUY','EGG_SALE',
+              'PET_CARE','PET_TRAIN','PET_BREED','PET_BOSS',
+              'GEAR_BUY','GEM_BUY','CORE_BUY','WEAPON_BUY'
+            )
+          ORDER BY created_at DESC
+          LIMIT 80
+          `,
+          [req.member.id]
+        );
+        rewards = led.rows.map((row) => {
+          const typ = String(row.type || "REWARD");
+          let label = typ;
+          let kind = "REWARD";
+          if (typ === "LUCKY_SPIN") label = "LUCKY SPIN";
+          else if (typ === "DAILY" || typ === "DAILY_REWARD") label = "DAILY REWARD";
+          else if (typ === "AIRDROP") label = "AIRDROP";
+          else if (typ === "AD_BONUS") label = "AD BONUS";
+          else if (typ === "REFERRAL") label = "REFERRAL";
+          else if (typ === "MINING" || typ === "MINING_CLAIM") label = "MINING";
+          else if (typ === "PET_PURCHASE") { label = "PET BUY (AMT)"; kind = "PET"; }
+          else if (typ === "PET_BUY_LISTING") { label = "PET BUY LISTING"; kind = "PET"; }
+          else if (typ === "PET_SALE") { label = "PET SALE"; kind = "PET"; }
+          else if (typ === "EGG_BUY") { label = "EGG BUY"; kind = "PET"; }
+          else if (typ === "EGG_SALE") { label = "EGG SALE"; kind = "PET"; }
+          else if (typ === "PET_CARE") { label = "PET CARE"; kind = "PET"; }
+          else if (typ === "PET_TRAIN") { label = "PET TRAIN"; kind = "PET"; }
+          else if (typ === "PET_BREED") { label = "PET BREED"; kind = "PET"; }
+          else if (typ === "PET_BOSS") { label = "BOSS BATTLE"; kind = "PET"; }
+          else if (typ.indexOf("BUY") >= 0 || typ.indexOf("GEAR") >= 0) { label = typ.replace(/_/g, " "); kind = "SHOP"; }
+          return {
+            kind: kind,
+            type: typ,
+            label: label,
+            currency: "AMT",
+            txId: row.reference || ("LEDGER-" + row.id),
+            amount: Number(row.amount),
+            memo: label + (row.reference ? " · " + row.reference : ""),
+            status: "OK",
+            createdAt: row.created_at,
+            direction: Number(row.amount) >= 0 ? "RECEIVE" : "SEND"
+          };
+        });
+      } catch (ledErr) {
+        console.warn("ledger history:", ledErr.message);
+      }
+
+      // Pi marketplace payments (pet buys with real Pi)
+      let piPays = [];
+      try {
+        const pays = await pool.query(
+          `
+          SELECT id, pi_payment_id, product_id, amount, status, created_at, updated_at
+          FROM marketplace_payments
+          WHERE member_id = $1
+          ORDER BY COALESCE(updated_at, created_at) DESC
+          LIMIT 40
+          `,
+          [req.member.id]
+        );
+        piPays = pays.rows.map((row) => {
+          const st = String(row.status || "").toUpperCase();
+          const prod = String(row.product_id || "item");
+          let label = "PI PAYMENT";
+          if (/pet/i.test(prod)) label = "PET BUY (PI)";
+          else if (/egg/i.test(prod)) label = "EGG BUY (PI)";
+          else label = "BUY (PI) · " + prod;
+          return {
+            kind: "PI_PAY",
+            type: "PI_PAYMENT",
+            label: label,
+            currency: "PI",
+            txId: row.pi_payment_id || ("PI-" + row.id),
+            amount: -Math.abs(Number(row.amount) || 0),
+            memo: label + " · " + st + (prod ? " · " + prod : ""),
+            status: st || "OK",
+            createdAt: row.updated_at || row.created_at,
+            direction: "SEND"
+          };
+        });
+      } catch (payErr) {
+        console.warn("pi payment history:", payErr.message);
+      }
+
+      const merged = transfers.concat(rewards).concat(piPays).sort((a, b) => {
+        const ta = new Date(a.createdAt || 0).getTime();
+        const tb = new Date(b.createdAt || 0).getTime();
+        return tb - ta;
+      }).slice(0, 80);
+
+      res.json({ ok: true, transactions: merged });
+    } catch (e) {
+      console.error("TX HISTORY:", e);
+      res.status(500).json({ ok: false, error: "Unable to load transactions." });
     }
-  }catch(e){
-    console.warn("spin status", e);
   }
-}
+);
 
-async function doLuckySpin(){
-  if(_spinBusy) return;
-  try{
-    _spinBusy = true;
-    if($("spinBtn")) $("spinBtn").disabled = true;
-    if($("spinResult")) $("spinResult").textContent = "Spinning…";
+/* =========================================================
+AIRDROP (100 AMT + 48-hour claim timer)
+========================================================= */
 
-    const data = await api("/api/spin/claim", { method:"POST", body: JSON.stringify({}) });
-    if(!data || !data.ok){
-      showToast((data && data.error) || "Spin failed", true);
-      _spinBusy = false;
-      loadSpinStatus();
-      return;
+app.get(
+  "/api/airdrop/status",
+  requireAuth,
+  async (req, res) => {
+    const result =
+      await pool.query(
+        `
+        SELECT
+          amount,
+          reference,
+          created_at
+        FROM amt_airdrops
+        WHERE member_id = $1
+        LIMIT 1
+        `,
+        [req.member.id]
+      );
+
+    /*
+     * Old 1 AMT claims are ignored.
+     * Only a claim with amount >= current AIRDROP_AMOUNT_AMT (100)
+     * counts as truly claimed.
+     */
+    let claimed = false;
+    let claimedAt = null;
+    let claimedAmount = null;
+
+    if (result.rows.length > 0) {
+      const row = result.rows[0];
+      const oldAmount = Number(row.amount);
+
+      if (oldAmount >= AIRDROP_AMOUNT_AMT) {
+        claimed = true;
+        claimedAt = row.created_at;
+        claimedAmount = oldAmount;
+      }
+      // else: old 1 AMT claim → treat as NOT claimed (can claim 100)
     }
 
-    // Animate wheel
-    const wheel = $("luckyWheel");
-    const prizeIndex = Number(data.prizeIndex || 0);
-    // 8 segments, pointer at top; stop so segment center is at top
-    const seg = 360 / 8;
-    const target = 360 * 6 + (360 - (prizeIndex * seg + seg/2));
-    _spinTurns = (_spinTurns || 0) + target;
-    if(wheel){
-      wheel.style.transition = "transform 4s cubic-bezier(.15,.85,.25,1)";
-      wheel.style.transform = "rotate(" + _spinTurns + "deg)";
+    // Shared 48-hour campaign window (not per-account created_at)
+    const expiresAt =
+      AIRDROP_CAMPAIGN_START_MS +
+      AIRDROP_CLAIM_WINDOW_SECONDS *
+        1000;
+
+    const now =
+      Date.now();
+
+    const remainingSeconds =
+      Math.max(
+        0,
+        Math.ceil(
+          (expiresAt - now) /
+            1000
+        )
+      );
+
+    const expired =
+      now >= expiresAt;
+
+    const canClaim =
+      !claimed && !expired;
+
+    res.json({
+      ok: true,
+
+      claimed,
+
+      amount:
+        AIRDROP_AMOUNT_AMT,
+
+      network:
+        "Pi Mainnet",
+
+      type:
+        "ONE_TIME_AIRDROP",
+
+      claimWindowSeconds:
+        AIRDROP_CLAIM_WINDOW_SECONDS,
+
+      remainingSeconds,
+
+      expired,
+
+      canClaim,
+
+      expiresAt:
+        new Date(
+          expiresAt
+        ).toISOString(),
+
+      claimedAt,
+
+      claimedAmount
+    });
+  }
+);
+
+app.post(
+  "/api/airdrop/claim",
+  requireAuth,
+  async (req, res) => {
+    const client =
+      await pool.connect();
+
+    try {
+      await client.query(
+        "BEGIN"
+      );
+
+      await client.query(
+        `
+        SELECT id, created_at
+        FROM members
+        WHERE id = $1
+        FOR UPDATE
+        `,
+        [req.member.id]
+      );
+
+      // Shared 48-hour campaign window
+      const expiresAt =
+        AIRDROP_CAMPAIGN_START_MS +
+        AIRDROP_CLAIM_WINDOW_SECONDS *
+          1000;
+
+      if (
+        Date.now() >= expiresAt
+      ) {
+        await client.query(
+          "ROLLBACK"
+        );
+
+        return res
+          .status(400)
+          .json({
+            ok: false,
+            error:
+              "Airdrop claim window has expired.",
+            expired: true
+          });
+      }
+
+      const existing =
+        await client.query(
+          `
+          SELECT id, amount
+          FROM amt_airdrops
+          WHERE member_id = $1
+          FOR UPDATE
+          `,
+          [req.member.id]
+        );
+
+      if (
+        existing.rows.length
+      ) {
+        const oldAmount =
+          Number(
+            existing.rows[0].amount
+          );
+
+        // Already claimed the new 100 AMT airdrop
+        if (
+          oldAmount >=
+          AIRDROP_AMOUNT_AMT
+        ) {
+          await client.query(
+            "ROLLBACK"
+          );
+
+          return res
+            .status(409)
+            .json({
+              ok: false,
+              error:
+                "Airdrop has already been claimed."
+            });
+        }
+
+        // Old 1 AMT claim → remove it so user can claim 100 AMT
+        await client.query(
+          `
+          DELETE FROM amt_airdrops
+          WHERE member_id = $1
+          `,
+          [req.member.id]
+        );
+      }
+
+      const reference =
+        makeReference(
+          "AMT-AIRDROP"
+        );
+
+      await client.query(
+        `
+        INSERT INTO amt_airdrops
+          (
+            member_id,
+            amount,
+            reference
+          )
+        VALUES
+          (
+            $1,
+            $2,
+            $3
+          )
+        `,
+        [
+          req.member.id,
+          AIRDROP_AMOUNT_AMT,
+          reference
+        ]
+      );
+
+      await client.query(
+        `
+        INSERT INTO amt_ledger
+          (
+            member_id,
+            amount,
+            type,
+            reference
+          )
+        VALUES
+          (
+            $1,
+            $2,
+            'AIRDROP_REWARD',
+            $3
+          )
+        `,
+        [
+          req.member.id,
+          AIRDROP_AMOUNT_AMT,
+          reference
+        ]
+      );
+
+      await client.query(
+        "COMMIT"
+      );
+
+      const balance =
+        await getBalance(
+          req.member.id
+        );
+
+      const remainingSeconds =
+        Math.max(
+          0,
+          Math.ceil(
+            (expiresAt -
+              Date.now()) /
+              1000
+          )
+        );
+
+      res.json({
+        ok: true,
+
+        claimed:
+          true,
+
+        amount:
+          AIRDROP_AMOUNT_AMT,
+
+        reference,
+
+        balance,
+
+        remainingSeconds,
+
+        network:
+          "Pi Mainnet"
+      });
+
+    } catch (error) {
+      try {
+        await client.query(
+          "ROLLBACK"
+        );
+      } catch {}
+
+      console.error(
+        "AIRDROP ERROR:",
+        error
+      );
+
+      res
+        .status(500)
+        .json({
+          ok: false,
+          error:
+            "Unable to claim airdrop."
+        });
+
+    } finally {
+      client.release();
+    }
+  }
+);
+
+/* =========================================================
+MINING
+========================================================= */
+
+app.post(
+  "/api/mining/start",
+  requireAuth,
+  async (req, res) => {
+    const active =
+      await pool.query(
+        `
+        SELECT *
+        FROM mining_sessions
+        WHERE
+          member_id = $1
+          AND status = 'ACTIVE'
+        ORDER BY
+          started_at DESC
+        LIMIT 1
+        `,
+        [req.member.id]
+      );
+
+    if (
+      active.rows.length
+    ) {
+      return res
+        .status(409)
+        .json({
+          ok: false,
+          error:
+            "Mining session is already active.",
+          session:
+            active.rows[0]
+        });
     }
 
-    await new Promise(r => setTimeout(r, 4200));
+    const start =
+      new Date();
 
-    const label = data.prizeLabel || data.prize || "Prize";
-    if($("spinResult")){
-      $("spinResult").textContent = "🎉 " + label;
-      $("spinResult").dataset.locked = "1";
-      setTimeout(function(){ try{ delete $("spinResult").dataset.locked; }catch(e){} }, 2000);
+    const end =
+      new Date(
+        start.getTime() +
+        MINING_DURATION_SECONDS *
+          1000
+      );
+
+    const result =
+      await pool.query(
+        `
+        INSERT INTO mining_sessions
+          (
+            member_id,
+            started_at,
+            ends_at,
+            status,
+            rate,
+            claimed_amount
+          )
+        VALUES
+          (
+            $1,
+            $2,
+            $3,
+            'ACTIVE',
+            $4,
+            0
+          )
+
+        RETURNING *
+        `,
+        [
+          req.member.id,
+          start,
+          end,
+          AMT_MINING_RATE
+        ]
+      );
+
+    res.json({
+      ok: true,
+
+      session:
+        result.rows[0],
+
+      rate:
+        AMT_MINING_RATE,
+
+      durationSeconds:
+        MINING_DURATION_SECONDS,
+
+      maximumBaseReward:
+        MAXIMUM_BASE_REWARD
+    });
+  }
+);
+
+app.get(
+  "/api/mining/status",
+  requireAuth,
+  async (req, res) => {
+    const result =
+      await pool.query(
+        `
+        SELECT *
+        FROM mining_sessions
+        WHERE
+          member_id = $1
+          AND status = 'ACTIVE'
+        ORDER BY
+          started_at DESC
+        LIMIT 1
+        `,
+        [req.member.id]
+      );
+
+    const balance =
+      await getBalance(
+        req.member.id
+      );
+
+    if (
+      !result.rows.length
+    ) {
+      return res.json({
+        ok: true,
+
+        active:
+          false,
+
+        completed:
+          false,
+
+        earned:
+          0,
+
+        balance
+      });
     }
-    if(data.freeSpin){
-      showToast("FREE SPIN! +1 extra spin today 🎡");
+
+    const session =
+      result.rows[0];
+
+    const started =
+      new Date(
+        session.started_at
+      ).getTime();
+
+    const ends =
+      new Date(
+        session.ends_at
+      ).getTime();
+
+    const current =
+      Date.now();
+
+    const elapsedSeconds =
+      Math.max(
+        0,
+        Math.min(
+          MINING_DURATION_SECONDS,
+          (current - started) /
+            1000
+        )
+      );
+
+    const earned =
+      Math.min(
+        MAXIMUM_BASE_REWARD,
+        Number(
+          (
+            elapsedSeconds /
+              3600 *
+            Number(
+              session.rate
+            )
+          ).toFixed(8)
+        )
+      );
+
+    const completed =
+      current >= ends;
+
+    res.json({
+      ok: true,
+
+      active:
+        true,
+
+      completed,
+
+      session,
+
+      earned,
+
+      balance,
+
+      rate:
+        Number(
+          session.rate
+        ),
+
+      remainingSeconds:
+        Math.max(
+          0,
+          Math.ceil(
+            (ends - current) /
+              1000
+          )
+        )
+    });
+  }
+);
+
+app.post(
+  "/api/mining/claim",
+  requireAuth,
+  async (req, res) => {
+    const client =
+      await pool.connect();
+
+    try {
+      await client.query(
+        "BEGIN"
+      );
+
+      await client.query(
+        `
+        SELECT id
+        FROM members
+        WHERE id = $1
+        FOR UPDATE
+        `,
+        [req.member.id]
+      );
+
+      const sessionResult =
+        await client.query(
+          `
+          SELECT *
+          FROM mining_sessions
+          WHERE
+            member_id = $1
+            AND status = 'ACTIVE'
+          ORDER BY
+            started_at DESC
+          LIMIT 1
+          FOR UPDATE
+          `,
+          [req.member.id]
+        );
+
+      if (
+        !sessionResult.rows.length
+      ) {
+        await client.query(
+          "ROLLBACK"
+        );
+
+        return res
+          .status(404)
+          .json({
+            ok: false,
+            error:
+              "No active mining session."
+          });
+      }
+
+      const session =
+        sessionResult.rows[0];
+
+      const ends =
+        new Date(
+          session.ends_at
+        ).getTime();
+
+      if (
+        Date.now() < ends
+      ) {
+        await client.query(
+          "ROLLBACK"
+        );
+
+        return res
+          .status(400)
+          .json({
+            ok: false,
+
+            error:
+              "Mining session is not yet complete.",
+
+            remainingSeconds:
+              Math.ceil(
+                (ends -
+                  Date.now()) /
+                  1000
+              )
+          });
+      }
+
+      let reward =
+        Number(
+          (
+            Number(
+              session.rate
+            ) * 24
+          ).toFixed(8)
+        );
+
+      // Comeback bonus if idle 3+ days since last completed claim
+      let comebackBonus = 0;
+      try {
+        const last = await client.query(
+          `SELECT claimed_amount, ends_at FROM mining_sessions
+           WHERE member_id = $1 AND status = 'COMPLETED'
+           ORDER BY ends_at DESC LIMIT 1`,
+          [req.member.id]
+        );
+        if (last.rows.length) {
+          const lastEnd = new Date(last.rows[0].ends_at).getTime();
+          const idleDays = (Date.now() - lastEnd) / (24 * 3600 * 1000);
+          if (idleDays >= COMEBACK_IDLE_DAYS) {
+            comebackBonus = COMEBACK_BONUS_AMT;
+            reward = Number((reward + comebackBonus).toFixed(8));
+          }
+        }
+      } catch (e) {
+        console.error("COMEBACK CHECK:", e.message);
+      }
+
+      const reference =
+        makeReference(
+          "AMT-MINING"
+        );
+
+      await client.query(
+        `
+        INSERT INTO amt_ledger
+          (
+            member_id,
+            amount,
+            type,
+            reference
+          )
+        VALUES
+          (
+            $1,
+            $2,
+            'MINING_REWARD',
+            $3
+          )
+        `,
+        [
+          req.member.id,
+          reward,
+          reference
+        ]
+      );
+
+      await client.query(
+        `
+        UPDATE mining_sessions
+        SET
+          status = 'COMPLETED',
+          claimed_amount = $1
+        WHERE id = $2
+        `,
+        [
+          reward,
+          session.id
+        ]
+      );
+
+      await client.query(
+        "COMMIT"
+      );
+
+      const balance =
+        await getBalance(
+          req.member.id
+        );
+
+      res.json({
+        ok: true,
+        reward,
+        comebackBonus,
+        reference,
+        balance,
+        status: "COMPLETED",
+        message:
+          comebackBonus > 0
+            ? "Mining +" +
+              reward +
+              " AMT (includes +" +
+              comebackBonus +
+              " comeback bonus)"
+            : "Mining +" + reward + " AMT claimed"
+      });
+
+    } catch (error) {
+      try {
+        await client.query(
+          "ROLLBACK"
+        );
+      } catch {}
+
+      console.error(
+        "MINING CLAIM ERROR:",
+        error
+      );
+
+      res
+        .status(500)
+        .json({
+          ok: false,
+          error:
+            "Unable to claim mining reward."
+        });
+
+    } finally {
+      client.release();
+    }
+  }
+);
+
+/* =========================================================
+DAILY REWARD (1x per UTC day + streak)
+========================================================= */
+
+app.get("/api/daily/status", requireAuth, async (req, res) => {
+  try {
+    await ensureDailyRewardTable();
+    const today = utcDateString();
+    const yesterday = yesterdayUtcString();
+
+    const hist = await pool.query(
+      `SELECT claim_date, amount, streak, created_at
+       FROM daily_rewards
+       WHERE member_id = $1
+       ORDER BY claim_date DESC
+       LIMIT 14`,
+      [req.member.id]
+    );
+
+    let streak = 0;
+    let claimedToday = false;
+    let lastClaimDate = null;
+    let lastAmount = null;
+
+    if (hist.rows.length) {
+      const row = hist.rows[0];
+      lastClaimDate = asYmd(row.claim_date);
+      lastAmount = Number(row.amount);
+      const dates = hist.rows.map((r) => asYmd(r.claim_date));
+      if (lastClaimDate === today) {
+        claimedToday = true;
+        streak = streakFromClaimDates(dates, today) || Number(row.streak) || 1;
+      } else if (lastClaimDate === yesterday) {
+        streak = streakFromClaimDates(dates, yesterday) || Number(row.streak) || 1;
+      } else {
+        streak = 0;
+      }
+    }
+
+    let nextStreak;
+    let displayAmount;
+    if (claimedToday) {
+      // Already claimed: streak is today's day; tomorrow continues or resets
+      if ((streak || 0) >= DAILY_MAX_STREAK) {
+        nextStreak = 1; // cycle complete → tomorrow Day 1
+      } else {
+        nextStreak = Math.min(DAILY_MAX_STREAK, (streak || 0) + 1);
+      }
+      displayAmount = lastAmount != null ? lastAmount : dailyAmountForStreak(streak || 1);
+    } else if ((streak || 0) >= DAILY_MAX_STREAK) {
+      // Finished 7-day cycle, not yet claimed today — start Day 1
+      nextStreak = 1;
+      displayAmount = dailyAmountForStreak(1);
     } else {
-      showToast(label);
+      nextStreak = Math.min(DAILY_MAX_STREAK, (streak || 0) + 1);
+      displayAmount = dailyAmountForStreak(nextStreak);
     }
-    if(typeof refreshWallet === "function") refreshWallet().catch(function(){});
-    if(typeof loadTxHistory === "function") loadTxHistory().catch(function(){});
-    loadSpinStatus();
-  }catch(e){
-    showToast((e && e.message) || "Spin failed", true);
-    loadSpinStatus();
-  }finally{
-    _spinBusy = false;
+    const nextAmount = dailyAmountForStreak(nextStreak);
+
+    // Next claim available at next UTC midnight if already claimed
+    let nextClaimAt = null;
+    let secondsUntilReset = 0;
+    if (claimedToday) {
+      const now = new Date();
+      const next = new Date(Date.UTC(
+        now.getUTCFullYear(),
+        now.getUTCMonth(),
+        now.getUTCDate() + 1,
+        0, 0, 0, 0
+      ));
+      nextClaimAt = next.toISOString();
+      secondsUntilReset = Math.max(0, Math.ceil((next.getTime() - now.getTime()) / 1000));
+    }
+
+    res.json({
+      ok: true,
+      claimedToday,
+      streak: claimedToday ? streak : streak,
+      nextStreak,
+      nextAmount,
+      displayAmount: displayAmount != null ? displayAmount : nextAmount,
+      cycleComplete: claimedToday && (streak || 0) >= DAILY_MAX_STREAK,
+      lastClaimDate,
+      lastAmount,
+      nextClaimAt,
+      secondsUntilReset,
+      maxStreak: DAILY_MAX_STREAK,
+      schedule: DAILY_REWARD_AMOUNTS,
+      canClaim: !claimedToday
+    });
+  } catch (e) {
+    console.error("DAILY STATUS ERROR:", e);
+    res.status(500).json({ ok: false, error: "Unable to load daily reward." });
   }
-}
-
-
-async function loadAirdrop(){
-// UI removed (spin-only page); keep function for API compatibility
-if(!$("airdropStatus") && !$("airdropBtn")) return;
-try{
-const data = await api("/api/airdrop/status");
-const claimed = !!(data.claimed || data.alreadyClaimed);
-const expired = !!(data.expired || data.windowClosed);
-const canClaim = data.canClaim !== false && !claimed && !expired;
-if(claimed){
-if($("airdropStatus")) $("airdropStatus").textContent="CLAIMED";
-if($("airdropBtn")){ $("airdropBtn").disabled=true; $("airdropBtn").textContent="✅ AIRDROP CLAIMED"; }
-}else if(expired||!canClaim){
-if($("airdropStatus")) $("airdropStatus").textContent="EXPIRED";
-if($("airdropBtn")){ $("airdropBtn").disabled=true; $("airdropBtn").textContent="⏰ WINDOW CLOSED"; }
-}else{
-if($("airdropStatus")) $("airdropStatus").textContent="AVAILABLE";
-if($("airdropBtn")){ $("airdropBtn").disabled=false; $("airdropBtn").textContent="🎁 CLAIM AIRDROP"; }
-}
-}catch(error){
-console.log("Airdrop status:", error);
-if($("airdropStatus")) $("airdropStatus").textContent="ERROR";
-}
-}else if(expired||!canClaim){
-$("airdropStatus").textContent="EXPIRED";
-$("airdropBtn").disabled=true;
-$("airdropBtn").textContent="⏰ WINDOW CLOSED";
-}else{
-$("airdropStatus").textContent="AVAILABLE";
-$("airdropBtn").disabled=false;
-$("airdropBtn").textContent="🎁 CLAIM AIRDROP";
-}
-
-}catch(error){
-
-console.log(
-"Airdrop status:",
-error
-);
-$("airdropStatus").textContent="ERROR";
-
-}
-}
-
-async function claimAirdrop(){
-
-try{
-
-const data=
-await api("/api/airdrop/claim",{
-method:"POST",
-body:JSON.stringify({})
 });
 
-showToast(
-"Airdrop claimed: "+
-fmt(
-data.amount??
-data.reward??
-0
-)+
-" AMT"
-);
+app.post("/api/daily/claim", requireAuth, async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await ensureDailyRewardTable();
+    await client.query("BEGIN");
+    await client.query(`SELECT id FROM members WHERE id = $1 FOR UPDATE`, [req.member.id]);
 
-await loadAirdrop();
-await refreshWallet();
+    const today = utcDateString();
+    const yesterday = yesterdayUtcString();
 
-}catch(error){
-
-showToast(
-error.message,
-true
-);
-
-}
-}
-
-/* ============================================================
-   REFERRAL
-============================================================ */
-
-const APP_BASE_URL = "https://amtmining13.github.io";
-
-function getPendingReferralCode(){
-  try{
-    const params = new URLSearchParams(window.location.search);
-    const fromUrl = (params.get("ref") || params.get("referral") || "").trim();
-    if(fromUrl){
-      localStorage.setItem("amt_pending_referral", fromUrl);
-      return fromUrl;
+    const existing = await client.query(
+      `SELECT id FROM daily_rewards WHERE member_id = $1 AND claim_date = $2`,
+      [req.member.id, today]
+    );
+    if (existing.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({
+        ok: false,
+        error: "Daily reward already claimed today. Come back after UTC midnight."
+      });
     }
-    return (localStorage.getItem("amt_pending_referral") || "").trim();
-  }catch(e){
-    return "";
+
+    const last = await client.query(
+      `SELECT claim_date, streak FROM daily_rewards
+       WHERE member_id = $1 ORDER BY claim_date DESC LIMIT 1`,
+      [req.member.id]
+    );
+
+    // Build streak from actual consecutive claim days (repairs old streak=1 rows)
+    const hist = await client.query(
+      `SELECT claim_date FROM daily_rewards
+       WHERE member_id = $1
+       ORDER BY claim_date DESC
+       LIMIT 14`,
+      [req.member.id]
+    );
+    const pastDates = hist.rows.map((r) => asYmd(r.claim_date));
+    // After full 7-day cycle, reset to Day 1 (not permanent max reward)
+    let streak = 1;
+    if (pastDates.includes(yesterday)) {
+      const prior = streakFromClaimDates(pastDates, yesterday) || 1;
+      if (prior >= DAILY_MAX_STREAK) {
+        streak = 1;
+      } else {
+        streak = Math.min(DAILY_MAX_STREAK, prior + 1);
+      }
+    } else {
+      streak = 1;
+    }
+
+    const amount = dailyAmountForStreak(streak);
+    const reference = makeReference("AMT-DAILY");
+
+    await client.query(
+      `INSERT INTO daily_rewards (member_id, claim_date, amount, streak)
+       VALUES ($1, $2, $3, $4)`,
+      [req.member.id, today, amount, streak]
+    );
+    await client.query(
+      `INSERT INTO amt_ledger (member_id, amount, type, reference)
+       VALUES ($1, $2, 'DAILY_REWARD', $3)`,
+      [req.member.id, amount, reference]
+    );
+
+    await client.query("COMMIT");
+    const balance = await getBalance(req.member.id);
+
+    res.json({
+      ok: true,
+      claimed: true,
+      amount,
+      streak,
+      claimDate: today,
+      reference,
+      balance,
+      message: "Daily reward +" + amount + " AMT · Streak " + streak + "/" + DAILY_MAX_STREAK
+    });
+  } catch (e) {
+    try { await client.query("ROLLBACK"); } catch {}
+    console.error("DAILY CLAIM ERROR:", e);
+    res.status(500).json({
+      ok: false,
+      error: "Unable to claim daily reward. " + (e.message || "")
+    });
+  } finally {
+    client.release();
   }
-}
+});
 
-function capturePendingPaymentFromUrl(){
-  try{
-    const params = new URLSearchParams(window.location.search);
-    const payUser = (params.get("pay") || "").trim();
-    const payAmt = (params.get("amt") || params.get("amount") || "").trim();
-    if(payUser){
-      localStorage.setItem("amt_pending_pay_user", payUser);
-      if(payAmt) localStorage.setItem("amt_pending_pay_amt", payAmt);
-      else localStorage.removeItem("amt_pending_pay_amt");
+/* =========================================================
+REFERRAL
+========================================================= */
+
+/** Both-sides welcome bonus when a referral is first linked */
+const REFERRAL_INVITEE_BONUS = Number(
+  process.env.REFERRAL_INVITEE_BONUS || "2"
+);
+const REFERRAL_INVITER_FLAT = Number(
+  process.env.REFERRAL_INVITER_FLAT || "2"
+);
+
+/**
+ * Credit referral reward + milestone bonus to the referrer,
+ * and fixed welcome AMT to the invitee (both sides).
+ */
+async function creditReferralReward(
+  referrerMemberId,
+  newReferralCount,
+  db = pool,
+  referredMemberId = null
+) {
+  const tier = getReferralTier(newReferralCount);
+  const reward = Number(
+    Math.max(tier.rewardPerReferral, REFERRAL_INVITER_FLAT).toFixed(8)
+  );
+  const results = {
+    tier: tier.name,
+    referralReward: reward,
+    milestoneBonus: 0,
+    inviteeBonus: 0,
+    totalCredited: 0
+  };
+
+  if (reward > 0) {
+    const ref = makeReference("AMT-REF");
+    await db.query(
+      `
+      INSERT INTO amt_ledger
+        (member_id, amount, type, reference)
+      VALUES
+        ($1, $2, 'REFERRAL_REWARD', $3)
+      `,
+      [referrerMemberId, reward, ref]
+    );
+    results.totalCredited += reward;
+  }
+
+  // Invitee both-sides bonus (one-time per referred member)
+  if (referredMemberId && REFERRAL_INVITEE_BONUS > 0) {
+    const invRef = `AMT-REF-INVITEE-${referredMemberId}`;
+    const existsInv = await db.query(
+      `SELECT id FROM amt_ledger WHERE member_id = $1 AND reference = $2 LIMIT 1`,
+      [referredMemberId, invRef]
+    );
+    if (!existsInv.rows.length) {
+      await db.query(
+        `INSERT INTO amt_ledger (member_id, amount, type, reference)
+         VALUES ($1, $2, 'REFERRAL_INVITEE', $3)`,
+        [referredMemberId, REFERRAL_INVITEE_BONUS, invRef]
+      );
+      results.inviteeBonus = REFERRAL_INVITEE_BONUS;
     }
-  }catch(e){}
+  }
+
+  // Check milestones (one-time)
+  for (const mile of REFERRAL_MILESTONES) {
+    if (newReferralCount >= mile.count) {
+      const mileRef = `AMT-MILESTONE-${mile.key}-${referrerMemberId}`;
+
+      const existing = await db.query(
+        `
+        SELECT id FROM amt_ledger
+        WHERE member_id = $1 AND reference = $2
+        LIMIT 1
+        `,
+        [referrerMemberId, mileRef]
+      );
+
+      if (!existing.rows.length) {
+        await db.query(
+          `
+          INSERT INTO amt_ledger
+            (member_id, amount, type, reference)
+          VALUES
+            ($1, $2, 'REFERRAL_MILESTONE', $3)
+          `,
+          [referrerMemberId, mile.bonus, mileRef]
+        );
+        results.milestoneBonus += mile.bonus;
+        results.totalCredited += mile.bonus;
+      }
+    }
+  }
+
+  return results;
 }
 
-function getPendingPayment(){
-  try{
-    const user = (localStorage.getItem("amt_pending_pay_user") || "").trim();
-    const amt = (localStorage.getItem("amt_pending_pay_amt") || "").trim();
-    if(!user) return null;
-    return { user: user, amount: amt };
-  }catch(e){
+async function addReferralToSecurityCircle(
+  client,
+  ownerMemberId,
+  referredMemberId
+) {
+  if (
+    Number(ownerMemberId) ===
+    Number(referredMemberId)
+  ) {
+    return false;
+  }
+
+  const countResult =
+    await client.query(
+      `
+      SELECT
+        COUNT(*)::INT AS count
+      FROM security_circle
+      WHERE
+        owner_member_id = $1
+        AND status = 'ACTIVE'
+      `,
+      [ownerMemberId]
+    );
+
+  const count =
+    Number(
+      countResult.rows[0]?.count || 0
+    );
+
+  const existing =
+    await client.query(
+      `
+      SELECT id
+      FROM security_circle
+      WHERE
+        owner_member_id = $1
+        AND member_id = $2
+      LIMIT 1
+      `,
+      [
+        ownerMemberId,
+        referredMemberId
+      ]
+    );
+
+  if (
+    existing.rows.length
+  ) {
+    await client.query(
+      `
+      UPDATE security_circle
+      SET status = 'ACTIVE'
+      WHERE id = $1
+      `,
+      [
+        existing.rows[0].id
+      ]
+    );
+
+    return true;
+  }
+
+  if (
+    count >=
+    MAX_SECURITY_CIRCLE
+  ) {
+    return false;
+  }
+
+  await client.query(
+    `
+    INSERT INTO security_circle
+      (
+        owner_member_id,
+        member_id,
+        status
+      )
+    VALUES
+      (
+        $1,
+        $2,
+        'ACTIVE'
+      )
+    `,
+    [
+      ownerMemberId,
+      referredMemberId
+    ]
+  );
+
+  return true;
+}
+
+app.post(
+  "/api/referral/link",
+  requireAuth,
+  async (req, res) => {
+    const referredMemberId =
+      Number(
+        req.body?.referralMemberId
+      );
+
+    if (
+      !Number.isInteger(
+        referredMemberId
+      )
+    ) {
+      return res
+        .status(400)
+        .json({
+          ok: false,
+          error:
+            "Valid referralMemberId is required."
+        });
+    }
+
+    if (
+      referredMemberId ===
+      Number(req.member.id)
+    ) {
+      return res
+        .status(400)
+        .json({
+          ok: false,
+          error:
+            "You cannot refer yourself."
+        });
+    }
+
+    const client =
+      await pool.connect();
+
+    try {
+      await client.query(
+        "BEGIN"
+      );
+
+      const memberCheck =
+        await client.query(
+          `
+          SELECT id
+          FROM members
+          WHERE id = $1
+          LIMIT 1
+          `,
+          [referredMemberId]
+        );
+
+      if (
+        !memberCheck.rows.length
+      ) {
+        throw new HttpError(
+          404,
+          "Pioneer member was not found."
+        );
+      }
+
+      const existing =
+        await client.query(
+          `
+          SELECT id
+          FROM referrals
+          WHERE
+            referred_member_id = $1
+          LIMIT 1
+          `,
+          [referredMemberId]
+        );
+
+      if (
+        existing.rows.length
+      ) {
+        await client.query(
+          "ROLLBACK"
+        );
+
+        return res
+          .status(409)
+          .json({
+            ok: false,
+            error:
+              "This Pioneer already has a referrer."
+          });
+      }
+
+      await client.query(
+        `
+        INSERT INTO referrals
+          (
+            referrer_member_id,
+            referred_member_id,
+            status
+          )
+        VALUES
+          (
+            $1,
+            $2,
+            'ACTIVE'
+          )
+        `,
+        [
+          req.member.id,
+          referredMemberId
+        ]
+      );
+
+      const addedToCircle =
+        await addReferralToSecurityCircle(
+          client,
+          req.member.id,
+          referredMemberId
+        );
+
+      const countRes = await client.query(
+        `
+        SELECT COUNT(*)::INT AS count
+        FROM referrals
+        WHERE referrer_member_id = $1
+          AND status = 'ACTIVE'
+        `,
+        [req.member.id]
+      );
+      const newCount = Number(countRes.rows[0]?.count || 0);
+
+      const rewardInfo = await creditReferralReward(
+        req.member.id,
+        newCount,
+        client,
+        referredMemberId
+      );
+
+      await client.query(
+        "COMMIT"
+      );
+
+      res.json({
+        ok: true,
+
+        linked:
+          true,
+
+        addedToSecurityCircle:
+          addedToCircle,
+
+        referralReward: rewardInfo
+      });
+
+    } catch (error) {
+      try {
+        await client.query(
+          "ROLLBACK"
+        );
+      } catch {}
+
+      if (
+        error.code ===
+        "23505"
+      ) {
+        return res
+          .status(409)
+          .json({
+            ok: false,
+            error:
+              "Referral is already linked."
+          });
+      }
+
+      console.error(
+        "REFERRAL ERROR:",
+        error
+      );
+
+      res
+        .status(
+          error.status || 500
+        )
+        .json({
+          ok: false,
+          error:
+            error.message ||
+            "Unable to link referral."
+        });
+
+    } finally {
+      client.release();
+    }
+  }
+);
+
+app.post(
+  "/api/referral/auto-link",
+  async (req, res) => {
+    try {
+      const token =
+        String(
+          req.body?.accessToken || ""
+        ).trim();
+
+      const referralUsername =
+        cleanUsername(
+          req.body?.referralUsername
+        );
+
+      if (!token) {
+        return res
+          .status(401)
+          .json({
+            ok: false,
+            error:
+              "Pi access token is required."
+          });
+      }
+
+      if (!referralUsername) {
+        return res
+          .status(400)
+          .json({
+            ok: false,
+            error:
+              "Referral username is required."
+          });
+      }
+
+      const auth =
+        await getAuthenticatedMember(
+          token
+        );
+
+      const client =
+        await pool.connect();
+
+      try {
+        await client.query(
+          "BEGIN"
+        );
+
+        const referrer =
+          await client.query(
+            `
+            SELECT *
+            FROM members
+            WHERE
+              LOWER(username) =
+              LOWER($1)
+            LIMIT 1
+            `,
+            [referralUsername]
+          );
+
+        if (
+          !referrer.rows.length
+        ) {
+          await client.query(
+            "ROLLBACK"
+          );
+
+          return res
+            .status(404)
+            .json({
+              ok: false,
+              error:
+                "Referral username not found."
+            });
+        }
+
+        const referrerMember =
+          referrer.rows[0];
+
+        if (
+          Number(
+            referrerMember.id
+          ) ===
+          Number(
+            auth.member.id
+          )
+        ) {
+          await client.query(
+            "ROLLBACK"
+          );
+
+          return res
+            .status(400)
+            .json({
+              ok: false,
+              error:
+                "You cannot use your own username."
+            });
+        }
+
+        const existing =
+          await client.query(
+            `
+            SELECT *
+            FROM referrals
+            WHERE
+              referred_member_id = $1
+            LIMIT 1
+            `,
+            [auth.member.id]
+          );
+
+        if (
+          existing.rows.length
+        ) {
+          await client.query(
+            "ROLLBACK"
+          );
+
+          return res.json({
+            ok: true,
+            linked: false,
+            alreadyLinked:
+              true
+          });
+        }
+
+        await client.query(
+          `
+          INSERT INTO referrals
+            (
+              referrer_member_id,
+              referred_member_id,
+              status
+            )
+          VALUES
+            (
+              $1,
+              $2,
+              'ACTIVE'
+            )
+          `,
+          [
+            referrerMember.id,
+            auth.member.id
+          ]
+        );
+
+        const addedToCircle =
+          await addReferralToSecurityCircle(
+            client,
+            referrerMember.id,
+            auth.member.id
+          );
+
+        // Count after this new referral
+        const countRes = await client.query(
+          `
+          SELECT COUNT(*)::INT AS count
+          FROM referrals
+          WHERE referrer_member_id = $1
+            AND status = 'ACTIVE'
+          `,
+          [referrerMember.id]
+        );
+        const newCount = Number(countRes.rows[0]?.count || 0);
+
+        const rewardInfo = await creditReferralReward(
+          referrerMember.id,
+          newCount,
+          client,
+          auth.member.id
+        );
+
+        await client.query(
+          "COMMIT"
+        );
+
+        return res.json({
+          ok: true,
+
+          linked:
+            true,
+
+          referrerUsername:
+            referrerMember.username,
+
+          addedToSecurityCircle:
+            addedToCircle,
+
+          referralReward: rewardInfo
+        });
+
+      } catch (error) {
+        try {
+          await client.query(
+            "ROLLBACK"
+          );
+        } catch {}
+
+        throw error;
+
+      } finally {
+        client.release();
+      }
+
+    } catch (error) {
+      console.error(
+        "AUTO REFERRAL ERROR:",
+        error
+      );
+
+      res
+        .status(
+          error.status || 500
+        )
+        .json({
+          ok: false,
+          error:
+            error.message ||
+            "Unable to auto-link referral."
+        });
+    }
+  }
+);
+
+app.get(
+  "/api/referral/status",
+  requireAuth,
+  async (req, res) => {
+    const countResult =
+      await pool.query(
+        `
+        SELECT
+          COUNT(*)::INT AS count
+        FROM referrals
+        WHERE
+          referrer_member_id = $1
+          AND status = 'ACTIVE'
+        `,
+        [req.member.id]
+      );
+
+    const activeMiners =
+      await pool.query(
+        `
+        SELECT
+          COUNT(*)::INT AS count
+        FROM referrals r
+        JOIN mining_sessions ms
+          ON ms.member_id =
+             r.referred_member_id
+        WHERE
+          r.referrer_member_id = $1
+          AND r.status = 'ACTIVE'
+          AND ms.status = 'ACTIVE'
+          AND NOW() < ms.ends_at
+        `,
+        [req.member.id]
+      );
+
+    const referrals =
+      await pool.query(
+        `
+        SELECT
+
+          m.username,
+          m.pi_uid,
+          r.status,
+          r.created_at,
+
+          EXISTS (
+            SELECT 1
+            FROM mining_sessions ms
+            WHERE
+              ms.member_id = m.id
+              AND ms.status = 'ACTIVE'
+              AND NOW() < ms.ends_at
+          ) AS mining
+
+        FROM referrals r
+
+        JOIN members m
+          ON m.id =
+             r.referred_member_id
+
+        WHERE
+          r.referrer_member_id = $1
+
+        ORDER BY
+          r.created_at DESC
+        `,
+        [req.member.id]
+      );
+
+    const referralCount = Number(
+      countResult.rows[0]?.count || 0
+    );
+    const currentTier = getReferralTier(referralCount);
+
+    res.json({
+      ok: true,
+
+      username:
+        req.member.username,
+
+      // Referral code of this Pioneer (saved from Pi username on login)
+      // This is what other miners should use when joining
+      referralCode:
+        req.member.referral_code ||
+        req.member.username ||
+        null,
+
+      referralCount,
+
+      maxDirectReferrals:
+        "UNLIMITED",
+
+      activeMiners:
+        Number(
+          activeMiners.rows[0]?.count || 0
+        ),
+
+      // Tier system info
+      tier: {
+        name: currentTier.name,
+        rewardPerReferral: currentTier.rewardPerReferral,
+        min: currentTier.min,
+        max: currentTier.max === Infinity ? null : currentTier.max
+      },
+
+      tiers: REFERRAL_TIERS.map(t => ({
+        name: t.name,
+        min: t.min,
+        max: t.max === Infinity ? null : t.max,
+        rewardPerReferral: t.rewardPerReferral
+      })),
+
+      milestones: REFERRAL_MILESTONES,
+
+      referrals:
+        referrals.rows
+    });
+  }
+);
+
+/* =========================================================
+SECURITY CIRCLE
+========================================================= */
+
+app.post(
+  "/api/security-circle/add",
+  requireAuth,
+  async (req, res) => {
+    const memberId =
+      Number(
+        req.body?.memberId
+      );
+
+    if (
+      !Number.isInteger(
+        memberId
+      )
+    ) {
+      return res
+        .status(400)
+        .json({
+          ok: false,
+          error:
+            "Valid memberId is required."
+        });
+    }
+
+    if (
+      memberId ===
+      Number(req.member.id)
+    ) {
+      return res
+        .status(400)
+        .json({
+          ok: false,
+          error:
+            "You cannot add yourself."
+        });
+    }
+
+    const client =
+      await pool.connect();
+
+    try {
+      await client.query(
+        "BEGIN"
+      );
+
+      const memberCheck =
+        await client.query(
+          `
+          SELECT id
+          FROM members
+          WHERE id = $1
+          LIMIT 1
+          `,
+          [memberId]
+        );
+
+      if (
+        !memberCheck.rows.length
+      ) {
+        throw new HttpError(
+          404,
+          "Pioneer member was not found."
+        );
+      }
+
+      const added =
+        await addReferralToSecurityCircle(
+          client,
+          req.member.id,
+          memberId
+        );
+
+      if (!added) {
+        await client.query(
+          "ROLLBACK"
+        );
+
+        return res
+          .status(409)
+          .json({
+            ok: false,
+            error:
+              "Security Circle is full. Maximum 5 members."
+          });
+      }
+
+      await client.query(
+        "COMMIT"
+      );
+
+      res.json({
+        ok: true,
+        added: true
+      });
+
+    } catch (error) {
+      try {
+        await client.query(
+          "ROLLBACK"
+        );
+      } catch {}
+
+      console.error(
+        "SECURITY ADD ERROR:",
+        error
+      );
+
+      res
+        .status(
+          error.status || 500
+        )
+        .json({
+          ok: false,
+          error:
+            error.message ||
+            "Unable to add Security Circle member."
+        });
+
+    } finally {
+      client.release();
+    }
+  }
+);
+
+app.get(
+  "/api/security-circle/status",
+  requireAuth,
+  async (req, res) => {
+    const result =
+      await pool.query(
+        `
+        SELECT
+
+          m.id,
+          m.username,
+          m.pi_uid,
+
+          sc.status,
+          sc.created_at,
+
+          EXISTS (
+            SELECT 1
+            FROM mining_sessions ms
+            WHERE
+              ms.member_id = m.id
+              AND ms.status = 'ACTIVE'
+              AND NOW() < ms.ends_at
+          ) AS mining
+
+        FROM security_circle sc
+
+        JOIN members m
+          ON m.id =
+             sc.member_id
+
+        WHERE
+          sc.owner_member_id = $1
+          AND sc.status = 'ACTIVE'
+
+        ORDER BY
+          sc.created_at ASC
+        `,
+        [req.member.id]
+      );
+
+    res.json({
+      ok: true,
+
+      maxMembers:
+        MAX_SECURITY_CIRCLE,
+
+      count:
+        result.rows.length,
+
+      members:
+        result.rows
+    });
+  }
+);
+
+/* =========================================================
+STAKING POOLS
+========================================================= */
+
+app.get(
+  "/api/staking/pools",
+  async (req, res) => {
+    res.json({
+      ok: true,
+
+      network:
+        "Pi Mainnet",
+
+      environment:
+        "MAINNET",
+
+      minimumStake:
+        STAKING_MIN_AMOUNT_AMT,
+
+      compounding:
+        false,
+
+      pools:
+        Object.values(
+          STAKING_POOLS
+        )
+    });
+  }
+);
+
+/* =========================================================
+STAKING STATUS
+========================================================= */
+
+app.get(
+  "/api/staking/status",
+  requireAuth,
+  async (req, res) => {
+    try {
+      const balance =
+        await getBalance(
+          req.member.id
+        );
+
+      const summary =
+        await getStakingSummary(
+          req.member.id
+        );
+
+      const result =
+        await pool.query(
+          `
+          SELECT
+
+            id,
+            pool_id,
+            principal,
+            reward_rate,
+            reward_amount,
+            started_at,
+            unlock_at,
+            status,
+            unstaked_at,
+            created_at
+
+          FROM amt_stakes
+
+          WHERE member_id = $1
+
+          ORDER BY
+            created_at DESC
+
+          LIMIT 100
+          `,
+          [req.member.id]
+        );
+
+      const stakes =
+        result.rows.map(
+          stake => {
+            const poolInfo =
+              STAKING_POOLS[
+                stake.pool_id
+              ];
+
+            const unlockTime =
+              new Date(
+                stake.unlock_at
+              ).getTime();
+
+            const unlocked =
+              Date.now() >=
+              unlockTime;
+
+            const remainingSeconds =
+              Math.max(
+                0,
+                Math.ceil(
+                  (
+                    unlockTime -
+                    Date.now()
+                  ) / 1000
+                )
+              );
+
+            return {
+              id:
+                stake.id,
+
+              poolId:
+                stake.pool_id,
+
+              poolName:
+                poolInfo?.name ||
+                stake.pool_id,
+
+              lockDays:
+                poolInfo?.lockDays ||
+                null,
+
+              rewardPercent:
+                Number(
+                  stake.reward_rate
+                ),
+
+              principal:
+                Number(
+                  stake.principal
+                ),
+
+              reward:
+                Number(
+                  stake.reward_amount
+                ),
+
+              totalAtUnlock:
+                Number(
+                  (
+                    Number(
+                      stake.principal
+                    ) +
+                    Number(
+                      stake.reward_amount
+                    )
+                  ).toFixed(8)
+                ),
+
+              startedAt:
+                stake.started_at,
+
+              unlockAt:
+                stake.unlock_at,
+
+              remainingSeconds,
+
+              unlocked,
+
+              status:
+                stake.status,
+
+              canUnstake:
+                stake.status ===
+                  "ACTIVE" &&
+                unlocked,
+
+              unstakedAt:
+                stake.unstaked_at,
+
+              createdAt:
+                stake.created_at
+            };
+          }
+        );
+
+      const portfolioBalance =
+        Number(
+          (
+            balance +
+            summary.stakedPrincipal
+          ).toFixed(8)
+        );
+
+      res.json({
+        ok: true,
+
+        network:
+          "Pi Mainnet",
+
+        environment:
+          "MAINNET",
+
+        minimumStake:
+          STAKING_MIN_AMOUNT_AMT,
+
+        availableBalance:
+          balance,
+
+        stakedPrincipal:
+          summary.stakedPrincipal,
+
+        pendingRewards:
+          summary.pendingRewards,
+
+        portfolioBalance,
+
+        activeStakeCount:
+          stakes.filter(
+            stake =>
+              stake.status ===
+              "ACTIVE"
+          ).length,
+
+        pools:
+          Object.values(
+            STAKING_POOLS
+          ),
+
+        stakes
+      });
+
+    } catch (error) {
+      console.error(
+        "STAKING STATUS ERROR:",
+        error
+      );
+
+      res
+        .status(500)
+        .json({
+          ok: false,
+          error:
+            "Unable to load staking status."
+        });
+    }
+  }
+);
+
+/* =========================================================
+CREATE STAKE
+========================================================= */
+
+app.post(
+  "/api/staking/stake",
+  requireAuth,
+  async (req, res) => {
+    const poolId =
+      String(
+        req.body?.poolId || ""
+      )
+        .trim()
+        .toUpperCase();
+
+    const amount =
+      validAmount(
+        req.body?.amount
+      );
+
+    const selectedPool =
+      STAKING_POOLS[
+        poolId
+      ];
+
+    if (!selectedPool) {
+      return res
+        .status(400)
+        .json({
+          ok: false,
+          error:
+            "Invalid staking pool."
+        });
+    }
+
+    if (amount === null) {
+      return res
+        .status(400)
+        .json({
+          ok: false,
+          error:
+            "Invalid AMT amount."
+        });
+    }
+
+    if (
+      amount <
+      STAKING_MIN_AMOUNT_AMT
+    ) {
+      return res
+        .status(400)
+        .json({
+          ok: false,
+
+          error:
+            `Minimum stake is ${STAKING_MIN_AMOUNT_AMT} AMT.`
+        });
+    }
+
+    const client =
+      await pool.connect();
+
+    try {
+      await client.query(
+        "BEGIN"
+      );
+
+      await client.query(
+        `
+        SELECT id
+        FROM members
+        WHERE id = $1
+        FOR UPDATE
+        `,
+        [req.member.id]
+      );
+
+      const balance =
+        await getBalance(
+          req.member.id,
+          client
+        );
+
+      if (
+        balance < amount
+      ) {
+        throw new HttpError(
+          400,
+          "Insufficient AMT balance.",
+          {
+            balance,
+            requested:
+              amount
+          }
+        );
+      }
+
+      const rewardRate =
+        selectedPool
+          .rewardPercent / 100;
+
+      const reward =
+        Number(
+          (
+            amount *
+            rewardRate
+          ).toFixed(8)
+        );
+
+      const startedAt =
+        new Date();
+
+      const unlockAt =
+        new Date(
+          startedAt.getTime() +
+          selectedPool.lockDays *
+            24 *
+            60 *
+            60 *
+            1000
+        );
+
+      const reference =
+        makeReference(
+          "AMT-STAKE"
+        );
+
+      const stakeResult =
+        await client.query(
+          `
+          INSERT INTO amt_stakes
+            (
+              member_id,
+              pool_id,
+              principal,
+              reward_rate,
+              reward_amount,
+              started_at,
+              unlock_at,
+              status
+            )
+          VALUES
+            (
+              $1,
+              $2,
+              $3,
+              $4,
+              $5,
+              $6,
+              $7,
+              'ACTIVE'
+            )
+
+          RETURNING *
+          `,
+          [
+            req.member.id,
+            selectedPool.id,
+            amount,
+            rewardRate,
+            reward,
+            startedAt,
+            unlockAt
+          ]
+        );
+
+      await client.query(
+        `
+        INSERT INTO amt_ledger
+          (
+            member_id,
+            amount,
+            type,
+            reference
+          )
+        VALUES
+          (
+            $1,
+            $2,
+            'STAKING_LOCK',
+            $3
+          )
+        `,
+        [
+          req.member.id,
+          -amount,
+          reference
+        ]
+      );
+
+      await client.query(
+        "COMMIT"
+      );
+
+      const newBalance =
+        await getBalance(
+          req.member.id
+        );
+
+      res.json({
+        ok: true,
+
+        staked:
+          true,
+
+        stake: {
+          id:
+            stakeResult.rows[0].id,
+
+          poolId:
+            selectedPool.id,
+
+          poolName:
+            selectedPool.name,
+
+          lockDays:
+            selectedPool.lockDays,
+
+          principal:
+            amount,
+
+          rewardPercent:
+            selectedPool.rewardPercent,
+
+          reward,
+
+          totalAtUnlock:
+            Number(
+              (
+                amount +
+                reward
+              ).toFixed(8)
+            ),
+
+          startedAt,
+
+          unlockAt,
+
+          status:
+            "ACTIVE"
+        },
+
+        balance:
+          newBalance,
+
+        network:
+          "Pi Mainnet",
+
+        environment:
+          "MAINNET"
+      });
+
+    } catch (error) {
+      try {
+        await client.query(
+          "ROLLBACK"
+        );
+      } catch {}
+
+      console.error(
+        "STAKE ERROR:",
+        error
+      );
+
+      res
+        .status(
+          error.status || 500
+        )
+        .json({
+          ok: false,
+
+          error:
+            error.message ||
+            "Unable to create stake.",
+
+          ...(error.extra || {})
+        });
+
+    } finally {
+      client.release();
+    }
+  }
+);
+
+/* =========================================================
+UNSTAKE
+========================================================= */
+
+app.post(
+  "/api/staking/unstake",
+  requireAuth,
+  async (req, res) => {
+    const stakeId =
+      Number(
+        req.body?.stakeId
+      );
+
+    if (
+      !Number.isInteger(
+        stakeId
+      ) ||
+      stakeId <= 0
+    ) {
+      return res
+        .status(400)
+        .json({
+          ok: false,
+          error:
+            "Valid stakeId is required."
+        });
+    }
+
+    const client =
+      await pool.connect();
+
+    try {
+      await client.query(
+        "BEGIN"
+      );
+
+      await client.query(
+        `
+        SELECT id
+        FROM members
+        WHERE id = $1
+        FOR UPDATE
+        `,
+        [req.member.id]
+      );
+
+      const stakeResult =
+        await client.query(
+          `
+          SELECT *
+          FROM amt_stakes
+          WHERE
+            id = $1
+            AND member_id = $2
+          FOR UPDATE
+          `,
+          [
+            stakeId,
+            req.member.id
+          ]
+        );
+
+      if (
+        !stakeResult.rows.length
+      ) {
+        throw new HttpError(
+          404,
+          "Stake not found."
+        );
+      }
+
+      const stake =
+        stakeResult.rows[0];
+
+      if (
+        stake.status !==
+        "ACTIVE"
+      ) {
+        throw new HttpError(
+          409,
+          "This stake has already been processed."
+        );
+      }
+
+      const unlockTime =
+        new Date(
+          stake.unlock_at
+        ).getTime();
+
+      if (
+        Date.now() <
+        unlockTime
+      ) {
+        throw new HttpError(
+          400,
+          "Stake is still locked.",
+          {
+            unlockAt:
+              stake.unlock_at,
+
+            remainingSeconds:
+              Math.ceil(
+                (
+                  unlockTime -
+                  Date.now()
+                ) / 1000
+              )
+          }
+        );
+      }
+
+      const principal =
+        Number(
+          stake.principal
+        );
+
+      const reward =
+        Number(
+          stake.reward_amount
+        );
+
+      const total =
+        Number(
+          (
+            principal +
+            reward
+          ).toFixed(8)
+        );
+
+      const reference =
+        makeReference(
+          "AMT-UNSTAKE"
+        );
+
+      await client.query(
+        `
+        INSERT INTO amt_ledger
+          (
+            member_id,
+            amount,
+            type,
+            reference
+          )
+        VALUES
+          (
+            $1,
+            $2,
+            'STAKING_PAYOUT',
+            $3
+          )
+        `,
+        [
+          req.member.id,
+          total,
+          reference
+        ]
+      );
+
+      await client.query(
+        `
+        UPDATE amt_stakes
+        SET
+          status = 'COMPLETED',
+          unstaked_at = NOW()
+        WHERE id = $1
+        `,
+        [stakeId]
+      );
+
+      await client.query(
+        "COMMIT"
+      );
+
+      const balance =
+        await getBalance(
+          req.member.id
+        );
+
+      res.json({
+        ok: true,
+
+        unstaked:
+          true,
+
+        stakeId,
+
+        principal,
+
+        reward,
+
+        total,
+
+        reference,
+
+        balance,
+
+        status:
+          "COMPLETED",
+
+        network:
+          "Pi Mainnet",
+
+        environment:
+          "MAINNET"
+      });
+
+    } catch (error) {
+      try {
+        await client.query(
+          "ROLLBACK"
+        );
+      } catch {}
+
+      console.error(
+        "UNSTAKE ERROR:",
+        error
+      );
+
+      res
+        .status(
+          error.status || 500
+        )
+        .json({
+          ok: false,
+
+          error:
+            error.message ||
+            "Unable to unstake.",
+
+          ...(error.extra || {})
+        });
+
+    } finally {
+      client.release();
+    }
+  }
+);
+
+/* =========================================================
+STAKING HISTORY
+========================================================= */
+
+app.get(
+  "/api/staking/history",
+  requireAuth,
+  async (req, res) => {
+    try {
+      const result =
+        await pool.query(
+          `
+          SELECT
+
+            id,
+            pool_id,
+            principal,
+            reward_rate,
+            reward_amount,
+            started_at,
+            unlock_at,
+            status,
+            unstaked_at,
+            created_at
+
+          FROM amt_stakes
+
+          WHERE member_id = $1
+
+          ORDER BY
+            created_at DESC
+
+          LIMIT 100
+          `,
+          [req.member.id]
+        );
+
+      const history =
+        result.rows.map(
+          stake => ({
+            id:
+              stake.id,
+
+            poolId:
+              stake.pool_id,
+
+            pool:
+              STAKING_POOLS[
+                stake.pool_id
+              ] || null,
+
+            principal:
+              Number(
+                stake.principal
+              ),
+
+            rewardPercent:
+              Number(
+                stake.reward_rate
+              ),
+
+            reward:
+              Number(
+                stake.reward_amount
+              ),
+
+            total:
+              Number(
+                (
+                  Number(
+                    stake.principal
+                  ) +
+                  Number(
+                    stake.reward_amount
+                  )
+                ).toFixed(8)
+              ),
+
+            startedAt:
+              stake.started_at,
+
+            unlockAt:
+              stake.unlock_at,
+
+            status:
+              stake.status,
+
+            unstakedAt:
+              stake.unstaked_at,
+
+            createdAt:
+              stake.created_at
+          })
+        );
+
+      res.json({
+        ok: true,
+
+        network:
+          "Pi Mainnet",
+
+        history
+      });
+
+    } catch (error) {
+      console.error(
+        "STAKING HISTORY ERROR:",
+        error
+      );
+
+      res
+        .status(500)
+        .json({
+          ok: false,
+          error:
+            "Unable to load staking history."
+        });
+    }
+  }
+);
+
+/* =========================================================
+AMT PET MARKETPLACE + FULL PET SYSTEM (v2.4.0)
+========================================================= */
+
+const PET_ELEMENTS = [
+  "Earth", "Water", "Nature", "Ice", "Fire", "Wind", "Thunder", "Shadow", "Light", "Cosmic"
+];
+
+const PET_RARITIES = [
+  "Common",
+  "Uncommon",
+  "Rare",
+  "Epic",
+  "Legendary",
+  "Mythic"
+];
+
+/* Level → max rarity pioneers can reach by training/battling */
+function rarityRank(r) {
+  const i = PET_RARITIES.indexOf(String(r || "Common"));
+  return i < 0 ? 0 : i;
+}
+function rarityFromLevel(level) {
+  const lv = Math.max(1, Number(level) || 1);
+  if (lv >= 50) return "Mythic";
+  if (lv >= 40) return "Legendary";
+  if (lv >= 30) return "Epic";
+  if (lv >= 20) return "Rare";
+  if (lv >= 10) return "Uncommon";
+  return "Common";
+}
+/** Option A: rarity is 100% from pet level (shop rarity = price tier only). */
+function evolvedRarity(_baseRarity, level) {
+  return rarityFromLevel(level);
+}
+const PET_LEVEL_MILESTONES = [
+  { level: 10, amount: 2, key: "LV10" },
+  { level: 20, amount: 5, key: "LV20" },
+  { level: 50, amount: 15, key: "LV50" }
+];
+
+async function creditPetLevelMilestones(db, memberId, ownedId, newLevel) {
+  const bonuses = [];
+  for (const m of PET_LEVEL_MILESTONES) {
+    if (newLevel < m.level) continue;
+    const ref = `AMT-PET-LV-${m.key}-${ownedId}`;
+    const exists = await db.query(
+      `SELECT id FROM amt_ledger WHERE member_id = $1 AND reference = $2 LIMIT 1`,
+      [memberId, ref]
+    );
+    if (exists.rows.length) continue;
+    await db.query(
+      `INSERT INTO amt_ledger (member_id, amount, type, reference)
+       VALUES ($1, $2, 'PET_LEVEL_MILESTONE', $3)`,
+      [memberId, m.amount, ref]
+    );
+    bonuses.push({ level: m.level, amount: m.amount });
+  }
+  return bonuses;
+}
+
+async function applyLevelAndRarity(client, ownedId, memberId) {
+  const db = client || pool;
+  const row = await db.query(
+    `SELECT id, level, exp, member_id FROM owned_pets WHERE id = $1`,
+    [ownedId]
+  );
+  if (!row.rows.length) return null;
+  let { level, exp } = row.rows[0];
+  const ownerId = memberId || row.rows[0].member_id;
+  const oldLevel = Number(level) || 1;
+  level = oldLevel;
+  exp = Number(exp) || 0;
+  // Multi level-up if lots of exp
+  while (exp >= level * 50 && level < 99) {
+    exp -= level * 50;
+    level += 1;
+  }
+  const newRarity = rarityFromLevel(level);
+  const updated = await db.query(
+    `UPDATE owned_pets SET level = $1, exp = $2, rarity = $3
+     WHERE id = $4 RETURNING *`,
+    [level, exp, newRarity, ownedId]
+  );
+  let milestones = [];
+  if (level > oldLevel && ownerId) {
+    try {
+      milestones = await creditPetLevelMilestones(db, ownerId, ownedId, level);
+    } catch (e) {
+      console.error("PET LEVEL MILESTONE:", e.message || e);
+    }
+  }
+  const pet = updated.rows[0];
+  if (pet) pet._milestones = milestones;
+  return pet;
+}
+
+const AMT_PETS = [
+  {
+    "id": "earth-rock-puppy",
+    "name": "Rock Puppy",
+    "element": "Earth",
+    "rarity": "Common",
+    "priceAmt": 0.5,
+    "hp": 90,
+    "atk": 12,
+    "def": 20,
+    "spd": 8,
+    "ability": "Stone Guard",
+    "image": "assets/pets/common/earth-rock-puppy.png",
+    "number": 1
+  },
+  {
+    "id": "earth-mud-turtle",
+    "name": "Mud Turtle",
+    "element": "Earth",
+    "rarity": "Common",
+    "priceAmt": 0.5,
+    "hp": 93,
+    "atk": 13,
+    "def": 21,
+    "spd": 9,
+    "ability": "Stone Guard",
+    "image": "assets/pets/common/earth-mud-turtle.png",
+    "number": 2
+  },
+  {
+    "id": "earth-mountain-bear",
+    "name": "Mountain Bear",
+    "element": "Earth",
+    "rarity": "Common",
+    "priceAmt": 0.5,
+    "hp": 96,
+    "atk": 15,
+    "def": 23,
+    "spd": 10,
+    "ability": "Stone Guard",
+    "image": "assets/pets/common/earth-mountain-bear.png",
+    "number": 3
+  },
+  {
+    "id": "earth-crystal-wolf",
+    "name": "Crystal Wolf",
+    "element": "Earth",
+    "rarity": "Common",
+    "priceAmt": 0.5,
+    "hp": 99,
+    "atk": 16,
+    "def": 24,
+    "spd": 11,
+    "ability": "Stone Guard",
+    "image": "assets/pets/common/earth-crystal-wolf.png",
+    "number": 4
+  },
+  {
+    "id": "earth-terra-dragon",
+    "name": "Terra Dragon",
+    "element": "Earth",
+    "rarity": "Common",
+    "priceAmt": 0.5,
+    "hp": 102,
+    "atk": 18,
+    "def": 26,
+    "spd": 12,
+    "ability": "Stone Guard",
+    "image": "assets/pets/common/earth-terra-dragon.png",
+    "number": 5
+  },
+  {
+    "id": "earth-golem",
+    "name": "Golem",
+    "element": "Earth",
+    "rarity": "Uncommon",
+    "priceAmt": 1.5,
+    "hp": 105,
+    "atk": 19,
+    "def": 27,
+    "spd": 13,
+    "ability": "Stone Guard",
+    "image": "assets/pets/common/earth-golem.png",
+    "number": 6
+  },
+  {
+    "id": "earth-sand-cat",
+    "name": "Sand Cat",
+    "element": "Earth",
+    "rarity": "Uncommon",
+    "priceAmt": 1.5,
+    "hp": 108,
+    "atk": 21,
+    "def": 29,
+    "spd": 14,
+    "ability": "Stone Guard",
+    "image": "assets/pets/common/earth-sand-cat.png",
+    "number": 7
+  },
+  {
+    "id": "earth-clay-puppy",
+    "name": "Clay Puppy",
+    "element": "Earth",
+    "rarity": "Rare",
+    "priceAmt": 4.0,
+    "hp": 111,
+    "atk": 22,
+    "def": 30,
+    "spd": 15,
+    "ability": "Stone Guard",
+    "image": "assets/pets/common/earth-clay-puppy.png",
+    "number": 8
+  },
+  {
+    "id": "earth-emerald-snake",
+    "name": "Emerald Snake",
+    "element": "Earth",
+    "rarity": "Epic",
+    "priceAmt": 12.0,
+    "hp": 114,
+    "atk": 24,
+    "def": 32,
+    "spd": 16,
+    "ability": "Stone Guard",
+    "image": "assets/pets/common/earth-emerald-snake.png",
+    "number": 9
+  },
+  {
+    "id": "earth-gaia-titan",
+    "name": "Gaia Titan",
+    "element": "Earth",
+    "rarity": "Legendary",
+    "priceAmt": 40.0,
+    "hp": 117,
+    "atk": 25,
+    "def": 33,
+    "spd": 17,
+    "ability": "Stone Guard",
+    "image": "assets/pets/common/earth-gaia-titan.png",
+    "number": 10
+  },
+  {
+    "id": "water-bubble-puppy",
+    "name": "Bubble Puppy",
+    "element": "Water",
+    "rarity": "Common",
+    "priceAmt": 0.5,
+    "hp": 85,
+    "atk": 14,
+    "def": 14,
+    "spd": 12,
+    "ability": "Tidal Pulse",
+    "image": "assets/pets/common/water-bubble-puppy.png",
+    "number": 1
+  },
+  {
+    "id": "water-splash-turtle",
+    "name": "Splash Turtle",
+    "element": "Water",
+    "rarity": "Common",
+    "priceAmt": 0.5,
+    "hp": 88,
+    "atk": 15,
+    "def": 15,
+    "spd": 13,
+    "ability": "Tidal Pulse",
+    "image": "assets/pets/common/water-splash-turtle.png",
+    "number": 2
+  },
+  {
+    "id": "water-wave-wolf",
+    "name": "Wave Wolf",
+    "element": "Water",
+    "rarity": "Common",
+    "priceAmt": 0.5,
+    "hp": 91,
+    "atk": 17,
+    "def": 17,
+    "spd": 14,
+    "ability": "Tidal Pulse",
+    "image": "assets/pets/common/water-wave-wolf.png",
+    "number": 3
+  },
+  {
+    "id": "water-aqua-dragon",
+    "name": "Aqua Dragon",
+    "element": "Water",
+    "rarity": "Common",
+    "priceAmt": 0.5,
+    "hp": 94,
+    "atk": 18,
+    "def": 18,
+    "spd": 15,
+    "ability": "Tidal Pulse",
+    "image": "assets/pets/common/water-aqua-dragon.png",
+    "number": 4
+  },
+  {
+    "id": "water-coral-cat",
+    "name": "Coral Cat",
+    "element": "Water",
+    "rarity": "Common",
+    "priceAmt": 0.5,
+    "hp": 97,
+    "atk": 20,
+    "def": 20,
+    "spd": 16,
+    "ability": "Tidal Pulse",
+    "image": "assets/pets/common/water-coral-cat.png",
+    "number": 5
+  },
+  {
+    "id": "water-ice-seal",
+    "name": "Ice Seal",
+    "element": "Water",
+    "rarity": "Uncommon",
+    "priceAmt": 1.5,
+    "hp": 100,
+    "atk": 21,
+    "def": 21,
+    "spd": 17,
+    "ability": "Tidal Pulse",
+    "image": "assets/pets/common/water-ice-seal.png",
+    "number": 6
+  },
+  {
+    "id": "water-mermaid-puppy",
+    "name": "Mermaid Puppy",
+    "element": "Water",
+    "rarity": "Uncommon",
+    "priceAmt": 1.5,
+    "hp": 103,
+    "atk": 23,
+    "def": 23,
+    "spd": 18,
+    "ability": "Tidal Pulse",
+    "image": "assets/pets/common/water-mermaid-puppy.png",
+    "number": 7
+  },
+  {
+    "id": "water-kraken-baby",
+    "name": "Kraken Baby",
+    "element": "Water",
+    "rarity": "Rare",
+    "priceAmt": 4.0,
+    "hp": 106,
+    "atk": 24,
+    "def": 24,
+    "spd": 19,
+    "ability": "Tidal Pulse",
+    "image": "assets/pets/common/water-kraken-baby.png",
+    "number": 8
+  },
+  {
+    "id": "water-droplet-spirit",
+    "name": "Droplet Spirit",
+    "element": "Water",
+    "rarity": "Epic",
+    "priceAmt": 12.0,
+    "hp": 109,
+    "atk": 26,
+    "def": 26,
+    "spd": 20,
+    "ability": "Tidal Pulse",
+    "image": "assets/pets/common/water-droplet-spirit.png",
+    "number": 9
+  },
+  {
+    "id": "water-ocean-god",
+    "name": "Ocean God",
+    "element": "Water",
+    "rarity": "Legendary",
+    "priceAmt": 40.0,
+    "hp": 112,
+    "atk": 27,
+    "def": 27,
+    "spd": 21,
+    "ability": "Tidal Pulse",
+    "image": "assets/pets/common/water-ocean-god.png",
+    "number": 10
+  },
+  {
+    "id": "nature-leaf-puppy",
+    "name": "Leaf Puppy",
+    "element": "Nature",
+    "rarity": "Common",
+    "priceAmt": 0.5,
+    "hp": 80,
+    "atk": 13,
+    "def": 15,
+    "spd": 14,
+    "ability": "Leaf Veil",
+    "image": "assets/pets/common/nature-leaf-puppy.png",
+    "number": 1
+  },
+  {
+    "id": "nature-vine-snake",
+    "name": "Vine Snake",
+    "element": "Nature",
+    "rarity": "Common",
+    "priceAmt": 0.5,
+    "hp": 83,
+    "atk": 14,
+    "def": 16,
+    "spd": 15,
+    "ability": "Leaf Veil",
+    "image": "assets/pets/common/nature-vine-snake.png",
+    "number": 2
+  },
+  {
+    "id": "nature-forest-wolf",
+    "name": "Forest Wolf",
+    "element": "Nature",
+    "rarity": "Common",
+    "priceAmt": 0.5,
+    "hp": 86,
+    "atk": 16,
+    "def": 18,
+    "spd": 16,
+    "ability": "Leaf Veil",
+    "image": "assets/pets/common/nature-forest-wolf.png",
+    "number": 3
+  },
+  {
+    "id": "nature-bloom-dragon",
+    "name": "Bloom Dragon",
+    "element": "Nature",
+    "rarity": "Common",
+    "priceAmt": 0.5,
+    "hp": 89,
+    "atk": 17,
+    "def": 19,
+    "spd": 17,
+    "ability": "Leaf Veil",
+    "image": "assets/pets/common/nature-bloom-dragon.png",
+    "number": 4
+  },
+  {
+    "id": "nature-sprout-cat",
+    "name": "Sprout Cat",
+    "element": "Nature",
+    "rarity": "Common",
+    "priceAmt": 0.5,
+    "hp": 92,
+    "atk": 19,
+    "def": 21,
+    "spd": 18,
+    "ability": "Leaf Veil",
+    "image": "assets/pets/common/nature-sprout-cat.png",
+    "number": 5
+  },
+  {
+    "id": "nature-tree-golem",
+    "name": "Tree Golem",
+    "element": "Nature",
+    "rarity": "Uncommon",
+    "priceAmt": 1.5,
+    "hp": 95,
+    "atk": 20,
+    "def": 22,
+    "spd": 19,
+    "ability": "Leaf Veil",
+    "image": "assets/pets/common/nature-tree-golem.png",
+    "number": 6
+  },
+  {
+    "id": "nature-flower-puppy",
+    "name": "Flower Puppy",
+    "element": "Nature",
+    "rarity": "Uncommon",
+    "priceAmt": 1.5,
+    "hp": 98,
+    "atk": 22,
+    "def": 24,
+    "spd": 20,
+    "ability": "Leaf Veil",
+    "image": "assets/pets/common/nature-flower-puppy.png",
+    "number": 7
+  },
+  {
+    "id": "nature-jungle-tiger",
+    "name": "Jungle Tiger",
+    "element": "Nature",
+    "rarity": "Rare",
+    "priceAmt": 4.0,
+    "hp": 101,
+    "atk": 23,
+    "def": 25,
+    "spd": 21,
+    "ability": "Leaf Veil",
+    "image": "assets/pets/common/nature-jungle-tiger.png",
+    "number": 8
+  },
+  {
+    "id": "nature-herb-sheep",
+    "name": "Herb Sheep",
+    "element": "Nature",
+    "rarity": "Epic",
+    "priceAmt": 12.0,
+    "hp": 104,
+    "atk": 25,
+    "def": 27,
+    "spd": 22,
+    "ability": "Leaf Veil",
+    "image": "assets/pets/common/nature-herb-sheep.png",
+    "number": 9
+  },
+  {
+    "id": "nature-mother-earth",
+    "name": "Mother Earth",
+    "element": "Nature",
+    "rarity": "Legendary",
+    "priceAmt": 40.0,
+    "hp": 107,
+    "atk": 26,
+    "def": 28,
+    "spd": 23,
+    "ability": "Leaf Veil",
+    "image": "assets/pets/common/nature-mother-earth.png",
+    "number": 10
+  },
+  {
+    "id": "ice-snow-puppy",
+    "name": "Snow Puppy",
+    "element": "Ice",
+    "rarity": "Common",
+    "priceAmt": 0.5,
+    "hp": 82,
+    "atk": 13,
+    "def": 16,
+    "spd": 12,
+    "ability": "Frost Armor",
+    "image": "assets/pets/common/ice-snow-puppy.png",
+    "number": 1
+  },
+  {
+    "id": "ice-frost-fox",
+    "name": "Frost Fox",
+    "element": "Ice",
+    "rarity": "Common",
+    "priceAmt": 0.5,
+    "hp": 85,
+    "atk": 14,
+    "def": 17,
+    "spd": 13,
+    "ability": "Frost Armor",
+    "image": "assets/pets/common/ice-frost-fox.png",
+    "number": 2
+  },
+  {
+    "id": "ice-glacier-bear",
+    "name": "Glacier Bear",
+    "element": "Ice",
+    "rarity": "Common",
+    "priceAmt": 0.5,
+    "hp": 88,
+    "atk": 16,
+    "def": 19,
+    "spd": 14,
+    "ability": "Frost Armor",
+    "image": "assets/pets/common/ice-glacier-bear.png",
+    "number": 3
+  },
+  {
+    "id": "ice-ice-dragon",
+    "name": "Ice Dragon",
+    "element": "Ice",
+    "rarity": "Common",
+    "priceAmt": 0.5,
+    "hp": 91,
+    "atk": 17,
+    "def": 20,
+    "spd": 15,
+    "ability": "Frost Armor",
+    "image": "assets/pets/common/ice-ice-dragon.png",
+    "number": 4
+  },
+  {
+    "id": "ice-icicle-cat",
+    "name": "Icicle Cat",
+    "element": "Ice",
+    "rarity": "Common",
+    "priceAmt": 0.5,
+    "hp": 94,
+    "atk": 19,
+    "def": 22,
+    "spd": 16,
+    "ability": "Frost Armor",
+    "image": "assets/pets/common/ice-icicle-cat.png",
+    "number": 5
+  },
+  {
+    "id": "ice-snow-wolf",
+    "name": "Snow Wolf",
+    "element": "Ice",
+    "rarity": "Uncommon",
+    "priceAmt": 1.5,
+    "hp": 97,
+    "atk": 20,
+    "def": 23,
+    "spd": 17,
+    "ability": "Frost Armor",
+    "image": "assets/pets/common/ice-snow-wolf.png",
+    "number": 6
+  },
+  {
+    "id": "ice-frozen-turtle",
+    "name": "Frozen Turtle",
+    "element": "Ice",
+    "rarity": "Uncommon",
+    "priceAmt": 1.5,
+    "hp": 100,
+    "atk": 22,
+    "def": 25,
+    "spd": 18,
+    "ability": "Frost Armor",
+    "image": "assets/pets/common/ice-frozen-turtle.png",
+    "number": 7
+  },
+  {
+    "id": "ice-frost-sprite",
+    "name": "Frost Sprite",
+    "element": "Ice",
+    "rarity": "Rare",
+    "priceAmt": 4.0,
+    "hp": 103,
+    "atk": 23,
+    "def": 26,
+    "spd": 19,
+    "ability": "Frost Armor",
+    "image": "assets/pets/common/ice-frost-sprite.png",
+    "number": 8
+  },
+  {
+    "id": "ice-avalanche-golem",
+    "name": "Avalanche Golem",
+    "element": "Ice",
+    "rarity": "Epic",
+    "priceAmt": 12.0,
+    "hp": 106,
+    "atk": 25,
+    "def": 28,
+    "spd": 20,
+    "ability": "Frost Armor",
+    "image": "assets/pets/common/ice-avalanche-golem.png",
+    "number": 9
+  },
+  {
+    "id": "ice-winter-god",
+    "name": "Winter God",
+    "element": "Ice",
+    "rarity": "Legendary",
+    "priceAmt": 40.0,
+    "hp": 109,
+    "atk": 26,
+    "def": 29,
+    "spd": 21,
+    "ability": "Frost Armor",
+    "image": "assets/pets/common/ice-winter-god.png",
+    "number": 10
+  },
+  {
+    "id": "fire-ember-puppy",
+    "name": "Ember Puppy",
+    "element": "Fire",
+    "rarity": "Common",
+    "priceAmt": 0.5,
+    "hp": 78,
+    "atk": 18,
+    "def": 12,
+    "spd": 14,
+    "ability": "Flame Burst",
+    "image": "assets/pets/common/fire-ember-puppy.png",
+    "number": 1
+  },
+  {
+    "id": "fire-flame-fox",
+    "name": "Flame Fox",
+    "element": "Fire",
+    "rarity": "Common",
+    "priceAmt": 0.5,
+    "hp": 81,
+    "atk": 19,
+    "def": 13,
+    "spd": 15,
+    "ability": "Flame Burst",
+    "image": "assets/pets/common/fire-flame-fox.png",
+    "number": 2
+  },
+  {
+    "id": "fire-lava-turtle",
+    "name": "Lava Turtle",
+    "element": "Fire",
+    "rarity": "Common",
+    "priceAmt": 0.5,
+    "hp": 84,
+    "atk": 21,
+    "def": 15,
+    "spd": 16,
+    "ability": "Flame Burst",
+    "image": "assets/pets/common/fire-lava-turtle.png",
+    "number": 3
+  },
+  {
+    "id": "fire-inferno-wolf",
+    "name": "Inferno Wolf",
+    "element": "Fire",
+    "rarity": "Common",
+    "priceAmt": 0.5,
+    "hp": 87,
+    "atk": 22,
+    "def": 16,
+    "spd": 17,
+    "ability": "Flame Burst",
+    "image": "assets/pets/common/fire-inferno-wolf.png",
+    "number": 4
+  },
+  {
+    "id": "fire-blaze-dragon",
+    "name": "Blaze Dragon",
+    "element": "Fire",
+    "rarity": "Common",
+    "priceAmt": 0.5,
+    "hp": 90,
+    "atk": 24,
+    "def": 18,
+    "spd": 18,
+    "ability": "Flame Burst",
+    "image": "assets/pets/common/fire-blaze-dragon.png",
+    "number": 5
+  },
+  {
+    "id": "fire-cinder-cat",
+    "name": "Cinder Cat",
+    "element": "Fire",
+    "rarity": "Uncommon",
+    "priceAmt": 1.5,
+    "hp": 93,
+    "atk": 25,
+    "def": 19,
+    "spd": 19,
+    "ability": "Flame Burst",
+    "image": "assets/pets/common/fire-cinder-cat.png",
+    "number": 6
+  },
+  {
+    "id": "fire-magma-bear",
+    "name": "Magma Bear",
+    "element": "Fire",
+    "rarity": "Uncommon",
+    "priceAmt": 1.5,
+    "hp": 96,
+    "atk": 27,
+    "def": 21,
+    "spd": 20,
+    "ability": "Flame Burst",
+    "image": "assets/pets/common/fire-magma-bear.png",
+    "number": 7
+  },
+  {
+    "id": "fire-phoenix-chick",
+    "name": "Phoenix Chick",
+    "element": "Fire",
+    "rarity": "Rare",
+    "priceAmt": 4.0,
+    "hp": 99,
+    "atk": 28,
+    "def": 22,
+    "spd": 21,
+    "ability": "Flame Burst",
+    "image": "assets/pets/common/fire-phoenix-chick.png",
+    "number": 8
+  },
+  {
+    "id": "fire-spark-lizard",
+    "name": "Spark Lizard",
+    "element": "Fire",
+    "rarity": "Epic",
+    "priceAmt": 12.0,
+    "hp": 102,
+    "atk": 30,
+    "def": 24,
+    "spd": 22,
+    "ability": "Flame Burst",
+    "image": "assets/pets/common/fire-spark-lizard.png",
+    "number": 9
+  },
+  {
+    "id": "fire-volcano-golem",
+    "name": "Volcano Golem",
+    "element": "Fire",
+    "rarity": "Legendary",
+    "priceAmt": 40.0,
+    "hp": 105,
+    "atk": 31,
+    "def": 25,
+    "spd": 23,
+    "ability": "Flame Burst",
+    "image": "assets/pets/common/fire-volcano-golem.png",
+    "number": 10
+  },
+  {
+    "id": "wind-breeze-bunny",
+    "name": "Breeze Bunny",
+    "element": "Wind",
+    "rarity": "Common",
+    "priceAmt": 0.5,
+    "hp": 75,
+    "atk": 14,
+    "def": 11,
+    "spd": 20,
+    "ability": "Gale Force",
+    "image": "assets/pets/common/wind-breeze-bunny.png",
+    "number": 1
+  },
+  {
+    "id": "wind-gale-hawk",
+    "name": "Gale Hawk",
+    "element": "Wind",
+    "rarity": "Common",
+    "priceAmt": 0.5,
+    "hp": 78,
+    "atk": 15,
+    "def": 12,
+    "spd": 21,
+    "ability": "Gale Force",
+    "image": "assets/pets/common/wind-gale-hawk.png",
+    "number": 2
+  },
+  {
+    "id": "wind-storm-eagle",
+    "name": "Storm Eagle",
+    "element": "Wind",
+    "rarity": "Common",
+    "priceAmt": 0.5,
+    "hp": 81,
+    "atk": 17,
+    "def": 14,
+    "spd": 22,
+    "ability": "Gale Force",
+    "image": "assets/pets/common/wind-storm-eagle.png",
+    "number": 3
+  },
+  {
+    "id": "wind-zephyr-wolf",
+    "name": "Zephyr Wolf",
+    "element": "Wind",
+    "rarity": "Common",
+    "priceAmt": 0.5,
+    "hp": 84,
+    "atk": 18,
+    "def": 15,
+    "spd": 23,
+    "ability": "Gale Force",
+    "image": "assets/pets/common/wind-zephyr-wolf.png",
+    "number": 4
+  },
+  {
+    "id": "wind-tornado-dragon",
+    "name": "Tornado Dragon",
+    "element": "Wind",
+    "rarity": "Common",
+    "priceAmt": 0.5,
+    "hp": 87,
+    "atk": 20,
+    "def": 17,
+    "spd": 24,
+    "ability": "Gale Force",
+    "image": "assets/pets/common/wind-tornado-dragon.png",
+    "number": 5
+  },
+  {
+    "id": "wind-feather-cat",
+    "name": "Feather Cat",
+    "element": "Wind",
+    "rarity": "Uncommon",
+    "priceAmt": 1.5,
+    "hp": 90,
+    "atk": 21,
+    "def": 18,
+    "spd": 25,
+    "ability": "Gale Force",
+    "image": "assets/pets/common/wind-feather-cat.png",
+    "number": 6
+  },
+  {
+    "id": "wind-cyclone-horse",
+    "name": "Cyclone Horse",
+    "element": "Wind",
+    "rarity": "Uncommon",
+    "priceAmt": 1.5,
+    "hp": 93,
+    "atk": 23,
+    "def": 20,
+    "spd": 26,
+    "ability": "Gale Force",
+    "image": "assets/pets/common/wind-cyclone-horse.png",
+    "number": 7
+  },
+  {
+    "id": "wind-sky-whale",
+    "name": "Sky Whale",
+    "element": "Wind",
+    "rarity": "Rare",
+    "priceAmt": 4.0,
+    "hp": 96,
+    "atk": 24,
+    "def": 21,
+    "spd": 27,
+    "ability": "Gale Force",
+    "image": "assets/pets/common/wind-sky-whale.png",
+    "number": 8
+  },
+  {
+    "id": "wind-wind-sprite",
+    "name": "Wind Sprite",
+    "element": "Wind",
+    "rarity": "Epic",
+    "priceAmt": 12.0,
+    "hp": 99,
+    "atk": 26,
+    "def": 23,
+    "spd": 28,
+    "ability": "Gale Force",
+    "image": "assets/pets/common/wind-wind-sprite.png",
+    "number": 9
+  },
+  {
+    "id": "wind-tempest-god",
+    "name": "Tempest God",
+    "element": "Wind",
+    "rarity": "Legendary",
+    "priceAmt": 40.0,
+    "hp": 102,
+    "atk": 27,
+    "def": 24,
+    "spd": 29,
+    "ability": "Gale Force",
+    "image": "assets/pets/common/wind-tempest-god.png",
+    "number": 10
+  },
+  {
+    "id": "thunder-spark-puppy",
+    "name": "Spark Puppy",
+    "element": "Thunder",
+    "rarity": "Common",
+    "priceAmt": 0.5,
+    "hp": 76,
+    "atk": 17,
+    "def": 11,
+    "spd": 18,
+    "ability": "Static Shock",
+    "image": "assets/pets/common/thunder-spark-puppy.png",
+    "number": 1
+  },
+  {
+    "id": "thunder-bolt-fox",
+    "name": "Bolt Fox",
+    "element": "Thunder",
+    "rarity": "Common",
+    "priceAmt": 0.5,
+    "hp": 79,
+    "atk": 18,
+    "def": 12,
+    "spd": 19,
+    "ability": "Static Shock",
+    "image": "assets/pets/common/thunder-bolt-fox.png",
+    "number": 2
+  },
+  {
+    "id": "thunder-thunder-wolf",
+    "name": "Thunder Wolf",
+    "element": "Thunder",
+    "rarity": "Common",
+    "priceAmt": 0.5,
+    "hp": 82,
+    "atk": 20,
+    "def": 14,
+    "spd": 20,
+    "ability": "Static Shock",
+    "image": "assets/pets/common/thunder-thunder-wolf.png",
+    "number": 3
+  },
+  {
+    "id": "thunder-storm-dragon",
+    "name": "Storm Dragon",
+    "element": "Thunder",
+    "rarity": "Common",
+    "priceAmt": 0.5,
+    "hp": 85,
+    "atk": 21,
+    "def": 15,
+    "spd": 21,
+    "ability": "Static Shock",
+    "image": "assets/pets/common/thunder-storm-dragon.png",
+    "number": 4
+  },
+  {
+    "id": "thunder-zap-cat",
+    "name": "Zap Cat",
+    "element": "Thunder",
+    "rarity": "Common",
+    "priceAmt": 0.5,
+    "hp": 88,
+    "atk": 23,
+    "def": 17,
+    "spd": 22,
+    "ability": "Static Shock",
+    "image": "assets/pets/common/thunder-zap-cat.png",
+    "number": 5
+  },
+  {
+    "id": "thunder-lightning-horse",
+    "name": "Lightning Horse",
+    "element": "Thunder",
+    "rarity": "Uncommon",
+    "priceAmt": 1.5,
+    "hp": 91,
+    "atk": 24,
+    "def": 18,
+    "spd": 23,
+    "ability": "Static Shock",
+    "image": "assets/pets/common/thunder-lightning-horse.png",
+    "number": 6
+  },
+  {
+    "id": "thunder-static-puppy",
+    "name": "Static Puppy",
+    "element": "Thunder",
+    "rarity": "Uncommon",
+    "priceAmt": 1.5,
+    "hp": 94,
+    "atk": 26,
+    "def": 20,
+    "spd": 24,
+    "ability": "Static Shock",
+    "image": "assets/pets/common/thunder-static-puppy.png",
+    "number": 7
+  },
+  {
+    "id": "thunder-thunder-bear",
+    "name": "Thunder Bear",
+    "element": "Thunder",
+    "rarity": "Rare",
+    "priceAmt": 4.0,
+    "hp": 97,
+    "atk": 27,
+    "def": 21,
+    "spd": 25,
+    "ability": "Static Shock",
+    "image": "assets/pets/common/thunder-thunder-bear.png",
+    "number": 8
+  },
+  {
+    "id": "thunder-volt-lizard",
+    "name": "Volt Lizard",
+    "element": "Thunder",
+    "rarity": "Epic",
+    "priceAmt": 12.0,
+    "hp": 100,
+    "atk": 29,
+    "def": 23,
+    "spd": 26,
+    "ability": "Static Shock",
+    "image": "assets/pets/common/thunder-volt-lizard.png",
+    "number": 9
+  },
+  {
+    "id": "thunder-zeus-titan",
+    "name": "Zeus Titan",
+    "element": "Thunder",
+    "rarity": "Legendary",
+    "priceAmt": 40.0,
+    "hp": 103,
+    "atk": 30,
+    "def": 24,
+    "spd": 27,
+    "ability": "Static Shock",
+    "image": "assets/pets/common/thunder-zeus-titan.png",
+    "number": 10
+  }
+  ,
+  {
+    "id": "premium-earth-guardian",
+    "name": "Earth Guardian",
+    "element": "Earth",
+    "rarity": "Common",
+    "priceAmt": 1.0,
+    "hp": 110,
+    "atk": 16,
+    "def": 28,
+    "spd": 10,
+    "ability": "Strong Roots",
+    "image": "amt_pet_earth.png",
+    "tagline": "Strong Roots, Brighter Tomorrow.",
+    "number": 101
+  },
+  {
+    "id": "premium-water-spirit",
+    "name": "Water Spirit",
+    "element": "Water",
+    "rarity": "Common",
+    "priceAmt": 1.0,
+    "hp": 100,
+    "atk": 18,
+    "def": 18,
+    "spd": 16,
+    "ability": "Flow Path",
+    "image": "amt_pet_water.png",
+    "tagline": "Flow with Change, Find Your Path.",
+    "number": 102
+  },
+  {
+    "id": "premium-nature-sprout",
+    "name": "Nature Sprout",
+    "element": "Nature",
+    "rarity": "Common",
+    "priceAmt": 1.0,
+    "hp": 95,
+    "atk": 17,
+    "def": 17,
+    "spd": 15,
+    "ability": "Big Growth",
+    "image": "amt_pet_nature.png",
+    "tagline": "Small Steps, Big Growth.",
+    "number": 103
+  },
+  {
+    "id": "premium-ice-crystal",
+    "name": "Ice Crystal",
+    "element": "Ice",
+    "rarity": "Common",
+    "priceAmt": 1.0,
+    "hp": 98,
+    "atk": 19,
+    "def": 16,
+    "spd": 14,
+    "ability": "Cool Mind",
+    "image": "amt_pet_ice.png",
+    "tagline": "Cool Mind, Strong Soul.",
+    "number": 104
+  },
+  {
+    "id": "premium-thunder-bolt",
+    "name": "Thunder Bolt",
+    "element": "Thunder",
+    "rarity": "Common",
+    "priceAmt": 1.0,
+    "hp": 92,
+    "atk": 24,
+    "def": 14,
+    "spd": 22,
+    "ability": "Lightning Speed",
+    "image": "amt_pet_thunder.png",
+    "tagline": "Lightning Speed, Limitless Energy.",
+    "number": 105
+  },
+  {
+    "id": "premium-wind-flyer",
+    "name": "Wind Flyer",
+    "element": "Wind",
+    "rarity": "Common",
+    "priceAmt": 1.0,
+    "hp": 90,
+    "atk": 18,
+    "def": 14,
+    "spd": 26,
+    "ability": "Fly Higher",
+    "image": "amt_pet_wind.png",
+    "tagline": "Fly Higher, Reach Further.",
+    "number": 106
+  },
+  {
+    "id": "premium-fire-ember",
+    "name": "Fire Ember",
+    "element": "Fire",
+    "rarity": "Common",
+    "priceAmt": 1.0,
+    "hp": 94,
+    "atk": 22,
+    "def": 14,
+    "spd": 18,
+    "ability": "Small Flame",
+    "image": "amt_pet_fire.png",
+    "tagline": "Small Flame, Big Dreams.",
+    "number": 107
+  },
+  {
+    "id": "premium-shadow-wraith",
+    "name": "Shadow Wraith",
+    "element": "Shadow",
+    "rarity": "Rare",
+    "priceAmt": 5.0,
+    "hp": 105,
+    "atk": 28,
+    "def": 18,
+    "spd": 24,
+    "ability": "Dark Strength",
+    "image": "amt_pet_shadow.png",
+    "tagline": "In the Darkness, We Find Strength.",
+    "number": 108
+  },
+  {
+    "id": "premium-light-angel",
+    "name": "Light Angel",
+    "element": "Light",
+    "rarity": "Epic",
+    "priceAmt": 15.0,
+    "hp": 120,
+    "atk": 30,
+    "def": 22,
+    "spd": 20,
+    "ability": "Spread Light",
+    "image": "amt_pet_light.png",
+    "tagline": "Bring Hope, Spread Light.",
+    "number": 109
+  },
+  {
+    "id": "premium-cosmic-nova",
+    "name": "Cosmic Nova",
+    "element": "Cosmic",
+    "rarity": "Legendary",
+    "priceAmt": 45.0,
+    "hp": 140,
+    "atk": 35,
+    "def": 28,
+    "spd": 25,
+    "ability": "Beyond Dimensions",
+    "image": "amt_pet_cosmic.png",
+    "tagline": "Beyond Dimensions, Together We Shine.",
+    "number": 110
+  }
+
+];
+
+
+
+/* =========================================================
+   PET GEAR — wearable equipment (not emoji)
+   SOURCE: Weapon/Gear STORE only (buy with AMT).
+   GEAR LOOT DISABLED — no battle/story drops for now.
+========================================================= */
+const AMT_GEAR = [
+  /* --- Swords --- */
+  { id: "wpn_wood_blade", name: "Wood Blade", slot: "weapon", rarity: "Common", priceAmt: 0.8,
+    atk: 4, def: 0, hp: 0, spd: 0, color: "#c4a574", shape: "sword", weaponType: "sword" },
+  { id: "wpn_iron_sword", name: "Iron Sword", slot: "weapon", rarity: "Uncommon", priceAmt: 2.5,
+    atk: 9, def: 0, hp: 0, spd: 1, color: "#9aa4b2", shape: "sword", weaponType: "sword" },
+  { id: "wpn_flame_edge", name: "Flame Edge", slot: "weapon", rarity: "Rare", priceAmt: 8,
+    atk: 16, def: 0, hp: 0, spd: 2, color: "#ff6b35", shape: "sword", weaponType: "sword" },
+  { id: "wpn_cosmic_blade", name: "Cosmic Blade", slot: "weapon", rarity: "Legendary", priceAmt: 40,
+    atk: 35, def: 5, hp: 10, spd: 5, color: "#b388ff", shape: "sword", weaponType: "sword" },
+  /* --- Daggers --- */
+  { id: "wpn_bone_dagger", name: "Bone Dagger", slot: "weapon", rarity: "Common", priceAmt: 0.7,
+    atk: 3, def: 0, hp: 0, spd: 3, color: "#e0d5c0", shape: "dagger", weaponType: "dagger" },
+  { id: "wpn_shadow_dagger", name: "Shadow Dagger", slot: "weapon", rarity: "Rare", priceAmt: 7.5,
+    atk: 14, def: 0, hp: 0, spd: 8, color: "#7e57c2", shape: "dagger", weaponType: "dagger" },
+  { id: "wpn_venom_fang", name: "Venom Fang", slot: "weapon", rarity: "Epic", priceAmt: 17,
+    atk: 20, def: 0, hp: 0, spd: 10, color: "#69f0ae", shape: "dagger", weaponType: "dagger" },
+  /* --- Axes --- */
+  { id: "wpn_stone_axe", name: "Stone Axe", slot: "weapon", rarity: "Common", priceAmt: 0.9,
+    atk: 5, def: 1, hp: 0, spd: -1, color: "#90a4ae", shape: "axe", weaponType: "axe" },
+  { id: "wpn_war_axe", name: "War Axe", slot: "weapon", rarity: "Uncommon", priceAmt: 3,
+    atk: 11, def: 2, hp: 5, spd: -1, color: "#ef5350", shape: "axe", weaponType: "axe" },
+  { id: "wpn_berserker_axe", name: "Berserker Axe", slot: "weapon", rarity: "Epic", priceAmt: 19,
+    atk: 26, def: 3, hp: 8, spd: 0, color: "#ff1744", shape: "axe", weaponType: "axe" },
+  /* --- Bows --- */
+  { id: "wpn_hunter_bow", name: "Hunter Bow", slot: "weapon", rarity: "Common", priceAmt: 0.9,
+    atk: 4, def: 0, hp: 0, spd: 2, color: "#8d6e63", shape: "bow", weaponType: "bow" },
+  { id: "wpn_wind_bow", name: "Wind Bow", slot: "weapon", rarity: "Rare", priceAmt: 8,
+    atk: 15, def: 0, hp: 0, spd: 6, color: "#4fc3f7", shape: "bow", weaponType: "bow" },
+  { id: "wpn_star_bow", name: "Star Bow", slot: "weapon", rarity: "Legendary", priceAmt: 38,
+    atk: 30, def: 0, hp: 5, spd: 8, color: "#e1bee7", shape: "bow", weaponType: "bow" },
+  /* --- Mage / staff --- */
+  { id: "wpn_apprentice_staff", name: "Apprentice Staff", slot: "weapon", rarity: "Common", priceAmt: 0.85,
+    atk: 3, def: 0, hp: 5, spd: 1, color: "#ce93d8", shape: "staff", weaponType: "staff" },
+  { id: "wpn_arcane_staff", name: "Arcane Staff", slot: "weapon", rarity: "Rare", priceAmt: 9,
+    atk: 14, def: 2, hp: 12, spd: 2, color: "#7c4dff", shape: "staff", weaponType: "staff" },
+  { id: "wpn_crystal_wand", name: "Crystal Wand", slot: "weapon", rarity: "Uncommon", priceAmt: 2.8,
+    atk: 8, def: 0, hp: 8, spd: 2, color: "#80d8ff", shape: "wand", weaponType: "wand" },
+  { id: "wpn_void_staff", name: "Void Staff", slot: "weapon", rarity: "Legendary", priceAmt: 42,
+    atk: 32, def: 4, hp: 15, spd: 4, color: "#ea80fc", shape: "staff", weaponType: "staff" },
+  /* --- Spear / pole --- */
+  { id: "wpn_thunder_spear", name: "Thunder Spear", slot: "weapon", rarity: "Epic", priceAmt: 18,
+    atk: 24, def: 0, hp: 5, spd: 4, color: "#ffd93d", shape: "spear", weaponType: "spear" },
+  { id: "wpn_halberd", name: "Iron Halberd", slot: "weapon", rarity: "Uncommon", priceAmt: 3.2,
+    atk: 10, def: 3, hp: 0, spd: 0, color: "#b0bec5", shape: "halberd", weaponType: "halberd" },
+
+  { id: "shd_wood_buckler", name: "Wood Buckler", slot: "shield", rarity: "Common", priceAmt: 0.8,
+    atk: 0, def: 5, hp: 8, spd: 0, color: "#c4a574", shape: "shield" },
+  { id: "shd_iron_guard", name: "Iron Guard", slot: "shield", rarity: "Uncommon", priceAmt: 2.5,
+    atk: 0, def: 10, hp: 15, spd: 0, color: "#9aa4b2", shape: "shield" },
+  { id: "shd_crystal_aegis", name: "Crystal Aegis", slot: "shield", rarity: "Rare", priceAmt: 8,
+    atk: 0, def: 18, hp: 25, spd: 0, color: "#4fc3f7", shape: "shield" },
+
+  { id: "hd_leather_cap", name: "Leather Cap", slot: "head", rarity: "Common", priceAmt: 0.6,
+    atk: 0, def: 3, hp: 10, spd: 0, color: "#8d6e63", shape: "helm" },
+  { id: "hd_iron_helm", name: "Iron Helm", slot: "head", rarity: "Uncommon", priceAmt: 2.2,
+    atk: 1, def: 7, hp: 18, spd: 0, color: "#90a4ae", shape: "helm" },
+  { id: "hd_crown_light", name: "Crown of Light", slot: "head", rarity: "Epic", priceAmt: 16,
+    atk: 5, def: 10, hp: 30, spd: 2, color: "#ffe082", shape: "crown" },
+
+  { id: "bd_cloth_vest", name: "Cloth Vest", slot: "body", rarity: "Common", priceAmt: 0.7,
+    atk: 0, def: 4, hp: 12, spd: 0, color: "#81c784", shape: "armor" },
+  { id: "bd_scale_mail", name: "Scale Mail", slot: "body", rarity: "Uncommon", priceAmt: 3,
+    atk: 0, def: 12, hp: 28, spd: -1, color: "#66bb6a", shape: "armor" },
+  { id: "bd_shadow_cloak", name: "Shadow Cloak", slot: "body", rarity: "Rare", priceAmt: 9,
+    atk: 6, def: 10, hp: 20, spd: 5, color: "#7e57c2", shape: "cloak" },
+  { id: "bd_cosmic_plate", name: "Cosmic Plate", slot: "body", rarity: "Legendary", priceAmt: 42,
+    atk: 8, def: 22, hp: 45, spd: 2, color: "#ce93d8", shape: "armor" },
+
+  { id: "bt_soft_paws", name: "Soft Paws", slot: "boots", rarity: "Common", priceAmt: 0.6,
+    atk: 0, def: 1, hp: 5, spd: 4, color: "#a1887f", shape: "boots" },
+  { id: "bt_wind_runners", name: "Wind Runners", slot: "boots", rarity: "Rare", priceAmt: 7,
+    atk: 2, def: 2, hp: 8, spd: 12, color: "#4dd0e1", shape: "boots" },
+
+  { id: "acc_power_ring", name: "Power Ring", slot: "accessory", rarity: "Uncommon", priceAmt: 2,
+    atk: 5, def: 0, hp: 0, spd: 2, color: "#ff8a65", shape: "ring" },
+  { id: "acc_guardian_amulet", name: "Guardian Amulet", slot: "accessory", rarity: "Rare", priceAmt: 7.5,
+    atk: 0, def: 8, hp: 20, spd: 0, color: "#26c6da", shape: "amulet" },
+  { id: "acc_mythic_orb", name: "Mythic Orb", slot: "accessory", rarity: "Legendary", priceAmt: 35,
+    atk: 12, def: 12, hp: 25, spd: 6, color: "#ea80fc", shape: "orb" }
+];
+
+function getGearById(id) {
+  return AMT_GEAR.find(g => g.id === id) || null;
+}
+
+async function ensureGearTables() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS pet_inventory (
+      id BIGSERIAL PRIMARY KEY,
+      member_id BIGINT NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+      gear_id TEXT NOT NULL,
+      qty INT NOT NULL DEFAULT 1,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      UNIQUE (member_id, gear_id)
+    )
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS pet_equipment (
+      owned_pet_id BIGINT NOT NULL REFERENCES owned_pets(id) ON DELETE CASCADE,
+      slot TEXT NOT NULL,
+      gear_id TEXT NOT NULL,
+      updated_at TIMESTAMPTZ DEFAULT NOW(),
+      PRIMARY KEY (owned_pet_id, slot)
+    )
+  `);
+  await pool.query(`ALTER TABLE pet_equipment ADD COLUMN IF NOT EXISTS upgrade_level INT NOT NULL DEFAULT 0`);
+  await pool.query(`ALTER TABLE pet_equipment ADD COLUMN IF NOT EXISTS gem1 TEXT`);
+  await pool.query(`ALTER TABLE pet_equipment ADD COLUMN IF NOT EXISTS gem2 TEXT`);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS member_materials (
+      member_id BIGINT NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+      material_id TEXT NOT NULL,
+      qty INT NOT NULL DEFAULT 0,
+      PRIMARY KEY (member_id, material_id)
+    )
+  `);
+}
+
+const GEAR_MAX_UPGRADE = 15;
+
+const AMT_MATERIALS = {
+  pet_food: { id: "pet_food", name: "Pet Food", kind: "consumable", priceAmt: 0.2, desc: "Feed pet · restore energy / care" },
+  upgrade_core: { id: "upgrade_core", name: "Upgrade Core", kind: "core", priceAmt: 0.5, desc: "Upgrade weapon/armor +1 (max +15)" },
+  gem_atk_1: { id: "gem_atk_1", name: "Attack Gem Lv1", kind: "gem", stat: "atk", bonus: 2, level: 1, priceAmt: 0.4, desc: "+2 ATK when socketed" },
+  gem_atk_2: { id: "gem_atk_2", name: "Attack Gem Lv2", kind: "gem", stat: "atk", bonus: 5, level: 2, priceAmt: 1.2, desc: "+5 ATK when socketed" },
+  gem_atk_3: { id: "gem_atk_3", name: "Attack Gem Lv3", kind: "gem", stat: "atk", bonus: 10, level: 3, priceAmt: 3.0, desc: "+10 ATK when socketed" },
+  gem_hp_1: { id: "gem_hp_1", name: "HP Gem Lv1", kind: "gem", stat: "hp", bonus: 10, level: 1, priceAmt: 0.4, desc: "+10 HP when socketed" },
+  gem_hp_2: { id: "gem_hp_2", name: "HP Gem Lv2", kind: "gem", stat: "hp", bonus: 22, level: 2, priceAmt: 1.2, desc: "+22 HP when socketed" },
+  gem_hp_3: { id: "gem_hp_3", name: "HP Gem Lv3", kind: "gem", stat: "hp", bonus: 40, level: 3, priceAmt: 3.0, desc: "+40 HP when socketed" },
+  gem_def_1: { id: "gem_def_1", name: "Defense Gem Lv1", kind: "gem", stat: "def", bonus: 2, level: 1, priceAmt: 0.4, desc: "+2 DEF when socketed" },
+  gem_def_2: { id: "gem_def_2", name: "Defense Gem Lv2", kind: "gem", stat: "def", bonus: 5, level: 2, priceAmt: 1.2, desc: "+5 DEF when socketed" },
+  gem_def_3: { id: "gem_def_3", name: "Defense Gem Lv3", kind: "gem", stat: "def", bonus: 9, level: 3, priceAmt: 2.5, desc: "+9 DEF when socketed" }
+};
+
+function getMaterial(id) {
+  return AMT_MATERIALS[id] || null;
+}
+
+async function addMaterial(client, memberId, materialId, qty) {
+  const q = client.query.bind(client);
+  await q(
+    `INSERT INTO member_materials (member_id, material_id, qty)
+     VALUES ($1, $2, $3)
+     ON CONFLICT (member_id, material_id)
+     DO UPDATE SET qty = member_materials.qty + EXCLUDED.qty`,
+    [memberId, materialId, qty]
+  );
+}
+
+async function spendMaterial(client, memberId, materialId, qty) {
+  const r = await client.query(
+    `SELECT qty FROM member_materials WHERE member_id = $1 AND material_id = $2 FOR UPDATE`,
+    [memberId, materialId]
+  );
+  const have = r.rows.length ? Number(r.rows[0].qty) : 0;
+  if (have < qty) {
+    const m = getMaterial(materialId);
+    throw Object.assign(new Error("Need " + qty + "x " + ((m && m.name) || materialId) + " (have " + have + ")."), { status: 400 });
+  }
+  await client.query(
+    `UPDATE member_materials SET qty = qty - $1 WHERE member_id = $2 AND material_id = $3`,
+    [qty, memberId, materialId]
+  );
+}
+
+function gemBonus(gemId) {
+  const m = getMaterial(gemId);
+  if (!m || m.kind !== "gem") return { atk: 0, def: 0, hp: 0, spd: 0 };
+  const b = { atk: 0, def: 0, hp: 0, spd: 0 };
+  b[m.stat] = Number(m.bonus) || 0;
+  return b;
+}
+
+
+async function getPetEquipmentMap(client, ownedPetId) {
+  const q = client ? client.query.bind(client) : pool.query.bind(pool);
+  const r = await q(
+    `SELECT slot, gear_id, COALESCE(upgrade_level,0) AS upgrade_level, gem1, gem2
+     FROM pet_equipment WHERE owned_pet_id = $1`,
+    [ownedPetId]
+  );
+  const map = {};
+  for (const row of r.rows) {
+    map[row.slot] = {
+      gear_id: row.gear_id,
+      upgrade_level: Number(row.upgrade_level) || 0,
+      gem1: row.gem1 || null,
+      gem2: row.gem2 || null
+    };
+  }
+  return map;
+}
+
+function sumGearBonuses(equipMap) {
+  const b = { atk: 0, def: 0, hp: 0, spd: 0, items: [] };
+  for (const slot of Object.keys(equipMap || {})) {
+    const entry = equipMap[slot];
+    const gearId = typeof entry === "string" ? entry : entry.gear_id;
+    const up = typeof entry === "object" ? (Number(entry.upgrade_level) || 0) : 0;
+    const g = getGearById(gearId);
+    if (!g) continue;
+    // +12% base stats per upgrade level
+    const mult = 1 + up * 0.12;
+    let atk = Math.round((Number(g.atk) || 0) * mult);
+    let def = Math.round((Number(g.def) || 0) * mult);
+    let hp = Math.round((Number(g.hp) || 0) * mult);
+    let spd = Math.round((Number(g.spd) || 0) * mult);
+    if (typeof entry === "object") {
+      for (const gid of [entry.gem1, entry.gem2]) {
+        const gb = gemBonus(gid);
+        atk += gb.atk; def += gb.def; hp += gb.hp; spd += gb.spd;
+      }
+    }
+    b.atk += atk; b.def += def; b.hp += hp; b.spd += spd;
+    b.items.push({
+      slot, ...g, upgrade_level: up,
+      gem1: typeof entry === "object" ? entry.gem1 : null,
+      gem2: typeof entry === "object" ? entry.gem2 : null,
+      effective: { atk, def, hp, spd }
+    });
+  }
+  return b;
+}
+
+function getPetById(petId) {
+  return AMT_PETS.find(p => p.id === petId) || null;
+}
+
+
+function makeCertificateId(origin) {
+  const crypto = require("crypto");
+  const prefix =
+    origin === "pi_payment"
+      ? "AMT-MINT"
+      : origin === "shop"
+        ? "AMT-OWN"
+        : "AMT-PET";
+  return prefix + "-" + crypto.randomBytes(5).toString("hex").toUpperCase();
+}
+
+async function ensurePetTables() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS owned_pets (
+      id BIGSERIAL PRIMARY KEY,
+      member_id BIGINT NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+      pet_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      element TEXT NOT NULL,
+      rarity TEXT NOT NULL,
+      level INT NOT NULL DEFAULT 1,
+      exp INT NOT NULL DEFAULT 0,
+      hp INT NOT NULL,
+      atk INT NOT NULL,
+      def INT NOT NULL,
+      spd INT NOT NULL,
+      ability TEXT NOT NULL,
+      image TEXT,
+      energy INT NOT NULL DEFAULT 100,
+      happiness INT NOT NULL DEFAULT 100,
+      is_listed BOOLEAN NOT NULL DEFAULT FALSE,
+      purchased_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_owned_pets_member ON owned_pets(member_id);
+
+    CREATE TABLE IF NOT EXISTS pet_eggs (
+      id BIGSERIAL PRIMARY KEY,
+      member_id BIGINT NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+      parent1_id BIGINT,
+      parent2_id BIGINT,
+      element TEXT NOT NULL,
+      rarity TEXT NOT NULL DEFAULT 'Common',
+      status TEXT NOT NULL DEFAULT 'READY',
+      hatch_at TIMESTAMPTZ,
+      is_listed BOOLEAN NOT NULL DEFAULT FALSE,
+      gen INT NOT NULL DEFAULT 1,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS pet_listings (
+      id BIGSERIAL PRIMARY KEY,
+      seller_member_id BIGINT NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+      owned_pet_id BIGINT REFERENCES owned_pets(id) ON DELETE CASCADE,
+      egg_id BIGINT REFERENCES pet_eggs(id) ON DELETE CASCADE,
+      listing_type TEXT NOT NULL DEFAULT 'PET',
+      price_amt NUMERIC(20,8) NOT NULL,
+      status TEXT NOT NULL DEFAULT 'ACTIVE',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS egg_listings (
+      id BIGSERIAL PRIMARY KEY,
+      seller_member_id BIGINT NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+      egg_id BIGINT NOT NULL REFERENCES pet_eggs(id) ON DELETE CASCADE,
+      price_amt NUMERIC(20,8) NOT NULL,
+      status TEXT NOT NULL DEFAULT 'ACTIVE',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS pet_battles (
+      id BIGSERIAL PRIMARY KEY,
+      member_id BIGINT NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+      owned_pet_id BIGINT NOT NULL,
+      opponent_name TEXT NOT NULL,
+      result TEXT NOT NULL,
+      reward_amt NUMERIC(20,8) NOT NULL DEFAULT 0,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+  // Ensure columns exist if table was created by older schema
+  const alts = [
+    `ALTER TABLE owned_pets ADD COLUMN IF NOT EXISTS energy INT NOT NULL DEFAULT 100`,
+    `ALTER TABLE owned_pets ADD COLUMN IF NOT EXISTS happiness INT NOT NULL DEFAULT 100`,
+    `ALTER TABLE owned_pets ADD COLUMN IF NOT EXISTS is_listed BOOLEAN NOT NULL DEFAULT FALSE`,
+    `ALTER TABLE owned_pets ADD COLUMN IF NOT EXISTS purchased_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`,
+    `ALTER TABLE owned_pets ADD COLUMN IF NOT EXISTS image TEXT`,
+    `ALTER TABLE owned_pets ADD COLUMN IF NOT EXISTS level INT NOT NULL DEFAULT 1`,
+    `ALTER TABLE owned_pets ADD COLUMN IF NOT EXISTS exp INT NOT NULL DEFAULT 0`,
+    `ALTER TABLE owned_pets ADD COLUMN IF NOT EXISTS session_type TEXT`,
+    `ALTER TABLE owned_pets ADD COLUMN IF NOT EXISTS session_ends_at TIMESTAMPTZ`,
+    `ALTER TABLE owned_pets ADD COLUMN IF NOT EXISTS session_stat TEXT`,
+    `ALTER TABLE owned_pets ADD COLUMN IF NOT EXISTS session_xp INT NOT NULL DEFAULT 0`,
+    `ALTER TABLE owned_pets ADD COLUMN IF NOT EXISTS session_cost NUMERIC(18,8) NOT NULL DEFAULT 0`,
+
+    `ALTER TABLE pet_eggs ADD COLUMN IF NOT EXISTS is_listed BOOLEAN NOT NULL DEFAULT FALSE`,
+    `ALTER TABLE pet_eggs ADD COLUMN IF NOT EXISTS gen INT NOT NULL DEFAULT 1`,
+    `ALTER TABLE pet_listings ADD COLUMN IF NOT EXISTS egg_id BIGINT`,
+    `ALTER TABLE pet_listings ADD COLUMN IF NOT EXISTS listing_type TEXT DEFAULT 'PET'`,
+    `ALTER TABLE pet_listings ALTER COLUMN owned_pet_id DROP NOT NULL`,
+    `ALTER TABLE owned_pets ADD COLUMN IF NOT EXISTS rep INT NOT NULL DEFAULT 0`,
+    `ALTER TABLE owned_pets ADD COLUMN IF NOT EXISTS wins INT NOT NULL DEFAULT 0`,
+    `ALTER TABLE owned_pets ADD COLUMN IF NOT EXISTS losses INT NOT NULL DEFAULT 0`,
+    `ALTER TABLE owned_pets ADD COLUMN IF NOT EXISTS origin TEXT DEFAULT 'shop'`,
+    `ALTER TABLE owned_pets ADD COLUMN IF NOT EXISTS certificate_id TEXT`
+  ];
+  for (const q of alts) {
+    try {
+      await pool.query(q);
+    } catch (e) {
+      /* ignore */
+    }
+  }
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS pet_ownership_history (
+      id BIGSERIAL PRIMARY KEY,
+      owned_pet_id BIGINT NOT NULL,
+      from_member_id BIGINT,
+      to_member_id BIGINT,
+      event_type TEXT NOT NULL,
+      price_amt NUMERIC(20,8) DEFAULT 0,
+      note TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS owner_rep (
+      member_id BIGINT PRIMARY KEY REFERENCES members(id) ON DELETE CASCADE,
+      rep INT NOT NULL DEFAULT 0,
+      wins INT NOT NULL DEFAULT 0,
+      losses INT NOT NULL DEFAULT 0,
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS pet_story_progress (
+      member_id BIGINT NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+      chapter INT NOT NULL DEFAULT 1,
+      clears_today INT NOT NULL DEFAULT 0,
+      clear_date DATE,
+      total_clears INT NOT NULL DEFAULT 0,
+      PRIMARY KEY (member_id)
+    )
+  `);
+}
+
+function repBadge(rep) {
+  const r = Number(rep) || 0;
+  if (r >= 500) return "Mythic Ace";
+  if (r >= 250) return "Legend";
+  if (r >= 120) return "Veteran";
+  if (r >= 40) return "Fighter";
+  return "Rookie";
+}
+
+async function ensureOwnerRep(client, memberId) {
+  const q = client ? client.query.bind(client) : pool.query.bind(pool);
+  await q(
+    `INSERT INTO owner_rep (member_id, rep, wins, losses)
+     VALUES ($1, 0, 0, 0) ON CONFLICT (member_id) DO NOTHING`,
+    [memberId]
+  );
+}
+
+async function addOwnershipEvent(client, ownedPetId, fromId, toId, eventType, price, note) {
+  const q = client ? client.query.bind(client) : pool.query.bind(pool);
+  await q(
+    `INSERT INTO pet_ownership_history
+      (owned_pet_id, from_member_id, to_member_id, event_type, price_amt, note)
+     VALUES ($1,$2,$3,$4,$5,$6)`,
+    [ownedPetId, fromId || null, toId || null, eventType, price || 0, note || null]
+  );
+}
+
+async function applyBattleRep(client, memberId, ownedPetId, won, tierKey, underdog) {
+  let petRep = won ? 3 : 0;
+  let ownerRep = won ? 2 : 0;
+  if (won) {
+    if (tierKey === "hunter") { petRep = 5; ownerRep = 3; }
+    if (tierKey === "elite") { petRep = 8; ownerRep = 5; }
+    if (tierKey === "mythic") { petRep = 12; ownerRep = 8; }
+    if (tierKey === "pvp") { petRep = 6; ownerRep = 4; }
+    if (tierKey === "squad") { petRep = 10; ownerRep = 6; }
+    if (tierKey === "story") { petRep = 4; ownerRep = 2; }
+    if (underdog) { petRep += 5; ownerRep += 3; }
+  } else {
+    petRep = 0;
+    ownerRep = 0;
+  }
+  if (ownedPetId) {
+    if (won) {
+      await client.query(
+        `UPDATE owned_pets SET rep = COALESCE(rep,0) + $1, wins = COALESCE(wins,0) + 1
+         WHERE id = $2`,
+        [petRep, ownedPetId]
+      );
+    } else {
+      await client.query(
+        `UPDATE owned_pets SET losses = COALESCE(losses,0) + 1 WHERE id = $1`,
+        [ownedPetId]
+      );
+    }
+  }
+  await ensureOwnerRep(client, memberId);
+  if (won) {
+    await client.query(
+      `UPDATE owner_rep SET rep = rep + $1, wins = wins + 1, updated_at = NOW()
+       WHERE member_id = $2`,
+      [ownerRep, memberId]
+    );
+  } else {
+    await client.query(
+      `UPDATE owner_rep SET losses = losses + 1, updated_at = NOW()
+       WHERE member_id = $1`,
+      [memberId]
+    );
+  }
+  return { petRep, ownerRep };
+}
+
+const STORY_CHAPTERS = [
+  { id: 1, name: "Whispering Forest", mult: 0.55, exp: 45, reward: 0.15, energy: 8 },
+  { id: 2, name: "Crystal Cave", mult: 0.70, exp: 55, reward: 0.20, energy: 8 },
+  { id: 3, name: "Storm Ridge", mult: 0.85, exp: 70, reward: 0.30, energy: 10 },
+  { id: 4, name: "Ember Peak", mult: 1.00, exp: 85, reward: 0.40, energy: 10 },
+  { id: 5, name: "Frozen Hollow", mult: 1.15, exp: 100, reward: 0.50, energy: 12 },
+  { id: 6, name: "Thunder Valley", mult: 1.30, exp: 120, reward: 0.65, energy: 12 },
+  { id: 7, name: "Shadow Marsh", mult: 1.45, exp: 140, reward: 0.80, energy: 14 },
+  { id: 8, name: "Golden Ruins", mult: 1.60, exp: 160, reward: 1.00, energy: 14 },
+  { id: 9, name: "Mythic Gate", mult: 1.80, exp: 200, reward: 1.40, energy: 16 },
+  { id: 10, name: "Legend Trial", mult: 2.00, exp: 250, reward: 2.00, energy: 18 }
+];
+
+/* AFK grind map — leave pet on zone, claim later */
+const GRIND_ZONES = [
+  { id: 1, name: "Whispering Forest", minLevel: 1,  emoji: "🌲", expPerHour: 18, energyCostPerHour: 4, foodChance: 0.35, coreChance: 0.08, gemChance: 0.06, amtPerHour: 0.02 },
+  { id: 2, name: "Crystal Cave",      minLevel: 5,  emoji: "💎", expPerHour: 28, energyCostPerHour: 5, foodChance: 0.40, coreChance: 0.10, gemChance: 0.08, amtPerHour: 0.03 },
+  { id: 3, name: "Storm Ridge",       minLevel: 10, emoji: "⛈️", expPerHour: 40, energyCostPerHour: 6, foodChance: 0.42, coreChance: 0.12, gemChance: 0.10, amtPerHour: 0.04 },
+  { id: 4, name: "Ember Peak",        minLevel: 15, emoji: "🌋", expPerHour: 55, energyCostPerHour: 7, foodChance: 0.45, coreChance: 0.14, gemChance: 0.12, amtPerHour: 0.05 },
+  { id: 5, name: "Frozen Hollow",     minLevel: 20, emoji: "❄️", expPerHour: 72, energyCostPerHour: 8, foodChance: 0.48, coreChance: 0.16, gemChance: 0.14, amtPerHour: 0.06 },
+  { id: 6, name: "Thunder Valley",    minLevel: 25, emoji: "⚡", expPerHour: 90, energyCostPerHour: 9, foodChance: 0.50, coreChance: 0.18, gemChance: 0.15, amtPerHour: 0.08 },
+  { id: 7, name: "Shadow Marsh",      minLevel: 30, emoji: "🌫️", expPerHour: 110, energyCostPerHour: 10, foodChance: 0.52, coreChance: 0.20, gemChance: 0.16, amtPerHour: 0.10 },
+  { id: 8, name: "Golden Ruins",      minLevel: 35, emoji: "🏛️", expPerHour: 135, energyCostPerHour: 11, foodChance: 0.55, coreChance: 0.22, gemChance: 0.18, amtPerHour: 0.12 }
+];
+
+const GRIND_DURATIONS = [
+  { hours: 1,  label: "1h" },
+  { hours: 4,  label: "4h" },
+  { hours: 8,  label: "8h" },
+  { hours: 24, label: "24h" }
+];
+
+async function ensureGrindTables() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS pet_grinds (
+      id BIGSERIAL PRIMARY KEY,
+      member_id BIGINT NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+      owned_pet_id BIGINT NOT NULL,
+      zone_id INT NOT NULL,
+      hours INT NOT NULL,
+      energy_cost INT NOT NULL,
+      started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      ends_at TIMESTAMPTZ NOT NULL,
+      claimed_at TIMESTAMPTZ,
+      status TEXT NOT NULL DEFAULT 'active',
+      reward_json TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_pet_grinds_member ON pet_grinds(member_id, status);
+    CREATE INDEX IF NOT EXISTS idx_pet_grinds_pet ON pet_grinds(owned_pet_id, status);
+  `);
+}
+ensureGrindTables().catch(err => console.error("Grind tables:", err.message));
+
+ensurePetTables().catch(err => console.error("Pet tables init:", err.message));
+
+async function ensureDailyRewardTable() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS daily_rewards (
+      id BIGSERIAL PRIMARY KEY,
+      member_id BIGINT NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+      claim_date DATE NOT NULL,
+      amount NUMERIC(20,8) NOT NULL,
+      streak INT NOT NULL DEFAULT 1,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE (member_id, claim_date)
+    );
+    CREATE INDEX IF NOT EXISTS idx_daily_rewards_member ON daily_rewards(member_id);
+  `);
+}
+ensureDailyRewardTable().catch(err => console.error("Daily rewards table init:", err.message));
+
+function utcDateString(d = new Date()) {
+  return d.toISOString().slice(0, 10);
+}
+
+function yesterdayUtcString() {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() - 1);
+  return d.toISOString().slice(0, 10);
+}
+
+/** Normalize PG DATE / Date / string → YYYY-MM-DD (UTC) */
+function asYmd(v) {
+  if (v == null || v === "") return null;
+  if (typeof v === "string") {
+    // "2026-10-01" or ISO datetime
+    const m = v.match(/(\d{4}-\d{2}-\d{2})/);
+    if (m) return m[1];
+    const d = new Date(v);
+    if (!isNaN(d.getTime())) {
+      return d.toISOString().slice(0, 10);
+    }
+    return v.slice(0, 10);
+  }
+  if (v instanceof Date && !isNaN(v.getTime())) {
+    const y = v.getUTCFullYear();
+    const m = String(v.getUTCMonth() + 1).padStart(2, "0");
+    const day = String(v.getUTCDate()).padStart(2, "0");
+    return y + "-" + m + "-" + day;
+  }
+  try {
+    return asYmd(String(v));
+  } catch (e) {
     return null;
   }
 }
 
-function clearPendingPayment(){
-  try{
-    localStorage.removeItem("amt_pending_pay_user");
-    localStorage.removeItem("amt_pending_pay_amt");
-  }catch(e){}
+function dailyAmountForStreak(streak) {
+  const s = Math.max(1, Math.min(DAILY_MAX_STREAK, Number(streak) || 1));
+  return DAILY_REWARD_AMOUNTS[s - 1];
 }
 
-function showPayConfirmModal(){
-  const pending = getPendingPayment();
-  if(!pending || !pending.user) return false;
-  // Prefill classic SEND form as backup
-  try{
-    if($("sendTo")) $("sendTo").value = pending.user;
-    if($("sendAmount") && pending.amount) $("sendAmount").value = pending.amount;
-  }catch(e){}
-  const box = $("payConfirmModal");
-  if(!box) return false;
-  if($("payConfirmUser")) $("payConfirmUser").textContent = pending.user;
-  if($("payConfirmAmount")) $("payConfirmAmount").textContent =
-    pending.amount && Number(pending.amount) > 0 ? (pending.amount + " AMT") : "Enter amount below";
-  if($("payConfirmInput")){
-    $("payConfirmInput").value = pending.amount && Number(pending.amount) > 0 ? pending.amount : "";
+/** Count consecutive UTC days ending at endYmd from claim date list (YYYY-MM-DD desc or asc). */
+function streakFromClaimDates(datesYmd, endYmd) {
+  const set = new Set((datesYmd || []).map(asYmd).filter(Boolean));
+  if (!endYmd || !set.has(endYmd)) return 0;
+  let streak = 0;
+  let cur = endYmd;
+  while (set.has(cur) && streak < DAILY_MAX_STREAK) {
+    streak += 1;
+    const d = new Date(cur + "T00:00:00.000Z");
+    d.setUTCDate(d.getUTCDate() - 1);
+    cur = d.toISOString().slice(0, 10);
   }
-  box.classList.add("show");
-  box.style.display = "flex";
-  box.style.alignItems = "center";
-  box.style.justifyContent = "center";
-  var ban = $("pendingPayBanner");
-  if(ban){
-    ban.style.display = "block";
-    if($("pendingPayBannerText")){
-      $("pendingPayBannerText").textContent = "Pay " + pending.user +
-        (pending.amount ? (" · " + pending.amount + " AMT") : "");
+  return streak;
+}
+
+/* ---------- Catalog ---------- */
+app.get("/api/pets", async (req, res) => {
+  try {
+    const element = String(req.query.element || "").trim();
+    let pets = AMT_PETS;
+    if (element) {
+      pets = AMT_PETS.filter(p => p.element.toLowerCase() === element.toLowerCase());
     }
+    res.json({ ok: true, total: pets.length, elements: PET_ELEMENTS, rarities: PET_RARITIES, pets });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: "Unable to load pets." });
   }
-  return true;
-}
+});
 
-function hidePayConfirmModal(){
-  const box = $("payConfirmModal");
-  if(box){
-    box.classList.remove("show");
-    box.style.display = "none";
-  }
-  var ban = $("pendingPayBanner");
-  if(ban) ban.style.display = "none";
-}
-
-async function confirmPendingPay(){
-  const pending = getPendingPayment();
-  if(!pending || !pending.user){
-    hidePayConfirmModal();
-    return;
-  }
-  const inputAmt = $("payConfirmInput") ? num($("payConfirmInput").value) : 0;
-  const amount = inputAmt > 0 ? inputAmt : num(pending.amount);
-  if(amount <= 0){
-    return showToast("Enter a valid AMT amount", true);
-  }
-  try{
-    await api("/api/ledger/send", {
-      method: "POST",
-      body: JSON.stringify({
-        recipient: pending.user,
-        amount: amount,
-        memo: "QR Pay"
-      })
+/* ---------- My pets (MUST be before /api/pets/:petId) ---------- */
+app.get("/api/pets/owned", requireAuth, async (req, res) => {
+  try {
+    await ensurePetTables();
+    const result = await pool.query(
+      `SELECT * FROM owned_pets WHERE member_id = $1 ORDER BY id DESC`,
+      [req.member.id]
+    );
+    res.json({
+      ok: true,
+      count: result.rows.length,
+      memberId: req.member.id,
+      pets: result.rows
     });
-    clearPendingPayment();
-    hidePayConfirmModal();
-    showToast("Paid " + amount + " AMT to " + pending.user);
-    try{ await refreshWallet(); }catch(e){}
-  }catch(error){
-    showToast(error.message || "Payment failed", true);
+  } catch (e) {
+    console.error("OWNED PETS ERROR:", e);
+    res.status(500).json({
+      ok: false,
+      error: "Unable to load owned pets. " + (e.message || "")
+    });
   }
+});
+
+/* ---------- Buy from market ---------- */
+
+function petPricePi(pet) {
+  if (!pet) return null;
+  const r = String(pet.rarity || "Common").toLowerCase();
+  const map = {
+    common: 0.1,
+    uncommon: 0.25,
+    rare: 0.5,
+    epic: 1.0,
+    legendary: 2.0,
+    mythic: 5.0
+  };
+  return map[r] != null ? map[r] : 0.1;
 }
 
-function dismissPendingPay(){
-  clearPendingPayment();
-  hidePayConfirmModal();
-  showToast("Payment cancelled");
+function parsePetProductId(productId) {
+  const id = String(productId || "").trim();
+  if (id.startsWith("pet:")) {
+    return { kind: "pet", petId: id.slice(4) };
+  }
+  return { kind: "other", productId: id };
 }
 
-function clearPendingReferralCode(){
-  try{
-    localStorage.removeItem("amt_pending_referral");
-  }catch(e){}
+
+app.get("/api/pets/pi-price/:petId", requireAuth, async (req, res) => {
+  const pet = getPetById(String(req.params.petId || "").trim());
+  if (!pet) {
+    return res.status(404).json({ ok: false, error: "Pet not found." });
+  }
+  res.json({
+    ok: true,
+    petId: pet.id,
+    name: pet.name,
+    rarity: pet.rarity,
+    priceAmt: pet.priceAmt,
+    pricePi: petPricePi(pet),
+    productId: "pet:" + pet.id
+  });
+});
+
+app.post("/api/pets/buy", requireAuth, async (req, res) => {
+  const petId = String(req.body?.petId || "").trim();
+  const pet = getPetById(petId);
+  if (!pet) {
+    return res.status(404).json({ ok: false, error: "Pet not found." });
+  }
+
+  const client = await pool.connect();
+  try {
+    await ensurePetTables();
+    await client.query("BEGIN");
+    await client.query(
+      `SELECT id FROM members WHERE id = $1 FOR UPDATE`,
+      [req.member.id]
+    );
+
+    const balance = await getBalance(req.member.id, client);
+    if (balance < pet.priceAmt) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({
+        ok: false,
+        error:
+          "Insufficient in-app AMT. Mine or claim airdrop first. Need " +
+          pet.priceAmt +
+          " AMT (you have " +
+          balance +
+          ").",
+        balance,
+        required: pet.priceAmt
+      });
+    }
+
+    const reference = makeReference("AMT-PET");
+    await client.query(
+      `INSERT INTO amt_ledger (member_id, amount, type, reference)
+       VALUES ($1,$2,'PET_PURCHASE',$3)`,
+      [req.member.id, -pet.priceAmt, reference]
+    );
+    const ins = await client.query(
+      `INSERT INTO owned_pets
+        (member_id, pet_id, name, element, rarity, hp, atk, def, spd, ability, image, origin, certificate_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'shop',$12)
+       RETURNING *`,
+      [
+        req.member.id,
+        pet.id,
+        pet.name,
+        pet.element,
+        pet.rarity,
+        pet.hp,
+        pet.atk,
+        pet.def,
+        pet.spd,
+        pet.ability,
+        pet.image,
+        makeCertificateId("shop")
+      ]
+    );
+    try {
+      await addOwnershipEvent(client, ins.rows[0].id, null, req.member.id, "ORIGIN_SHOP", pet.priceAmt, "Bought from shop");
+    } catch (e) { console.error("ownership shop:", e.message); }
+    await client.query("COMMIT");
+
+    // Verify row is actually readable after commit
+    const verify = await pool.query(
+      `SELECT * FROM owned_pets WHERE id = $1 AND member_id = $2`,
+      [ins.rows[0].id, req.member.id]
+    );
+    if (!verify.rows.length) {
+      console.error("PET BUY VERIFY FAIL member=", req.member.id, "pet=", ins.rows[0]?.id);
+      return res.status(500).json({
+        ok: false,
+        error: "Pet buy committed but not readable. Contact admin."
+      });
+    }
+
+    const newBalance = await getBalance(req.member.id);
+    res.json({
+      ok: true,
+      purchased: true,
+      pet: verify.rows[0],
+      paid: pet.priceAmt,
+      balance: newBalance,
+      reference,
+      memberId: req.member.id,
+      message: pet.name + " saved to My Pets."
+    });
+  } catch (e) {
+    try {
+      await client.query("ROLLBACK");
+    } catch (err) {}
+    console.error("PET BUY ERROR:", e);
+    res.status(500).json({
+      ok: false,
+      error: "Unable to buy pet. " + (e.message || "Server error")
+    });
+  } finally {
+    client.release();
+  }
+});
+
+/* ---------- Starter pet (one free Common per pioneer) ---------- */
+app.get("/api/pets/starter-status", requireAuth, async (req, res) => {
+  try {
+    await ensurePetTables();
+    const claimed = await pool.query(
+      `SELECT id FROM amt_ledger
+       WHERE member_id = $1 AND type = 'PET_STARTER'
+       LIMIT 1`,
+      [req.member.id]
+    );
+    const ownedCount = await pool.query(
+      `SELECT COUNT(*)::INT AS c FROM owned_pets WHERE member_id = $1`,
+      [req.member.id]
+    );
+    res.json({
+      ok: true,
+      claimed: claimed.rows.length > 0,
+      ownedCount: Number(ownedCount.rows[0]?.c || 0),
+      canClaim: claimed.rows.length === 0
+    });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message || "Status failed" });
+  }
+});
+
+app.post("/api/pets/claim-starter", requireAuth, async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await ensurePetTables();
+    await client.query("BEGIN");
+    await client.query(`SELECT id FROM members WHERE id = $1 FOR UPDATE`, [
+      req.member.id
+    ]);
+
+    const claimed = await client.query(
+      `SELECT id FROM amt_ledger
+       WHERE member_id = $1 AND type = 'PET_STARTER'
+       LIMIT 1`,
+      [req.member.id]
+    );
+    if (claimed.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(409).json({
+        ok: false,
+        error: "Starter pet already claimed."
+      });
+    }
+
+    // Prefer Terra; fallback first Common
+    let pet =
+      getPetById("earth-terra") ||
+      AMT_PETS.find(p => p.rarity === "Common") ||
+      AMT_PETS[0];
+    if (!pet) {
+      await client.query("ROLLBACK");
+      return res.status(500).json({ ok: false, error: "No starter pet available." });
+    }
+
+    const ref = `AMT-PET-STARTER-${req.member.id}`;
+    await client.query(
+      `INSERT INTO amt_ledger (member_id, amount, type, reference)
+       VALUES ($1, 0, 'PET_STARTER', $2)`,
+      [req.member.id, ref]
+    );
+
+    const ins = await client.query(
+      `INSERT INTO owned_pets
+        (member_id, pet_id, name, element, rarity, hp, atk, def, spd, ability, image, level, exp)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,1,0)
+       RETURNING *`,
+      [
+        req.member.id,
+        pet.id,
+        pet.name,
+        pet.element,
+        "Common",
+        pet.hp,
+        pet.atk,
+        pet.def,
+        pet.spd,
+        pet.ability,
+        pet.image
+      ]
+    );
+        try {
+      await addOwnershipEvent(client, ins.rows[0].id, null, req.member.id, "ORIGIN_STARTER", 0, "Starter claim");
+    } catch (e) {}
+await client.query("COMMIT");
+    res.json({
+      ok: true,
+      pet: ins.rows[0],
+      message: "Starter pet " + pet.name + " claimed — free once per pioneer."
+    });
+  } catch (e) {
+    try {
+      await client.query("ROLLBACK");
+    } catch {}
+    if (e.code === "23505") {
+      return res.status(409).json({
+        ok: false,
+        error: "Starter pet already claimed."
+      });
+    }
+    console.error("STARTER PET:", e);
+    res.status(500).json({
+      ok: false,
+      error: "Unable to claim starter. " + (e.message || "")
+    });
+  } finally {
+    client.release();
+  }
+});
+
+/* ---------- Energy pack shop (AMT sink) ---------- */
+const ENERGY_PACKS = {
+  energy: { cost: 1, energy: 100, happiness: 0, label: "Full Energy" },
+  full: { cost: 3, energy: 100, happiness: 100, label: "Energy + Happiness" }
+};
+
+app.post("/api/pets/energy-pack", requireAuth, async (req, res) => {
+  const ownedId = Number(req.body?.ownedPetId);
+  const packId = String(req.body?.pack || "energy").toLowerCase();
+  const pack = ENERGY_PACKS[packId];
+  if (!pack) {
+    return res.status(400).json({
+      ok: false,
+      error: "Invalid pack. Use energy (1 AMT) or full (3 AMT)."
+    });
+  }
+  if (!Number.isFinite(ownedId) || ownedId < 1) {
+    return res.status(400).json({ ok: false, error: "ownedPetId required." });
+  }
+
+  const client = await pool.connect();
+  try {
+    await ensurePetTables();
+    await client.query("BEGIN");
+    const pet = await client.query(
+      `SELECT * FROM owned_pets WHERE id = $1 AND member_id = $2 FOR UPDATE`,
+      [ownedId, req.member.id]
+    );
+    if (!pet.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ ok: false, error: "Pet not found in My Pets." });
+    }
+    const balance = await getBalance(req.member.id, client);
+    if (balance < pack.cost) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({
+        ok: false,
+        error:
+          "Need " + pack.cost + " AMT (you have " + balance + ")."
+      });
+    }
+    await client.query(
+      `INSERT INTO amt_ledger (member_id, amount, type, reference)
+       VALUES ($1,$2,'ENERGY_PACK',$3)`,
+      [req.member.id, -pack.cost, makeReference("AMT-PACK")]
+    );
+    const final = await client.query(
+      `UPDATE owned_pets SET
+        energy = CASE WHEN $1 > 0 THEN 100 ELSE energy END,
+        happiness = CASE WHEN $2 > 0 THEN 100 ELSE happiness END
+       WHERE id = $3 RETURNING *`,
+      [pack.energy, pack.happiness, ownedId]
+    );
+    await client.query("COMMIT");
+    res.json({
+      ok: true,
+      pack: packId,
+      cost: pack.cost,
+      label: pack.label,
+      pet: final.rows[0],
+      message: pack.label + " applied (−" + pack.cost + " AMT)"
+    });
+  } catch (e) {
+    try {
+      await client.query("ROLLBACK");
+    } catch {}
+    console.error("ENERGY PACK:", e);
+    res.status(500).json({
+      ok: false,
+      error: "Pack failed. " + (e.message || "")
+    });
+  } finally {
+    client.release();
+  }
+});
+
+/* ---------- Care (feed / play) ---------- */
+app.post("/api/pets/care", requireAuth, async (req, res) => {
+  const ownedId = Number(req.body?.ownedPetId);
+  const action = String(req.body?.action || "feed").toLowerCase(); // feed | play
+  const hours = Number(req.body?.durationHours || 0); // 0 instant | 4 | 12 | 24
+  if (!Number.isFinite(ownedId) || ownedId < 1) {
+    return res.status(400).json({ ok: false, error: "ownedPetId required." });
+  }
+  if (![0, 4, 12, 24].includes(hours)) {
+    return res.status(400).json({ ok: false, error: "durationHours must be 0, 4, 12, or 24." });
+  }
+
+  const baseCost = action === "play" ? 0.1 : 0.2;
+  const cost = hours === 0 ? baseCost : (hours === 4 ? 0.3 : hours === 12 ? 0.6 : 1.0);
+  const xpGain = hours === 0
+    ? (action === "play" ? 12 : 18)
+    : (hours === 4 ? 45 : hours === 12 ? 90 : 160);
+
+  const client = await pool.connect();
+  try {
+    await ensurePetTables();
+    await client.query("BEGIN");
+    const pet = await client.query(
+      `SELECT * FROM owned_pets WHERE id = $1 AND member_id = $2 FOR UPDATE`,
+      [ownedId, req.member.id]
+    );
+    if (!pet.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ ok: false, error: "Pet not found in your My Pets." });
+    }
+    if (pet.rows[0].session_ends_at && new Date(pet.rows[0].session_ends_at) > new Date()) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({
+        ok: false,
+        error: "Pet is busy with a timed session. Wait for the timer, tap CLAIM when ready, or Cancel Session."
+      });
+    }
+    const balance = await getBalance(req.member.id, client);
+    if (balance < cost) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({
+        ok: false,
+        error: "Insufficient in-app AMT. Need " + cost + " (you have " + balance + ")."
+      });
+    }
+    await client.query(
+      `INSERT INTO amt_ledger (member_id, amount, type, reference) VALUES ($1,$2,'PET_CARE',$3)`,
+      [req.member.id, -cost, makeReference("AMT-CARE")]
+    );
+    const energyGain = action === "feed" ? 30 : 15;
+    const happyGain = action === "play" ? 30 : 15;
+
+    if (hours === 0) {
+      await client.query(
+        `UPDATE owned_pets SET
+          energy = LEAST(100, COALESCE(energy, 0) + $1),
+          happiness = LEAST(100, COALESCE(happiness, 0) + $2),
+          exp = COALESCE(exp, 0) + $3,
+          session_type = NULL, session_ends_at = NULL, session_xp = 0
+         WHERE id = $4`,
+        [energyGain, happyGain, xpGain, ownedId]
+      );
+      const petAfter = await applyLevelAndRarity(client, ownedId, req.member.id);
+      await client.query("COMMIT");
+      return res.json({
+        ok: true, action, cost, durationHours: 0, xpGained: xpGain,
+        pet: petAfter, level: petAfter && petAfter.level
+      });
+    }
+
+    const ends = new Date(Date.now() + hours * 3600 * 1000);
+    await client.query(
+      `UPDATE owned_pets SET
+        energy = LEAST(100, COALESCE(energy, 0) + $1),
+        happiness = LEAST(100, COALESCE(happiness, 0) + $2),
+        session_type = $3,
+        session_ends_at = $4,
+        session_stat = NULL,
+        session_xp = $5,
+        session_cost = $6
+       WHERE id = $7`,
+      [energyGain, happyGain, "care_" + action, ends.toISOString(), xpGain, cost, ownedId]
+    );
+    const updated = await client.query(`SELECT * FROM owned_pets WHERE id = $1`, [ownedId]);
+    await client.query("COMMIT");
+    res.json({
+      ok: true, action, cost, durationHours: hours, xpPending: xpGain,
+      sessionEndsAt: ends.toISOString(), pet: updated.rows[0],
+      message: "Care started · claim XP after " + hours + "h"
+    });
+  } catch (e) {
+    try { await client.query("ROLLBACK"); } catch {}
+    console.error("CARE ERROR:", e);
+    res.status(500).json({ ok: false, error: "Care failed. " + (e.message || "") });
+  } finally {
+    client.release();
+  }
+});
+
+/* ---------- Training ---------- */
+app.post("/api/pets/train", requireAuth, async (req, res) => {
+  const ownedId = Number(req.body?.ownedPetId);
+  const stat = String(req.body?.stat || "atk").toLowerCase();
+  const hours = Number(req.body?.durationHours || 0); // 0 instant | 8 | 12 | 24
+  if (!Number.isFinite(ownedId) || ownedId < 1) {
+    return res.status(400).json({ ok: false, error: "ownedPetId required." });
+  }
+  if (!["hp", "atk", "def", "spd"].includes(stat)) {
+    return res.status(400).json({ ok: false, error: "Invalid stat." });
+  }
+  if (![0, 8, 12, 24].includes(hours)) {
+    return res.status(400).json({ ok: false, error: "durationHours must be 0, 8, 12, or 24." });
+  }
+
+  const cost = hours === 0 ? 0.5 : (hours === 8 ? 1.0 : hours === 12 ? 1.5 : 2.5);
+  const xpGain = hours === 0 ? 28 : (hours === 8 ? 70 : hours === 12 ? 110 : 200);
+  const client = await pool.connect();
+  try {
+    await ensurePetTables();
+    await client.query("BEGIN");
+    const pet = await client.query(
+      `SELECT * FROM owned_pets WHERE id = $1 AND member_id = $2 FOR UPDATE`,
+      [ownedId, req.member.id]
+    );
+    if (!pet.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ ok: false, error: "Pet not found in your My Pets." });
+    }
+    if (pet.rows[0].session_ends_at && new Date(pet.rows[0].session_ends_at) > new Date()) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({
+        ok: false,
+        error: "Pet is busy with a timed session. Wait for the timer, tap CLAIM when ready, or Cancel Session."
+      });
+    }
+    if (Number(pet.rows[0].energy || 0) < 20) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({
+        ok: false,
+        error: "Pet needs more energy. Feed first (CARE)."
+      });
+    }
+    const balance = await getBalance(req.member.id, client);
+    if (balance < cost) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({
+        ok: false,
+        error: "Insufficient in-app AMT. Need " + cost + " (you have " + balance + ")."
+      });
+    }
+    await client.query(
+      `INSERT INTO amt_ledger (member_id, amount, type, reference) VALUES ($1,$2,'PET_TRAIN',$3)`,
+      [req.member.id, -cost, makeReference("AMT-TRAIN")]
+    );
+    const gain = stat === "hp" ? 12 : (stat === "atk" ? 6 : 4);
+
+    if (hours === 0) {
+      const beforeStat = Number(pet.rows[0][stat]) || 0;
+      await client.query(
+        `UPDATE owned_pets SET
+          ${stat} = COALESCE(${stat}, 0) + $1,
+          energy = GREATEST(0, COALESCE(energy, 0) - 20),
+          exp = COALESCE(exp, 0) + $2,
+          session_type = NULL, session_ends_at = NULL, session_xp = 0
+         WHERE id = $3`,
+        [gain, xpGain, ownedId]
+      );
+      const petAfter = await applyLevelAndRarity(client, ownedId, req.member.id);
+      await client.query("COMMIT");
+      return res.json({
+        ok: true, trained: stat, gain, cost, durationHours: 0, xpGained: xpGain,
+        beforeStat: beforeStat,
+        afterStat: beforeStat + gain,
+        pet: petAfter, level: petAfter && petAfter.level,
+        milestones: (petAfter && petAfter._milestones) || []
+      });
+    }
+
+    const ends = new Date(Date.now() + hours * 3600 * 1000);
+    await client.query(
+      `UPDATE owned_pets SET
+        energy = GREATEST(0, COALESCE(energy, 0) - 20),
+        session_type = 'train',
+        session_ends_at = $1,
+        session_stat = $2,
+        session_xp = $3,
+        session_cost = $4
+       WHERE id = $5`,
+      [ends.toISOString(), stat, xpGain, cost, ownedId]
+    );
+    // store stat gain in session_stat as "atk:2" style already session_stat = stat; apply gain on claim
+    const updated = await client.query(`SELECT * FROM owned_pets WHERE id = $1`, [ownedId]);
+    await client.query("COMMIT");
+    res.json({
+      ok: true, trained: stat, cost, durationHours: hours, xpPending: xpGain,
+      sessionEndsAt: ends.toISOString(), pet: updated.rows[0],
+      message: "Training started · claim XP + stats after " + hours + "h"
+    });
+  } catch (e) {
+    try { await client.query("ROLLBACK"); } catch {}
+    console.error("TRAIN ERROR:", e);
+    res.status(500).json({ ok: false, error: "Train failed. " + (e.message || "") });
+  } finally {
+    client.release();
+  }
+});
+
+/* ---------- Breeding → Egg ---------- */
+app.post("/api/pets/breed", requireAuth, async (req, res) => {
+  const p1 = Number(req.body?.pet1Id);
+  const p2 = Number(req.body?.pet2Id);
+  if (!Number.isFinite(p1) || !Number.isFinite(p2) || p1 < 1 || p2 < 1 || p1 === p2) {
+    return res.status(400).json({ ok: false, error: "Two different owned pet IDs required." });
+  }
+  const cost = 1.0;
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const pets = await client.query(
+      `SELECT * FROM owned_pets WHERE id IN ($1,$2) AND member_id = $3 FOR UPDATE`,
+      [p1, p2, req.member.id]
+    );
+    if (pets.rows.length !== 2) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ ok: false, error: "Both pets must be owned by you." });
+    }
+    const balance = await getBalance(req.member.id, client);
+    if (balance < cost) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Insufficient AMT. Breeding costs 1 AMT." });
+    }
+    await client.query(
+      `INSERT INTO amt_ledger (member_id, amount, type, reference) VALUES ($1,$2,'PET_BREED',$3)`,
+      [req.member.id, -cost, makeReference("AMT-BREED")]
+    );
+    const element = pets.rows[0].element === pets.rows[1].element
+      ? pets.rows[0].element
+      : pets.rows[Math.floor(Math.random()*2)].element;
+    const avgLv =
+      (Number(pets.rows[0].level || 1) + Number(pets.rows[1].level || 1)) / 2;
+    const gen = Math.max(1, Math.min(10, Math.floor(avgLv / 5) + 1));
+    const hatchAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    const egg = await client.query(
+      `INSERT INTO pet_eggs (member_id, parent1_id, parent2_id, element, rarity, status, hatch_at, gen)
+       VALUES ($1,$2,$3,$4,'Common','INCUBATING',$5,$6) RETURNING *`,
+      [req.member.id, p1, p2, element, hatchAt, gen]
+    );
+    await client.query("COMMIT");
+    res.json({ ok: true, egg: egg.rows[0], cost, message: "Egg is incubating. Hatch in 24 hours." });
+  } catch (e) {
+    try { await client.query("ROLLBACK"); } catch {}
+    console.error("BREED ERROR:", e);
+    res.status(500).json({ ok: false, error: "Breeding failed." });
+  } finally {
+    client.release();
+  }
+});
+
+/* ---------- My eggs ---------- */
+app.get("/api/pets/eggs", requireAuth, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM pet_eggs WHERE member_id = $1 ORDER BY created_at DESC`,
+      [req.member.id]
+    );
+    res.json({ ok: true, eggs: result.rows });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: "Unable to load eggs." });
+  }
+});
+
+/* ---------- Hatch egg ---------- */
+app.post("/api/pets/hatch", requireAuth, async (req, res) => {
+  const eggId = Number(req.body?.eggId);
+  if (!Number.isInteger(eggId)) return res.status(400).json({ ok: false, error: "eggId required." });
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const eggRes = await client.query(
+      `SELECT * FROM pet_eggs WHERE id = $1 AND member_id = $2 FOR UPDATE`,
+      [eggId, req.member.id]
+    );
+    if (!eggRes.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ ok: false, error: "Egg not found." });
+    }
+    const egg = eggRes.rows[0];
+    if (egg.status === "HATCHED") {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Already hatched." });
+    }
+    if (egg.is_listed) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({
+        ok: false,
+        error: "Egg is listed for sale. Cancel listing first."
+      });
+    }
+    if (egg.hatch_at) {
+      const readyAt = new Date(egg.hatch_at).getTime();
+      // 60s grace for device/server clock skew
+      if (readyAt - 60 * 1000 > Date.now()) {
+        await client.query("ROLLBACK");
+        return res.status(400).json({
+          ok: false,
+          error: "Still incubating.",
+          hatchAt: egg.hatch_at
+        });
+      }
+    }
+    // Pick a random pet of same element (prefer Common for hatch)
+    let poolPets = AMT_PETS.filter(
+      p =>
+        p.element === egg.element &&
+        String(p.rarity || "Common") === "Common"
+    );
+    if (!poolPets.length) {
+      poolPets = AMT_PETS.filter(p => p.element === egg.element);
+    }
+    if (!poolPets.length) poolPets = AMT_PETS.slice();
+    const base = poolPets[Math.floor(Math.random() * poolPets.length)] || AMT_PETS[0];
+
+    // Unique owned instance; keep catalog id for art lookup
+    const ownedPetId = String(base.id || "unknown") + "-egg" + eggId;
+    const hatchRarity = rarityFromLevel(1); // Option A: Lv1 = Common
+
+    const ins = await client.query(
+      `INSERT INTO owned_pets
+        (member_id, pet_id, name, element, rarity, hp, atk, def, spd, ability, image, level, exp, energy, happiness)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,1,0,100,100)
+       RETURNING *`,
+      [
+        req.member.id,
+        ownedPetId,
+        base.name,
+        base.element,
+        hatchRarity,
+        Number(base.hp || 80) + 5,
+        Number(base.atk || 10) + 1,
+        Number(base.def || 10) + 1,
+        Number(base.spd || 10) + 1,
+        base.ability || "Hatchling",
+        base.image || null
+      ]
+    );
+
+        try {
+      const newId = (typeof ins !== "undefined" && ins.rows && ins.rows[0]) ? ins.rows[0].id : null;
+      if (newId) await addOwnershipEvent(client, newId, null, req.member.id, "ORIGIN_HATCH", 0, "Hatched from egg");
+    } catch (e) {}
+if (!ins.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(500).json({ ok: false, error: "Hatch insert failed." });
+    }
+
+    await client.query(
+      `UPDATE pet_eggs SET status = 'HATCHED', is_listed = FALSE WHERE id = $1`,
+      [eggId]
+    );
+    await client.query("COMMIT");
+
+    // Re-read to confirm visible to owner
+    const verify = await pool.query(
+      `SELECT * FROM owned_pets WHERE id = $1 AND member_id = $2`,
+      [ins.rows[0].id, req.member.id]
+    );
+    const pet = verify.rows[0] || ins.rows[0];
+
+    res.json({
+      ok: true,
+      hatched: true,
+      pet,
+      eggId,
+      message: "Delivered " + pet.name + " to My Pets!"
+    });
+  } catch (e) {
+    try {
+      await client.query("ROLLBACK");
+    } catch {}
+    console.error("HATCH ERROR:", e);
+    res.status(500).json({
+      ok: false,
+      error: "Hatch failed. " + (e.message || "")
+    });
+  } finally {
+    client.release();
+  }
+});
+
+/* ---------- Public Sell (list) ---------- */
+app.post("/api/pets/list", requireAuth, async (req, res) => {
+  const ownedId = Number(req.body?.ownedPetId);
+  const price = Number(req.body?.priceAmt);
+  if (!Number.isInteger(ownedId) || !(price > 0)) {
+    return res.status(400).json({ ok: false, error: "ownedPetId and priceAmt required." });
+  }
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const pet = await client.query(
+      `SELECT * FROM owned_pets WHERE id = $1 AND member_id = $2 FOR UPDATE`,
+      [ownedId, req.member.id]
+    );
+    if (!pet.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ ok: false, error: "Pet not found." });
+    }
+    if (pet.rows[0].is_listed) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Already listed." });
+    }
+    await client.query(`UPDATE owned_pets SET is_listed = TRUE WHERE id = $1`, [ownedId]);
+    const listing = await client.query(
+      `INSERT INTO pet_listings (seller_member_id, owned_pet_id, price_amt)
+       VALUES ($1,$2,$3) RETURNING *`,
+      [req.member.id, ownedId, price]
+    );
+    await client.query("COMMIT");
+    res.json({ ok: true, listing: listing.rows[0] });
+  } catch (e) {
+    try { await client.query("ROLLBACK"); } catch {}
+    res.status(500).json({ ok: false, error: "List failed." });
+  } finally {
+    client.release();
+  }
+});
+
+
+
+/* ---------- Update pet sell price ---------- */
+app.post("/api/pets/update-listing-price", requireAuth, async (req, res) => {
+  const ownedId = Number(req.body?.ownedPetId);
+  const price = Number(req.body?.priceAmt);
+  if (!Number.isFinite(ownedId) || ownedId < 1) {
+    return res.status(400).json({ ok: false, error: "ownedPetId required." });
+  }
+  if (!(price > 0)) {
+    return res.status(400).json({ ok: false, error: "Valid priceAmt required." });
+  }
+  const client = await pool.connect();
+  try {
+    await ensurePetTables();
+    await client.query("BEGIN");
+    const pet = await client.query(
+      `SELECT id FROM owned_pets WHERE id = $1 AND member_id = $2`,
+      [ownedId, req.member.id]
+    );
+    if (!pet.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ ok: false, error: "Pet not found." });
+    }
+    const upd = await client.query(
+      `UPDATE pet_listings SET price_amt = $1
+       WHERE owned_pet_id = $2 AND seller_member_id = $3 AND status = 'ACTIVE'
+       RETURNING id, price_amt`,
+      [price, ownedId, req.member.id]
+    );
+    if (!upd.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "No active sell listing. List first." });
+    }
+    await client.query("COMMIT");
+    res.json({
+      ok: true,
+      priceAmt: Number(upd.rows[0].price_amt),
+      message: "Price updated to " + price + " AMT"
+    });
+  } catch (e) {
+    try { await client.query("ROLLBACK"); } catch {}
+    res.status(500).json({ ok: false, error: "Update price failed." });
+  } finally {
+    client.release();
+  }
+});
+
+/* ---------- Cancel pet public sell ---------- */
+app.post("/api/pets/cancel-listing", requireAuth, async (req, res) => {
+  const ownedId = Number(req.body?.ownedPetId);
+  if (!Number.isFinite(ownedId) || ownedId < 1) {
+    return res.status(400).json({ ok: false, error: "ownedPetId required." });
+  }
+  const client = await pool.connect();
+  try {
+    await ensurePetTables();
+    await client.query("BEGIN");
+    const pet = await client.query(
+      `SELECT * FROM owned_pets WHERE id = $1 AND member_id = $2 FOR UPDATE`,
+      [ownedId, req.member.id]
+    );
+    if (!pet.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ ok: false, error: "Pet not found." });
+    }
+    const upd = await client.query(
+      `UPDATE pet_listings SET status = 'CANCELLED'
+       WHERE owned_pet_id = $1 AND seller_member_id = $2 AND status = 'ACTIVE'
+       RETURNING id`,
+      [ownedId, req.member.id]
+    );
+    await client.query(`UPDATE owned_pets SET is_listed = FALSE WHERE id = $1`, [ownedId]);
+    await client.query("COMMIT");
+    res.json({
+      ok: true,
+      cancelled: upd.rows.length,
+      message: upd.rows.length ? "Sell cancelled. Pet back in My Pets." : "No active sell listing."
+    });
+  } catch (e) {
+    try { await client.query("ROLLBACK"); } catch {}
+    res.status(500).json({ ok: false, error: "Cancel sell failed." });
+  } finally {
+    client.release();
+  }
+});
+
+/* ---------- List egg for public sell ---------- */
+app.post("/api/pets/list-egg", requireAuth, async (req, res) => {
+  const eggId = Number(req.body?.eggId);
+  const price = Number(req.body?.priceAmt);
+  if (!Number.isInteger(eggId) || !(price > 0)) {
+    return res.status(400).json({ ok: false, error: "eggId and priceAmt required." });
+  }
+  const client = await pool.connect();
+  try {
+    await ensurePetTables();
+    await client.query("BEGIN");
+    const egg = await client.query(
+      `SELECT * FROM pet_eggs WHERE id = $1 AND member_id = $2 FOR UPDATE`,
+      [eggId, req.member.id]
+    );
+    if (!egg.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ ok: false, error: "Egg not found." });
+    }
+    const E = egg.rows[0];
+    if (E.status === "HATCHED") {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Cannot sell a hatched egg." });
+    }
+    if (E.is_listed) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Egg already listed." });
+    }
+    await client.query(`UPDATE pet_eggs SET is_listed = TRUE WHERE id = $1`, [eggId]);
+    const listing = await client.query(
+      `INSERT INTO egg_listings (seller_member_id, egg_id, price_amt)
+       VALUES ($1,$2,$3) RETURNING *`,
+      [req.member.id, eggId, price]
+    );
+    await client.query("COMMIT");
+    res.json({ ok: true, listing: listing.rows[0], message: "Egg listed for " + price + " AMT" });
+  } catch (e) {
+    try {
+      await client.query("ROLLBACK");
+    } catch {}
+    console.error("LIST EGG:", e);
+    res.status(500).json({ ok: false, error: "List egg failed. " + (e.message || "") });
+  } finally {
+    client.release();
+  }
+});
+
+/* ---------- Cancel egg listing ---------- */
+app.post("/api/pets/cancel-egg-listing", requireAuth, async (req, res) => {
+  const eggId = Number(req.body?.eggId);
+  if (!Number.isInteger(eggId)) {
+    return res.status(400).json({ ok: false, error: "eggId required." });
+  }
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const egg = await client.query(
+      `SELECT * FROM pet_eggs WHERE id = $1 AND member_id = $2 FOR UPDATE`,
+      [eggId, req.member.id]
+    );
+    if (!egg.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ ok: false, error: "Egg not found." });
+    }
+    await client.query(
+      `UPDATE egg_listings SET status = 'CANCELLED'
+       WHERE egg_id = $1 AND seller_member_id = $2 AND status = 'ACTIVE'`,
+      [eggId, req.member.id]
+    );
+    await client.query(`UPDATE pet_eggs SET is_listed = FALSE WHERE id = $1`, [eggId]);
+    await client.query("COMMIT");
+    res.json({ ok: true, cancelled: true });
+  } catch (e) {
+    try {
+      await client.query("ROLLBACK");
+    } catch {}
+    res.status(500).json({ ok: false, error: "Cancel failed." });
+  } finally {
+    client.release();
+  }
+});
+
+/* ---------- Buy egg from public sell ---------- */
+app.post("/api/pets/buy-egg-listing", requireAuth, async (req, res) => {
+  const listingId = Number(req.body?.listingId);
+  if (!Number.isInteger(listingId)) {
+    return res.status(400).json({ ok: false, error: "listingId required." });
+  }
+  const client = await pool.connect();
+  try {
+    await ensurePetTables();
+    await client.query("BEGIN");
+    const listing = await client.query(
+      `SELECT * FROM egg_listings WHERE id = $1 AND status = 'ACTIVE' FOR UPDATE`,
+      [listingId]
+    );
+    if (!listing.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ ok: false, error: "Egg listing not found." });
+    }
+    const L = listing.rows[0];
+    if (Number(L.seller_member_id) === Number(req.member.id)) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Cannot buy your own egg." });
+    }
+    const price = Number(L.price_amt);
+    const balance = await getBalance(req.member.id, client);
+    if (balance < price) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Insufficient AMT." });
+    }
+    const egg = await client.query(
+      `SELECT * FROM pet_eggs WHERE id = $1 FOR UPDATE`,
+      [L.egg_id]
+    );
+    if (!egg.rows.length || egg.rows[0].status === "HATCHED") {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Egg no longer available." });
+    }
+    await client.query(
+      `INSERT INTO amt_ledger (member_id, amount, type, reference) VALUES ($1,$2,'EGG_SALE',$3)`,
+      [L.seller_member_id, price, makeReference("AMT-EGG-SALE")]
+    );
+    await client.query(
+      `INSERT INTO amt_ledger (member_id, amount, type, reference) VALUES ($1,$2,'EGG_BUY',$3)`,
+      [req.member.id, -price, makeReference("AMT-EGG-BUY")]
+    );
+    await client.query(
+      `UPDATE pet_eggs SET member_id = $1, is_listed = FALSE WHERE id = $2`,
+      [req.member.id, L.egg_id]
+    );
+    await client.query(
+      `UPDATE egg_listings SET status = 'SOLD' WHERE id = $1`,
+      [listingId]
+    );
+    await client.query("COMMIT");
+    res.json({
+      ok: true,
+      purchased: true,
+      price,
+      eggId: L.egg_id,
+      message: "Egg purchased — check Baby Room (Eggs tab)"
+    });
+  } catch (e) {
+    try {
+      await client.query("ROLLBACK");
+    } catch {}
+    console.error("BUY EGG:", e);
+    res.status(500).json({ ok: false, error: "Buy egg failed. " + (e.message || "") });
+  } finally {
+    client.release();
+  }
+});
+
+/* ---------- Public listings (pets + eggs) ---------- */
+app.get("/api/pets/listings", async (req, res) => {
+  try {
+    await ensurePetTables();
+    const pets = await pool.query(`
+      SELECT l.id, l.price_amt, l.created_at, l.status,
+             'PET' AS listing_type,
+             p.name, p.element, p.rarity, p.hp, p.atk, p.def, p.spd, p.ability, p.image, p.level,
+             p.origin, p.rep, p.wins, p.losses, p.certificate_id,
+             m.username AS seller_username,
+             NULL::BIGINT AS egg_id,
+             NULL::TIMESTAMPTZ AS hatch_at,
+             NULL::TEXT AS egg_status,
+             NULL::INT AS gen
+      FROM pet_listings l
+      JOIN owned_pets p ON p.id = l.owned_pet_id
+      JOIN members m ON m.id = l.seller_member_id
+      WHERE l.status = 'ACTIVE'
+      ORDER BY l.created_at DESC
+      LIMIT 80
+    `);
+    let eggs = { rows: [] };
+    try {
+      eggs = await pool.query(`
+        SELECT l.id, l.price_amt, l.created_at, l.status,
+               'EGG' AS listing_type,
+               (e.element || ' Egg') AS name,
+               e.element, e.rarity,
+               NULL::INT AS hp, NULL::INT AS atk, NULL::INT AS def, NULL::INT AS spd,
+               NULL::TEXT AS ability, NULL::TEXT AS image, 1 AS level,
+               m.username AS seller_username,
+               e.id AS egg_id, e.hatch_at, e.status AS egg_status, e.gen
+        FROM egg_listings l
+        JOIN pet_eggs e ON e.id = l.egg_id
+        JOIN members m ON m.id = l.seller_member_id
+        WHERE l.status = 'ACTIVE' AND e.status <> 'HATCHED'
+        ORDER BY l.created_at DESC
+        LIMIT 80
+      `);
+    } catch (err) {
+      console.error("EGG LISTINGS QUERY:", err.message);
+    }
+    const listings = [...pets.rows, ...eggs.rows].sort(
+      (a, b) => new Date(b.created_at) - new Date(a.created_at)
+    );
+    res.json({ ok: true, listings });
+  } catch (e) {
+    console.error("LISTINGS:", e);
+    res.status(500).json({ ok: false, error: "Unable to load listings." });
+  }
+});
+
+/* ---------- Buy from public sell ---------- */
+app.post("/api/pets/buy-listing", requireAuth, async (req, res) => {
+  const listingId = Number(req.body?.listingId);
+  if (!Number.isInteger(listingId)) return res.status(400).json({ ok: false, error: "listingId required." });
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const listing = await client.query(
+      `SELECT * FROM pet_listings WHERE id = $1 AND status = 'ACTIVE' FOR UPDATE`,
+      [listingId]
+    );
+    if (!listing.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ ok: false, error: "Listing not found." });
+    }
+    const L = listing.rows[0];
+    if (Number(L.seller_member_id) === Number(req.member.id)) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Cannot buy your own listing." });
+    }
+    const price = Number(L.price_amt);
+    const balance = await getBalance(req.member.id, client);
+    if (balance < price) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Insufficient AMT." });
+    }
+    // Pay seller
+    await client.query(
+      `INSERT INTO amt_ledger (member_id, amount, type, reference) VALUES ($1,$2,'PET_SALE',$3)`,
+      [L.seller_member_id, price, makeReference("AMT-SALE")]
+    );
+    await client.query(
+      `INSERT INTO amt_ledger (member_id, amount, type, reference) VALUES ($1,$2,'PET_BUY_LISTING',$3)`,
+      [req.member.id, -price, makeReference("AMT-BUY")]
+    );
+    // Transfer ownership + history
+    await client.query(
+      `UPDATE owned_pets SET member_id = $1, is_listed = FALSE WHERE id = $2`,
+      [req.member.id, L.owned_pet_id]
+    );
+    try {
+      await addOwnershipEvent(
+        client,
+        L.owned_pet_id,
+        L.seller_member_id,
+        req.member.id,
+        "SALE",
+        price,
+        "Public sell"
+      );
+    } catch (e) { console.error("ownership sale:", e.message); }
+    await client.query(
+      `UPDATE pet_listings SET status = 'SOLD' WHERE id = $1`,
+      [listingId]
+    );
+    await client.query("COMMIT");
+    res.json({ ok: true, purchased: true, price });
+  } catch (e) {
+    try { await client.query("ROLLBACK"); } catch {}
+    console.error("BUY LISTING ERROR:", e);
+    res.status(500).json({ ok: false, error: "Purchase failed." });
+  } finally {
+    client.release();
+  }
+});
+
+/* ---------- Battle (simple PvE) ---------- */
+
+/* =========================================================
+   PET BATTLE — Tiered CPU + Async PvP
+========================================================= */
+
+const BATTLE_TIERS = {
+  rookie:  { mult: 0.95, rewardMin: 0.15, rewardMax: 0.35, energy: 12, label: "Rookie" },
+  hunter:  { mult: 1.20, rewardMin: 0.45, rewardMax: 0.90, energy: 15, label: "Hunter" },
+  elite:   { mult: 1.55, rewardMin: 1.00, rewardMax: 2.20, energy: 20, label: "Elite" },
+  mythic:  { mult: 2.00, rewardMin: 3.00, rewardMax: 7.00, energy: 25, label: "Mythic" }
+};
+
+const ELEMENT_BEATS = {
+  Fire: "Nature",
+  Nature: "Water",
+  Water: "Fire",
+  Thunder: "Water",
+  Earth: "Thunder",
+  Ice: "Nature",
+  Wind: "Earth",
+  Shadow: "Light",
+  Light: "Shadow",
+  Cosmic: "Shadow"
+};
+
+function elementMult(atkEl, defEl) {
+  if (!atkEl || !defEl) return 1;
+  const a = String(atkEl);
+  const d = String(defEl);
+  if (ELEMENT_BEATS[a] === d) return 1.35;
+  if (ELEMENT_BEATS[d] === a) return 0.72;
+  return 1;
 }
 
-function buildReferralLink(code){
-  return APP_BASE_URL + "/?ref=" + encodeURIComponent(code);
+function elementRelation(atkEl, defEl) {
+  const m = elementMult(atkEl, defEl);
+  if (m > 1) return { key: "advantage", label: "SUPER EFFECTIVE", mult: m };
+  if (m < 1) return { key: "disadvantage", label: "RESISTED", mult: m };
+  return { key: "neutral", label: "Neutral", mult: 1 };
 }
 
-function qrPlaceholder(msg){
-  return "data:image/svg+xml," + encodeURIComponent(
-    '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">' +
-    '<rect fill="#1a1028" width="200" height="200"/>' +
-    '<text x="50%" y="50%" fill="#958ba3" text-anchor="middle" dy=".3em" font-size="12">' +
-    (msg || "QR") + '</text></svg>'
+function pickTier(bodyTier, petLevel) {
+  const t = String(bodyTier || "").toLowerCase();
+  if (BATTLE_TIERS[t]) return t;
+  const lv = Number(petLevel) || 1;
+  if (lv >= 30) return "elite";
+  if (lv >= 15) return "hunter";
+  if (lv >= 5) return "hunter";
+  return "rookie";
+}
+
+async function ensureArenaTables() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS pet_arena (
+      id BIGSERIAL PRIMARY KEY,
+      member_id BIGINT NOT NULL REFERENCES members(id),
+      owned_pet_id BIGINT NOT NULL,
+      pet_name TEXT,
+      pet_element TEXT,
+      pet_image TEXT,
+      level INT DEFAULT 1,
+      hp INT DEFAULT 50,
+      atk INT DEFAULT 10,
+      def INT DEFAULT 10,
+      spd INT DEFAULT 10,
+      rating INT DEFAULT 1000,
+      active BOOLEAN DEFAULT TRUE,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS pet_pvp_battles (
+      id BIGSERIAL PRIMARY KEY,
+      attacker_id BIGINT NOT NULL,
+      defender_id BIGINT NOT NULL,
+      attacker_pet_id BIGINT,
+      defender_arena_id BIGINT,
+      result TEXT,
+      reward_amt NUMERIC(18,8) DEFAULT 0,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS pet_battle_daily (
+      member_id BIGINT NOT NULL,
+      battle_date DATE NOT NULL,
+      cpu_count INT DEFAULT 0,
+      pvp_count INT DEFAULT 0,
+      charges INT DEFAULT 5,
+      wins INT DEFAULT 0,
+      streak INT DEFAULT 0,
+      bonus_earned INT DEFAULT 0,
+      PRIMARY KEY (member_id, battle_date)
+    )
+  `);
+  await pool.query(`ALTER TABLE pet_battle_daily ADD COLUMN IF NOT EXISTS charges INT DEFAULT 5`);
+  await pool.query(`ALTER TABLE pet_battle_daily ADD COLUMN IF NOT EXISTS wins INT DEFAULT 0`);
+  await pool.query(`ALTER TABLE pet_battle_daily ADD COLUMN IF NOT EXISTS streak INT DEFAULT 0`);
+  await pool.query(`ALTER TABLE pet_battle_daily ADD COLUMN IF NOT EXISTS bonus_earned INT DEFAULT 0`);
+}
+
+const BATTLE_BASE_CHARGES = 5;
+const BATTLE_MAX_CHARGES = 15;
+const BATTLE_MAX_BONUS = 10;
+
+async function getBattleDay(client, memberId) {
+  const day = new Date().toISOString().slice(0, 10);
+  const q = client ? client.query.bind(client) : pool.query.bind(pool);
+  await q(
+    `INSERT INTO pet_battle_daily
+      (member_id, battle_date, cpu_count, pvp_count, charges, wins, streak, bonus_earned)
+     VALUES ($1, $2::date, 0, 0, $3, 0, 0, 0)
+     ON CONFLICT (member_id, battle_date) DO NOTHING`,
+    [memberId, day, BATTLE_BASE_CHARGES]
   );
-}
-
-
-function getProfileImageForQr(){
-  try{
-    if(window._profileImageUrl && String(window._profileImageUrl).indexOf("http") === 0)
-      return window._profileImageUrl;
-    if(window._profileImageUrl && String(window._profileImageUrl).indexOf("data:image") === 0)
-      return window._profileImageUrl;
-    var av = document.querySelector("#avatarBox img, img#avatarBox");
-    if(av && av.src && av.src.indexOf("data:image/svg") < 0 && av.src.length > 20) return av.src;
-  }catch(e){}
-  return "";
-}
-
-function applyQrCenterLogo(qrImgId){
-  if(qrImgId !== "referralQr") return;
-  var logoEl = $("referralQrLogo");
-  var logoImg = $("referralQrLogoImg");
-  var logoText = $("referralQrLogoText");
-  if(!logoEl) return;
-  var pic = getProfileImageForQr();
-  if(pic && logoImg){
-    logoImg.onload = function(){
-      logoImg.style.display = "block";
-      if(logoText) logoText.style.display = "none";
-    };
-    logoImg.onerror = function(){
-      logoImg.style.display = "none";
-      if(logoText) logoText.style.display = "";
-    };
-    logoImg.src = pic;
-  }else{
-    if(logoImg) logoImg.style.display = "none";
-    if(logoText) logoText.style.display = "";
-  }
-}
-
-function setQrImage(img, data){
-  if(!img) return;
-  var logoEl = null;
-  if(img.id === "paymentQr") logoEl = $("paymentQrLogo");
-  if(img.id === "referralQr") logoEl = $("referralQrLogo");
-  if(!data || data === "------"){
-    img.removeAttribute("crossorigin");
-    img.src = qrPlaceholder("Login for QR");
-    img.onclick = null;
-    if(logoEl) logoEl.style.display = "none";
-    return;
-  }
-  var encoded = encodeURIComponent(data);
-  // ecc=H supports center logo better
-  var sources = [
-    "https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=10&ecc=H&data=" + encoded,
-    "https://quickchart.io/qr?size=400&margin=2&ecLevel=H&text=" + encoded,
-    "https://api.qrserver.com/v1/create-qr-code/?size=300x300&ecc=H&data=" + encoded + "&t=" + Date.now()
-  ];
-  var i = 0;
-  function tryNext(){
-    if(i >= sources.length){
-      img.removeAttribute("crossorigin");
-      img.src = qrPlaceholder("Use Copy Link");
-      img.alt = "QR unavailable — use copy link";
-      if(logoEl) logoEl.style.display = "none";
-      return;
-    }
-    img.onerror = function(){ i++; tryNext(); };
-    img.onload = function(){
-      img.onerror = null;
-      if(logoEl) logoEl.style.display = "";
-      try{ applyQrCenterLogo(img.id); }catch(e){}
-    };
-    try{ img.crossOrigin = "anonymous"; }catch(e){}
-    img.src = sources[i];
-  }
-  tryNext();
-}
-
-function buildPaymentLink(amount){
-  var user = (
-    window._referralCode ||
-    (window.currentUser && (currentUser.username || currentUser.user)) ||
-    localStorage.getItem("amt_pi_username") ||
-    ""
+  const r = await q(
+    `SELECT * FROM pet_battle_daily WHERE member_id = $1 AND battle_date = $2::date`,
+    [memberId, day]
   );
-  user = String(user || "").trim();
-  if(!user || user === "------" || user === "Pioneer"){
-    // still allow if we have a real username in profile fields
-    try{
-      var el = $("infoUsername") || $("profileUsername");
-      if(el && el.textContent) user = String(el.textContent).trim();
-    }catch(e){}
-  }
-  if(!user || user === "------") return "";
-  var base = (typeof APP_BASE_URL === "string" && APP_BASE_URL) ? APP_BASE_URL : (location.origin + location.pathname.replace(/\/[^/]*$/, "/") || "https://amtmining13.github.io");
-  base = String(base).replace(/\/$/, "");
-  var url = base + "/?pay=" + encodeURIComponent(user);
-  if(amount != null && String(amount).trim() !== "" && Number(amount) > 0){
-    url += "&amt=" + encodeURIComponent(String(amount));
-  }
-  return url;
+  return { day, row: r.rows[0] };
 }
 
-function updatePaymentQr(payload){
-  setQrImage($("paymentQr"), payload);
+/** Spend 1 charge; return error string or null */
+async function spendBattleCharge(client, memberId) {
+  const { day, row } = await getBattleDay(client, memberId);
+  let charges = Number(row.charges);
+  if (Number.isNaN(charges) || row.charges == null) charges = BATTLE_BASE_CHARGES;
+  if (charges <= 0) {
+    return {
+      error:
+        "No battle charges left. Win battles to earn more (max " +
+        BATTLE_MAX_CHARGES +
+        "/day). Resets tomorrow.",
+      charges: 0,
+      day
+    };
+  }
+  await client.query(
+    `UPDATE pet_battle_daily SET charges = charges - 1, cpu_count = cpu_count + 1
+     WHERE member_id = $1 AND battle_date = $2::date`,
+    [memberId, day]
+  );
+  return { error: null, charges: charges - 1, day };
 }
 
-function refreshPaymentQr(){
-  var amtEl = $("payQrAmount");
-  var amount = amtEl ? amtEl.value : "";
-  var link = buildPaymentLink(amount);
-  if(!link){
-    updatePaymentQr(null);
-    if($("paymentQrHint")) $("paymentQrHint").textContent = "Login first";
-    return;
-  }
-  updatePaymentQr(link);
-  window._paymentLink = link;
-  if($("paymentQrHint")){
-    $("paymentQrHint").textContent = amount && Number(amount) > 0
-      ? ("Pay " + amount + " AMT to you")
-      : "Open link / scan to pay you AMT";
-  }
-}
+/** After a battle: win grants +1 charge (capped), streak bonus */
+async function applyBattleWinCharges(client, memberId, day, won) {
+  const r = await client.query(
+    `SELECT charges, wins, streak, bonus_earned FROM pet_battle_daily
+     WHERE member_id = $1 AND battle_date = $2::date`,
+    [memberId, day]
+  );
+  if (!r.rows.length) return { charges: 0, streak: 0, bonus: 0 };
+  let { charges, wins, streak, bonus_earned } = r.rows[0];
+  charges = Number(charges) || 0;
+  wins = Number(wins) || 0;
+  streak = Number(streak) || 0;
+  bonus_earned = Number(bonus_earned) || 0;
+  let bonus = 0;
+  let msg = [];
 
-function copyPaymentLink(){
-  var link = window._paymentLink || buildPaymentLink($("payQrAmount") && $("payQrAmount").value);
-  if(!link){
-    showToast("Login first", true);
-    return;
+  if (won) {
+    wins += 1;
+    streak += 1;
+    if (bonus_earned < BATTLE_MAX_BONUS && charges < BATTLE_MAX_CHARGES) {
+      charges = Math.min(BATTLE_MAX_CHARGES, charges + 1);
+      bonus_earned += 1;
+      bonus += 1;
+      msg.push("+1 charge for win");
+    }
+    if (streak > 0 && streak % 3 === 0 && bonus_earned < BATTLE_MAX_BONUS && charges < BATTLE_MAX_CHARGES) {
+      charges = Math.min(BATTLE_MAX_CHARGES, charges + 1);
+      bonus_earned += 1;
+      bonus += 1;
+      msg.push("3-win streak +1 charge");
+    }
+  } else {
+    streak = 0;
   }
-  copyTextSmart(link).then(function(ok){
-    if(ok) showToast("Pay link copied");
-    else showCopyModal("Copy pay link", link);
-  });
-}
 
-function downloadPaymentQr(){
-
-  var img = $("paymentQr");
-  var link = window._paymentLink || buildPaymentLink($("payQrAmount") && $("payQrAmount").value);
-  if(!link || !img || !img.src || img.src.indexOf("data:image/svg") === 0){
-    showToast("Login first / generate QR", true);
-    return;
-  }
-  try{
-    var size = 400;
-    var canvas = document.createElement("canvas");
-    canvas.width = size;
-    canvas.height = size;
-    var ctx = canvas.getContext("2d");
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, size, size);
-    // draw QR
-    ctx.drawImage(img, 0, 0, size, size);
-    // center AMT badge
-    var bw = 72, bh = 72;
-    var bx = (size - bw) / 2, by = (size - bh) / 2;
-    ctx.fillStyle = "#12081f";
-    roundRect(ctx, bx, by, bw, bh, 14);
-    ctx.fill();
-    ctx.strokeStyle = "#ffd95a";
-    ctx.lineWidth = 3;
-    roundRect(ctx, bx, by, bw, bh, 14);
-    ctx.stroke();
-    ctx.fillStyle = "#ffd95a";
-    ctx.font = "bold 22px sans-serif";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText("AMT", size / 2, size / 2);
-    canvas.toBlob(function(blob){
-      if(!blob){
-        // fallback: open QR image
-        window.open(img.src, "_blank");
-        showToast("Long-press image to save");
-        return;
-      }
-      var a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = "AMT-payment-QR.png";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(function(){ URL.revokeObjectURL(a.href); }, 2000);
-      showToast("QR downloaded");
-    }, "image/png");
-  }catch(e){
-    // CORS fallback — direct high-res QR without logo composite
-    var encoded = encodeURIComponent(link);
-    var url = "https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=10&ecc=H&format=png&data=" + encoded;
-    var a = document.createElement("a");
-    a.href = url;
-    a.target = "_blank";
-    a.rel = "noopener";
-    a.download = "AMT-payment-QR.png";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    showToast("QR opened — save image");
-  }
-}
-
-function roundRect(ctx, x, y, w, h, r){
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.arcTo(x + w, y, x + w, y + h, r);
-  ctx.arcTo(x + w, y + h, x, y + h, r);
-  ctx.arcTo(x, y + h, x, y, r);
-  ctx.arcTo(x, y, x + w, y, r);
-  ctx.closePath();
+  await client.query(
+    `UPDATE pet_battle_daily
+     SET charges = $1, wins = $2, streak = $3, bonus_earned = $4
+     WHERE member_id = $5 AND battle_date = $6::date`,
+    [charges, wins, streak, bonus_earned, memberId, day]
+  );
+  return { charges, wins, streak, bonus, bonus_earned, message: msg.join(" · ") };
 }
 
 
-function updateReferralQr(link){
-  setQrImage($("referralQr"), link);
+function simulateBattle(my, en, myEl, enEl) {
+  // Skills-enabled duel (1v1 CPU / PvP)
+  const a = { ...my, level: my.level || 1, maxHp: my.maxHp || my.hp };
+  const b = { ...en, level: en.level || 1, maxHp: en.maxHp || en.hp };
+  if (typeof simulateBattleWithSkills === "function") {
+    return simulateBattleWithSkills(a, b, myEl, enEl);
+  }
+  let myHp = my.hp, enHp = en.hp;
+  return { win: myHp >= enHp, rounds: [], myMax: myHp, enMax: enHp, myHp, enHp };
 }
 
-async function loadReferral(){
-  try{
-    const data = await api("/api/referrals");
-    const code = (data.referralCode || data.code || data.username || "").trim();
 
-    if(code && code !== "------"){
-      const fullLink = buildReferralLink(code);
-      if($("referralCode")) $("referralCode").textContent = fullLink;
-      if($("referralCodeOnly")) $("referralCodeOnly").textContent = code;
-      updateReferralQr(fullLink);
-      window._referralLink = fullLink;
-      window._referralCode = code;
-      try{ refreshPaymentQr(); }catch(e){}
-    }else{
-      if($("referralCode")) $("referralCode").textContent = "------";
-      if($("referralCodeOnly")) $("referralCodeOnly").textContent = "------";
-      updateReferralQr(null);
-      window._referralLink = "";
-      window._referralCode = "";
+app.post("/api/pets/battle", requireAuth, async (req, res) => {
+  const ownedId = Number(req.body?.ownedPetId);
+  if (!Number.isInteger(ownedId)) {
+    return res.status(400).json({ ok: false, error: "ownedPetId required." });
+  }
+
+  const client = await pool.connect();
+  try {
+    await ensurePetTables();
+    await ensureArenaTables();
+
+    const petRes = await client.query(
+      `SELECT * FROM owned_pets WHERE id = $1 AND member_id = $2`,
+      [ownedId, req.member.id]
+    );
+    if (!petRes.rows.length) {
+      return res.status(404).json({ ok: false, error: "Pet not found in My Pets." });
+    }
+    const pet = petRes.rows[0];
+    const tierKey = pickTier(req.body?.tier, pet.level);
+    const tier = BATTLE_TIERS[tierKey];
+
+    if (Number(pet.energy) < tier.energy) {
+      return res.status(400).json({
+        ok: false,
+        error: "Pet needs more energy for " + tier.label + " (" + tier.energy + " required)."
+      });
     }
 
-    const count = Number(data.referralCount ?? data.count ?? 0);
-    if($("referralCount")) $("referralCount").textContent = count;
-    if($("activeMiners")) $("activeMiners").textContent = data.activeMiners ?? 0;
-
-    const tier = data.tier || {};
-    if($("tierName")) $("tierName").textContent = tier.name || "Bronze";
-    if($("tierReward")) $("tierReward").textContent = tier.rewardPerReferral ?? 0.5;
-
-    const milestones = [5, 15, 50, 100];
-    let nextMile = null;
-    for(const m of milestones){
-      if(count < m){ nextMile = m; break; }
+    // Win-to-earn battle charges (base 5, +1 per win, max 15)
+    const spent = await spendBattleCharge(client, req.member.id);
+    if (spent.error) {
+      return res.status(400).json({
+        ok: false,
+        error: spent.error,
+        charges: spent.charges
+      });
     }
-    if($("nextMilestone")) $("nextMilestone").textContent = nextMile ? (nextMile + " refs") : "Max reached";
+    const day = spent.day;
 
-    const tiers = [
-      {name:"Bronze", min:0, max:5},
-      {name:"Silver", min:6, max:15},
-      {name:"Gold", min:16, max:50},
-      {name:"Legend", min:51, max:99},
-      {name:"Mythic", min:100, max:999999}
-    ];
-    let current = tiers.find(t => count >= t.min && count <= t.max) || tiers[0];
-    let nextTier = tiers.find(t => t.min > count);
-    let progressPct = 0;
-    let progressText = "";
-    if(nextTier){
-      const span = nextTier.min - current.min;
-      const done = count - current.min;
-      progressPct = Math.max(0, Math.min(100, Math.round((done / Math.max(span,1)) * 100)));
-      progressText = count + " / " + nextTier.min + " to " + nextTier.name;
-    }else{
-      progressPct = 100;
-      progressText = count + " · Mythic max";
+    // Player combat stats
+    const lv = Number(pet.level) || 1;
+    let gearBonus = { atk: 0, def: 0, hp: 0, spd: 0 };
+    try {
+      await ensureGearTables();
+      const emap = await getPetEquipmentMap(client, ownedId);
+      gearBonus = sumGearBonuses(emap);
+    } catch (e) {}
+    const my = {
+      name: pet.name,
+      level: lv,
+      hp: Number(pet.hp) + lv * 8 + (gearBonus.hp || 0),
+      maxHp: Number(pet.hp) + lv * 8 + (gearBonus.hp || 0),
+      atk: Number(pet.atk) + lv * 2 + (gearBonus.atk || 0),
+      def: Number(pet.def) + Math.floor(lv * 0.8) + (gearBonus.def || 0),
+      spd: Number(pet.spd) + Math.floor(lv * 0.5) + (gearBonus.spd || 0)
+    };
+    const myEl = pet.element || "Earth";
+
+    // Scaled wild foe from catalog
+    let foePool = AMT_PETS.filter(p => p.id !== pet.pet_id && p.name !== pet.name);
+    if (!foePool.length) foePool = AMT_PETS.slice();
+    const wild = foePool[Math.floor(Math.random() * foePool.length)] || AMT_PETS[0];
+    const mult = tier.mult * (0.97 + Math.random() * 0.08);
+    const en = {
+      name: tier.label + " " + wild.name,
+      hp: Math.max(30, Math.round(my.hp * mult)),
+      atk: Math.max(8, Math.round(my.atk * mult * 0.95)),
+      def: Math.max(5, Math.round(my.def * mult * 0.9)),
+      spd: Math.max(5, Math.round(my.spd * (0.9 + Math.random() * 0.25)))
+    };
+    const enEl = wild.element || "Earth";
+
+    const sim = simulateBattle(
+      { ...my, name: pet.name },
+      { ...en, name: en.name },
+      myEl,
+      enEl
+    );
+
+    const win = sim.win;
+    const rel = elementRelation(myEl, enEl);
+    let reward = 0;
+    if (win) {
+      reward =
+        tier.rewardMin +
+        Math.random() * (tier.rewardMax - tier.rewardMin);
+      if (rel.key === "advantage") reward *= 1.15;
+      reward = Math.round(reward * 100) / 100;
+    } else {
+      reward = 0.05;
     }
-    // Mythic glow on tier name
-    if($("tierName")){
-      if((tier.name || current.name) === "Mythic"){
-        $("tierName").style.color = "#ff6bcb";
-        $("tierName").style.textShadow = "0 0 16px rgba(255,100,200,.55)";
-      }else if((tier.name || current.name) === "Legend"){
-        $("tierName").style.color = "#ffd54f";
-        $("tierName").style.textShadow = "0 0 12px rgba(255,200,60,.35)";
-      }else{
-        $("tierName").style.color = "#ffd54f";
-        $("tierName").style.textShadow = "none";
-      }
+
+    await client.query(
+      `UPDATE owned_pets SET energy = GREATEST(0, energy - $1),
+        exp = COALESCE(exp, 0) + $2 WHERE id = $3`,
+      [tier.energy, win ? 20 + Math.floor(tier.mult * 15) : 8, ownedId]
+    );
+    const petAfterBattle = await applyLevelAndRarity(
+      client,
+      ownedId,
+      req.member.id
+    );
+    const chargeInfo = await applyBattleWinCharges(client, req.member.id, day, win);
+
+    // Win-streak AMT bonuses (3 / 5 / 7)
+    let streakBonusAmt = 0;
+    let streakMsg = "";
+    if (win && chargeInfo.streak === 3) { streakBonusAmt = 0.35; streakMsg = "🔥 3-win streak +0.35 AMT"; }
+    if (win && chargeInfo.streak === 5) { streakBonusAmt = 0.80; streakMsg = "🔥 5-win streak +0.80 AMT"; }
+    if (win && chargeInfo.streak === 7) { streakBonusAmt = 1.50; streakMsg = "🔥 7-win streak +1.50 AMT"; }
+    reward = Math.round((reward + streakBonusAmt) * 100) / 100;
+
+    await client.query(
+      `INSERT INTO amt_ledger (member_id, amount, type, reference)
+       VALUES ($1,$2,'PET_BATTLE',$3)`,
+      [req.member.id, reward, makeReference("AMT-BATTLE")]
+    );
+    await client.query(
+      `INSERT INTO pet_battles
+        (member_id, owned_pet_id, opponent_name, result, reward_amt)
+       VALUES ($1,$2,$3,$4,$5)`,
+      [req.member.id, ownedId, en.name, win ? "WIN" : "LOSS", reward]
+    );
+
+    // Material drops (cores / gems) on win
+    let drops = [];
+    if (win) {
+      try {
+        await ensureGearTables();
+        if (Math.random() < 0.55) {
+          await addMaterial(client, req.member.id, "upgrade_core", 1);
+          drops.push("Upgrade Core x1");
+        }
+        if (Math.random() < 0.35) {
+          const gems = ["gem_atk_1", "gem_hp_1", "gem_def_1"];
+          const g = gems[Math.floor(Math.random() * gems.length)];
+          await addMaterial(client, req.member.id, g, 1);
+          drops.push((getMaterial(g) || {}).name || g);
+        }
+        if (tierKey === "elite" || tierKey === "mythic") {
+          if (Math.random() < 0.2) {
+            const gems2 = ["gem_atk_2", "gem_hp_2", "gem_def_2"];
+            const g2 = gems2[Math.floor(Math.random() * gems2.length)];
+            await addMaterial(client, req.member.id, g2, 1);
+            drops.push((getMaterial(g2) || {}).name || g2);
+          }
+        }
+      } catch (e) { console.warn("drop", e.message); }
     }
-    if($("tierProgress")) $("tierProgress").style.width = progressPct + "%";
-    if($("tierProgressText")) $("tierProgressText").textContent = progressText;
-  }catch(error){
-    console.error("loadReferral", error);
-    // keep existing values; don't wipe if soft fail
-  }
-}
 
+    const underdog = false;
+    const repInfo = await applyBattleRep(client, req.member.id, ownedId, win, tierKey, underdog);
 
-function downloadReferralQr(){
-  var link = window._referralLink || "";
-  if(!link){
-    showToast("Login first / generate invite QR", true);
-    return;
-  }
-  showToast("Preparing QR with photo…");
-  var size = 400;
-  var encoded = encodeURIComponent(link);
-  var qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=10&ecc=H&format=png&data=" + encoded;
-
-  function showFinal(dataUrl){
-    showQrSaveSheet(dataUrl, link, true);
-  }
-  function showPlain(){
-    showQrSaveSheet(qrUrl, link, false);
-  }
-
-  function composite(qrImg, picImg){
-    try{
-      var canvas = document.createElement("canvas");
-      canvas.width = size;
-      canvas.height = size;
-      var ctx = canvas.getContext("2d");
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, size, size);
-      ctx.drawImage(qrImg, 0, 0, size, size);
-      var bw = 84, bh = 84;
-      var bx = (size - bw) / 2, by = (size - bh) / 2;
-      ctx.fillStyle = "#ffffff";
-      roundRect(ctx, bx - 6, by - 6, bw + 12, bh + 12, 20);
-      ctx.fill();
-      ctx.save();
-      roundRect(ctx, bx, by, bw, bh, 16);
-      ctx.clip();
-      if(picImg){
-        ctx.drawImage(picImg, bx, by, bw, bh);
-      }else{
-        ctx.fillStyle = "#12081f";
-        ctx.fillRect(bx, by, bw, bh);
-        ctx.fillStyle = "#ffd95a";
-        ctx.font = "bold 22px sans-serif";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText("AMT", size / 2, size / 2);
-      }
-      ctx.restore();
-      ctx.strokeStyle = "#ffd95a";
-      ctx.lineWidth = 4;
-      roundRect(ctx, bx, by, bw, bh, 16);
-      ctx.stroke();
-      showFinal(canvas.toDataURL("image/png"));
-    }catch(e){
-      console.error("QR composite", e);
-      showPlain();
-    }
-  }
-
-  function withPic(qrImg){
-    var picUrl = getProfileImageForQr();
-    if(!picUrl){
-      composite(qrImg, null);
-      return;
-    }
-    // Profile may be data URL (no CORS issue) or http
-    var p = new Image();
-    if(picUrl.indexOf("data:") !== 0){
-      try{ p.crossOrigin = "anonymous"; }catch(e){}
-    }
-    p.onload = function(){ composite(qrImg, p); };
-    p.onerror = function(){ composite(qrImg, null); };
-    p.src = picUrl;
-  }
-
-  // Fetch QR as blob to avoid tainted canvas (CORS-safe)
-  fetch(qrUrl, { mode: "cors", cache: "no-store" })
-    .then(function(r){
-      if(!r.ok) throw new Error("qr fetch " + r.status);
-      return r.blob();
-    })
-    .then(function(blob){
-      var obj = URL.createObjectURL(blob);
-      var q = new Image();
-      q.onload = function(){
-        withPic(q);
-        setTimeout(function(){ try{ URL.revokeObjectURL(obj); }catch(e){} }, 5000);
-      };
-      q.onerror = function(){
-        try{ URL.revokeObjectURL(obj); }catch(e){}
-        showPlain();
-      };
-      q.src = obj;
-    })
-    .catch(function(){
-      // last resort: try on-screen image
-      var img = $("referralQr");
-      if(img && img.complete && img.naturalWidth > 0){
-        withPic(img);
-      }else{
-        showPlain();
-      }
+    res.json({
+      ok: true,
+      result: win ? "WIN" : "LOSS",
+      drops,
+      tier: tierKey,
+      tierLabel: tier.label,
+      chargesLeft: chargeInfo.charges,
+      winStreak: chargeInfo.streak,
+      chargeBonus: [chargeInfo.message, streakMsg].filter(Boolean).join(" · "),
+      streakBonusAmt,
+      elementRelation: rel.key,
+      elementLabel: rel.label,
+      elementMult: rel.mult,
+      petRepGained: repInfo.petRep,
+      ownerRepGained: repInfo.ownerRep,
+      petLevel: petAfterBattle && petAfterBattle.level,
+      petRarity: petAfterBattle && petAfterBattle.rarity,
+      petExp: petAfterBattle && petAfterBattle.exp,
+      milestones: (petAfterBattle && petAfterBattle._milestones) || [],
+      opponent: en.name,
+      opponentElement: enEl,
+      opponentImage: wild.image || null,
+      opponentPetId: wild.id,
+      opponentEmoji:
+        ({
+          Earth: "🌍", Water: "💧", Nature: "🌿", Ice: "❄️",
+          Fire: "🔥", Wind: "🌬️", Thunder: "⚡", Shadow: "🌑", Light: "✨", Cosmic: "🌌"
+        }[enEl] || "🐾"),
+      petName: pet.name,
+      petElement: myEl,
+      petImage: pet.image || null,
+      reward,
+      myMaxHp: sim.myMax,
+      enMaxHp: sim.enMax,
+      rounds: sim.rounds,
+      mode: "cpu"
     });
-}
+  } catch (error) {
+    console.error("PET BATTLE ERROR:", error);
+    res.status(500).json({ ok: false, error: "Battle failed." });
+  } finally {
+    client.release();
+  }
+});
 
-function showQrSaveSheet(imgSrc, link, hasPhoto){
-  var old = document.getElementById("qrSaveOverlay");
-  if(old) old.remove();
-
-  window._qrSaveSrc = imgSrc;
-  window._qrSaveLink = link || "";
-
-  var ov = document.createElement("div");
-  ov.id = "qrSaveOverlay";
-  ov.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:2147483646;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:16px 16px 120px;overflow:auto;-webkit-overflow-scrolling:touch;";
-
-  ov.innerHTML =
-    '<div style="color:#fff;font-size:15px;margin:6px 0 8px;text-align:center;font-weight:800">Save your Invite QR</div>' +
-    '<img id="qrSaveImg" src="'+imgSrc+'" alt="QR" style="width:min(88vw,300px);height:auto;background:#fff;padding:8px;border-radius:16px">' +
-    '<div style="color:#cfc;font-size:12px;margin:12px 10px 0;text-align:center;line-height:1.45;max-width:320px">' +
-      (hasPhoto ? '✅ Photo in center<br>' : '') +
-      'To save with photo: <b>Screenshot</b> (Power + Volume Down)' +
-    '</div>' +
-    '<div style="width:100%;max-width:320px;display:flex;flex-direction:column;gap:10px;margin-top:14px">' +
-      '<button type="button" onclick="event.preventDefault();event.stopPropagation();window._qrSaveCode&&window._qrSaveCode()" style="width:100%;padding:16px;border:0;border-radius:14px;background:linear-gradient(90deg,#f0c14b,#a959ff);color:#111;font-weight:900;font-size:16px;touch-action:manipulation">💾 Save QR code</button>' +
-      '<button type="button" onclick="event.preventDefault();event.stopPropagation();window._qrCopyInvite&&window._qrCopyInvite()" style="width:100%;padding:14px;border:0;border-radius:14px;background:#2a2040;color:#fff;font-weight:700;font-size:15px;touch-action:manipulation">📋 Copy link</button>' +
-      '<button type="button" onclick="event.preventDefault();event.stopPropagation();var e=document.getElementById(\'qrSaveOverlay\');if(e)e.remove()" style="width:100%;padding:14px;border:0;border-radius:14px;background:#333;color:#fff;font-size:14px;touch-action:manipulation">Close</button>' +
-    '</div>';
-
-  ov.addEventListener("click", function(e){ if(e.target === ov) ov.remove(); });
-  document.body.appendChild(ov);
-
-  window._qrCopyInvite = function(){
-    var L = window._qrSaveLink || "";
-    if(!L){ showToast("No link", true); return; }
-    copyTextSmart(L).then(function(ok){
-      if(ok) showToast("Link copied!");
-      else showCopyModal("Copy invite link", L);
+/* List your pet in PvP Arena */
+app.post("/api/pets/arena/list", requireAuth, async (req, res) => {
+  const ownedId = Number(req.body?.ownedPetId);
+  if (!Number.isInteger(ownedId)) {
+    return res.status(400).json({ ok: false, error: "ownedPetId required." });
+  }
+  try {
+    await ensurePetTables();
+    await ensureArenaTables();
+    const petRes = await pool.query(
+      `SELECT * FROM owned_pets WHERE id = $1 AND member_id = $2`,
+      [ownedId, req.member.id]
+    );
+    if (!petRes.rows.length) {
+      return res.status(404).json({ ok: false, error: "Pet not found." });
+    }
+    const pet = petRes.rows[0];
+    const lv = Number(pet.level) || 1;
+    // One active listing per member
+    await pool.query(
+      `UPDATE pet_arena SET active = FALSE, updated_at = NOW()
+       WHERE member_id = $1 AND active = TRUE`,
+      [req.member.id]
+    );
+    const ins = await pool.query(
+      `INSERT INTO pet_arena
+        (member_id, owned_pet_id, pet_name, pet_element, pet_image,
+         level, hp, atk, def, spd, active)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,TRUE)
+       RETURNING id, rating, level, pet_name`,
+      [
+        req.member.id,
+        ownedId,
+        pet.name,
+        pet.element || "Earth",
+        pet.image || null,
+        lv,
+        Number(pet.hp) + lv * 8,
+        Number(pet.atk) + lv * 2,
+        Number(pet.def) + Math.floor(lv * 0.8),
+        Number(pet.spd) + Math.floor(lv * 0.5)
+      ]
+    );
+    res.json({
+      ok: true,
+      arenaId: ins.rows[0].id,
+      rating: ins.rows[0].rating,
+      message: pet.name + " listed in PvP Arena (Lv" + lv + ")"
     });
-  };
+  } catch (e) {
+    console.error("ARENA LIST:", e);
+    res.status(500).json({ ok: false, error: "Could not list in arena." });
+  }
+});
 
-  window._qrSaveCode = function(){
-    // Pi Browser blocks file download — guide screenshot (keeps center photo)
-    showToast("Screenshot now: Power + Volume Down (keeps photo)");
-  };
-}
+app.get("/api/pets/arena", requireAuth, async (req, res) => {
+  try {
+    await ensureArenaTables();
+    const rows = await pool.query(
+      `SELECT a.id, a.pet_name, a.pet_element, a.pet_image, a.level,
+              a.hp, a.atk, a.def, a.spd, a.rating, a.member_id,
+              m.username
+       FROM pet_arena a
+       LEFT JOIN members m ON m.id = a.member_id
+       WHERE a.active = TRUE AND a.member_id <> $1
+       ORDER BY a.rating DESC, a.level DESC
+       LIMIT 40`,
+      [req.member.id]
+    );
+    res.json({ ok: true, listings: rows.rows });
+  } catch (e) {
+    console.error("ARENA LIST GET:", e);
+    res.status(500).json({ ok: false, error: "Arena unavailable." });
+  }
+});
 
-function showCopyModal(title, text){
-  var old = document.getElementById("amtCopyModal");
-  if(old) old.remove();
-  var ov = document.createElement("div");
-  ov.id = "amtCopyModal";
-  ov.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;";
-  ov.innerHTML = '<div style="background:#1a1028;border:1px solid rgba(255,215,80,.35);border-radius:16px;padding:16px;max-width:340px;width:100%">' +
-    '<div style="color:#ffd95a;font-weight:800;margin-bottom:8px">'+title+'</div>' +
-    '<textarea id="amtCopyTa" readonly style="width:100%;min-height:100px;border-radius:10px;padding:10px;font-size:13px;background:#0d0814;color:#fff;border:1px solid #444"></textarea>' +
-    '<button type="button" id="amtCopyBtn" style="margin-top:10px;width:100%;padding:12px;border:0;border-radius:12px;background:linear-gradient(90deg,#f0c14b,#a959ff);color:#111;font-weight:800">Copy</button>' +
-    '<button type="button" id="amtCopyClose" style="margin-top:8px;width:100%;padding:10px;border:0;border-radius:12px;background:#333;color:#fff">Close</button></div>';
-  document.body.appendChild(ov);
-  var ta = ov.querySelector("#amtCopyTa");
-  ta.value = text;
-  ov.querySelector("#amtCopyClose").onclick = function(){ ov.remove(); };
-  ov.querySelector("#amtCopyBtn").onclick = function(){
-    ta.focus(); ta.select();
-    var ok = false;
-    try{ ok = document.execCommand("copy"); }catch(e){}
-    if(!ok && navigator.clipboard){
-      navigator.clipboard.writeText(text).then(function(){ showToast("Copied!"); }).catch(function(){ showToast("Select text → Copy", true); });
-    }else{
-      showToast(ok ? "Copied!" : "Select all text → Copy", !ok);
+
+app.get("/api/pets/arena/mine", requireAuth, async (req, res) => {
+  try {
+    await ensureArenaTables();
+    const rows = await pool.query(
+      `SELECT id, pet_name, pet_element, pet_image, level, hp, atk, def, spd, rating, active, owned_pet_id
+       FROM pet_arena
+       WHERE member_id = $1 AND active = TRUE
+       ORDER BY updated_at DESC
+       LIMIT 5`,
+      [req.member.id]
+    );
+    res.json({ ok: true, listings: rows.rows });
+  } catch (e) {
+    console.error("ARENA MINE:", e);
+    res.status(500).json({ ok: false, error: "Could not load your arena listing." });
+  }
+});
+
+app.post("/api/pets/arena/unlist", requireAuth, async (req, res) => {
+  const arenaId = req.body?.arenaId != null ? Number(req.body.arenaId) : null;
+  try {
+    await ensureArenaTables();
+    let result;
+    if (Number.isInteger(arenaId)) {
+      result = await pool.query(
+        `UPDATE pet_arena SET active = FALSE, updated_at = NOW()
+         WHERE id = $1 AND member_id = $2 AND active = TRUE
+         RETURNING id, pet_name`,
+        [arenaId, req.member.id]
+      );
+    } else {
+      result = await pool.query(
+        `UPDATE pet_arena SET active = FALSE, updated_at = NOW()
+         WHERE member_id = $1 AND active = TRUE
+         RETURNING id, pet_name`,
+        [req.member.id]
+      );
     }
+    if (!result.rows.length) {
+      return res.json({ ok: true, unlisted: 0, message: "No active arena listing." });
+    }
+    res.json({
+      ok: true,
+      unlisted: result.rows.length,
+      message: "Unlisted " + result.rows.map(r => r.pet_name).join(", ")
+    });
+  } catch (e) {
+    console.error("ARENA UNLIST:", e);
+    res.status(500).json({ ok: false, error: "Could not unlist." });
+  }
+});
+
+app.get("/api/pets/arena/:arenaId", requireAuth, async (req, res) => {
+  const arenaId = Number(req.params.arenaId);
+  if (!Number.isInteger(arenaId)) {
+    return res.status(400).json({ ok: false, error: "Invalid arena id." });
+  }
+  try {
+    await ensureArenaTables();
+    const rows = await pool.query(
+      `SELECT a.id, a.pet_name, a.pet_element, a.pet_image, a.level,
+              a.hp, a.atk, a.def, a.spd, a.rating, a.member_id,
+              m.username
+       FROM pet_arena a
+       LEFT JOIN members m ON m.id = a.member_id
+       WHERE a.id = $1 AND a.active = TRUE`,
+      [arenaId]
+    );
+    if (!rows.rows.length) {
+      return res.status(404).json({ ok: false, error: "Opponent not found or unlisted." });
+    }
+    res.json({ ok: true, opponent: rows.rows[0] });
+  } catch (e) {
+    console.error("ARENA VIEW:", e);
+    res.status(500).json({ ok: false, error: "Could not load opponent." });
+  }
+});
+
+app.post("/api/pets/arena/challenge", requireAuth, async (req, res) => {
+  const ownedId = Number(req.body?.ownedPetId);
+  const arenaId = Number(req.body?.arenaId);
+  if (!Number.isInteger(ownedId) || !Number.isInteger(arenaId)) {
+    return res.status(400).json({
+      ok: false,
+      error: "ownedPetId and arenaId required."
+    });
+  }
+  const client = await pool.connect();
+  try {
+    await ensurePetTables();
+    await ensureArenaTables();
+
+    const day = new Date().toISOString().slice(0, 10);
+    await client.query(
+      `INSERT INTO pet_battle_daily (member_id, battle_date, cpu_count, pvp_count)
+       VALUES ($1, $2::date, 0, 0)
+       ON CONFLICT (member_id, battle_date) DO UPDATE SET member_id = EXCLUDED.member_id`,
+      [req.member.id, day]
+    );
+    const daily = await client.query(
+      `SELECT pvp_count FROM pet_battle_daily
+       WHERE member_id = $1 AND battle_date = $2::date`,
+      [req.member.id, day]
+    );
+    if (Number(daily.rows[0]?.pvp_count || 0) >= 15) {
+      return res.status(400).json({
+        ok: false,
+        error: "Daily PvP limit reached (15)."
+      });
+    }
+
+    const petRes = await client.query(
+      `SELECT * FROM owned_pets WHERE id = $1 AND member_id = $2`,
+      [ownedId, req.member.id]
+    );
+    if (!petRes.rows.length) {
+      return res.status(404).json({ ok: false, error: "Your pet not found." });
+    }
+    const pet = petRes.rows[0];
+    if (Number(pet.energy) < 18) {
+      return res.status(400).json({
+        ok: false,
+        error: "PvP needs 18 energy. Care / energy pack first."
+      });
+    }
+
+    const arenaRes = await client.query(
+      `SELECT * FROM pet_arena WHERE id = $1 AND active = TRUE`,
+      [arenaId]
+    );
+    if (!arenaRes.rows.length) {
+      return res.status(404).json({ ok: false, error: "Arena opponent not found." });
+    }
+    const foe = arenaRes.rows[0];
+    if (Number(foe.member_id) === Number(req.member.id)) {
+      return res.status(400).json({ ok: false, error: "Cannot fight your own pet." });
+    }
+
+    const lv = Number(pet.level) || 1;
+    const my = {
+      name: pet.name,
+      level: lv,
+      hp: Number(pet.hp) + lv * 8,
+      maxHp: Number(pet.hp) + lv * 8,
+      atk: Number(pet.atk) + lv * 2,
+      def: Number(pet.def) + Math.floor(lv * 0.8),
+      spd: Number(pet.spd) + Math.floor(lv * 0.5)
+    };
+    const en = {
+      name: foe.pet_name + " (PvP)",
+      hp: Number(foe.hp),
+      atk: Number(foe.atk),
+      def: Number(foe.def),
+      spd: Number(foe.spd)
+    };
+    const sim = simulateBattle(my, en, pet.element, foe.pet_element);
+    const win = sim.win;
+    const reward = win ? 0.8 + Math.random() * 1.2 : 0.1;
+    const rewardR = Math.round(reward * 100) / 100;
+
+    await client.query(
+      `UPDATE owned_pets SET energy = GREATEST(0, energy - 18),
+        exp = COALESCE(exp, 0) + $1 WHERE id = $2`,
+      [win ? 40 : 12, ownedId]
+    );
+    const petAfter = await applyLevelAndRarity(client, ownedId, req.member.id);
+
+    await client.query(
+      `INSERT INTO amt_ledger (member_id, amount, type, reference)
+       VALUES ($1,$2,'PET_PVP',$3)`,
+      [req.member.id, rewardR, makeReference("AMT-PVP")]
+    );
+    const repPvp = await applyBattleRep(client, req.member.id, ownedId, win, "pvp", false);
+
+    // Rating
+    const delta = win ? 18 : -12;
+    await client.query(
+      `UPDATE pet_arena SET rating = GREATEST(100, rating + $1), updated_at = NOW()
+       WHERE id = $2`,
+      [win ? -10 : 8, arenaId]
+    );
+
+    await client.query(
+      `INSERT INTO pet_pvp_battles
+        (attacker_id, defender_id, attacker_pet_id, defender_arena_id, result, reward_amt)
+       VALUES ($1,$2,$3,$4,$5,$6)`,
+      [
+        req.member.id,
+        foe.member_id,
+        ownedId,
+        arenaId,
+        win ? "WIN" : "LOSS",
+        rewardR
+      ]
+    );
+    await client.query(
+      `UPDATE pet_battle_daily SET pvp_count = pvp_count + 1
+       WHERE member_id = $1 AND battle_date = $2::date`,
+      [req.member.id, day]
+    );
+
+    res.json({
+      ok: true,
+      result: win ? "WIN" : "LOSS",
+      mode: "pvp",
+      tierLabel: "PvP",
+      petRepGained: repPvp && repPvp.petRep,
+      ownerRepGained: repPvp && repPvp.ownerRep,
+      opponent: en.name,
+      opponentElement: foe.pet_element,
+      opponentImage: foe.pet_image,
+      petName: pet.name,
+      petElement: pet.element,
+      petImage: pet.image,
+      reward: rewardR,
+      myMaxHp: sim.myMax,
+      enMaxHp: sim.enMax,
+      rounds: sim.rounds,
+      petLevel: petAfter && petAfter.level,
+      milestones: (petAfter && petAfter._milestones) || []
+    });
+  } catch (e) {
+    console.error("PVP CHALLENGE:", e);
+    res.status(500).json({ ok: false, error: "PvP battle failed." });
+  } finally {
+    client.release();
+  }
+});
+
+
+/* =========================================================
+   PET SKILLS + SQUAD 3v3 / 4v4
+========================================================= */
+
+const PET_SKILLS = {
+  Fire: [
+    { id: "ember", name: "Ember Strike", minLv: 1, power: 1.25, kind: "attack", desc: "Fire hit · 125% ATK" },
+    { id: "inferno", name: "Inferno", minLv: 12, power: 1.55, kind: "attack", desc: "Heavy fire · 155% ATK" }
+  ],
+  Water: [
+    { id: "splash", name: "Aqua Pulse", minLv: 1, power: 1.2, kind: "attack", desc: "Water hit · 120% ATK" },
+    { id: "tide", name: "Tidal Guard", minLv: 12, power: 0, kind: "defend", desc: "Raise DEF next hit" }
+  ],
+  Nature: [
+    { id: "vine", name: "Vine Lash", minLv: 1, power: 1.2, kind: "attack", desc: "Nature hit · 120% ATK" },
+    { id: "bloom", name: "Bloom Heal", minLv: 10, power: 0.18, kind: "heal", desc: "Heal 18% max HP" }
+  ],
+  Thunder: [
+    { id: "spark", name: "Spark", minLv: 1, power: 1.3, kind: "attack", desc: "Thunder · 130% ATK" },
+    { id: "storm", name: "Storm Bolt", minLv: 15, power: 1.6, kind: "attack", desc: "Heavy thunder · 160% ATK" }
+  ],
+  Earth: [
+    { id: "quake", name: "Quake", minLv: 1, power: 1.15, kind: "attack", desc: "Earth hit · 115% ATK" },
+    { id: "shell", name: "Stone Shell", minLv: 10, power: 0, kind: "defend", desc: "Raise DEF next hit" }
+  ],
+  Ice: [
+    { id: "frost", name: "Frostbite", minLv: 1, power: 1.2, kind: "attack", desc: "Ice hit · 120% ATK" },
+    { id: "freeze", name: "Deep Freeze", minLv: 14, power: 1.45, kind: "attack", desc: "Heavy ice · 145% ATK" }
+  ],
+  Wind: [
+    { id: "gust", name: "Gust", minLv: 1, power: 1.2, kind: "attack", desc: "Wind hit · 120% ATK" },
+    { id: "cyclone", name: "Cyclone", minLv: 12, power: 1.5, kind: "attack", desc: "Heavy wind · 150% ATK" }
+  ],
+  Shadow: [
+    { id: "shade", name: "Shadow Strike", minLv: 1, power: 1.3, kind: "attack", desc: "Dark hit · 130% ATK" },
+    { id: "void", name: "Void Pulse", minLv: 15, power: 1.6, kind: "attack", desc: "Heavy shadow · 160% ATK" }
+  ],
+  Light: [
+    { id: "ray", name: "Holy Ray", minLv: 1, power: 1.25, kind: "attack", desc: "Light hit · 125% ATK" },
+    { id: "bless", name: "Blessing", minLv: 12, power: 0.2, kind: "heal", desc: "Heal 20% max HP" }
+  ],
+  Cosmic: [
+    { id: "nova", name: "Star Nova", minLv: 1, power: 1.35, kind: "attack", desc: "Cosmic hit · 135% ATK" },
+    { id: "galaxy", name: "Galaxy Burst", minLv: 18, power: 1.7, kind: "attack", desc: "Heavy cosmic · 170% ATK" }
+  ]
+};
+
+function skillsForPet(element, level) {
+  const el = String(element || "Earth");
+  const list = PET_SKILLS[el] || PET_SKILLS.Earth;
+  const lv = Number(level) || 1;
+  return list.filter(s => lv >= s.minLv).map(s => ({
+    id: s.id,
+    name: s.name,
+    minLv: s.minLv,
+    kind: s.kind,
+    power: s.power,
+    desc: s.desc,
+    unlocked: true
+  }));
+}
+
+function allSkillsPreview(element, level) {
+  const el = String(element || "Earth");
+  const list = PET_SKILLS[el] || PET_SKILLS.Earth;
+  const lv = Number(level) || 1;
+  return list.map(s => ({
+    id: s.id,
+    name: s.name,
+    minLv: s.minLv,
+    kind: s.kind,
+    power: s.power,
+    desc: s.desc,
+    unlocked: lv >= s.minLv
+  }));
+}
+
+function pickSkill(element, level) {
+  const unlocked = skillsForPet(element, level);
+  if (!unlocked.length) return null;
+  // Prefer stronger skill ~35% if available
+  if (unlocked.length > 1 && Math.random() < 0.35) {
+    return unlocked[unlocked.length - 1];
+  }
+  if (Math.random() < 0.45) return unlocked[0];
+  return null; // basic attack
+}
+
+async function ensureSquadTables() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS pet_squads (
+      member_id BIGINT NOT NULL REFERENCES members(id),
+      slot SMALLINT NOT NULL CHECK (slot >= 1 AND slot <= 4),
+      owned_pet_id BIGINT NOT NULL,
+      updated_at TIMESTAMPTZ DEFAULT NOW(),
+      PRIMARY KEY (member_id, slot)
+    )
+  `);
+}
+
+function combatStatsFromOwned(pet, gearBonus) {
+  const lv = Number(pet.level) || 1;
+  const b = gearBonus || { atk: 0, def: 0, hp: 0, spd: 0 };
+  return {
+    ownedId: pet.id,
+    name: pet.name,
+    element: pet.element || "Earth",
+    image: pet.image || null,
+    level: lv,
+    hp: Number(pet.hp) + lv * 8 + (b.hp || 0),
+    atk: Number(pet.atk) + lv * 2 + (b.atk || 0),
+    def: Number(pet.def) + Math.floor(lv * 0.8) + (b.def || 0),
+    spd: Number(pet.spd) + Math.floor(lv * 0.5) + (b.spd || 0),
+    maxHp: Number(pet.hp) + lv * 8 + (b.hp || 0)
   };
-  setTimeout(function(){ try{ ta.focus(); ta.select(); }catch(e){} }, 100);
 }
 
+/** Single duel with skills */
+function simulateBattleWithSkills(my, en, myEl, enEl) {
+  let myHp = my.hp;
+  let enHp = en.hp;
+  const myMax = my.maxHp || my.hp;
+  const enMax = en.maxHp || en.hp;
+  let myDefBuf = 0;
+  let enDefBuf = 0;
+  const rounds = [];
+  let round = 0;
+  const maxRounds = 12;
 
-async function copyTextSmart(text){
-  if(!text) return false;
-  try{
-    if(navigator.clipboard && navigator.clipboard.writeText){
-      await navigator.clipboard.writeText(text);
-      return true;
-    }
-  }catch(e){}
-  return fallbackCopyText(text);
-}
+  while (myHp > 0 && enHp > 0 && round < maxRounds) {
+    round += 1;
+    const myFirst = my.spd + Math.random() * 8 >= en.spd + Math.random() * 8;
 
-function copyReferral(){
-  const link = (window._referralLink || ($("referralCode") && $("referralCode").textContent) || "").trim();
-  if(!link || link === "------"){
-    return showToast("Referral link is not ready. Please login again.", true);
-  }
-  copyTextSmart(link).then(function(ok){
-    if(ok) showToast("Link copied! Paste sa Messenger / chat.");
-    else showCopyModal("Copy invite link", link);
-  });
-}
+    const turn = (attacker, defender, actor, atkEl, defEl, isMe) => {
+      const skill = pickSkill(atkEl, attacker.level || 1);
+      let dmg = 0;
+      let text = "";
+      const defExtra = isMe ? enDefBuf : myDefBuf;
 
-function copyReferralCode(){
-  const code = (window._referralCode || ($("referralCodeOnly") && $("referralCodeOnly").textContent) || "").trim();
-  if(!code || code === "------"){
-    return showToast("Referral code not ready. Login first.", true);
-  }
-  copyTextSmart(code).then(function(ok){
-    if(ok) showToast("Code copied: " + code);
-    else showCopyModal("Copy referral code", code);
-  });
-}
-
-
-function openCoixaSwap(){
-  // On-chain AMT swap / LP via Coixa (not in-app ledger)
-  const url = "https://app.coixa.xyz?ref=exe5LLq";
-  try{
-    if(window.Pi && typeof Pi.openUrlInSystemBrowser === "function"){
-      Pi.openUrlInSystemBrowser(url);
-    }else{
-      window.open(url, "_blank");
-    }
-    showToast("Opening Coixa · AMT on-chain swap / portfolio");
-  }catch(e){
-    try{ window.location.href = url; }catch(err){}
-    showToast("Open: app.coixa.xyz");
-  }
-}
-
-async function shareReferral(){
-  const link = (window._referralLink || "").trim();
-  const code = (window._referralCode || "").trim();
-  if(!link || link === "------"){
-    return showToast("Login first to share your invite.", true);
-  }
-  const text =
-    "Join AMT on Pi Mainnet!\n" +
-    "App: https://amtmining13.github.io\n" +
-    "My code: " + code + "\n" +
-    "Invite: " + link;
-
-  // 1) Native share sheet (Android / some Pi Browser builds)
-  if(navigator.share){
-    try{
-      // Prefer text-only — more reliable on in-app browsers than text+url together
-      await navigator.share({ title: "AMT Invite", text: text });
-      showToast("Shared!");
-      return;
-    }catch(e){
-      if(e && e.name === "AbortError") return; // user cancelled
-      try{
-        await navigator.share({ title: "AMT Invite", text: text, url: link });
-        showToast("Shared!");
-        return;
-      }catch(e2){
-        if(e2 && e2.name === "AbortError") return;
+      if (skill && skill.kind === "heal") {
+        const heal = Math.round((isMe ? myMax : enMax) * skill.power);
+        if (isMe) {
+          myHp = Math.min(myMax, myHp + heal);
+        } else {
+          enHp = Math.min(enMax, enHp + heal);
+        }
+        text = attacker.name + " uses " + skill.name + " · +" + heal + " HP";
+        // clear opposite def buf not needed
+      } else if (skill && skill.kind === "defend") {
+        if (isMe) myDefBuf = Math.round(attacker.def * 0.5);
+        else enDefBuf = Math.round(attacker.def * 0.5);
+        text = attacker.name + " uses " + skill.name + " · DEF up";
+      } else {
+        const power = skill && skill.kind === "attack" ? skill.power : 1;
+        const em = elementMult(atkEl, defEl);
+        const def = (defender.def + defExtra) * 0.35;
+        dmg = Math.max(4, Math.round((attacker.atk * power - def) * em + Math.random() * 8));
+        if (isMe) {
+          enHp = Math.max(0, enHp - dmg);
+          enDefBuf = 0;
+        } else {
+          myHp = Math.max(0, myHp - dmg);
+          myDefBuf = 0;
+        }
+        if (skill && skill.kind === "attack") {
+          text = attacker.name + " · " + skill.name + " for " + dmg +
+            (em > 1 ? " (super!)" : em < 1 ? " (resisted)" : "");
+        } else {
+          text = attacker.name + " hits " + defender.name + " for " + dmg +
+            (em > 1 ? " (super!)" : em < 1 ? " (resisted)" : "");
+        }
       }
+      rounds.push({
+        round,
+        actor,
+        dmg,
+        skill: skill ? skill.name : null,
+        myHp,
+        enHp,
+        text
+      });
+    };
+
+    if (myFirst) {
+      turn(my, en, "you", myEl, enEl, true);
+      if (enHp <= 0) break;
+      turn(en, my, "enemy", enEl, myEl, false);
+    } else {
+      turn(en, my, "enemy", enEl, myEl, false);
+      if (myHp <= 0) break;
+      turn(my, en, "you", myEl, enEl, true);
     }
   }
 
-  // 2) Clipboard fallback (Pi Browser often lands here)
-  const ok = await copyTextSmart(text);
-  if(ok){
-    showToast("Invite copied! Open Messenger / Viber / Telegram → Paste → Send");
-  }else{
-    showCopyModal("Share invite — copy this text", text);
+  // Strict outcome (fixes inverted Victory/Defeat reports)
+  let win = false;
+  if (enHp <= 0 && myHp > 0) win = true;          // clear win
+  else if (myHp <= 0 && enHp > 0) win = false;     // clear loss
+  else if (myHp <= 0 && enHp <= 0) win = false;    // mutual KO = loss
+  else win = myHp > enHp;                          // timeout: higher HP wins
+  return { win, rounds, myMax, enMax, myHp, enHp };
+}
+
+// Patch: use skills in existing simulateBattle path — replace function body calls
+// We keep simulateBattle for compatibility; squad uses simulateBattleWithSkills
+
+app.get("/api/pets/battle-charges", requireAuth, async (req, res) => {
+  try {
+    await ensureArenaTables();
+    const { day, row } = await getBattleDay(null, req.member.id);
+    res.json({
+      ok: true,
+      date: day,
+      charges: Number(row.charges ?? BATTLE_BASE_CHARGES),
+      wins: Number(row.wins || 0),
+      streak: Number(row.streak || 0),
+      bonusEarned: Number(row.bonus_earned || 0),
+      baseCharges: BATTLE_BASE_CHARGES,
+      maxCharges: BATTLE_MAX_CHARGES,
+      rule: "Start with 5 charges. Each win +1 charge (max 15). 3-win streak +1 extra. Resets daily."
+    });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: "Could not load charges." });
   }
-}
-
-async function applyReferral(){
-
-const code=
-$("referralInput")
-.value
-.trim();
-
-if(!code){
-
-return showToast(
-"Enter a referral code.",
-true
-);
-
-}
-
-try{
-
-// Prefer username-based auto-link endpoint
-await api("/api/referral/auto-link",{
-method:"POST",
-body:JSON.stringify({
-accessToken: accessToken,
-referralUsername: code
-})
 });
 
-$("referralInput").value="";
-clearPendingReferralCode();
 
-showToast(
-"Referral applied successfully."
-);
-
-await loadReferral();
-
-}catch(error){
-
-showToast(
-error.message || "Unable to apply referral.",
-true
-);
-
-}
-}
-
-/* Try to apply pending referral from URL (?ref=username) after login */
-async function tryApplyPendingReferral(){
-
-const pending = getPendingReferralCode();
-if(!pending || !accessToken) return;
-
-try{
-
-await api("/api/referral/auto-link",{
-method:"POST",
-body:JSON.stringify({
-accessToken: accessToken,
-referralUsername: pending
-})
-});
-
-clearPendingReferralCode();
-showToast("Referral from link applied: " + pending);
-
-}catch(error){
-  // silent fail - already linked or invalid
-  console.log("Pending referral:", error.message || error);
-}
-
-}
-
-/* ============================================================
-   SECURITY CIRCLE
-============================================================ */
-
-async function loadSecurityCircle(){
-
-try{
-
-const data=
-await api("/api/security-circle");
-
-const members=
-data.members||
-data.securityCircle||
-[];
-
-$("circleCount").textContent=
-members.length;
-
-$("circleStatus").textContent=
-members.length?
-"ACTIVE":
-"NO MEMBERS";
-
-if(!members.length){
-
-$("circleList").innerHTML=
-'<div class="empty">No security-circle members returned.</div>';
-
-return;
-}
-
-$("circleList").innerHTML=
-members.map(member=>`
-
-<div class="stake-item">
-
-<div class="row">
-<b>
-${esc(
-member.username??
-member.name??
-"Pioneer"
-)}
-</b>
-
-<span class="muted">Pi</span>
-</div>
-
-</div>
-
-`).join("");
-
-}catch(error){
-
-$("circleStatus").textContent=
-"Unavailable";
-
-$("circleList").innerHTML=
-'<div class="empty">Security Circle data is not available from the backend yet.</div>';
-
-console.log(error);
-
-}
-}
-
-/* ============================================================
-   PROFILE
-============================================================ */
-
-async function loadProfile(){
-
-try{
-
-const data=
-await api("/api/profile");
-
-const username=
-data.username??
-currentUser?.username??
-"Pioneer";
-
-const uid=
-data.uid??
-data.piUid??
-currentUser?.uid??
-"—";
-
-$("profileUsername").textContent=
-username;
-
-$("infoUsername").textContent=
-username;
-
-$("profileUid").textContent=
-"Pi UID: "+uid;
-
-$("infoUid").textContent=
-uid;
-
-$("infoKyc").textContent=
-data.kycStatus??
-data.kyc??
-"UNVERIFIED";
-
-try{ refreshDevTreasuryCard(); }catch(e){}
-
-renderAvatar(
-data.profileImage??
-data.profile_image??
-data.profileImageUrl??
-data.profile_image_url??
-data.avatarUrl??
-data.avatar??
-""
-);
-
-}catch(error){
-
-console.log(
-"Profile:",
-error
-);
-
-const username=
-currentUser?.username||
-"Pioneer";
-
-const uid=
-currentUser?.uid||
-"—";
-
-$("profileUsername").textContent=
-username;
-
-$("infoUsername").textContent=
-username;
-
-$("profileUid").textContent=
-"Pi UID: "+uid;
-
-$("infoUid").textContent=
-uid;
-
-}
-}
-
-function renderAvatar(url){
-
-const box=
-$("avatarBox");
-
-if(!url){
-window._profileImageUrl = "";
-box.className=
-"avatar avatar-placeholder";
-
-box.textContent=
-"👤";
-
-return;
-}
-
-window._profileImageUrl = url;
-box.outerHTML=
-'<img id="avatarBox" class="avatar" src="'+
-esc(url)+
-'" alt="AMT Profile Picture">';
-
-try{ applyQrCenterLogo("referralQr"); }catch(e){}
-}
-
-async function compressImageToDataUrl(file, maxSize){
-maxSize = maxSize || 512;
-return new Promise((resolve, reject) => {
-const reader = new FileReader();
-reader.onerror = () => reject(new Error("Unable to read image."));
-reader.onload = () => {
-const img = new Image();
-img.onerror = () => reject(new Error("Invalid image file."));
-img.onload = () => {
-let w = img.width;
-let h = img.height;
-if (w > maxSize || h > maxSize) {
-if (w > h) {
-h = Math.round(h * (maxSize / w));
-w = maxSize;
-} else {
-w = Math.round(w * (maxSize / h));
-h = maxSize;
-}
-}
-const canvas = document.createElement("canvas");
-canvas.width = w;
-canvas.height = h;
-const ctx = canvas.getContext("2d");
-ctx.drawImage(img, 0, 0, w, h);
-resolve(canvas.toDataURL("image/jpeg", 0.82));
-};
-img.src = reader.result;
-};
-reader.readAsDataURL(file);
-});
-}
-
-async function uploadProfileImage(){
-
-const file=
-$("profileImageInput")
-.files[0];
-
-if(!file){
-
-return showToast(
-"Choose a profile picture first.",
-true
-);
-
-}
-
-if(file.size>8*1024*1024){
-
-return showToast(
-"Maximum image size is 8 MB.",
-true
-);
-
-}
-
-try{
-
-showToast("Uploading profile picture...");
-
-const imageData = await compressImageToDataUrl(file, 512);
-
-const data=
-await api("/api/profile/image",{
-method:"POST",
-body:JSON.stringify({
-image:imageData
-})
-});
-
-const image=
-data.profileImage??
-data.profile_image??
-data.profileImageUrl??
-data.profile_image_url??
-data.url??
-imageData;
-
-renderAvatar(image);
-
-$("profileImageInput").value="";
-
-showToast(
-"Profile picture saved!"
-);
-
-}catch(error){
-
-console.error(
-"Profile image:",
-error
-);
-
-showToast(
-error.message || "Failed to save profile picture.",
-true
-);
-
-}
-}
-
-async function deleteProfileImage(){
-
-try{
-
-await api("/api/profile/image",{
-method:"DELETE"
-});
-
-renderAvatar("");
-
-showToast(
-"Profile picture removed."
-);
-
-}catch(error){
-
-showToast(
-error.message,
-true
-);
-
-}
-}
-
-/* ============================================================
-   STAKING
-============================================================ */
-
-function selectPool(pool){
-
-selectedStakePool=pool;
-
-$("selectedPool").value=
-pool;
-
-document
-.querySelectorAll(".pool")
-.forEach(item=>
-item.classList.remove("active")
-);
-
-const pools=
-document.querySelectorAll(".pool");
-
-if(pool==="30D")
-pools[0]?.classList.add("active");
-
-if(pool==="90D")
-pools[1]?.classList.add("active");
-
-if(pool==="180D")
-pools[2]?.classList.add("active");
-
-}
-
-async function loadStaking(){
-
-try{
-
-const summary=
-await api("/api/staking/status");
-
-$("stakeAvailable").textContent=
-fmt(
-summary.availableBalance??
-summary.available??
-0
-)+
-" AMT";
-
-$("stakePrincipal").textContent=
-fmt(
-summary.stakedPrincipal??
-summary.staked??
-0
-)+
-" AMT";
-
-$("stakeRewards").textContent=
-fmt(
-summary.pendingRewards??
-summary.rewards??
-0
-)+
-" AMT";
-
-renderActiveStakes(
-summary.activeStakes??
-summary.stakes??
-[]
-);
-
-await loadStakingHistory();
-
-}catch(error){
-
-console.log(
-"Staking:",
-error
-);
-
-$("activeStakes").innerHTML=
-'<div class="empty">No active stakes.</div>';
-
-}
-}
-
-function renderActiveStakes(stakes){
-
-if(
-!stakes||
-!stakes.length
-){
-
-$("activeStakes").innerHTML=
-'<div class="empty">No active stakes.</div>';
-
-return;
-}
-
-$("activeStakes").innerHTML=
-stakes.map(stake=>{
-
-const principal=
-num(stake.principal);
-
-const reward=
-num(
-stake.rewardAmount??
-stake.reward_amount??
-0
-);
-
-const unlock=
-stake.unlockAt??
-stake.unlock_at??
-"—";
-
-const unlocked=
-Boolean(
-stake.unlocked??
-(
-unlock!=="—"&&
-new Date(unlock)<=new Date()
-)
-);
-
-return `
-
-<div class="stake-item">
-
-<div class="row">
-<b>
-${esc(
-stake.poolName??
-stake.poolId??
-"AMT STAKE"
-)}
-</b>
-
-<span style="color:#ffd450">
-${fmt(principal)} AMT
-</span>
-</div>
-
-<div class="row">
-<span class="muted">Reward</span>
-<span>${fmt(reward)} AMT</span>
-</div>
-
-<div class="row">
-<span class="muted">Unlock</span>
-<span>${esc(formatDate(unlock))}</span>
-</div>
-
-<button
-class="${unlocked?"primary":"secondary"}"
-style="margin-top:10px"
-${unlocked?"":"disabled"}
-onclick="unstake('${esc(stake.id)}')"
->
-${unlocked?
-"💰 UNSTAKE + REWARD":
-"🔒 LOCKED"}
-</button>
-
-</div>
-
-`;
-
-}).join("");
-
-}
-
-async function createStake(){
-
-const poolId=
-$("selectedPool").value||
-selectedStakePool;
-
-const amount=
-num($("stakeAmount").value);
-
-if(amount<=0){
-
-return showToast(
-"Enter an AMT amount to stake.",
-true
-);
-
-}
-
-try{
-
-const data=
-await api("/api/staking/stake",{
-method:"POST",
-body:JSON.stringify({
-poolId,
-amount
-})
-});
-
-$("stakeAmount").value="";
-
-showToast(
-"Stake created: "+
-fmt(
-data.principal??
-amount
-)+
-" AMT"
-);
-
-await loadStaking();
-await refreshWallet();
-
-}catch(error){
-
-showToast(
-error.message,
-true
-);
-
-}
-}
-
-async function unstake(stakeId){
-
-if(
-!confirm(
-"Unstake this AMT stake and receive principal + earned reward?"
-)
-)return;
-
-try{
-
-const data=
-await api("/api/staking/unstake",{
-method:"POST",
-body:JSON.stringify({
-stakeId
-})
-});
-
-showToast(
-"Unstaked successfully. "+
-fmt(
-data.totalPayout??
-data.amount??
-0
-)+
-" AMT returned."
-);
-
-await loadStaking();
-await refreshWallet();
-
-}catch(error){
-
-showToast(
-error.message,
-true
-);
-
-}
-}
-
-async function loadStakingHistory(){
-
-try{
-
-const data=
-await api("/api/staking/history");
-
-const history=
-data.history??
-data.stakes??
-[];
-
-if(!history.length){
-
-$("stakingHistory").innerHTML=
-'<div class="empty">No staking history yet.</div>';
-
-return;
-}
-
-$("stakingHistory").innerHTML=
-history.map(item=>`
-
-<div class="stake-item">
-
-<div class="row">
-<b>
-${esc(
-item.poolName??
-item.poolId??
-"AMT"
-)}
-</b>
-
-<span>
-${fmt(
-item.principal??
-0
-)} AMT
-</span>
-</div>
-
-<div class="row">
-<span class="muted">Status</span>
-<span>
-${esc(
-item.status??
-"—"
-)}
-</span>
-</div>
-
-<div class="row">
-<span class="muted">Reward</span>
-<span>
-${fmt(
-item.rewardAmount??
-0
-)} AMT
-</span>
-</div>
-
-</div>
-
-`).join("");
-
-}catch(error){
-
-console.log(error);
-
-}
-}
-
-/* ============================================================
-   DATE
-============================================================ */
-
-function formatDate(value){
-
-if(
-!value||
-value==="—"
-)return "—";
-
-const date=
-new Date(value);
-
-if(
-Number.isNaN(
-date.getTime()
-)
-){
-return String(value);
-}
-
-return date.toLocaleString();
-
-}
-
-/* ============================================================
-   FULL PET SYSTEM
-============================================================ */
-
-let allPets = [];
-let selectedPet = null;
-let selectedOwned = null;
-let currentElementFilter = "";
-let currentPetTab = "shop";
-
-const PET_EMOJI = {
-  Earth: "🪨", Water: "💧", Nature: "🌿", Ice: "❄️",
-  Thunder: "⚡", Shadow: "🌑", Light: "✨", Cosmic: "🌌", Wind: "🌪️", Fire: "🔥"
-};
-
-/**
- * IMAGE PATH READY (Mainnet)
- * Prefer: assets/pets/{rarity}/{id}.png  e.g. assets/pets/common/earth-terra.png
- * Fallback: GitHub root numbered files (01_terra_earth_common_lv1.png)
- * Fallback: backend pet.image relative path
- * Fallback: emoji
- */
-const PET_ASSETS_BASE = "assets/pets";
-
-/* Root filenames already on GitHub (legacy image uploads) */
-const PET_FILE_BY_NAME = {
-  earthguardian: "amt_pet_earth.png",
-  waterspirit: "amt_pet_water.png",
-  naturesprout: "amt_pet_nature.png",
-  icecrystal: "amt_pet_ice.png",
-  thunderbolt: "amt_pet_thunder.png",
-  windflyer: "amt_pet_wind.png",
-  fireember: "amt_pet_fire.png",
-  shadowwraith: "amt_pet_shadow.png",
-  lightangel: "amt_pet_light.png",
-  cosmicnova: "amt_pet_cosmic.png"
-};
-
-function rarityBadgeClass(rarity) {
-  const r = String(rarity || "common").toLowerCase();
-  if (r.indexOf("mythic") >= 0) return "r-mythic";
-  if (r.indexOf("legend") >= 0) return "r-legendary";
-  if (r.indexOf("epic") >= 0) return "r-epic";
-  if (r.indexOf("rare") >= 0) return "r-rare";
-  if (r.indexOf("uncommon") >= 0) return "r-uncommon";
-  return "r-common";
-}
-
-function petImgCandidates(pet) {
-  const list = [];
-  pet = pet || {};
-  const nameKey = String(pet.name || "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, "");
-  const rarity = String(pet.rarity || "Common").toLowerCase();
-  // Normalize id: prefer pet_id (catalog), never bare numeric owned id
-  let id = String(pet.pet_id || "")
-    .replace(/-hatch$/i, "")
-    .replace(/-egg\d+$/i, "");
-  if (!id || /^\d+$/.test(id)) {
-    const raw = String(pet.id || "");
-    if (raw && !/^\d+$/.test(raw)) {
-      id = raw.replace(/-hatch$/i, "").replace(/-egg\d+$/i, "");
+/* ---------- Claim care/train session ---------- */
+app.post("/api/pets/claim-session", requireAuth, async (req, res) => {
+  const ownedId = Number(req.body?.ownedPetId);
+  if (!Number.isFinite(ownedId) || ownedId < 1) {
+    return res.status(400).json({ ok: false, error: "ownedPetId required." });
+  }
+  const client = await pool.connect();
+  try {
+    await ensurePetTables();
+    await client.query("BEGIN");
+    const pet = await client.query(
+      `SELECT * FROM owned_pets WHERE id = $1 AND member_id = $2 FOR UPDATE`,
+      [ownedId, req.member.id]
+    );
+    if (!pet.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ ok: false, error: "Pet not found." });
     }
-  }
-  const path = pet.image || pet.imageUrl || pet.image_url || "";
-  const element = String(pet.element || "").toLowerCase();
-
-  if (path && (/^https?:\/\//i.test(path) || path.startsWith("data:"))) {
-    list.push(path);
-  }
-
-  // 0) Premium root cards amt_pet_{element}.png
-  if (element) {
-    list.push("amt_pet_" + element + ".png");
-  }
-  if (path && /amt_pet_/i.test(path)) {
-    list.unshift(path.split("/").pop());
-  }
-  // 1) GitHub root — absolute filenames (PRIORITY)
-  if (id && !/^\d+$/.test(id)) {
-    list.push(id + ".png");
-    list.push(id + ".jpg");
-  }
-  // From display name: earth + rockpuppy → earth-rock-puppy
-  if (element && nameKey) {
-    // "Rock Puppy" → rockpuppy; prefer hyphenated slug from id when possible
-    const slugName = String(pet.name || "")
-      .toLowerCase()
-      .trim()
-      .replace(/\s+/g, "-")
-      .replace(/[^a-z0-9-]/g, "");
-    if (slugName) {
-      list.push(element + "-" + slugName + ".png");
+    const row = pet.rows[0];
+    if (!row.session_ends_at) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "No active session." });
     }
+    if (new Date(row.session_ends_at) > new Date()) {
+      await client.query("ROLLBACK");
+      const left = Math.ceil((new Date(row.session_ends_at) - Date.now()) / 60000);
+      return res.status(400).json({
+        ok: false,
+        error: "Session not finished yet. ~" + left + " min left.",
+        sessionEndsAt: row.session_ends_at
+      });
+    }
+    const xp = Number(row.session_xp) || 0;
+    const st = String(row.session_stat || "");
+    const isTrain = String(row.session_type || "").startsWith("train") || st;
+    if (isTrain && st && ["hp", "atk", "def", "spd"].includes(st)) {
+      const gain = st === "hp" ? 12 : (st === "atk" ? 6 : 4);
+      await client.query(
+        `UPDATE owned_pets SET
+          ${st} = COALESCE(${st}, 0) + $1,
+          exp = COALESCE(exp, 0) + $2,
+          session_type = NULL, session_ends_at = NULL, session_stat = NULL,
+          session_xp = 0, session_cost = 0
+         WHERE id = $3`,
+        [gain, xp, ownedId]
+      );
+    } else {
+      await client.query(
+        `UPDATE owned_pets SET
+          exp = COALESCE(exp, 0) + $1,
+          session_type = NULL, session_ends_at = NULL, session_stat = NULL,
+          session_xp = 0, session_cost = 0
+         WHERE id = $2`,
+        [xp, ownedId]
+      );
+    }
+    const petAfter = await applyLevelAndRarity(client, ownedId, req.member.id);
+    await client.query("COMMIT");
+    res.json({
+      ok: true, xpGained: xp, pet: petAfter,
+      level: petAfter && petAfter.level,
+      message: "Session claimed · +" + xp + " XP"
+    });
+  } catch (e) {
+    try { await client.query("ROLLBACK"); } catch {}
+    console.error("CLAIM SESSION:", e);
+    res.status(500).json({ ok: false, error: "Claim failed." });
+  } finally {
+    client.release();
+  }
+});
+
+
+app.post("/api/pets/cancel-session", requireAuth, async (req, res) => {
+  const ownedId = Number(req.body?.ownedPetId);
+  if (!Number.isFinite(ownedId) || ownedId < 1) {
+    return res.status(400).json({ ok: false, error: "ownedPetId required." });
+  }
+  const client = await pool.connect();
+  try {
+    await ensurePetTables();
+    await client.query("BEGIN");
+    const pet = await client.query(
+      `SELECT * FROM owned_pets WHERE id = $1 AND member_id = $2 FOR UPDATE`,
+      [ownedId, req.member.id]
+    );
+    if (!pet.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ ok: false, error: "Pet not found." });
+    }
+    if (!pet.rows[0].session_ends_at) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "No active session to cancel." });
+    }
+    await client.query(
+      `UPDATE owned_pets SET
+        session_type = NULL, session_ends_at = NULL, session_stat = NULL,
+        session_xp = 0, session_cost = 0
+       WHERE id = $1`,
+      [ownedId]
+    );
+    await client.query("COMMIT");
+    res.json({
+      ok: true,
+      message: "Session cancelled (no XP). Fee not refunded. You can care/train again."
+    });
+  } catch (e) {
+    try { await client.query("ROLLBACK"); } catch {}
+    res.status(500).json({ ok: false, error: "Cancel failed." });
+  } finally {
+    client.release();
+  }
+});
+
+app.get("/api/pets/skills", requireAuth, async (req, res) => {
+  try {
+    const element = req.query.element || "Earth";
+    const level = Number(req.query.level) || 1;
+    res.json({
+      ok: true,
+      element,
+      level,
+      skills: allSkillsPreview(element, level)
+    });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: "Skills unavailable." });
+  }
+});
+
+app.get("/api/pets/squad", requireAuth, async (req, res) => {
+  try {
+    await ensurePetTables();
+    await ensureSquadTables();
+    const rows = await pool.query(
+      `SELECT s.slot, s.owned_pet_id, p.name, p.element, p.image, p.level,
+              p.hp, p.atk, p.def, p.spd, p.energy, p.rarity
+       FROM pet_squads s
+       JOIN owned_pets p ON p.id = s.owned_pet_id AND p.member_id = s.member_id
+       WHERE s.member_id = $1
+       ORDER BY s.slot ASC`,
+      [req.member.id]
+    );
+    res.json({ ok: true, squad: rows.rows });
+  } catch (e) {
+    console.error("SQUAD GET:", e);
+    res.status(500).json({ ok: false, error: "Could not load squad." });
+  }
+});
+
+app.post("/api/pets/squad/set", requireAuth, async (req, res) => {
+  // body: { slots: [ownedPetId|null, ...] } length 3 or 4
+  const slots = Array.isArray(req.body?.slots) ? req.body.slots : [];
+  const size = Number(req.body?.size) === 4 ? 4 : 3;
+  if (slots.length < size) {
+    return res.status(400).json({
+      ok: false,
+      error: "Need " + size + " pet ids in slots (use null for empty)."
+    });
+  }
+  const ids = [];
+  for (let i = 0; i < size; i++) {
+    const id = slots[i] == null || slots[i] === "" ? null : Number(slots[i]);
+    if (id != null && !Number.isInteger(id)) {
+      return res.status(400).json({ ok: false, error: "Invalid pet id in slot " + (i + 1) });
+    }
+    if (id != null) ids.push(id);
+  }
+  if (ids.length < size) {
+    return res.status(400).json({
+      ok: false,
+      error: "Fill all " + size + " slots with different pets."
+    });
+  }
+  if (new Set(ids).size !== ids.length) {
+    return res.status(400).json({ ok: false, error: "Duplicate pets in squad." });
   }
 
-  // 2) assets/pets structure (Mainnet folder)
-  if (id) {
-    list.push(PET_ASSETS_BASE + "/" + rarity + "/" + id + ".png");
-    list.push(PET_ASSETS_BASE + "/common/" + id + ".png");
+  const client = await pool.connect();
+  try {
+    await ensurePetTables();
+    await ensureSquadTables();
+    const owned = await client.query(
+      `SELECT id FROM owned_pets WHERE member_id = $1 AND id = ANY($2::bigint[])`,
+      [req.member.id, ids]
+    );
+    if (owned.rows.length !== ids.length) {
+      return res.status(400).json({ ok: false, error: "All pets must be in your My Pets." });
+    }
+    await client.query(`DELETE FROM pet_squads WHERE member_id = $1`, [req.member.id]);
+    for (let i = 0; i < size; i++) {
+      await client.query(
+        `INSERT INTO pet_squads (member_id, slot, owned_pet_id)
+         VALUES ($1,$2,$3)`,
+        [req.member.id, i + 1, ids[i]]
+      );
+    }
+    res.json({ ok: true, size, message: size + "v" + size + " squad saved." });
+  } catch (e) {
+    console.error("SQUAD SET:", e);
+    res.status(500).json({ ok: false, error: "Could not save squad." });
+  } finally {
+    client.release();
   }
+});
 
-  // 3) Backend relative paths
-  if (path && !/^https?:\/\//i.test(path) && !path.startsWith("data:")) {
-    list.push(path);
-    // basename only (root)
-    const base = path.split("/").pop();
-    if (base) list.push(base);
-    list.push(PET_ASSETS_BASE + "/" + path.replace(/^pets\//, ""));
-  }
 
-  // 4) Legacy map
-  if (nameKey && PET_FILE_BY_NAME[nameKey]) {
-    list.push(PET_FILE_BY_NAME[nameKey]);
-  }
-
-  // unique preserve order
-  const seen = {};
-  return list.filter((u) => {
-    if (!u || seen[u]) return false;
-    seen[u] = true;
-    return true;
-  });
-}
-
-function petImg(pet) {
-  const c = petImgCandidates(pet);
-  return c[0] || "";
-}
-
-const PET_IMG_VER = "20261004a";
-const PET_IMG_HOSTS = [
-  "https://amtmining13.github.io",
-  "https://cdn.jsdelivr.net/gh/amtmining13/amtmining13.github.io@main",
-  "https://cdn.jsdelivr.net/gh/bonene28/bonene28.github.io@main",
-  "https://bonene28.github.io"
+/* =========================================================
+   DAILY BOSS
+========================================================= */
+const DAILY_BOSSES = [
+  { id: "ember", name: "Ember Tyrant", element: "Fire", mult: 1.45, reward: 1.8, exp: 55 },
+  { id: "tide", name: "Abyss Leviathan", element: "Water", mult: 1.45, reward: 1.8, exp: 55 },
+  { id: "grove", name: "Elder Grove", element: "Nature", mult: 1.40, reward: 1.6, exp: 50 },
+  { id: "frost", name: "Frost Colossus", element: "Ice", mult: 1.50, reward: 2.0, exp: 60 },
+  { id: "storm", name: "Storm Sovereign", element: "Thunder", mult: 1.50, reward: 2.0, exp: 60 },
+  { id: "stone", name: "Stone Warden", element: "Earth", mult: 1.40, reward: 1.6, exp: 50 },
+  { id: "void", name: "Void Herald", element: "Shadow", mult: 1.55, reward: 2.2, exp: 70 }
 ];
 
-const PET_OLD_NAME_MAP = {
-  terra: "earth-rock-puppy",
-  boulder: "earth-mud-turtle",
-  clayto: "earth-clay-puppy",
-  stonepaw: "earth-mountain-bear",
-  granite: "earth-golem",
-  muddo: "earth-sand-cat",
-  stonix: "earth-crystal-wolf",
-  earthen: "earth-emerald-snake",
-  golem: "earth-golem",
-  pebble: "earth-gaia-titan",
-  aqua: "water-bubble-puppy",
-  marina: "water-mermaid-puppy",
-  splash: "water-splash-turtle",
-  bubble: "water-bubble-puppy",
-  tide: "water-wave-wolf",
-  coral: "water-coral-cat",
-  leafy: "nature-leaf-puppy",
-  sprout: "nature-sprout-cat",
-  bloom: "nature-bloom-dragon",
-  forest: "nature-forest-wolf",
-  vine: "nature-vine-snake",
-  flora: "nature-mother-earth",
-  frosty: "ice-snow-puppy",
-  glacier: "ice-glacier-bear",
-  phoenix: "fire-phoenix-chick",
-  ember: "fire-ember-puppy",
-  blaze: "fire-blaze-dragon",
-  flame: "fire-ember-puppy",
-  breeze: "wind-breeze-bunny",
-  zephyr: "wind-zephyr-wolf",
-  bolt: "thunder-bolt-fox",
-  storm: "thunder-storm-dragon",
-  zap: "thunder-zap-cat",
-  tempest: "thunder-zeus-titan",
-  shard: "ice-winter-god"
-};
-
-function resolvePetFileId(pet) {
-  let id = String(pet.pet_id || "")
-    .replace(/-hatch$/i, "")
-    .replace(/-egg\d+$/i, "");
-  if (!id || /^\d+$/.test(id)) {
-    const raw = String(pet.id || "");
-    if (raw && !/^\d+$/.test(raw)) {
-      id = raw.replace(/-hatch$/i, "").replace(/-egg\d+$/i, "");
-    }
-  }
-  if (!id || /^\d+$/.test(id)) {
-    const el = String(pet.element || "").toLowerCase();
-    const slug = String(pet.name || "")
-      .toLowerCase()
-      .trim()
-      .replace(/\s+/g, "-")
-      .replace(/[^a-z0-9-]/g, "");
-    if (el && slug) id = el + "-" + slug;
-  }
-  const short = String(pet.name || "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, "");
-  if (PET_OLD_NAME_MAP[short]) id = PET_OLD_NAME_MAP[short];
-  const tail = String(id || "").replace(/^[a-z]+-/, "");
-  if (PET_OLD_NAME_MAP[tail]) id = PET_OLD_NAME_MAP[tail];
-  return id;
+function getTodayBoss() {
+  const dayIndex = Math.floor(Date.now() / 86400000);
+  return DAILY_BOSSES[dayIndex % DAILY_BOSSES.length];
 }
 
-function withImgVer(url) {
-  if (!url || /^data:/i.test(url)) return url;
-  let path = url;
-  if (/^https?:\/\//i.test(url)) {
-    try {
-      path = new URL(url).pathname.replace(/^\//, "");
-    } catch (e) {
-      path = url.replace(/^https?:\/\/[^/]+\//, "");
-    }
-  }
-  path = String(path).replace(/^\//, "");
-  return PET_IMG_HOSTS[0] + "/" + path + "?v=" + PET_IMG_VER;
+async function ensureBossTable() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS pet_boss_daily (
+      member_id BIGINT NOT NULL,
+      boss_date DATE NOT NULL,
+      attempts INT NOT NULL DEFAULT 0,
+      defeated BOOLEAN NOT NULL DEFAULT FALSE,
+      best_damage INT NOT NULL DEFAULT 0,
+      PRIMARY KEY (member_id, boss_date)
+    )
+  `);
 }
 
-function petArtHtml(pet, size) {
-  size = size || 140;
-  pet = pet || {};
-  const emoji = (typeof PET_EMOJI !== "undefined" && PET_EMOJI[pet.element]) ? PET_EMOJI[pet.element] : "🐾";
-  const fileId = resolvePetFileId(pet);
-  const candidates = [];
-  if (fileId && !/^\d+$/.test(fileId)) {
-    candidates.push(fileId + ".png");
-  }
-  // also try github.io direct as fallback host via petImgFallback hosts
-  const fromCandidates = petImgCandidates(pet);
-  fromCandidates.forEach((u) => {
-    if (candidates.indexOf(u) < 0) candidates.push(u);
-  });
-  if (!candidates.length) {
-    return `<div class="pet-card-emoji">${emoji}</div>`;
-  }
-  // Build absolute URLs for both CDN and github.io
-  const absList = [];
-  candidates.forEach((u) => {
-    let path = u;
-    if (/^https?:\/\//i.test(u)) {
-      try {
-        path = new URL(u).pathname.replace(/^\//, "");
-      } catch (e) {
-        path = u.replace(/^https?:\/\/[^/]+\//, "");
-      }
-    }
-    path = String(path).replace(/^\//, "");
-    PET_IMG_HOSTS.forEach((host) => {
-      absList.push(host + "/" + path + "?v=" + PET_IMG_VER);
+app.get("/api/pets/boss", requireAuth, async (req, res) => {
+  try {
+    await ensureBossTable();
+    const boss = getTodayBoss();
+    const day = new Date().toISOString().slice(0, 10);
+    const r = await pool.query(
+      `SELECT attempts, defeated, best_damage FROM pet_boss_daily
+       WHERE member_id = $1 AND boss_date = $2::date`,
+      [req.member.id, day]
+    );
+    const row = r.rows[0] || { attempts: 0, defeated: false, best_damage: 0 };
+    res.json({
+      ok: true,
+      boss: {
+        name: boss.name,
+        element: boss.element,
+        id: boss.id,
+        reward: boss.reward,
+        exp: boss.exp
+      },
+      attempts: Number(row.attempts) || 0,
+      maxAttempts: 3,
+      defeated: !!row.defeated,
+      bestDamage: Number(row.best_damage) || 0,
+      beats: ELEMENT_BEATS[boss.element] || null,
+      hint: "Use element that beats " + boss.element + " for super effective damage"
     });
-  });
-  const primary = absList[0];
-  const rest = absList.slice(1).join("|");
-  return `<img class="pet-card-img" src="${esc(primary)}" alt="${esc(pet.name || "pet")}"
-    data-fallbacks="${esc(rest)}"
-    loading="eager"
-    style="width:${size}px;height:${size}px;object-fit:contain;border-radius:14px;position:relative;z-index:2;filter:drop-shadow(0 8px 16px rgba(0,0,0,.45));background:transparent"
-    onerror="petImgFallback(this)">
-    <div class="pet-card-emoji" style="display:none">${emoji}</div>`;
-}
-
-function petImgFallback(img) {
-  const raw = img.getAttribute("data-fallbacks") || "";
-  const next = raw.split("|").filter(Boolean);
-  if (next.length) {
-    img.setAttribute("data-fallbacks", next.slice(1).join("|"));
-    img.src = next[0];
-    return;
+  } catch (e) {
+    console.error("BOSS GET:", e);
+    res.status(500).json({ ok: false, error: "Boss unavailable." });
   }
-  img.style.display = "none";
-  if (img.nextElementSibling) img.nextElementSibling.style.display = "block";
-}
+});
 
-function petStatsRow(pet) {
-  return `<div class="pet-card-stats">
-    <div class="pet-stat"><b>${pet.hp ?? "—"}</b><span>HP</span></div>
-    <div class="pet-stat"><b>${pet.atk ?? "—"}</b><span>ATK</span></div>
-    <div class="pet-stat"><b>${pet.def ?? "—"}</b><span>DEF</span></div>
-    <div class="pet-stat"><b>${pet.spd ?? "—"}</b><span>SPD</span></div>
-  </div>`;
-}
-
-function petTab(tab) {
-  try{ if(arguments[0]==="shop"||arguments[0]==="owned") refreshDailyBoss(); }catch(e){}
-  currentPetTab = tab;
-  ["petShopPanel","petOwnedPanel","petEggsPanel","petListingsPanel"].forEach(id => {
-    const el = $(id);
-    if (el) el.classList.add("hidden");
-  });
-  if (tab === "shop") { $("petShopPanel").classList.remove("hidden"); loadPets(currentElementFilter); loadStarterStatus(); }
-  if (tab === "owned") { $("petOwnedPanel").classList.remove("hidden"); loadOwnedPets(); }
-  if (tab === "eggs") { $("petEggsPanel").classList.remove("hidden"); loadEggs(); }
-  if (tab === "listings") { $("petListingsPanel").classList.remove("hidden"); loadListings(); }
-}
-
-async function loadPets(elementFilter) {
+app.post("/api/pets/boss/fight", requireAuth, async (req, res) => {
+  const ownedId = Number(req.body?.ownedPetId);
+  if (!Number.isInteger(ownedId)) {
+    return res.status(400).json({ ok: false, error: "ownedPetId required." });
+  }
+  const client = await pool.connect();
   try {
-    elementFilter = elementFilter || "";
-    const q = elementFilter ? ("?element=" + encodeURIComponent(elementFilter)) : "";
-    const data = await api("/api/pets" + q);
-    allPets = data.pets || [];
-    renderPetGrid(allPets);
-  } catch (error) {
-    console.log("Pets:", error);
-    if ($("petGrid")) {
-      $("petGrid").innerHTML =
-        '<div class="empty">Unable to load pets. ' +
-        esc(error.message || "Check server / login.") +
-        "</div>";
+    await ensurePetTables();
+    await ensureBossTable();
+    const boss = getTodayBoss();
+    const day = new Date().toISOString().slice(0, 10);
+
+    await client.query("BEGIN");
+    await client.query(
+      `INSERT INTO pet_boss_daily (member_id, boss_date, attempts, defeated, best_damage)
+       VALUES ($1, $2::date, 0, FALSE, 0)
+       ON CONFLICT (member_id, boss_date) DO NOTHING`,
+      [req.member.id, day]
+    );
+    const dayRow = await client.query(
+      `SELECT * FROM pet_boss_daily WHERE member_id = $1 AND boss_date = $2::date FOR UPDATE`,
+      [req.member.id, day]
+    );
+    let attempts = Number(dayRow.rows[0].attempts) || 0;
+    let defeated = !!dayRow.rows[0].defeated;
+    if (attempts >= 3) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "No boss attempts left today (3/3)." });
     }
+
+    const petRes = await client.query(
+      `SELECT * FROM owned_pets WHERE id = $1 AND member_id = $2 FOR UPDATE`,
+      [ownedId, req.member.id]
+    );
+    if (!petRes.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ ok: false, error: "Pet not found." });
+    }
+    const pet = petRes.rows[0];
+    if (Number(pet.energy) < 18) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Need at least 18 energy for Daily Boss." });
+    }
+
+    const lv = Number(pet.level) || 1;
+    const my = {
+      name: pet.name,
+      level: lv,
+      hp: Number(pet.hp) + lv * 8,
+      maxHp: Number(pet.hp) + lv * 8,
+      atk: Number(pet.atk) + lv * 2,
+      def: Number(pet.def) + Math.floor(lv * 0.8),
+      spd: Number(pet.spd) + Math.floor(lv * 0.5)
+    };
+    const myEl = pet.element || "Earth";
+    const en = {
+      name: boss.name,
+      hp: Math.max(80, Math.round(my.hp * boss.mult * 1.05)),
+      atk: Math.max(12, Math.round(my.atk * boss.mult * 0.92)),
+      def: Math.max(8, Math.round(my.def * boss.mult * 0.9)),
+      spd: Math.max(6, Math.round(my.spd * 0.95)),
+      maxHp: Math.max(80, Math.round(my.hp * boss.mult * 1.05))
+    };
+    const enEl = boss.element;
+    const sim = (typeof simulateBattleWithSkills === "function")
+      ? simulateBattleWithSkills({ ...my, name: pet.name }, { ...en, name: boss.name }, myEl, enEl)
+      : simulateBattle({ ...my, name: pet.name }, { ...en, name: boss.name }, myEl, enEl);
+
+    const win = !!sim.win;
+    attempts += 1;
+    const damage = Math.max(0, (sim.enMax || en.hp) - (sim.rounds && sim.rounds.length ? Number(sim.rounds[sim.rounds.length - 1].enHp) : 0));
+    const best = Math.max(Number(dayRow.rows[0].best_damage) || 0, damage);
+    if (win) defeated = true;
+
+    let reward = win ? boss.reward : Math.round(boss.reward * 0.15 * 100) / 100;
+    const rel = elementRelation(myEl, enEl);
+    if (win && rel.key === "advantage") reward = Math.round(reward * 1.2 * 100) / 100;
+
+    await client.query(
+      `UPDATE owned_pets SET energy = GREATEST(0, energy - 18),
+        exp = COALESCE(exp, 0) + $1 WHERE id = $2`,
+      [win ? boss.exp : Math.floor(boss.exp * 0.25), ownedId]
+    );
+    const petAfter = await applyLevelAndRarity(client, ownedId, req.member.id);
+    await client.query(
+      `INSERT INTO amt_ledger (member_id, amount, type, reference) VALUES ($1,$2,'PET_BOSS',$3)`,
+      [req.member.id, reward, makeReference("AMT-BOSS")]
+    );
+    await client.query(
+      `UPDATE pet_boss_daily SET attempts = $1, defeated = $2, best_damage = $3
+       WHERE member_id = $4 AND boss_date = $5::date`,
+      [attempts, defeated, best, req.member.id, day]
+    );
+    let drops = [];
+    try {
+      await ensureGearTables();
+      await addMaterial(client, req.member.id, "upgrade_core", win ? 2 : 1);
+      drops.push(win ? "Upgrade Core x2" : "Upgrade Core x1");
+      if (win && Math.random() < 0.45) {
+        const g = ["gem_atk_2", "gem_hp_2", "gem_def_2"][Math.floor(Math.random() * 3)];
+        await addMaterial(client, req.member.id, g, 1);
+        drops.push((getMaterial(g) || {}).name || g);
+      }
+    } catch (e) {}
+    await client.query("COMMIT");
+
+    res.json({
+      ok: true,
+      mode: "boss",
+      drops,
+      result: win ? "WIN" : "LOSS",
+      tierLabel: "Daily Boss",
+      opponent: boss.name,
+      opponentElement: enEl,
+      petName: pet.name,
+      petElement: myEl,
+      elementRelation: rel.key,
+      elementLabel: rel.label,
+      reward,
+      damage,
+      attemptsLeft: Math.max(0, 3 - attempts),
+      defeated,
+      winStreak: null,
+      myMaxHp: sim.myMax || my.hp,
+      enMaxHp: sim.enMax || en.hp,
+      rounds: sim.rounds || [],
+      petLevel: petAfter && petAfter.level,
+      milestones: (petAfter && petAfter._milestones) || [],
+      chargeBonus: win ? "Boss defeated!" : ("Attempts left: " + Math.max(0, 3 - attempts))
+    });
+  } catch (e) {
+    try { await client.query("ROLLBACK"); } catch {}
+    console.error("BOSS FIGHT:", e);
+    res.status(500).json({ ok: false, error: "Boss fight failed." });
+  } finally {
+    client.release();
   }
-}
+});
 
-function filterPets(element) {
-  currentElementFilter = element;
-  loadPets(element);
-}
+app.post("/api/pets/squad/battle", requireAuth, async (req, res) => {
+  const size = Number(req.body?.size) === 4 ? 4 : 3;
+  const tierKey = pickTier(req.body?.tier, 15);
+  const tier = BATTLE_TIERS[tierKey] || BATTLE_TIERS.hunter;
 
-function petElementClass(element) {
-  const e = String(element || "").toLowerCase();
-  if (["earth","water","nature","ice","fire","wind","thunder","shadow","light","cosmic"].includes(e)) return "pet-" + e;
-  return "pet-earth";
-}
-
-function renderPetGrid(pets) {
-  const grid = $("petGrid");
-  if (!grid) return;
-  if (!pets.length) {
-    grid.innerHTML = '<div class="empty">No pets found.</div>';
-    return;
-  }
-  window._petMap = {};
-  pets.forEach((p) => {
-    window._petMap[p.id] = p;
-  });
-  grid.innerHTML = pets
-    .map((pet) => {
-      const elClass = petElementClass(pet.element);
-      const rCls = rarityBadgeClass(pet.rarity);
-      return `<div class="pet-card ${elClass}" onclick="openPetById('${esc(pet.id)}')">
-      <div class="pet-card-top">
-        <span class="pet-card-element">${esc(pet.element)}</span>
-        <span class="pet-card-badge ${rCls}">${esc(pet.rarity || "Common")}</span>
-        ${petArtHtml(pet, 140)}
-      </div>
-      <div class="pet-card-body">
-        <div class="pet-card-name">${esc(pet.name)}</div>
-        <div class="pet-card-price">${pet.priceAmt} AMT</div>
-        ${petStatsRow(pet)}
-        <div class="pet-card-footer">
-          <button class="small-btn" onclick="event.stopPropagation();openPetById('${esc(pet.id)}')">VIEW / BUY</button>
-        </div>
-      </div>
-    </div>`;
-    })
-    .join("");
-}
-
-function openPetById(petId) {
-  const pet = (window._petMap && window._petMap[petId]) || allPets.find(p => p.id === petId);
-  if (pet) openPetModal(pet);
-}
-
-function openPetModal(pet) {
-  selectedPet = pet;
-  const elClass = petElementClass(pet.element);
-  $("modalPetName").textContent = pet.name;
-  $("modalPetArt").innerHTML = `
-    <div class="pet-modal-card ${elClass}" style="--pet-glow:inherit">
-      <div class="pet-modal-art">
-        <span class="pet-card-element" style="position:absolute;top:10px;left:10px">${esc(pet.element)}</span>
-        <span class="pet-card-badge" style="position:absolute;top:10px;right:10px">${esc(pet.rarity || "Common")}</span>
-        ${petArtHtml(pet, 120)}
-      </div>
-      <div class="pet-modal-stats">
-        <div class="pet-stat"><b>${pet.hp}</b><span>HP</span></div>
-        <div class="pet-stat"><b>${pet.atk}</b><span>ATK</span></div>
-        <div class="pet-stat"><b>${pet.def}</b><span>DEF</span></div>
-        <div class="pet-stat"><b>${pet.spd}</b><span>SPD</span></div>
-      </div>
-    </div>`;
-  $("modalElement").textContent = pet.element;
-  $("modalRarity").textContent = pet.rarity;
-  $("modalHp").textContent = pet.hp;
-  $("modalAtk").textContent = pet.atk;
-  $("modalDef").textContent = pet.def;
-  $("modalSpd").textContent = pet.spd;
-  $("modalAbility").textContent = pet.ability;
-  $("modalPrice").textContent = pet.priceAmt + " AMT";
-  const modal = $("petModal");
-  modal.classList.remove("hidden");
-  modal.style.display = "flex";
-}
-
-function closePetModal() {
-  selectedPet = null;
-  const modal = $("petModal");
-  modal.classList.add("hidden");
-  modal.style.display = "none";
-}
-
-
-async function buySelectedPetWithPi() {
+  const client = await pool.connect();
   try {
-    showToast("Starting PI payment...");
-    if (!selectedPet || !selectedPet.id) {
-      showToast("Open a pet first, then tap BUY WITH PI.", true);
-      return;
-    }
-    if (!accessToken) {
-      showToast("Login with Pi first (need payments permission).", true);
-      return;
-    }
-    var PiSDK = (typeof window !== "undefined" && window.Pi) ? window.Pi : (typeof Pi !== "undefined" ? Pi : null);
-    if (!PiSDK || typeof PiSDK.createPayment !== "function") {
-      showToast("Pi Wallet SDK not found. Open in Pi Browser (not Chrome/outside).", true);
-      return;
+    await ensurePetTables();
+    await ensureSquadTables();
+    await ensureArenaTables();
+
+    const squadRows = await client.query(
+      `SELECT s.slot, p.*
+       FROM pet_squads s
+       JOIN owned_pets p ON p.id = s.owned_pet_id AND p.member_id = s.member_id
+       WHERE s.member_id = $1
+       ORDER BY s.slot ASC
+       LIMIT $2`,
+      [req.member.id, size]
+    );
+    if (squadRows.rows.length < size) {
+      return res.status(400).json({
+        ok: false,
+        error: "Set a full " + size + "v" + size + " squad first (Market → Squad)."
+      });
     }
 
-    var btn = $("buyPetPiBtn");
-    if (btn) {
-      btn.disabled = true;
-      btn.textContent = "PREPARING...";
-    }
-
-    var priceInfo = await api("/api/pets/pi-price/" + encodeURIComponent(selectedPet.id));
-    var pricePi = Number(priceInfo.pricePi);
-    var productId = priceInfo.productId || ("pet:" + selectedPet.id);
-    if (!Number.isFinite(pricePi) || pricePi <= 0) {
-      throw new Error("Invalid PI price for this pet.");
-    }
-    showToast("Pay " + pricePi + " PI for " + (selectedPet.name || "pet") + "...");
-
-    var paymentResult = await new Promise(function(resolve, reject) {
-      var settled = false;
-      function fail(err) {
-        if (settled) return;
-        settled = true;
-        var msg = (err && (err.message || err.msg)) || String(err || "Payment failed");
-        reject(new Error(msg));
+    // Energy: each pet needs 10
+    for (const p of squadRows.rows) {
+      if (Number(p.energy) < 10) {
+        return res.status(400).json({
+          ok: false,
+          error: p.name + " needs at least 10 energy."
+        });
       }
-      function ok(data) {
-        if (settled) return;
-        settled = true;
-        resolve(data);
+    }
+
+    const spent = await spendBattleCharge(client, req.member.id);
+    if (spent.error) {
+      return res.status(400).json({ ok: false, error: spent.error, charges: spent.charges });
+    }
+    const day = spent.day;
+
+    const myTeam = squadRows.rows.map(combatStatsFromOwned);
+    // Build enemy team scaled
+    const enemyTeam = [];
+    for (let i = 0; i < size; i++) {
+      const ref = myTeam[i];
+      let foePool = AMT_PETS.filter(p => p.name !== ref.name);
+      if (!foePool.length) foePool = AMT_PETS.slice();
+      const wild = foePool[Math.floor(Math.random() * foePool.length)] || AMT_PETS[0];
+      const mult = tier.mult * (0.96 + Math.random() * 0.1);
+      enemyTeam.push({
+        name: tier.label + " " + wild.name,
+        element: wild.element || "Earth",
+        image: wild.image || null,
+        level: ref.level,
+        hp: Math.max(30, Math.round(ref.hp * mult)),
+        maxHp: Math.max(30, Math.round(ref.hp * mult)),
+        atk: Math.max(8, Math.round(ref.atk * mult * 0.95)),
+        def: Math.max(5, Math.round(ref.def * mult * 0.9)),
+        spd: Math.max(5, Math.round(ref.spd * (0.9 + Math.random() * 0.25)))
+      });
+    }
+
+    // Sequential 1v1 until one team wiped
+    const allRounds = [];
+    let myIdx = 0;
+    let enIdx = 0;
+    let match = 0;
+    const myAlive = myTeam.map(p => ({ ...p, hp: p.hp, maxHp: p.maxHp || p.hp }));
+    const enAlive = enemyTeam.map(p => ({ ...p, hp: p.hp, maxHp: p.maxHp || p.hp }));
+
+    while (myIdx < size && enIdx < size && match < size * 2) {
+      match += 1;
+      const a = myAlive[myIdx];
+      const b = enAlive[enIdx];
+      const sim = simulateBattleWithSkills(a, b, a.element, b.element);
+      allRounds.push({
+        match,
+        myPet: a.name,
+        enemyPet: b.name,
+        result: sim.win ? "WIN" : "LOSS",
+        rounds: sim.rounds
+      });
+      if (sim.win) {
+        enIdx += 1;
+        // carry some HP for winner optional - full reset next fight for simplicity
+      } else {
+        myIdx += 1;
       }
+    }
+
+    const teamWin = enIdx >= size && myIdx < size;
+    const baseReward = size === 4 ? 2.5 : 1.8;
+    const reward = teamWin
+      ? Math.round((baseReward * tier.mult * (0.9 + Math.random() * 0.3)) * 100) / 100
+      : 0.15;
+
+    // Deduct energy + exp
+    for (const p of squadRows.rows) {
+      await client.query(
+        `UPDATE owned_pets SET energy = GREATEST(0, energy - 10),
+          exp = COALESCE(exp, 0) + $1 WHERE id = $2`,
+        [teamWin ? 30 : 10, p.id]
+      );
+      await applyLevelAndRarity(client, p.id, req.member.id);
+    }
+
+    await client.query(
+      `INSERT INTO amt_ledger (member_id, amount, type, reference)
+       VALUES ($1,$2,'PET_SQUAD',$3)`,
+      [req.member.id, reward, makeReference("AMT-SQUAD")]
+    );
+    const chargeInfo = await applyBattleWinCharges(client, req.member.id, day, teamWin);
+    for (const p of squadRows.rows) {
+      try { await applyBattleRep(client, req.member.id, p.id, teamWin, "squad", false); } catch (e) {}
+    }
+
+    // Flatten first match rounds for existing arena UI + include team summary
+    const first = allRounds[0] || { rounds: [] };
+    res.json({
+      ok: true,
+      result: teamWin ? "WIN" : "LOSS",
+      mode: "squad",
+      size,
+      tier: tierKey,
+      tierLabel: size + "v" + size + " " + tier.label,
+      reward,
+      matches: allRounds,
+      opponent: enAlive.map(e => e.name).join(" / "),
+      opponentElement: enAlive[0] && enAlive[0].element,
+      opponentImage: enAlive[0] && enAlive[0].image,
+      petName: myAlive.map(m => m.name).join(" / "),
+      myMaxHp: first.rounds && first.rounds.length ? (allRounds[0].rounds[0] ? myAlive[0].maxHp : 100) : myAlive[0].maxHp,
+      enMaxHp: enAlive[0].maxHp,
+      rounds: allRounds.length ? allRounds[allRounds.length - 1].rounds : [],
+      teamSummary: allRounds.map(m => m.myPet + (m.result === "WIN" ? " ✓" : " ✗") + " vs " + m.enemyPet).join(" · "),
+      chargesLeft: chargeInfo.charges,
+      winStreak: chargeInfo.streak,
+      chargeBonus: chargeInfo.message || ""
+    });
+  } catch (e) {
+    console.error("SQUAD BATTLE:", e);
+    res.status(500).json({ ok: false, error: "Squad battle failed." });
+  } finally {
+    client.release();
+  }
+});
+
+
+app.get("/api/pets/:ownedId/history", requireAuth, async (req, res) => {
+  const ownedId = Number(req.params.ownedId);
+  if (!Number.isInteger(ownedId)) {
+    return res.status(400).json({ ok: false, error: "Invalid pet id." });
+  }
+  try {
+    await ensurePetTables();
+    const pet = await pool.query(
+      `SELECT id, name, rep, wins, losses, origin, level, member_id FROM owned_pets WHERE id = $1`,
+      [ownedId]
+    );
+    if (!pet.rows.length) {
+      return res.status(404).json({ ok: false, error: "Pet not found." });
+    }
+    const hist = await pool.query(
+      `SELECT h.*, mf.username AS from_user, mt.username AS to_user
+       FROM pet_ownership_history h
+       LEFT JOIN members mf ON mf.id = h.from_member_id
+       LEFT JOIN members mt ON mt.id = h.to_member_id
+       WHERE h.owned_pet_id = $1
+       ORDER BY h.created_at ASC
+       LIMIT 50`,
+      [ownedId]
+    );
+    res.json({
+      ok: true,
+      pet: pet.rows[0],
+      repBadge: repBadge(pet.rows[0].rep),
+      history: hist.rows
+    });
+  } catch (e) {
+    console.error("HISTORY:", e);
+    res.status(500).json({ ok: false, error: "History unavailable." });
+  }
+});
+
+app.get("/api/owner/rep", requireAuth, async (req, res) => {
+  try {
+    await ensurePetTables();
+    await ensureOwnerRep(null, req.member.id);
+    const r = await pool.query(`SELECT * FROM owner_rep WHERE member_id = $1`, [req.member.id]);
+    const row = r.rows[0] || { rep: 0, wins: 0, losses: 0 };
+    res.json({
+      ok: true,
+      rep: row.rep,
+      wins: row.wins,
+      losses: row.losses,
+      badge: repBadge(row.rep)
+    });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: "Rep unavailable." });
+  }
+});
+
+
+/* ========== PET GRIND MAP ========== */
+app.get("/api/pets/grind/map", requireAuth, async (req, res) => {
+  try {
+    await ensureGrindTables();
+    const active = await pool.query(
+      `SELECT g.*, op.name AS pet_name, op.level AS pet_level
+       FROM pet_grinds g
+       LEFT JOIN owned_pets op ON op.id = g.owned_pet_id
+       WHERE g.member_id = $1 AND g.status = 'active'
+       ORDER BY g.ends_at ASC`,
+      [req.member.id]
+    );
+    const now = Date.now();
+    const zones = GRIND_ZONES.map(z => ({
+      id: z.id,
+      name: z.name,
+      emoji: z.emoji,
+      minLevel: z.minLevel,
+      expPerHour: z.expPerHour,
+      energyCostPerHour: z.energyCostPerHour,
+      amtPerHour: z.amtPerHour
+    }));
+    res.json({
+      ok: true,
+      zones,
+      durations: GRIND_DURATIONS,
+      maxActive: 3,
+      active: active.rows.map(r => ({
+        id: Number(r.id),
+        ownedPetId: Number(r.owned_pet_id),
+        petName: r.pet_name || ("Pet #" + r.owned_pet_id),
+        petLevel: Number(r.pet_level || 1),
+        zoneId: Number(r.zone_id),
+        zoneName: (GRIND_ZONES.find(z => z.id === Number(r.zone_id)) || {}).name || ("Zone " + r.zone_id),
+        hours: Number(r.hours),
+        startedAt: r.started_at,
+        endsAt: r.ends_at,
+        ready: new Date(r.ends_at).getTime() <= now,
+        msLeft: Math.max(0, new Date(r.ends_at).getTime() - now)
+      }))
+    });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message || "Map load failed." });
+  }
+});
+
+app.post("/api/pets/grind/deploy", requireAuth, async (req, res) => {
+  const ownedPetId = Number(req.body?.ownedPetId);
+  const zoneId = Number(req.body?.zoneId);
+  const hours = Number(req.body?.hours);
+  const zone = GRIND_ZONES.find(z => z.id === zoneId);
+  const dur = GRIND_DURATIONS.find(d => d.hours === hours);
+  if (!ownedPetId || !zone || !dur) {
+    return res.status(400).json({ ok: false, error: "Pick pet, zone, and duration (1/4/8/24h)." });
+  }
+  const client = await pool.connect();
+  try {
+    await ensureGrindTables();
+    await client.query("BEGIN");
+    const petR = await client.query(
+      `SELECT * FROM owned_pets WHERE id = $1 AND member_id = $2 FOR UPDATE`,
+      [ownedPetId, req.member.id]
+    );
+    if (!petR.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ ok: false, error: "Pet not found." });
+    }
+    const pet = petR.rows[0];
+    const level = Number(pet.level || 1);
+    if (level < zone.minLevel) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Need pet level " + zone.minLevel + " for " + zone.name + "." });
+    }
+    const busy = await client.query(
+      `SELECT id FROM pet_grinds WHERE owned_pet_id = $1 AND status = 'active' LIMIT 1`,
+      [ownedPetId]
+    );
+    if (busy.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "This pet is already grinding." });
+    }
+    const countR = await client.query(
+      `SELECT COUNT(*)::int AS c FROM pet_grinds WHERE member_id = $1 AND status = 'active'`,
+      [req.member.id]
+    );
+    if (Number(countR.rows[0].c) >= 3) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Max 3 pets grinding at once." });
+    }
+    const energyCost = Math.ceil(zone.energyCostPerHour * hours);
+    const energy = Number(pet.energy ?? 100);
+    if (energy < energyCost) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Need " + energyCost + " energy (have " + energy + "). Buy Energy Pack or wait." });
+    }
+    await client.query(
+      `UPDATE owned_pets SET energy = GREATEST(0, energy - $1) WHERE id = $2`,
+      [energyCost, ownedPetId]
+    );
+    const ends = new Date(Date.now() + hours * 3600 * 1000);
+    const ins = await client.query(
+      `INSERT INTO pet_grinds (member_id, owned_pet_id, zone_id, hours, energy_cost, ends_at, status)
+       VALUES ($1,$2,$3,$4,$5,$6,'active') RETURNING id, started_at, ends_at`,
+      [req.member.id, ownedPetId, zoneId, hours, energyCost, ends.toISOString()]
+    );
+    await client.query("COMMIT");
+    res.json({
+      ok: true,
+      message: (pet.name || "Pet") + " deployed to " + zone.name + " for " + hours + "h (−" + energyCost + " energy)",
+      grindId: Number(ins.rows[0].id),
+      endsAt: ins.rows[0].ends_at,
+      energyCost
+    });
+  } catch (e) {
+    try { await client.query("ROLLBACK"); } catch {}
+    res.status(500).json({ ok: false, error: e.message || "Deploy failed." });
+  } finally {
+    client.release();
+  }
+});
+
+app.post("/api/pets/grind/claim", requireAuth, async (req, res) => {
+  const grindId = Number(req.body?.grindId);
+  if (!grindId) return res.status(400).json({ ok: false, error: "Missing grindId." });
+  const client = await pool.connect();
+  try {
+    await ensureGrindTables();
+    await client.query("BEGIN");
+    const gR = await client.query(
+      `SELECT * FROM pet_grinds WHERE id = $1 AND member_id = $2 AND status = 'active' FOR UPDATE`,
+      [grindId, req.member.id]
+    );
+    if (!gR.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ ok: false, error: "Grind not found or already claimed." });
+    }
+    const g = gR.rows[0];
+    if (new Date(g.ends_at).getTime() > Date.now()) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Still grinding — wait for timer." });
+    }
+    const zone = GRIND_ZONES.find(z => z.id === Number(g.zone_id)) || GRIND_ZONES[0];
+    const hours = Number(g.hours) || 1;
+    const petR = await client.query(
+      `SELECT * FROM owned_pets WHERE id = $1 AND member_id = $2 FOR UPDATE`,
+      [g.owned_pet_id, req.member.id]
+    );
+    if (!petR.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ ok: false, error: "Pet missing." });
+    }
+    const pet = petR.rows[0];
+    let expGain = Math.round(zone.expPerHour * hours);
+    const amtGain = Math.round(zone.amtPerHour * hours * 1000) / 1000;
+    const loot = [];
+    // food rolls (up to hours times, capped)
+    let foodQty = 0;
+    for (let i = 0; i < hours; i++) {
+      if (Math.random() < zone.foodChance) foodQty++;
+    }
+    if (foodQty > 0) {
+      await addMaterial(client, req.member.id, "pet_food", foodQty);
+      loot.push(foodQty + "x Pet Food");
+    }
+    let cores = 0;
+    for (let i = 0; i < hours; i++) {
+      if (Math.random() < zone.coreChance) cores++;
+    }
+    if (cores > 0) {
+      await addMaterial(client, req.member.id, "upgrade_core", cores);
+      loot.push(cores + "x Upgrade Core");
+    }
+    let gems = 0;
+    const gemPool = ["gem_atk_1", "gem_hp_1", "gem_def_1"];
+    const gotGems = [];
+    for (let i = 0; i < hours; i++) {
+      if (Math.random() < zone.gemChance) {
+        gems++;
+        const gid = gemPool[Math.floor(Math.random() * gemPool.length)];
+        await addMaterial(client, req.member.id, gid, 1);
+        gotGems.push(gid);
+      }
+    }
+    if (gems > 0) loot.push(gems + "x Gem");
+    // apply EXP / level
+    let level = Number(pet.level || 1);
+    let exp = Number(pet.exp || 0) + expGain;
+    const need = (lv) => 40 + lv * 25;
+    while (exp >= need(level) && level < 100) {
+      exp -= need(level);
+      level += 1;
+    }
+    await client.query(
+      `UPDATE owned_pets SET level = $1, exp = $2 WHERE id = $3`,
+      [level, exp, pet.id]
+    );
+    if (amtGain > 0) {
+      await client.query(
+        `INSERT INTO amt_ledger (member_id, amount, type, reference) VALUES ($1,$2,'GRIND_LOOT',$3)`,
+        [req.member.id, amtGain, "GRIND-" + grindId]
+      );
+      loot.push("+" + amtGain + " AMT");
+    }
+    const reward = { expGain, level, amtGain, loot };
+    await client.query(
+      `UPDATE pet_grinds SET status = 'claimed', claimed_at = NOW(), reward_json = $1 WHERE id = $2`,
+      [JSON.stringify(reward), grindId]
+    );
+    await client.query("COMMIT");
+    res.json({
+      ok: true,
+      message: "Claimed from " + zone.name + " · +" + expGain + " EXP" + (loot.length ? " · " + loot.join(", ") : ""),
+      expGain,
+      level,
+      amtGain,
+      loot
+    });
+  } catch (e) {
+    try { await client.query("ROLLBACK"); } catch {}
+    res.status(500).json({ ok: false, error: e.message || "Claim failed." });
+  } finally {
+    client.release();
+  }
+});
+
+app.get("/api/pets/story", requireAuth, async (req, res) => {
+  try {
+    await ensurePetTables();
+    let prog = await pool.query(
+      `SELECT * FROM pet_story_progress WHERE member_id = $1`,
+      [req.member.id]
+    );
+    if (!prog.rows.length) {
+      await pool.query(
+        `INSERT INTO pet_story_progress (member_id, chapter, clears_today, total_clears)
+         VALUES ($1, 1, 0, 0)`,
+        [req.member.id]
+      );
+      prog = await pool.query(
+        `SELECT * FROM pet_story_progress WHERE member_id = $1`,
+        [req.member.id]
+      );
+    }
+    const p = prog.rows[0];
+    const today = new Date().toISOString().slice(0, 10);
+    let clearsToday = Number(p.clears_today || 0);
+    if (String(p.clear_date || "") !== today) clearsToday = 0;
+    res.json({
+      ok: true,
+      chapter: Number(p.chapter) || 1,
+      clearsToday,
+      clearsLeft: Math.max(0, 3 - clearsToday),
+      totalClears: Number(p.total_clears || 0),
+      chapters: STORY_CHAPTERS.map(c => ({
+        id: c.id,
+        name: c.name,
+        unlocked: c.id <= (Number(p.chapter) || 1),
+        exp: c.exp,
+        reward: c.reward
+      }))
+    });
+  } catch (e) {
+    console.error("STORY GET:", e);
+    res.status(500).json({ ok: false, error: "Story unavailable." });
+  }
+});
+
+app.post("/api/pets/story/play", requireAuth, async (req, res) => {
+  const ownedId = Number(req.body?.ownedPetId);
+  const chapterId = Number(req.body?.chapter) || 0;
+  if (!Number.isInteger(ownedId)) {
+    return res.status(400).json({ ok: false, error: "ownedPetId required." });
+  }
+  const client = await pool.connect();
+  try {
+    await ensurePetTables();
+    const petRes = await client.query(
+      `SELECT * FROM owned_pets WHERE id = $1 AND member_id = $2`,
+      [ownedId, req.member.id]
+    );
+    if (!petRes.rows.length) {
+      return res.status(404).json({ ok: false, error: "Pet not found." });
+    }
+    const pet = petRes.rows[0];
+    let prog = await client.query(
+      `SELECT * FROM pet_story_progress WHERE member_id = $1 FOR UPDATE`,
+      [req.member.id]
+    );
+    if (!prog.rows.length) {
+      await client.query(
+        `INSERT INTO pet_story_progress (member_id, chapter) VALUES ($1, 1)`,
+        [req.member.id]
+      );
+      prog = await client.query(
+        `SELECT * FROM pet_story_progress WHERE member_id = $1 FOR UPDATE`,
+        [req.member.id]
+      );
+    }
+    const pr = prog.rows[0];
+    const maxChapter = Number(pr.chapter) || 1;
+    const ch = STORY_CHAPTERS.find(c => c.id === (chapterId || maxChapter)) ||
+      STORY_CHAPTERS[Math.min(maxChapter, STORY_CHAPTERS.length) - 1];
+    if (ch.id > maxChapter) {
+      return res.status(400).json({ ok: false, error: "Chapter locked. Clear previous first." });
+    }
+    const today = new Date().toISOString().slice(0, 10);
+    let clearsToday = Number(pr.clears_today || 0);
+    if (String(pr.clear_date || "") !== today) clearsToday = 0;
+    if (clearsToday >= 3) {
+      return res.status(400).json({
+        ok: false,
+        error: "Daily story limit (3). Come back tomorrow."
+      });
+    }
+    if (Number(pet.energy) < ch.energy) {
+      return res.status(400).json({
+        ok: false,
+        error: "Need " + ch.energy + " energy for this chapter."
+      });
+    }
+
+    const lv = Number(pet.level) || 1;
+    const my = {
+      name: pet.name,
+      level: lv,
+      hp: Number(pet.hp) + lv * 8,
+      maxHp: Number(pet.hp) + lv * 8,
+      atk: Number(pet.atk) + lv * 2,
+      def: Number(pet.def) + Math.floor(lv * 0.8),
+      spd: Number(pet.spd) + Math.floor(lv * 0.5)
+    };
+    // Story enemies scale soft — friendlier for low level
+    const mult = ch.mult * (lv < 15 ? 0.85 : lv > 30 ? 1.05 : 0.95);
+    let foePool = AMT_PETS.slice();
+    const wild = foePool[Math.floor(Math.random() * foePool.length)] || AMT_PETS[0];
+    const en = {
+      name: ch.name + " Guardian",
+      level: Math.max(1, Math.round(lv * mult)),
+      hp: Math.max(25, Math.round(my.hp * mult)),
+      maxHp: Math.max(25, Math.round(my.hp * mult)),
+      atk: Math.max(6, Math.round(my.atk * mult * 0.9)),
+      def: Math.max(4, Math.round(my.def * mult * 0.85)),
+      spd: Math.max(4, Math.round(my.spd * 0.95))
+    };
+    const sim = (typeof simulateBattleWithSkills === "function")
+      ? simulateBattleWithSkills(my, en, pet.element, wild.element || "Earth")
+      : simulateBattle(my, en, pet.element, wild.element || "Earth");
+    const win = sim.win;
+
+    // Exp: boost for low level, damp for high
+    let expGain = ch.exp;
+    if (lv <= 10) expGain = Math.round(ch.exp * 1.5);
+    else if (lv <= 20) expGain = Math.round(ch.exp * 1.2);
+    else if (lv >= 30) expGain = Math.round(ch.exp * 0.5);
+    if (!win) expGain = Math.round(expGain * 0.25);
+
+    const reward = win ? ch.reward : 0.05;
+    const underdog = win && en.level >= lv + 8;
+
+    await client.query(
+      `UPDATE owned_pets SET energy = GREATEST(0, energy - $1),
+        exp = COALESCE(exp, 0) + $2 WHERE id = $3`,
+      [ch.energy, expGain, ownedId]
+    );
+    const petAfter = await applyLevelAndRarity(client, ownedId, req.member.id);
+    await client.query(
+      `INSERT INTO amt_ledger (member_id, amount, type, reference)
+       VALUES ($1,$2,'PET_STORY',$3)`,
+      [req.member.id, reward, makeReference("AMT-STORY")]
+    );
+    await applyBattleRep(client, req.member.id, ownedId, win, "story", underdog);
+
+    let newChapter = maxChapter;
+    if (win && ch.id >= maxChapter && maxChapter < STORY_CHAPTERS.length) {
+      newChapter = maxChapter + 1;
+    }
+    await client.query(
+      `UPDATE pet_story_progress SET
+        chapter = $1,
+        clears_today = $2,
+        clear_date = $3::date,
+        total_clears = total_clears + 1
+       WHERE member_id = $4`,
+      [newChapter, clearsToday + 1, today, req.member.id]
+    );
+
+    res.json({
+      ok: true,
+      result: win ? "WIN" : "LOSS",
+      mode: "story",
+      tierLabel: "Story · " + ch.name,
+      chapter: ch.id,
+      chapterName: ch.name,
+      reward,
+      expGain,
+      underdog,
+      opponent: en.name,
+      opponentElement: wild.element,
+      opponentImage: wild.image,
+      petName: pet.name,
+      petElement: pet.element,
+      petImage: pet.image,
+      myMaxHp: sim.myMax,
+      enMaxHp: sim.enMax,
+      rounds: sim.rounds,
+      petLevel: petAfter && petAfter.level,
+      milestones: (petAfter && petAfter._milestones) || [],
+      nextChapter: newChapter,
+      clearsLeft: Math.max(0, 3 - (clearsToday + 1))
+    });
+  } catch (e) {
+    console.error("STORY PLAY:", e);
+    res.status(500).json({ ok: false, error: "Story battle failed." });
+  } finally {
+    client.release();
+  }
+});
+
+
+app.get("/api/gear/shop", requireAuth, async (req, res) => {
+  res.json({ ok: true, gear: AMT_GEAR });
+});
+
+app.get("/api/gear/inventory", requireAuth, async (req, res) => {
+  try {
+    await ensureGearTables();
+    const r = await pool.query(
+      `SELECT gear_id, qty FROM pet_inventory WHERE member_id = $1 AND qty > 0`,
+      [req.member.id]
+    );
+    // upgrades/gems currently on pets for this member
+    const eq = await pool.query(
+      `SELECT e.gear_id, e.slot, e.upgrade_level, e.gem1, e.gem2, p.name AS pet_name
+       FROM pet_equipment e
+       JOIN owned_pets p ON p.id = e.owned_pet_id
+       WHERE p.member_id = $1`,
+      [req.member.id]
+    );
+    const byGear = {};
+    for (const row of eq.rows) {
+      byGear[row.gear_id] = {
+        upgrade_level: Number(row.upgrade_level) || 0,
+        gem1: row.gem1,
+        gem2: row.gem2,
+        pet_name: row.pet_name,
+        equipped: true
+      };
+    }
+    const items = r.rows.map(row => {
+      const g = getGearById(row.gear_id) || { id: row.gear_id, name: row.gear_id };
+      const extra = byGear[row.gear_id] || {};
+      return { ...g, qty: row.qty, ...extra };
+    });
+    const mr = await pool.query(
+      `SELECT material_id, qty FROM member_materials WHERE member_id = $1 AND qty > 0`,
+      [req.member.id]
+    );
+    const materials = mr.rows.map(row => {
+      const m = getMaterial(row.material_id) || { id: row.material_id, name: row.material_id };
+      return { ...m, qty: Number(row.qty) };
+    });
+    res.json({ ok: true, items, materials });
+  } catch (e) {
+    console.error("GEAR INV:", e);
+    res.status(500).json({ ok: false, error: "Inventory failed." });
+  }
+});
+
+app.post("/api/gear/buy", requireAuth, async (req, res) => {
+  const gearId = String(req.body?.gearId || "").trim();
+  const g = getGearById(gearId);
+  if (!g) return res.status(404).json({ ok: false, error: "Gear not found." });
+  const client = await pool.connect();
+  try {
+    await ensureGearTables();
+    await client.query("BEGIN");
+    const bal = await getBalance(req.member.id, client);
+    if (bal < g.priceAmt) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Insufficient AMT." });
+    }
+    await client.query(
+      `INSERT INTO amt_ledger (member_id, amount, type, reference)
+       VALUES ($1,$2,'GEAR_BUY',$3)`,
+      [req.member.id, -g.priceAmt, makeReference("AMT-GEAR")]
+    );
+    await client.query(
+      `INSERT INTO pet_inventory (member_id, gear_id, qty)
+       VALUES ($1,$2,1)
+       ON CONFLICT (member_id, gear_id)
+       DO UPDATE SET qty = pet_inventory.qty + 1`,
+      [req.member.id, gearId]
+    );
+    await client.query("COMMIT");
+    const newBal = await getBalance(req.member.id);
+    res.json({ ok: true, gear: g, balance: newBal, message: g.name + " added to backpack." });
+  } catch (e) {
+    try { await client.query("ROLLBACK"); } catch (_) {}
+    console.error("GEAR BUY:", e);
+    res.status(500).json({ ok: false, error: "Purchase failed." });
+  } finally {
+    client.release();
+  }
+});
+
+app.get("/api/pets/:ownedId/equipment", requireAuth, async (req, res) => {
+  const ownedId = Number(req.params.ownedId);
+  if (!Number.isFinite(ownedId) || ownedId < 1) {
+    return res.status(400).json({ ok: false, error: "Invalid pet." });
+  }
+  try {
+    await ensureGearTables();
+    const pet = await pool.query(
+      `SELECT id, name, member_id FROM owned_pets WHERE id = $1 AND member_id = $2`,
+      [ownedId, req.member.id]
+    );
+    if (!pet.rows.length) return res.status(404).json({ ok: false, error: "Pet not found." });
+    const map = await getPetEquipmentMap(null, ownedId);
+    const bonuses = sumGearBonuses(map);
+    const slots = ["weapon", "shield", "head", "body", "boots", "accessory"].map(slot => {
+      const entry = map[slot];
+      const gid = entry && (typeof entry === "string" ? entry : entry.gear_id);
+      const g = gid ? getGearById(gid) : null;
+      return {
+        slot,
+        gear: g,
+        upgrade_level: entry && typeof entry === "object" ? entry.upgrade_level : 0,
+        gem1: entry && typeof entry === "object" ? entry.gem1 : null,
+        gem2: entry && typeof entry === "object" ? entry.gem2 : null
+      };
+    });
+    res.json({ ok: true, slots, bonuses });
+  } catch (e) {
+    console.error("GEAR GET:", e);
+    res.status(500).json({ ok: false, error: "Equipment failed." });
+  }
+});
+
+app.post("/api/gear/equip", requireAuth, async (req, res) => {
+  const ownedId = Number(req.body?.ownedPetId);
+  const gearId = String(req.body?.gearId || "").trim();
+  const g = getGearById(gearId);
+  if (!Number.isFinite(ownedId) || ownedId < 1 || !g) {
+    return res.status(400).json({ ok: false, error: "ownedPetId and gearId required." });
+  }
+  const client = await pool.connect();
+  try {
+    await ensureGearTables();
+    const pet = await client.query(
+      `SELECT id FROM owned_pets WHERE id = $1 AND member_id = $2`,
+      [ownedId, req.member.id]
+    );
+    if (!pet.rows.length) {
+      return res.status(404).json({ ok: false, error: "Pet not found." });
+    }
+    const inv = await client.query(
+      `SELECT qty FROM pet_inventory WHERE member_id = $1 AND gear_id = $2`,
+      [req.member.id, gearId]
+    );
+    if (!inv.rows.length || Number(inv.rows[0].qty) < 1) {
+      return res.status(400).json({ ok: false, error: "Item not in backpack." });
+    }
+    // Unequip previous in slot back stays in inventory (shared pool)
+    await client.query(
+      `INSERT INTO pet_equipment (owned_pet_id, slot, gear_id)
+       VALUES ($1,$2,$3)
+       ON CONFLICT (owned_pet_id, slot)
+       DO UPDATE SET gear_id = EXCLUDED.gear_id, updated_at = NOW()`,
+      [ownedId, g.slot, gearId]
+    );
+    const map = await getPetEquipmentMap(client, ownedId);
+    res.json({
+      ok: true,
+      message: g.name + " equipped on " + g.slot,
+      slots: map,
+      bonuses: sumGearBonuses(map)
+    });
+  } catch (e) {
+    console.error("GEAR EQUIP:", e);
+    res.status(500).json({ ok: false, error: "Equip failed." });
+  } finally {
+    client.release();
+  }
+});
+
+app.post("/api/gear/unequip", requireAuth, async (req, res) => {
+  const ownedId = Number(req.body?.ownedPetId);
+  const slot = String(req.body?.slot || "").trim();
+  if (!Number.isInteger(ownedId) || !slot) {
+    return res.status(400).json({ ok: false, error: "ownedPetId and slot required." });
+  }
+  try {
+    await ensureGearTables();
+    await pool.query(
+      `DELETE FROM pet_equipment WHERE owned_pet_id = $1 AND slot = $2
+       AND owned_pet_id IN (SELECT id FROM owned_pets WHERE member_id = $3)`,
+      [ownedId, slot, req.member.id]
+    );
+    const map = await getPetEquipmentMap(null, ownedId);
+    res.json({ ok: true, message: "Unequipped " + slot, bonuses: sumGearBonuses(map) });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: "Unequip failed." });
+  }
+});
+
+/* ---- Materials / upgrade / gems ---- */
+app.get("/api/gear/materials", requireAuth, async (req, res) => {
+  try {
+    await ensureGearTables();
+    const r = await pool.query(
+      `SELECT material_id, qty FROM member_materials WHERE member_id = $1 AND qty > 0`,
+      [req.member.id]
+    );
+    const list = r.rows.map(row => {
+      const m = getMaterial(row.material_id) || { id: row.material_id, name: row.material_id };
+      return { ...m, qty: Number(row.qty) };
+    });
+    res.json({
+      ok: true,
+      materials: list,
+      catalog: Object.values(AMT_MATERIALS)
+    });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: "Materials load failed." });
+  }
+});
+
+app.post("/api/gear/buy-material", requireAuth, async (req, res) => {
+  const materialId = String(req.body?.materialId || "");
+  const qty = Math.max(1, Math.min(50, Number(req.body?.qty) || 1));
+  const m = getMaterial(materialId);
+  if (!m) return res.status(400).json({ ok: false, error: "Unknown material." });
+  const cost = Math.round(m.priceAmt * qty * 100) / 100;
+  const client = await pool.connect();
+  try {
+    await ensureGearTables();
+    await client.query("BEGIN");
+    const bal = await getBalance(req.member.id, client);
+    if (bal < cost) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Need " + cost + " AMT." });
+    }
+    await client.query(
+      `INSERT INTO amt_ledger (member_id, amount, type, reference) VALUES ($1,$2,'GEAR_MAT',$3)`,
+      [req.member.id, -cost, makeReference("AMT-MAT")]
+    );
+    await addMaterial(client, req.member.id, materialId, qty);
+    await client.query("COMMIT");
+    res.json({ ok: true, materialId, qty, cost, message: "Bought " + qty + "x " + m.name });
+  } catch (e) {
+    try { await client.query("ROLLBACK"); } catch {}
+    res.status(500).json({ ok: false, error: e.message || "Buy failed." });
+  } finally {
+    client.release();
+  }
+});
+
+
+/** Apply core/gem directly to a bag gear piece (auto-equip on first pet if needed) */
+app.post("/api/gear/apply-to-item", requireAuth, async (req, res) => {
+  const materialId = String(req.body?.materialId || "");
+  const gearId = String(req.body?.gearId || "").trim();
+  const m = getMaterial(materialId);
+  const g = getGearById(gearId);
+  if (!m) return res.status(400).json({ ok: false, error: "Unknown material." });
+  if (!g) return res.status(400).json({ ok: false, error: "Unknown gear." });
+
+  const client = await pool.connect();
+  try {
+    await ensureGearTables();
+    await ensurePetTables();
+    await client.query("BEGIN");
+
+    // Must own the gear
+    const inv = await client.query(
+      `SELECT qty FROM pet_inventory WHERE member_id = $1 AND gear_id = $2`,
+      [req.member.id, gearId]
+    );
+    if (!inv.rows.length || Number(inv.rows[0].qty) < 1) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Item not in your bag." });
+    }
+
+    // Prefer pet from body, else first owned pet
+    let ownedPetId = Number(req.body?.ownedPetId);
+    let petName = "";
+    if (Number.isFinite(ownedPetId)) {
+      const one = await client.query(
+        `SELECT id, name FROM owned_pets WHERE id = $1 AND member_id = $2`,
+        [ownedPetId, req.member.id]
+      );
+      if (!one.rows.length) {
+        await client.query("ROLLBACK");
+        return res.status(400).json({ ok: false, error: "Pet not found." });
+      }
+      petName = one.rows[0].name;
+    } else {
+      const pets = await client.query(
+        `SELECT id, name FROM owned_pets WHERE member_id = $1 ORDER BY id ASC LIMIT 1`,
+        [req.member.id]
+      );
+      if (!pets.rows.length) {
+        await client.query("ROLLBACK");
+        return res.status(400).json({ ok: false, error: "Walang pet. Bumili muna ng pet, then equip gear." });
+      }
+      ownedPetId = Number(pets.rows[0].id);
+      petName = pets.rows[0].name;
+    }
+
+    // Equip this gear on the pet slot
+    await client.query(
+      `INSERT INTO pet_equipment (owned_pet_id, slot, gear_id, upgrade_level)
+       VALUES ($1, $2, $3, 0)
+       ON CONFLICT (owned_pet_id, slot)
+       DO UPDATE SET gear_id = EXCLUDED.gear_id, updated_at = NOW()`,
+      [ownedPetId, g.slot, gearId]
+    );
+
+    const eq = await client.query(
+      `SELECT * FROM pet_equipment WHERE owned_pet_id = $1 AND slot = $2 FOR UPDATE`,
+      [ownedPetId, g.slot]
+    );
+    const row = eq.rows[0];
+
+    if (materialId === "upgrade_core") {
+      const up = Number(row.upgrade_level) || 0;
+      if (up >= GEAR_MAX_UPGRADE) {
+        await client.query("ROLLBACK");
+        return res.status(400).json({ ok: false, error: "Max +" + GEAR_MAX_UPGRADE + " na ang item." });
+      }
+      const coresNeed = Math.min(up + 1, 10);
+      const fee = Math.round((0.2 + up * 0.12) * 100) / 100;
+      await spendMaterial(client, req.member.id, "upgrade_core", coresNeed);
+      const bal = await getBalance(req.member.id, client);
+      if (bal < fee) {
+        await client.query("ROLLBACK");
+        return res.status(400).json({ ok: false, error: "Need " + fee + " AMT fee." });
+      }
+      await client.query(
+        `INSERT INTO amt_ledger (member_id, amount, type, reference) VALUES ($1,$2,'GEAR_UP',$3)`,
+        [req.member.id, -fee, makeReference("AMT-UP")]
+      );
+      await client.query(
+        `UPDATE pet_equipment SET upgrade_level = $1, updated_at = NOW()
+         WHERE owned_pet_id = $2 AND slot = $3`,
+        [up + 1, ownedPetId, g.slot]
+      );
+      await client.query("COMMIT");
+      return res.json({
+        ok: true,
+        action: "upgrade",
+        gearId,
+        gearName: g.name,
+        upgrade_level: up + 1,
+        petName,
+        message: g.name + " → +" + (up + 1) + " (on " + petName + ")"
+      });
+    }
+
+    if (m.kind === "gem") {
+      await spendMaterial(client, req.member.id, materialId, 1);
+      let gemIndex = 1;
+      let col = "gem1";
+      if (row.gem1 && !row.gem2) { gemIndex = 2; col = "gem2"; }
+      else if (row.gem1 && row.gem2) { gemIndex = 1; col = "gem1"; }
+      const oldGem = row[col];
+      if (oldGem) await addMaterial(client, req.member.id, oldGem, 1);
+      await client.query(
+        `UPDATE pet_equipment SET ${col} = $1, updated_at = NOW()
+         WHERE owned_pet_id = $2 AND slot = $3`,
+        [materialId, ownedPetId, g.slot]
+      );
+      await client.query("COMMIT");
+      return res.json({
+        ok: true,
+        action: "socket",
+        gearId,
+        gearName: g.name,
+        gemIndex,
+        materialId,
+        petName,
+        message: m.name + " → " + g.name + " slot " + gemIndex
+      });
+    }
+
+    await client.query("ROLLBACK");
+    res.status(400).json({ ok: false, error: "Not a core or gem." });
+  } catch (e) {
+    try { await client.query("ROLLBACK"); } catch {}
+    res.status(e.status || 500).json({ ok: false, error: e.message || "Apply failed." });
+  } finally {
+    client.release();
+  }
+});
+
+
+app.post("/api/gear/upgrade", requireAuth, async (req, res) => {
+  const ownedPetId = Number(req.body?.ownedPetId);
+  const slot = String(req.body?.slot || "weapon");
+  if (!Number.isFinite(ownedPetId)) {
+    return res.status(400).json({ ok: false, error: "ownedPetId required." });
+  }
+  const client = await pool.connect();
+  try {
+    await ensureGearTables();
+    await client.query("BEGIN");
+    const own = await client.query(
+      `SELECT id FROM owned_pets WHERE id = $1 AND member_id = $2`,
+      [ownedPetId, req.member.id]
+    );
+    if (!own.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ ok: false, error: "Pet not found." });
+    }
+    const eq = await client.query(
+      `SELECT * FROM pet_equipment WHERE owned_pet_id = $1 AND slot = $2 FOR UPDATE`,
+      [ownedPetId, slot]
+    );
+    if (!eq.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "No item equipped in " + slot + "." });
+    }
+    const up = Number(eq.rows[0].upgrade_level) || 0;
+    if (up >= GEAR_MAX_UPGRADE) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Max upgrade +" + GEAR_MAX_UPGRADE + "." });
+    }
+    const coresNeed = Math.min(up + 1, 10);
+    const fee = Math.round((0.2 + up * 0.12) * 100) / 100;
+    await spendMaterial(client, req.member.id, "upgrade_core", coresNeed);
+    const bal = await getBalance(req.member.id, client);
+    if (bal < fee) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Need " + fee + " AMT fee." });
+    }
+    await client.query(
+      `INSERT INTO amt_ledger (member_id, amount, type, reference) VALUES ($1,$2,'GEAR_UP',$3)`,
+      [req.member.id, -fee, makeReference("AMT-UP")]
+    );
+    await client.query(
+      `UPDATE pet_equipment SET upgrade_level = $1, updated_at = NOW()
+       WHERE owned_pet_id = $2 AND slot = $3`,
+      [up + 1, ownedPetId, slot]
+    );
+    await client.query("COMMIT");
+    res.json({
+      ok: true,
+      slot,
+      upgrade_level: up + 1,
+      coresUsed: coresNeed,
+      fee,
+      message: slot + " upgraded to +" + (up + 1)
+    });
+  } catch (e) {
+    try { await client.query("ROLLBACK"); } catch {}
+    res.status(e.status || 500).json({ ok: false, error: e.message || "Upgrade failed." });
+  } finally {
+    client.release();
+  }
+});
+
+app.post("/api/gear/socket", requireAuth, async (req, res) => {
+  const ownedPetId = Number(req.body?.ownedPetId);
+  const slot = String(req.body?.slot || "weapon");
+  const gemIndex = Number(req.body?.gemIndex) === 2 ? 2 : 1;
+  const materialId = String(req.body?.materialId || "");
+  const m = getMaterial(materialId);
+  if (!m || m.kind !== "gem") {
+    return res.status(400).json({ ok: false, error: "Pick a gem material." });
+  }
+  const client = await pool.connect();
+  try {
+    await ensureGearTables();
+    await client.query("BEGIN");
+    const own = await client.query(
+      `SELECT id FROM owned_pets WHERE id = $1 AND member_id = $2`,
+      [ownedPetId, req.member.id]
+    );
+    if (!own.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ ok: false, error: "Pet not found." });
+    }
+    const eq = await client.query(
+      `SELECT * FROM pet_equipment WHERE owned_pet_id = $1 AND slot = $2 FOR UPDATE`,
+      [ownedPetId, slot]
+    );
+    if (!eq.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Equip an item in " + slot + " first." });
+    }
+    await spendMaterial(client, req.member.id, materialId, 1);
+    const col = gemIndex === 2 ? "gem2" : "gem1";
+    // return old gem to inventory if any
+    const oldGem = eq.rows[0][col];
+    if (oldGem) await addMaterial(client, req.member.id, oldGem, 1);
+    await client.query(
+      `UPDATE pet_equipment SET ${col} = $1, updated_at = NOW()
+       WHERE owned_pet_id = $2 AND slot = $3`,
+      [materialId, ownedPetId, slot]
+    );
+    await client.query("COMMIT");
+    res.json({
+      ok: true,
+      slot,
+      gemIndex,
+      materialId,
+      message: m.name + " socketed in " + slot + " slot " + gemIndex
+    });
+  } catch (e) {
+    try { await client.query("ROLLBACK"); } catch {}
+    res.status(e.status || 500).json({ ok: false, error: e.message || "Socket failed." });
+  } finally {
+    client.release();
+  }
+});
+
+
+
+app.get("/api/pets/:petId", async (req, res) => {
+  const reserved = ["owned", "eggs", "listings", "buy", "care", "train", "claim-session", "cancel-session", "boss", "breed", "hatch", "list", "battle", "arena", "skills", "squad", "story", "battle-charges"];
+  if (reserved.includes(String(req.params.petId || "").toLowerCase())) {
+    return res.status(404).json({ ok: false, error: "Not found." });
+  }
+  const pet = getPetById(req.params.petId);
+  if (!pet) return res.status(404).json({ ok: false, error: "Pet not found." });
+  res.json({ ok: true, pet });
+});
+
+/* =========================================================
+PRIVATE PI TESTNET MARKETPLACE
+========================================================= */
+
+app.get(
+  "/api/market/test-product",
+  async (req, res) => {
+    res.json({
+      ok: true,
+
+      product: {
+        id:
+          MARKET_TEST_PRODUCT_ID,
+
+        name:
+          "AMT Test Pet",
+
+        description:
+          "Private AMT Pi Testnet marketplace test item.",
+
+        pricePi:
+          MARKET_TEST_PRICE_PI,
+
+        currency:
+          "Pi",
+
+        network:
+          "Pi Mainnet",
+
+        environment:
+          "MAINNET"
+      }
+    });
+  }
+);
+
+/* =========================================================
+PI PAYMENT API
+========================================================= */
+
+async function piPaymentRequest(
+  path,
+  method = "GET",
+  body = null
+) {
+  if (!PI_API_KEY) {
+    throw new Error(
+      "PI_API_KEY is not configured."
+    );
+  }
+
+  const response =
+    await fetch(
+      `${PI_PAYMENT_API_BASE}${path}`,
+      {
+        method,
+
+        headers: {
+          Accept:
+            "application/json",
+
+          "Content-Type":
+            "application/json",
+
+          Authorization:
+            `Key ${PI_API_KEY}`
+        },
+
+        body:
+          body === null
+            ? undefined
+            : JSON.stringify(body)
+      }
+    );
+
+  const text =
+    await response.text();
+
+  let data;
+
+  try {
+    data = JSON.parse(text);
+  } catch {
+    data = {
+      raw: text
+    };
+  }
+
+  if (!response.ok) {
+    const error =
+      new Error(
+        data?.error ||
+        data?.message ||
+        `Pi Payment API error ${response.status}`
+      );
+
+    error.status =
+      response.status;
+
+    throw error;
+  }
+
+  return data;
+}
+
+/* =========================================================
+MARKETPLACE PAYMENT APPROVE
+========================================================= */
+
+app.post(
+  "/api/market/payment/approve",
+  requireAuth,
+  async (req, res) => {
+    try {
+      const paymentId =
+        String(
+          req.body?.paymentId || ""
+        ).trim();
+
+      const productId =
+        String(
+          req.body?.productId || ""
+        ).trim();
+
+      const amount =
+        Number(
+          req.body?.amount
+        );
+
+      if (!paymentId) {
+        return res
+          .status(400)
+          .json({
+            ok: false,
+            error:
+              "Payment ID is required."
+          });
+      }
+
+      const parsed = parsePetProductId(productId);
+      let expectedAmount = null;
+      let resolvedProductId = productId;
+
+      if (parsed.kind === "pet") {
+        const pet = getPetById(parsed.petId);
+        if (!pet) {
+          return res.status(400).json({
+            ok: false,
+            error: "Invalid pet product."
+          });
+        }
+        expectedAmount = petPricePi(pet);
+        resolvedProductId = "pet:" + pet.id;
+      } else if (productId === MARKET_TEST_PRODUCT_ID) {
+        expectedAmount = MARKET_TEST_PRICE_PI;
+        resolvedProductId = MARKET_TEST_PRODUCT_ID;
+      } else {
+        return res.status(400).json({
+          ok: false,
+          error: "Invalid product. Use pet:<id> or test product."
+        });
+      }
+
+      if (
+        !Number.isFinite(amount) ||
+        Math.abs(amount - expectedAmount) > 0.001
+      ) {
+        return res.status(400).json({
+          ok: false,
+          error:
+            "Invalid price. Expected " + expectedAmount + " PI, got " + amount
+        });
+      }
+
+      console.log("MARKET APPROVE", {
+        paymentId,
+        productId: resolvedProductId,
+        amount,
+        expectedAmount,
+        paymentApi: PI_PAYMENT_API_BASE
+      });
+
+      const payment =
+        await piPaymentRequest(
+          `/v2/payments/${encodeURIComponent(
+            paymentId
+          )}`,
+          "GET"
+        );
+
+      if (
+        Math.abs(Number(payment.amount) - expectedAmount) > 0.001
+      ) {
+        return res.status(400).json({
+          ok: false,
+          error:
+            "Payment amount does not match. Pi=" +
+            payment.amount +
+            " expected=" +
+            expectedAmount
+        });
+      }
+
+      await piPaymentRequest(
+        `/v2/payments/${encodeURIComponent(
+          paymentId
+        )}/approve`,
+        "POST"
+      );
+
+      const saved =
+        await pool.query(
+          `
+          INSERT INTO marketplace_payments
+            (
+              pi_payment_id,
+              member_id,
+              product_id,
+              amount,
+              status
+            )
+          VALUES
+            (
+              $1,
+              $2,
+              $3,
+              $4,
+              'APPROVED'
+            )
+
+          ON CONFLICT (
+            pi_payment_id
+          )
+
+          DO UPDATE SET
+            status = 'APPROVED'
+
+          RETURNING *
+          `,
+          [
+            paymentId,
+            req.member.id,
+            resolvedProductId,
+            amount
+          ]
+        );
+
+      res.json({
+        ok: true,
+        approved: true,
+        payment: saved.rows[0],
+        productId: resolvedProductId,
+        amount: expectedAmount
+      });
+
+    } catch (error) {
+      console.error(
+        "MARKET APPROVE ERROR:",
+        error
+      );
+
+      res
+        .status(
+          error.status || 500
+        )
+        .json({
+          ok: false,
+          error:
+            error.message ||
+            "Unable to approve payment."
+        });
+    }
+  }
+);
+
+
+/* =========================================================
+OWNERSHIP CERTIFICATE
+========================================================= */
+app.get("/api/pets/owned/:id/certificate", requireAuth, async (req, res) => {
+  try {
+    await ensurePetTables();
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) {
+      return res.status(400).json({ ok: false, error: "Invalid pet id." });
+    }
+    const r = await pool.query(
+      `SELECT o.*, m.username AS owner_username
+       FROM owned_pets o
+       LEFT JOIN members m ON m.id = o.member_id
+       WHERE o.id = $1 AND o.member_id = $2
+       LIMIT 1`,
+      [id, req.member.id]
+    );
+    if (!r.rows.length) {
+      return res.status(404).json({ ok: false, error: "Pet not found." });
+    }
+    const pet = r.rows[0];
+    let cert = pet.certificate_id;
+    if (!cert) {
+      cert = makeCertificateId(pet.origin || "shop");
+      await pool.query(
+        `UPDATE owned_pets SET certificate_id = $1 WHERE id = $2 AND certificate_id IS NULL`,
+        [cert, id]
+      );
+      pet.certificate_id = cert;
+    }
+    const mintedWithPi = String(pet.origin || "") === "pi_payment";
+    res.json({
+      ok: true,
+      certificate: {
+        certificateId: pet.certificate_id,
+        ownedPetId: pet.id,
+        petName: pet.name,
+        petId: pet.pet_id,
+        element: pet.element,
+        rarity: pet.rarity,
+        level: pet.level,
+        ownerUsername: pet.owner_username || req.member.username || "Pioneer",
+        origin: pet.origin || "shop",
+        mintedWithPi,
+        mintLabel: mintedWithPi ? "Minted with PI (Mainnet)" : "App ownership certificate",
+        purchasedAt: pet.purchased_at,
+        reputation: {
+          rep: Number(pet.rep) || 0,
+          wins: Number(pet.wins) || 0,
+          losses: Number(pet.losses) || 0
+        },
+        network: mintedWithPi ? "Pi Mainnet" : "AMT App Ledger"
+      }
+    });
+  } catch (e) {
+    console.error("CERTIFICATE ERROR:", e);
+    res.status(500).json({ ok: false, error: e.message || "Certificate failed." });
+  }
+});
+
+/* =========================================================
+MARKETPLACE PAYMENT COMPLETE
+========================================================= */
+
+app.post(
+  "/api/market/payment/complete",
+  requireAuth,
+  async (req, res) => {
+    const client =
+      await pool.connect();
+
+    try {
+      const paymentId =
+        String(
+          req.body?.paymentId || ""
+        ).trim();
+
+      if (!paymentId) {
+        return res
+          .status(400)
+          .json({
+            ok: false,
+            error:
+              "Payment ID is required."
+          });
+      }
+
+      await client.query(
+        "BEGIN"
+      );
+
+      const paymentResult =
+        await client.query(
+          `
+          SELECT *
+          FROM marketplace_payments
+          WHERE
+            pi_payment_id = $1
+          LIMIT 1
+          FOR UPDATE
+          `,
+          [paymentId]
+        );
+
+      if (
+        !paymentResult.rows.length
+      ) {
+        await client.query(
+          "ROLLBACK"
+        );
+
+        return res
+          .status(404)
+          .json({
+            ok: false,
+            error:
+              "Marketplace payment not found."
+          });
+      }
+
+      const payment =
+        paymentResult.rows[0];
+
+      if (
+        Number(
+          payment.member_id
+        ) !==
+        Number(
+          req.member.id
+        )
+      ) {
+        await client.query(
+          "ROLLBACK"
+        );
+
+        return res
+          .status(403)
+          .json({
+            ok: false,
+            error:
+              "Payment does not belong to this Pioneer."
+          });
+      }
+
+      const prodOk =
+        payment.product_id === MARKET_TEST_PRODUCT_ID ||
+        String(payment.product_id || "").startsWith("pet:");
+      if (!prodOk) {
+        await client.query("ROLLBACK");
+        return res.status(400).json({
+          ok: false,
+          error: "Invalid marketplace product."
+        });
+      }
+
+      if (
+        payment.status ===
+        "COMPLETED"
+      ) {
+        await client.query(
+          "COMMIT"
+        );
+
+        return res.json({
+          ok: true,
+
+          completed:
+            true,
+
+          alreadyCompleted:
+            true,
+
+          paymentId,
+
+          productId:
+            payment.product_id,
+
+          network:
+            "Pi Mainnet"
+        });
+      }
+
+      const txid = String(
+        req.body?.txid ||
+        req.body?.txId ||
+        ""
+      ).trim();
+
+      console.log("MARKET COMPLETE", {
+        paymentId,
+        txid: txid || "(empty)",
+        productId: payment.product_id,
+        paymentApi: PI_PAYMENT_API_BASE
+      });
+
+      // Pi Platform requires txid for server-side completion
+      await piPaymentRequest(
+        `/v2/payments/${encodeURIComponent(
+          paymentId
+        )}/complete`,
+        "POST",
+        txid ? { txid } : {}
+      );
+
+      await client.query(
+        `
+        UPDATE marketplace_payments
+        SET
+          status = 'COMPLETED',
+          completed_at = NOW()
+        WHERE id = $1
+        `,
+        [payment.id]
+      );
+
+      await client.query(
+        `
+        INSERT INTO marketplace_purchases
+          (
+            payment_id,
+            member_id,
+            product_id
+          )
+        VALUES
+          (
+            $1,
+            $2,
+            $3
+          )
+        ON CONFLICT DO NOTHING
+        `,
+        [
+          payment.id,
+          req.member.id,
+          payment.product_id
+        ]
+      );
+
+      let deliveredPet = null;
+      const pParsed = parsePetProductId(payment.product_id);
+      if (pParsed.kind === "pet") {
+        await ensurePetTables();
+        const pet = getPetById(pParsed.petId);
+        if (pet) {
+          const certId = makeCertificateId("pi_payment");
+          const ins = await client.query(
+            `INSERT INTO owned_pets
+              (member_id, pet_id, name, element, rarity, hp, atk, def, spd, ability, image, origin, certificate_id)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'pi_payment',$12)
+             RETURNING *`,
+            [
+              req.member.id,
+              pet.id,
+              pet.name,
+              pet.element,
+              pet.rarity,
+              pet.hp,
+              pet.atk,
+              pet.def,
+              pet.spd,
+              pet.ability || "",
+              pet.image || "",
+              certId
+            ]
+          );
+          deliveredPet = ins.rows[0] || null;
+        }
+      }
+
+      await client.query(
+        "COMMIT"
+      );
+
+      res.json({
+        ok: true,
+        completed: true,
+        paymentId,
+        productId: payment.product_id,
+        network: "Pi Mainnet",
+        pet: deliveredPet
+      });
+
+    } catch (error) {
       try {
-        PiSDK.createPayment(
-          {
-            amount: pricePi,
-            memo: "AMT pet " + (selectedPet.name || selectedPet.id).slice(0, 28),
-            metadata: {
-              productId: productId,
-              petId: selectedPet.id,
-              type: "pet_purchase"
-            }
-          },
-          {
-            onReadyForServerApproval: function(paymentId) {
-              api("/api/market/payment/approve", {
-                method: "POST",
-                body: JSON.stringify({
-                  paymentId: paymentId,
-                  productId: productId,
-                  amount: pricePi
-                })
-              }).then(function() {
-                /* approved — user can confirm in Pi Wallet */
-              }).catch(function(e) {
-                fail(e);
-              });
-            },
-            onReadyForServerCompletion: function(paymentId, txid) {
-              var tx = txid || "";
-              console.log("PI complete callback", paymentId, tx);
-              api("/api/market/payment/complete", {
-                method: "POST",
-                body: JSON.stringify({
-                  paymentId: paymentId,
-                  txid: tx
-                })
-              }).then(function(done) {
-                ok(done);
-              }).catch(function(e) {
-                fail(e);
-              });
-            },
-            onCancel: function() {
-              fail(new Error("Payment cancelled."));
-            },
-            onError: function(err) {
-              var m = (err && (err.message || err.msg)) || "Pi payment error";
-              if (String(m).toLowerCase().indexOf("wallet") >= 0) {
-                m = m + " — App wallet may still be in review.";
+        await client.query(
+          "ROLLBACK"
+        );
+      } catch {}
+
+      console.error(
+        "MARKET COMPLETE ERROR:",
+        error
+      );
+
+      res
+        .status(
+          error.status || 500
+        )
+        .json({
+          ok: false,
+          error:
+            error.message ||
+            "Unable to complete payment."
+        });
+
+    } finally {
+      client.release();
+    }
+  }
+);
+
+/* =========================================================
+PURCHASES
+========================================================= */
+
+app.get(
+  "/api/purchases",
+  requireAuth,
+  async (req, res) => {
+    const result =
+      await pool.query(
+        `
+        SELECT
+
+          mp.id,
+          mp.product_id,
+          mp.created_at,
+
+          p.pi_payment_id,
+          p.amount,
+          p.status
+
+        FROM marketplace_purchases mp
+
+        JOIN marketplace_payments p
+          ON p.id =
+             mp.payment_id
+
+        WHERE
+          mp.member_id = $1
+
+        ORDER BY
+          mp.created_at DESC
+        `,
+        [req.member.id]
+      );
+
+    res.json({
+      ok: true,
+
+      purchases:
+        result.rows
+    });
+  }
+);
+
+/* =========================================================
+LEGACY / FRONTEND COMPATIBILITY ROUTES
+========================================================= */
+
+/* ---------------------------------------------------------
+POST /api/users
+--------------------------------------------------------- */
+
+app.post(
+  "/api/users",
+  requireAuth,
+  async (req, res) => {
+    try {
+      const balance =
+        await getBalance(
+          req.member.id
+        );
+
+      const staking =
+        await getStakingSummary(
+          req.member.id
+        );
+
+      res.json({
+        ok: true,
+
+        user: {
+          id:
+            req.member.id,
+
+          uid:
+            req.piUser.uid,
+
+          username:
+            req.member.username,
+
+          kycStatus:
+            req.member.kyc_status,
+
+          profileImage:
+            req.member
+              .profile_image || null
+        },
+
+        wallet: {
+          walletStatus:
+            req.wallet
+              .wallet_status,
+
+          walletAddress:
+            req.wallet
+              .wallet_address,
+
+          isBlockchainWallet:
+            false
+        },
+
+        /*
+         * Added without changing the old wallet object.
+         */
+        piWalletAddress:
+          req.piUser.walletAddress ||
+          null,
+
+        balance,
+
+        availableBalance:
+          balance,
+
+        stakedBalance:
+          staking.stakedPrincipal,
+
+        pendingStakingRewards:
+          staking.pendingRewards,
+
+        network:
+          "Pi Mainnet",
+
+        environment:
+          "MAINNET",
+
+        // Referral code of this Pioneer (saved from Pi username on login)
+        referralCode:
+          req.member.referral_code ||
+          req.member.username ||
+          req.piUser.username ||
+          null
+      });
+
+    } catch (error) {
+      console.error(
+        "USERS COMPATIBILITY ERROR:",
+        error
+      );
+
+      res
+        .status(500)
+        .json({
+          ok: false,
+          error:
+            "Unable to load Pioneer account."
+        });
+    }
+  }
+);
+
+/* ---------------------------------------------------------
+GET /api/balance
+--------------------------------------------------------- */
+
+app.get(
+  "/api/balance",
+  requireAuth,
+  async (req, res) => {
+    try {
+      const balance =
+        await getBalance(
+          req.member.id
+        );
+
+      const staking =
+        await getStakingSummary(
+          req.member.id
+        );
+
+      res.json({
+        ok: true,
+
+        balance,
+
+        availableBalance:
+          balance,
+
+        stakedBalance:
+          staking.stakedPrincipal,
+
+        pendingStakingRewards:
+          staking.pendingRewards,
+
+        totalBalance:
+          Number(
+            (
+              balance +
+              staking.stakedPrincipal
+            ).toFixed(8)
+          ),
+
+        symbol:
+          "AMT",
+
+        network:
+          "Pi Mainnet",
+
+        walletAddress:
+          req.wallet
+            .wallet_address,
+
+        piWalletAddress:
+          req.piUser.walletAddress ||
+          null
+      });
+
+    } catch (error) {
+      console.error(
+        "BALANCE COMPATIBILITY ERROR:",
+        error
+      );
+
+      res
+        .status(500)
+        .json({
+          ok: false,
+          error:
+            "Unable to load AMT balance."
+        });
+    }
+  }
+);
+
+/* ---------------------------------------------------------
+POST /api/ledger/send
+--------------------------------------------------------- */
+
+app.post(
+  "/api/ledger/send",
+  requireAuth,
+  async (req, res) => {
+    const recipientAddress =
+      String(
+        req.body?.recipientAddress ||
+        req.body?.to ||
+        req.body?.recipient ||
+        ""
+      )
+        .trim()
+        .toUpperCase();
+
+    const amount =
+      validAmount(
+        req.body?.amount
+      );
+
+    const memo =
+      String(
+        req.body?.memo || ""
+      )
+        .trim()
+        .slice(0, 160);
+
+    if (!recipientAddress) {
+      return res
+        .status(400)
+        .json({
+          ok: false,
+          error:
+            "Recipient AMT address is required."
+        });
+    }
+
+    if (amount === null) {
+      return res
+        .status(400)
+        .json({
+          ok: false,
+          error:
+            "Invalid amount. Maximum 8 decimal places."
+        });
+    }
+
+    try {
+      const result =
+        await performAmtTransfer(
+          req.member,
+          recipientAddress,
+          amount,
+          memo
+        );
+
+      res.json({
+        ok: true,
+
+        ...result,
+
+        network:
+          "Pi Mainnet",
+
+        walletType:
+          "AMT_MAINNET_LEDGER"
+      });
+
+    } catch (error) {
+      console.error(
+        "LEDGER SEND COMPATIBILITY ERROR:",
+        error
+      );
+
+      res
+        .status(
+          error.status || 500
+        )
+        .json({
+          ok: false,
+
+          error:
+            error.message ||
+            "AMT transfer failed.",
+
+          ...(error.extra || {})
+        });
+    }
+  }
+);
+
+/* ---------------------------------------------------------
+GET /api/referrals
+--------------------------------------------------------- */
+
+app.get(
+  "/api/referrals",
+  requireAuth,
+  async (req, res) => {
+    try {
+      const result =
+        await pool.query(
+          `
+          SELECT
+
+            r.id,
+
+            r.status,
+
+            r.created_at,
+
+            m.id AS member_id,
+
+            m.username,
+
+            m.pi_uid
+
+          FROM referrals r
+
+          JOIN members m
+            ON m.id =
+               r.referred_member_id
+
+          WHERE
+            r.referrer_member_id = $1
+
+          ORDER BY
+            r.created_at DESC
+          `,
+          [req.member.id]
+        );
+
+      const activeMiners =
+        await pool.query(
+          `
+          SELECT
+            COUNT(*)::INT AS count
+          FROM referrals r
+          JOIN mining_sessions ms
+            ON ms.member_id =
+               r.referred_member_id
+          WHERE
+            r.referrer_member_id = $1
+            AND r.status = 'ACTIVE'
+            AND ms.status = 'ACTIVE'
+            AND NOW() < ms.ends_at
+          `,
+          [req.member.id]
+        );
+
+      const referralCount = result.rows.length;
+      const currentTier = getReferralTier(referralCount);
+
+      res.json({
+        ok: true,
+
+        // Referral code of this Pioneer (saved from Pi username on login)
+        referralCode:
+          req.member.referral_code ||
+          req.member.username ||
+          req.piUser.username ||
+          null,
+
+        username:
+          req.member.username,
+
+        count: referralCount,
+
+        referralCount,
+
+        activeMiners:
+          Number(
+            activeMiners.rows[0]?.count || 0
+          ),
+
+        // Tier system info
+        tier: {
+          name: currentTier.name,
+          rewardPerReferral: currentTier.rewardPerReferral,
+          min: currentTier.min,
+          max: currentTier.max === Infinity ? null : currentTier.max
+        },
+
+        tiers: REFERRAL_TIERS.map(t => ({
+          name: t.name,
+          min: t.min,
+          max: t.max === Infinity ? null : t.max,
+          rewardPerReferral: t.rewardPerReferral
+        })),
+
+        milestones: REFERRAL_MILESTONES,
+
+        referrals:
+          result.rows
+      });
+
+    } catch (error) {
+      console.error(
+        "REFERRALS COMPATIBILITY ERROR:",
+        error
+      );
+
+      res
+        .status(500)
+        .json({
+          ok: false,
+          error:
+            "Unable to load referrals."
+        });
+    }
+  }
+);
+
+/* ---------------------------------------------------------
+POST /api/referrals/apply
+--------------------------------------------------------- */
+
+app.post(
+  "/api/referrals/apply",
+  requireAuth,
+  async (req, res) => {
+    const referralMemberId =
+      Number(
+        req.body?.referralMemberId ??
+        req.body?.memberId
+      );
+
+    if (
+      !Number.isInteger(
+        referralMemberId
+      )
+    ) {
+      return res
+        .status(400)
+        .json({
+          ok: false,
+          error:
+            "Valid referralMemberId is required."
+        });
+    }
+
+    if (
+      referralMemberId ===
+      Number(req.member.id)
+    ) {
+      return res
+        .status(400)
+        .json({
+          ok: false,
+          error:
+            "You cannot refer yourself."
+        });
+    }
+
+    const client =
+      await pool.connect();
+
+    try {
+      await client.query(
+        "BEGIN"
+      );
+
+      const referredMember =
+        await client.query(
+          `
+          SELECT
+            id,
+            username,
+            pi_uid
+          FROM members
+          WHERE id = $1
+          LIMIT 1
+          `,
+          [referralMemberId]
+        );
+
+      if (
+        !referredMember.rows.length
+      ) {
+        throw new HttpError(
+          404,
+          "Referral Pioneer was not found."
+        );
+      }
+
+      const existing =
+        await client.query(
+          `
+          SELECT
+            id,
+            referrer_member_id,
+            referred_member_id,
+            status
+          FROM referrals
+          WHERE
+            referred_member_id = $1
+          LIMIT 1
+          FOR UPDATE
+          `,
+          [referralMemberId]
+        );
+
+      if (
+        existing.rows.length
+      ) {
+        await client.query(
+          "ROLLBACK"
+        );
+
+        return res
+          .status(409)
+          .json({
+            ok: false,
+            error:
+              "This Pioneer already has a referrer."
+          });
+      }
+
+      await client.query(
+        `
+        INSERT INTO referrals
+          (
+            referrer_member_id,
+            referred_member_id,
+            status
+          )
+        VALUES
+          (
+            $1,
+            $2,
+            'ACTIVE'
+          )
+        `,
+        [
+          req.member.id,
+          referralMemberId
+        ]
+      );
+
+      const addedToCircle =
+        await addReferralToSecurityCircle(
+          client,
+          req.member.id,
+          referralMemberId
+        );
+
+      const countRes = await client.query(
+        `
+        SELECT COUNT(*)::INT AS count
+        FROM referrals
+        WHERE referrer_member_id = $1
+          AND status = 'ACTIVE'
+        `,
+        [req.member.id]
+      );
+      const newCount = Number(countRes.rows[0]?.count || 0);
+
+      const rewardInfo = await creditReferralReward(
+        req.member.id,
+        newCount,
+        client,
+        referralMemberId
+      );
+
+      await client.query(
+        "COMMIT"
+      );
+
+      res.json({
+        ok: true,
+
+        applied:
+          true,
+
+        linked:
+          true,
+
+        referralMemberId,
+
+        addedToSecurityCircle:
+          addedToCircle,
+
+        referralReward: rewardInfo
+      });
+
+    } catch (error) {
+      try {
+        await client.query(
+          "ROLLBACK"
+        );
+      } catch {}
+
+      console.error(
+        "REFERRAL APPLY ERROR:",
+        error
+      );
+
+      res
+        .status(
+          error.status || 500
+        )
+        .json({
+          ok: false,
+
+          error:
+            error.message ||
+            "Unable to apply referral."
+        });
+
+    } finally {
+      client.release();
+    }
+  }
+);
+
+/* ---------------------------------------------------------
+GET /api/security-circle
+--------------------------------------------------------- */
+
+app.get(
+  "/api/security-circle",
+  requireAuth,
+  async (req, res) => {
+    try {
+      const result =
+        await pool.query(
+          `
+          SELECT
+
+            m.id,
+
+            m.username,
+
+            m.pi_uid,
+
+            sc.status,
+
+            sc.created_at,
+
+            EXISTS (
+              SELECT 1
+              FROM mining_sessions ms
+              WHERE
+                ms.member_id = m.id
+                AND ms.status = 'ACTIVE'
+                AND NOW() < ms.ends_at
+            ) AS mining
+
+          FROM security_circle sc
+
+          JOIN members m
+            ON m.id =
+               sc.member_id
+
+          WHERE
+            sc.owner_member_id = $1
+            AND sc.status = 'ACTIVE'
+
+          ORDER BY
+            sc.created_at ASC
+          `,
+          [req.member.id]
+        );
+
+      res.json({
+        ok: true,
+
+        maxMembers:
+          MAX_SECURITY_CIRCLE,
+
+        count:
+          result.rows.length,
+
+        members:
+          result.rows
+      });
+
+    } catch (error) {
+      console.error(
+        "SECURITY CIRCLE COMPATIBILITY ERROR:",
+        error
+      );
+
+      res
+        .status(500)
+        .json({
+          ok: false,
+          error:
+            "Unable to load Security Circle."
+        });
+    }
+  }
+);
+
+/* ---------------------------------------------------------
+POST /api/profile/image
+--------------------------------------------------------- */
+
+app.post(
+  "/api/profile/image",
+  requireAuth,
+  async (req, res) => {
+    try {
+      // Accept common field names used by different frontends
+      const image =
+        String(
+          req.body?.image ||
+          req.body?.profileImage ||
+          req.body?.photo ||
+          req.body?.profile_image ||
+          req.body?.avatar ||
+          ""
+        ).trim();
+
+      if (!image) {
+        return res
+          .status(400)
+          .json({
+            ok: false,
+            error:
+              "Profile image is required. Send base64 as 'image' or 'profileImage'."
+          });
+      }
+
+      if (
+        !image.startsWith(
+          "data:image/"
+        )
+      ) {
+        return res
+          .status(400)
+          .json({
+            ok: false,
+            error:
+              "Invalid image format. Must start with data:image/ (base64)."
+          });
+      }
+
+      // Increased limit: ~3MB base64 (~2.2MB actual image)
+      if (
+        image.length > 4000000
+      ) {
+        return res
+          .status(413)
+          .json({
+            ok: false,
+            error:
+              "Profile image is too large. Max ~2MB."
+          });
+      }
+
+      await pool.query(
+        `
+        UPDATE members
+        SET
+          profile_image = $1,
+          updated_at = NOW()
+        WHERE id = $2
+        `,
+        [
+          image,
+          req.member.id
+        ]
+      );
+
+      res.json({
+        ok: true,
+
+        profileImage:
+          image,
+
+        saved: true
+      });
+
+    } catch (error) {
+      console.error(
+        "PROFILE IMAGE ERROR:",
+        error
+      );
+
+      res
+        .status(500)
+        .json({
+          ok: false,
+          error:
+            "Unable to save profile image.",
+          detail:
+            error.message || null
+        });
+    }
+  }
+);
+
+/* ---------------------------------------------------------
+DELETE /api/profile/image
+--------------------------------------------------------- */
+
+app.delete(
+  "/api/profile/image",
+  requireAuth,
+  async (req, res) => {
+    try {
+      await pool.query(
+        `
+        UPDATE members
+        SET
+          profile_image = NULL,
+          updated_at = NOW()
+        WHERE id = $1
+        `,
+        [req.member.id]
+      );
+
+      res.json({
+        ok: true,
+
+        profileImage:
+          null
+      });
+
+    } catch (error) {
+      console.error(
+        "DELETE PROFILE IMAGE ERROR:",
+        error
+      );
+
+      res
+        .status(500)
+        .json({
+          ok: false,
+          error:
+            "Unable to remove profile image."
+        });
+    }
+  }
+);
+
+/* =========================================================
+ERROR HANDLER
+========================================================= */
+
+app.use(
+  (err, req, res, next) => {
+    console.error(
+      "UNHANDLED ERROR:",
+      err
+    );
+
+    if (
+      res.headersSent
+    ) {
+      return next(err);
+    }
+
+    res
+      .status(
+        err.status || 500
+      )
+      .json({
+        ok: false,
+
+        error:
+          err.message ||
+          "Internal server error."
+      });
+  }
+);
+
+
+
+
+/* =========================================================
+   LUCKY SPIN — 3 spins per UTC day per member
+   GET  /api/spin/status
+   POST /api/spin/claim
+========================================================= */
+
+const SPIN_MAX_PER_DAY = 3;
+// 8 segments — AMT rewards + free spin + rare 100 jackpot
+const SPIN_PRIZES = [
+  { key: "amt_5",    label: "+5 AMT",     type: "amt", amount: 5,    weight: 16 },
+  { key: "amt_10",   label: "+10 AMT",    type: "amt", amount: 10,   weight: 14 },
+  { key: "amt_25",   label: "+25 AMT",    type: "amt", amount: 25,   weight: 11 },
+  { key: "egg",      label: "Free Egg!",  type: "egg", amount: 0,    weight: 10 },
+  { key: "free_spin", label: "FREE SPIN!", type: "free_spin", amount: 0, weight: 14 },
+  { key: "amt_50",   label: "+50 AMT",    type: "amt", amount: 50,   weight: 7 },
+  { key: "jackpot",  label: "JACKPOT +100 AMT!", type: "amt", amount: 100, weight: 3 },
+  { key: "amt_15",   label: "+15 AMT",    type: "amt", amount: 15,   weight: 15 }
+];
+
+function pickSpinPrize(){
+  const total = SPIN_PRIZES.reduce((a, p) => a + p.weight, 0);
+  let r = Math.random() * total;
+  for (let i = 0; i < SPIN_PRIZES.length; i++){
+    r -= SPIN_PRIZES[i].weight;
+    if (r <= 0) return { prize: SPIN_PRIZES[i], index: i };
+  }
+  return { prize: SPIN_PRIZES[0], index: 0 };
+}
+
+async function ensureSpinTable(){
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS lucky_spins (
+      id SERIAL PRIMARY KEY,
+      member_id INTEGER NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+      spin_date DATE NOT NULL,
+      prize_key TEXT NOT NULL,
+      prize_label TEXT,
+      amount NUMERIC(18,6) DEFAULT 0,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_lucky_spins_member_date
+    ON lucky_spins(member_id, spin_date)
+  `);
+}
+
+app.get("/api/spin/status", requireAuth, async (req, res) => {
+  try {
+    await ensureSpinTable();
+    const today = new Date().toISOString().slice(0, 10);
+    const q = await pool.query(
+      `SELECT
+         COUNT(*)::int AS c,
+         COUNT(*) FILTER (WHERE prize_key = 'free_spin')::int AS bonus
+       FROM lucky_spins
+       WHERE member_id = $1 AND spin_date = $2`,
+      [req.member.id, today]
+    );
+    const used = q.rows[0] ? q.rows[0].c : 0;
+    const bonus = q.rows[0] ? q.rows[0].bonus : 0;
+    // Free-spin wins grant +1 extra spin for the day
+    const left = Math.max(0, SPIN_MAX_PER_DAY + bonus - used);
+    res.json({
+      ok: true,
+      usedToday: used,
+      bonusSpins: bonus,
+      spinsLeft: left,
+      maxPerDay: SPIN_MAX_PER_DAY,
+      canSpin: left > 0
+    });
+  } catch (e) {
+    console.error("SPIN STATUS:", e);
+    res.status(500).json({ ok: false, error: "Spin status failed." });
+  }
+});
+
+app.post("/api/spin/claim", requireAuth, async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await ensureSpinTable();
+    await client.query("BEGIN");
+    await client.query(`SELECT id FROM members WHERE id = $1 FOR UPDATE`, [req.member.id]);
+
+    const today = new Date().toISOString().slice(0, 10);
+    const q = await client.query(
+      `SELECT
+         COUNT(*)::int AS c,
+         COUNT(*) FILTER (WHERE prize_key = 'free_spin')::int AS bonus
+       FROM lucky_spins
+       WHERE member_id = $1 AND spin_date = $2`,
+      [req.member.id, today]
+    );
+    const used = q.rows[0] ? q.rows[0].c : 0;
+    const bonus = q.rows[0] ? q.rows[0].bonus : 0;
+    const leftBefore = Math.max(0, SPIN_MAX_PER_DAY + bonus - used);
+    if (leftBefore <= 0) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({
+        ok: false,
+        error: "No spins left today. Come back after UTC midnight."
+      });
+    }
+
+    const { prize, index } = pickSpinPrize();
+
+    await client.query(
+      `INSERT INTO lucky_spins (member_id, spin_date, prize_key, prize_label, amount)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [req.member.id, today, prize.key, prize.label, prize.amount || 0]
+    );
+
+    // Credit rewards
+    if (prize.type === "amt" && prize.amount > 0) {
+      const ref = "SPIN-" + req.member.id + "-" + today + "-" + (used + 1);
+      // Always credit balance via ledger (idempotent on reference)
+      const exists = await client.query(
+        `SELECT id FROM amt_ledger WHERE member_id = $1 AND reference = $2 LIMIT 1`,
+        [req.member.id, ref]
+      );
+      if (!exists.rows.length) {
+        await client.query(
+          `INSERT INTO amt_ledger (member_id, amount, type, reference)
+           VALUES ($1, $2, 'LUCKY_SPIN', $3)`,
+          [req.member.id, prize.amount, ref]
+        );
+      }
+    }
+    // egg / charge: best-effort flags on member or skip if no table
+    if (prize.type === "egg") {
+      try {
+        await client.query(
+          `INSERT INTO pet_eggs (member_id, status, hatch_at, created_at)
+           VALUES ($1, 'incubating', NOW() + INTERVAL '24 hours', NOW())`,
+          [req.member.id]
+        );
+      } catch (eggErr) {
+        console.warn("spin egg grant:", eggErr.message);
+      }
+    }
+    if (prize.type === "charge") {
+      try {
+        await client.query(
+          `UPDATE members SET battle_charges = COALESCE(battle_charges,0) + 1
+           WHERE id = $1`,
+          [req.member.id]
+        );
+      } catch (chErr) {
+        console.warn("spin charge grant:", chErr.message);
+      }
+    }
+
+    await client.query("COMMIT");
+    const newUsed = used + 1;
+    const newBonus = bonus + (prize.type === "free_spin" ? 1 : 0);
+    const left = Math.max(0, SPIN_MAX_PER_DAY + newBonus - newUsed);
+    res.json({
+      ok: true,
+      prize: prize.key,
+      prizeLabel: prize.label,
+      prizeIndex: index,
+      amount: prize.amount || 0,
+      spinsLeft: left,
+      usedToday: newUsed,
+      bonusSpins: newBonus,
+      freeSpin: prize.type === "free_spin"
+    });
+  } catch (e) {
+    try { await client.query("ROLLBACK"); } catch (_) {}
+    console.error("SPIN CLAIM:", e);
+    res.status(500).json({ ok: false, error: e.message || "Spin failed." });
+  } finally {
+    client.release();
+  }
+});
+
+
+/* =========================================================
+DAILY MINING AD BONUS (in-app AMT · 1x per UTC day per member)
+POST /api/ads/mining-bonus  (authenticated)
+Env: AD_MINING_BONUS_AMT (default 0.5)
+========================================================= */
+
+app.post(
+  "/api/ads/mining-bonus",
+  requireAuth,
+  async (req, res) => {
+    try {
+      const bonus = Math.min(
+        50,
+        Math.max(
+          0.01,
+          Number(process.env.AD_MINING_BONUS_AMT || "0.5")
+        )
+      );
+      const dayKey = new Date()
+        .toISOString()
+        .slice(0, 10);
+      // reference must be globally unique (amt_ledger_reference_key)
+      const ref = "AD-MINING-" + req.member.id + "-" + dayKey;
+
+      const exists = await pool.query(
+        `SELECT id FROM amt_ledger
+         WHERE member_id = $1 AND reference = $2
+         LIMIT 1`,
+        [req.member.id, ref]
+      );
+      if (exists.rows.length) {
+        const bal = await getBalance(req.member.id);
+        return res.json({
+          ok: true,
+          credited: false,
+          amount: 0,
+          balance: bal,
+          message: "Ad bonus already claimed today."
+        });
+      }
+
+      try {
+        await pool.query(
+          `INSERT INTO amt_ledger (member_id, amount, type, reference)
+           VALUES ($1, $2, 'AD_MINING_BONUS', $3)`,
+          [req.member.id, bonus, ref]
+        );
+      } catch (insErr) {
+        // Race: unique reference or double-click
+        if (insErr && insErr.code === "23505") {
+          const bal = await getBalance(req.member.id);
+          return res.json({
+            ok: true,
+            credited: false,
+            amount: 0,
+            balance: bal,
+            message: "Ad bonus already claimed today."
+          });
+        }
+        throw insErr;
+      }
+      const bal = await getBalance(req.member.id);
+      return res.json({
+        ok: true,
+        credited: true,
+        amount: bonus,
+        balance: bal,
+        message: "Ad bonus +" + bonus + " AMT"
+      });
+    } catch (err) {
+      console.error("AD MINING BONUS:", err);
+      return res.status(500).json({
+        ok: false,
+        error: err.message || "Ad bonus failed."
+      });
+    }
+  }
+);
+
+/* =========================================================
+DEV TREASURY CLAIM — one-time 5M in-app AMT for developer account
+POST /api/dev/claim-treasury  (authenticated)
+Matches DEV_PI_USERNAMES / DEV_PI_UIDS / DEV_LEDGER_ADDRESS
+========================================================= */
+
+app.post(
+  "/api/dev/claim-treasury",
+  requireAuth,
+  async (req, res) => {
+    try {
+      const ok = await ensureDevTreasury(
+        req.member,
+        req.piUser,
+        req.wallet
+      );
+      const bal = await getBalance(req.member.id);
+      return res.json({
+        ok: true,
+        credited: !!ok,
+        balance: bal,
+        amount: DEV_TREASURY_AMT,
+        username: req.member.username || (req.piUser && req.piUser.username),
+        ledger:
+          (req.wallet && req.wallet.wallet_address) || null,
+        message: ok
+          ? "Developer treasury credited."
+          : "No new credit (already claimed or username/ledger/uid not in env match)."
+      });
+    } catch (err) {
+      console.error("CLAIM TREASURY:", err);
+      return res.status(500).json({
+        ok: false,
+        error: err.message || "Claim failed."
+      });
+    }
+  }
+);
+
+/* =========================================================
+TESTNET A2U (App → User) — for Pi "5 unique wallets" requirement
+Env required on Render (Testnet service only):
+  PI_API_KEY              = Testnet app API key
+  PI_WALLET_PRIVATE_SEED  = Testnet app wallet seed (starts with S) — SECRET
+Optional:
+  A2U_TEST_AMOUNT         = amount of Test-Pi per payout (default 0.01)
+========================================================= */
+
+app.post(
+  "/api/test/a2u",
+  requireAuth,
+  async (req, res) => {
+    try {
+      const seed = String(
+        process.env.PI_WALLET_PRIVATE_SEED || ""
+      ).trim();
+      const apiKey = String(
+        process.env.PI_API_KEY || ""
+      ).trim();
+
+      if (!apiKey || !seed) {
+        return res.status(503).json({
+          ok: false,
+          error:
+            "A2U not configured. Set PI_API_KEY and PI_WALLET_PRIVATE_SEED on Render (Testnet)."
+        });
+      }
+
+      if (!seed.startsWith("S")) {
+        return res.status(500).json({
+          ok: false,
+          error:
+            "PI_WALLET_PRIVATE_SEED must be a secret seed starting with S."
+        });
+      }
+
+      const uid = String(
+        req.member.pi_uid || ""
+      ).trim();
+      if (!uid) {
+        return res.status(400).json({
+          ok: false,
+          error:
+            "Missing Pi user uid. Re-login with Pi on the Testnet app."
+        });
+      }
+
+      // One successful A2U test payout per member (enough for uniqueness count)
+      const prior = await pool.query(
+        `
+        SELECT id FROM amt_ledger
+        WHERE member_id = $1
+          AND type = 'A2U_TEST_PAYOUT'
+        LIMIT 1
+        `,
+        [req.member.id]
+      );
+      if (prior.rows.length > 0) {
+        return res.status(400).json({
+          ok: false,
+          error:
+            "This account already received a test A2U payout. Use another Pi account for remaining unique wallets."
+        });
+      }
+
+      const amount = Math.min(
+        1,
+        Math.max(
+          0.001,
+          Number(process.env.A2U_TEST_AMOUNT || "0.01")
+        )
+      );
+
+      let PiNetworkMod;
+      try {
+        PiNetworkMod = require("pi-backend");
+      } catch (e) {
+        return res.status(503).json({
+          ok: false,
+          error:
+            "pi-backend package not installed. Add pi-backend to package.json and redeploy."
+        });
+      }
+
+      // CJS/ESM interop: package may export default or named class
+      const PiNetwork =
+        (typeof PiNetworkMod === "function" && PiNetworkMod) ||
+        (PiNetworkMod && typeof PiNetworkMod.default === "function" && PiNetworkMod.default) ||
+        (PiNetworkMod && typeof PiNetworkMod.PiNetwork === "function" && PiNetworkMod.PiNetwork) ||
+        null;
+
+      if (!PiNetwork) {
+        return res.status(500).json({
+          ok: false,
+          error:
+            "pi-backend loaded but PiNetwork constructor not found. Check package version."
+        });
+      }
+
+      const pi = new PiNetwork(apiKey, seed);
+
+      // Clear stuck incomplete server payments if any
+      try {
+        const incomplete =
+          await pi.getIncompleteServerPayments();
+        if (
+          Array.isArray(incomplete) &&
+          incomplete.length
+        ) {
+          for (const p of incomplete) {
+            const id = p.identifier || p.paymentId;
+            if (!id) continue;
+            try {
+              if (
+                p.transaction &&
+                p.transaction.txid
+              ) {
+                await pi.completePayment(
+                  id,
+                  p.transaction.txid
+                );
+              } else {
+                await pi.cancelPayment(id);
               }
-              fail(new Error(m));
+            } catch (e2) {
+              console.warn(
+                "A2U incomplete cleanup:",
+                e2.message || e2
+              );
             }
           }
+        }
+      } catch (e) {
+        console.warn(
+          "getIncompleteServerPayments:",
+          e.message || e
+        );
+      }
+
+      const paymentData = {
+        amount,
+        memo: "AMT Testnet A2U test payout",
+        metadata: {
+          purpose: "a2u_unique_wallet_test",
+          member_id: req.member.id
+        },
+        uid
+      };
+
+      const paymentId =
+        await pi.createPayment(paymentData);
+      const txid =
+        await pi.submitPayment(paymentId);
+      const completed =
+        await pi.completePayment(
+          paymentId,
+          txid
+        );
+
+      // Audit row only (amount 0 so in-app AMT balance is unchanged — Test-Pi is on-chain)
+      try {
+        await pool.query(
+          `
+          INSERT INTO amt_ledger
+            (member_id, amount, type, reference)
+          VALUES
+            ($1, 0, 'A2U_TEST_PAYOUT', $2)
+          `,
+          [
+            req.member.id,
+            "A2U-" + String(paymentId)
+          ]
         );
       } catch (e) {
-        fail(e);
+        console.warn(
+          "A2U ledger audit:",
+          e.message || e
+        );
       }
-    });
 
-    showToast("Paid with PI · " + selectedPet.name + " saved to My Pets");
-    closePetModal();
-    await refreshWallet();
-    if (typeof petTab === "function") petTab("owned");
-    await new Promise(function(ok) { setTimeout(ok, 400); });
-    if (typeof loadOwnedPets === "function") await loadOwnedPets();
-  } catch (e) {
-    console.error("BUY WITH PI error:", e);
-    showToast((e && e.message) || "PI payment failed", true);
-  } finally {
-    var btn2 = $("buyPetPiBtn");
-    if (btn2) {
-      btn2.disabled = false;
-      btn2.textContent = "💜 BUY WITH PI";
+      return res.json({
+        ok: true,
+        amount,
+        paymentId,
+        txid,
+        to_address:
+          completed && completed.to_address
+            ? completed.to_address
+            : null,
+        direction:
+          completed && completed.direction
+            ? completed.direction
+            : "app_to_user",
+        message:
+          "A2U test payout submitted. Check Test-Pi wallet. Need 5 unique wallets total."
+      });
+    } catch (err) {
+      console.error(
+        "A2U ERROR:",
+        err && err.response
+          ? err.response.data
+          : err
+      );
+      return res.status(500).json({
+        ok: false,
+        error:
+          (err && err.message) ||
+          "A2U payout failed."
+      });
     }
   }
-}
+);
 
+/* =========================================================
+START SERVER
+========================================================= */
 
-async function buySelectedPet() {
-  if (!selectedPet) return;
-  if (!accessToken) {
-    showToast("Login with Pi first before buying.", true);
-    return;
-  }
-  const btn = $("buyPetBtn");
+async function startServer() {
   try {
-    btn.disabled = true;
-    btn.textContent = "BUYING...";
-    const data = await api("/api/pets/buy", {
-      method: "POST",
-      body: JSON.stringify({ petId: selectedPet.id })
-    });
-    if (!data || !data.purchased) {
-      throw new Error(data?.error || "Buy did not complete.");
-    }
-    showToast(
-      "Got " + selectedPet.name + "! -" + (data.paid || "") + " AMT · Saved to My Pets"
-    );
-    closePetModal();
-    await refreshWallet();
-    petTab("owned");
-    await new Promise(ok => setTimeout(ok, 500));
-    await loadOwnedPets();
-    // Always show purchased pet on grid
-    if (data.pet) {
-      if (!window._ownedMap) window._ownedMap = {};
-      window._ownedMap[data.pet.id] = data.pet;
-      const grid = $("ownedPetGrid");
-      if (grid) {
-        const elClass = petElementClass(data.pet.element);
-        const card =
-          `<div class="pet-card ${elClass}" onclick="openOwnedModal(${data.pet.id})">
-          <div class="pet-card-top">
-            <span class="pet-card-element">${esc(data.pet.element)}</span>
-            <span class="pet-card-badge">Lv ${data.pet.level || 1}</span>
-            ${petArtHtml(data.pet, 128)}
-          </div>
-          <div class="pet-card-body">
-            <div class="pet-card-name">${esc(data.pet.name)}</div>
-            <div class="pet-card-price">Just purchased · ${data.paid} AMT</div>
-            <div class="pet-card-footer">
-              <button class="small-btn" onclick="event.stopPropagation();openOwnedModal(${data.pet.id})">VIEW / BATTLE</button>
-            </div>
-          </div>
-        </div>`;
-        if (grid.querySelector(".empty")) grid.innerHTML = card;
-        else if (!grid.innerHTML.includes("openOwnedModal(" + data.pet.id + ")")) {
-          grid.insertAdjacentHTML("afterbegin", card);
-        }
+    await initializeDatabase();
+
+    app.listen(
+      PORT,
+      "0.0.0.0",
+      () => {
+        console.log(
+          "=================================================="
+        );
+
+        console.log(
+          "AMT TESTNET BACKEND ONLINE"
+        );
+
+        console.log(
+          `Port: ${PORT}`
+        );
+
+        console.log(
+          "Environment: TESTNET"
+        );
+
+        console.log(
+          "Network: Pi Testnet"
+        );
+
+        console.log(
+          "Version: 2.4.28"
+        );
+
+        console.log(
+          `Mining rate: ${AMT_MINING_RATE} AMT/hour`
+        );
+
+        console.log(
+          `Airdrop: ${AIRDROP_AMOUNT_AMT} AMT (48h claim window)`
+        );
+
+        console.log(
+          "Staking: ENABLED"
+        );
+
+        console.log(
+          "30D: 5%"
+        );
+
+        console.log(
+          "90D: 10%"
+        );
+
+        console.log(
+          "180D: 15%"
+        );
+
+        console.log(
+          "Legacy login compatibility: ENABLED"
+        );
+
+        console.log(
+          "Pi wallet address response: ENABLED"
+        );
+
+        console.log(
+          "=================================================="
+        );
       }
-    }
+    );
+
   } catch (error) {
-    showToast(error.message || "Purchase failed.", true);
-  } finally {
-    if (btn) {
-      btn.disabled = false;
-      btn.textContent = "BUY WITH AMT";
-    }
-  }
-}
-
-/* ---- Owned pets ---- */
-async function loadOwnedPets() {
-  const grid = $("ownedPetGrid");
-  if (!grid) return;
-  try {
-    if (!accessToken) {
-      grid.innerHTML = '<div class="empty">Login with Pi to see your pets.</div>';
-      return;
-    }
-    grid.innerHTML = '<div class="empty">Loading your pets...</div>';
-    const data = await api("/api/pets/owned");
-    const pets = data.pets || data.owned || [];
-    window.ownedPetsCache = pets.slice();
-    window._ownedMap = {};
-    pets.forEach(p => {
-      window._ownedMap[p.id] = p;
-      window._ownedMap[String(p.id)] = p;
-    });
-    if (!pets.length) {
-      grid.innerHTML =
-        '<div class="empty">No pets yet. Buy from Shop (need in-app AMT from mining/airdrop).</div>';
-      return;
-    }
-    grid.innerHTML = pets
-      .map((pet) => {
-        try {
-        if (!pet) return "";
-        const elClass = petElementClass(pet.element);
-        const rCls = rarityBadgeClass(pet.rarity);
-        const pid = pet.id;
-        return `<div class="pet-card ${elClass}" onclick="openOwnedModal(${pid})">
-        <div class="pet-card-top">
-          <span class="pet-card-element">${esc(pet.element)}</span>
-          <span class="pet-card-badge ${rCls}">Lv ${pet.level || 1}</span>
-          ${petArtHtml(pet, 140)}
-        </div>
-        <div class="pet-card-body">
-          <div class="pet-card-name">${esc(pet.name)}</div>
-          <div class="pet-card-sub">${esc(pet.rarity || "Common")} · ⚡${
-          pet.energy ?? 100
-        } · 😊${pet.happiness ?? 100}${
-          String(pet.origin || "") === "pi_payment"
-            ? " · <span style=\"color:#c4b5fd\">💜 PI Mint</span>"
-            : ""
-        }</div>
-          ${petStatsRow(pet)}
-          <div class="pet-card-footer">
-            <button class="small-btn" onclick="event.stopPropagation();openOwnedModal(${pid})">VIEW / CARE / BATTLE</button>
-          </div>
-        </div>
-      </div>`;
-        } catch (cardErr) {
-          console.warn("pet card error", cardErr, pet);
-          return "";
-        }
-      })
-      .join("");
-  } catch (e) {
-    console.log("Owned pets error:", e);
-    grid.innerHTML =
-      '<div class="empty">Unable to load My Pets. ' +
-      esc(e.message || "Check login / server.") +
-      '<br><button class="small-btn" style="margin-top:10px" onclick="loadOwnedPets()">Retry</button></div>';
-  }
-}
-
-
-async function showOwnershipCertificate() {
-  try {
-    if (!selectedOwned || !selectedOwned.id) {
-      showToast("Open a pet first.", true);
-      return;
-    }
-    showToast("Loading certificate...");
-    const data = await api("/api/pets/owned/" + selectedOwned.id + "/certificate");
-    const c = data.certificate || {};
-    const lines = [
-      "AMT OWNERSHIP CERTIFICATE",
-      "────────────────────",
-      "ID: " + (c.certificateId || "—"),
-      "Pet: " + (c.petName || "—"),
-      "Element: " + (c.element || "—") + " · " + (c.rarity || "—"),
-      "Level: " + (c.level != null ? c.level : "—"),
-      "Owner: @" + (c.ownerUsername || "Pioneer"),
-      "Mint: " + (c.mintLabel || "—"),
-      "Network: " + (c.network || "—"),
-      "Rep: " + ((c.reputation && c.reputation.rep) || 0) +
-        " · W" + ((c.reputation && c.reputation.wins) || 0) +
-        "/L" + ((c.reputation && c.reputation.losses) || 0),
-      "Date: " + (c.purchasedAt ? new Date(c.purchasedAt).toLocaleString() : "—")
-    ];
-    if ($("ownedCertId")) $("ownedCertId").textContent = c.certificateId || "—";
-    if ($("ownedCertMeta")) {
-      $("ownedCertMeta").textContent = (c.mintLabel || "") + " · " + (c.network || "");
-    }
-    if (c.certificateId && selectedOwned) {
-      selectedOwned.certificate_id = c.certificateId;
-      if (window._ownedMap) {
-        window._ownedMap[selectedOwned.id] = selectedOwned;
-        window._ownedMap[String(selectedOwned.id)] = selectedOwned;
-      }
-    }
-    alert(lines.join("\n"));
-    showToast(c.mintedWithPi ? "💜 PI-minted certificate ready" : "Certificate ready");
-  } catch (e) {
-    showToast((e && e.message) || "Certificate failed", true);
-  }
-}
-
-function openOwnedModal(id) {
-  if (!window._ownedMap) window._ownedMap = {};
-  // support both number and string ids from Postgres BIGINT
-  let pet = window._ownedMap[id] || window._ownedMap[String(id)] || window._ownedMap[Number(id)];
-  if (!pet && selectedOwned && (selectedOwned.id == id)) pet = selectedOwned;
-  if (!pet) {
-    showToast("Pet data missing. Open My Pets again.", true);
-    return;
-  }
-  selectedOwned = pet;
-  if ($("ownedModalName")) $("ownedModalName").textContent = pet.name || "Pet";
-  if ($("ownedModalArt")) $("ownedModalArt").innerHTML = petArtHtml(pet, 100);
-  if ($("ownedLv")) $("ownedLv").textContent = pet.level || 1;
-  if ($("ownedEnergy")) $("ownedEnergy").textContent = pet.energy ?? 100;
-  if ($("ownedHappy")) $("ownedHappy").textContent = pet.happiness ?? 100;
-  if ($("ownedId")) $("ownedId").textContent = pet.id;
-  if ($("ownedHp")) $("ownedHp").textContent = pet.hp;
-  if ($("ownedAtk")) $("ownedAtk").textContent = pet.atk;
-  if ($("ownedDef")) $("ownedDef").textContent = pet.def;
-  if ($("ownedSpd")) $("ownedSpd").textContent = pet.spd;
-  if ($("ownedRepLine")) {
-    const rep = pet.rep != null ? pet.rep : 0;
-    const wins = pet.wins != null ? pet.wins : 0;
-    const losses = pet.losses != null ? pet.losses : 0;
-    let badge = "Rookie";
-    if (rep >= 500) badge = "Mythic Ace";
-    else if (rep >= 250) badge = "Legend";
-    else if (rep >= 120) badge = "Veteran";
-    else if (rep >= 40) badge = "Fighter";
-    $("ownedRepLine").textContent = badge + " · Rep " + rep + " · W" + wins + "/L" + losses;
-  }
-  if ($("sellPriceGuide")) {
-    var _lv = Number(pet.level) || 1;
-    var _sMin = 0.5, _sMax = 2;
-    if (_lv >= 40) { _sMin = 8; _sMax = 25; }
-    else if (_lv >= 30) { _sMin = 5; _sMax = 15; }
-    else if (_lv >= 20) { _sMin = 3; _sMax = 10; }
-    else if (_lv >= 10) { _sMin = 1.5; _sMax = 6; }
-    else if (_lv >= 5) { _sMin = 1; _sMax = 4; }
-    var _pi = String(pet.origin || "") === "pi_payment";
-    if (_pi) { _sMin *= 1.25; _sMax *= 1.35; }
-    $("sellPriceGuide").textContent = "Guide ~" + _sMin.toFixed(1) + "–" + _sMax.toFixed(0) + " AMT · Lv" + _lv + (_pi ? " · PI PAID" : "") + " · not a floor";
-  }
-  if ($("ownedRepLine") && false) {
-    $("ownedRepLine").textContent = badge + " · Rep " + rep + " · W" + wins + "/L" + losses;
-  }
-  const mintedPi = String(pet.origin || "") === "pi_payment";
-  const mintEl = $("ownedMintBadge");
-  if (mintEl) {
-    if (mintedPi) {
-      mintEl.style.display = "block";
-      mintEl.classList.remove("hidden");
-    } else {
-      mintEl.style.display = "none";
-      mintEl.classList.add("hidden");
-    }
-  }
-  if ($("ownedCertId")) {
-    $("ownedCertId").textContent = pet.certificate_id || ("Will assign on view · #" + pet.id);
-  }
-  if ($("ownedCertMeta")) {
-    $("ownedCertMeta").textContent = mintedPi
-      ? "Payment-backed mint · Pi Mainnet"
-      : ("Origin: " + (pet.origin || "shop"));
-  }
-  if ($("ownedSkills")) {
-    $("ownedSkills").textContent = "Loading skills...";
-    const el = pet.element || "Earth";
-    const lv = Number(pet.level) || 1;
-    api("/api/pets/skills?element=" + encodeURIComponent(el) + "&level=" + lv)
-      .then(function(sk) {
-        const list = sk.skills || [];
-        $("ownedSkills").innerHTML = list.map(function(s) {
-          const lock = s.unlocked ? "✓" : ("🔒 Lv" + s.minLv);
-          return "<div style=\"margin:3px 0\"><b>" + s.name + "</b> " + lock + " · " + s.desc + "</div>";
-        }).join("") || "No skills";
-      })
-      .catch(function() { $("ownedSkills").textContent = "Skills unavailable"; });
-  }
-  if (pet.id) loadOwnedGear(pet.id);
-  const modal = $("ownedModal");
-  if (modal) {
-    modal.classList.remove("hidden");
-    modal.style.display = "flex";
-  }
-}
-
-function closeOwnedModal() {
-  // Keep selectedOwned so Story / Squad can use the last opened pet
-  if (selectedOwned) window._storyPet = selectedOwned;
-  const modal = $("ownedModal");
-  if (modal) {
-    modal.classList.add("hidden");
-    modal.style.display = "none";
-  }
-}
-
-function fillOwnedModalFromPet(pet) {
-  if (!pet) return;
-  if (!window._ownedMap) window._ownedMap = {};
-  window._ownedMap[pet.id] = pet;
-  window._ownedMap[String(pet.id)] = pet;
-  selectedOwned = pet;
-  openOwnedModal(pet.id);
-}
-
-async function carePet(action, durationHours) {
-  if (!selectedOwned || !selectedOwned.id) {
-    showToast("Open a pet first (My Pets → VIEW).", true);
-    return;
-  }
-  const ownedId = Number(selectedOwned.id);
-  const petName = selectedOwned.name || "pet";
-  const hours = Number(durationHours || 0);
-  try {
-    showToast(hours > 0 ? ("Starting " + hours + "h care...") : (action === "play" ? "Playing..." : "Feeding..."));
-    const data = await api("/api/pets/care", {
-      method: "POST",
-      body: JSON.stringify({ ownedPetId: ownedId, action: action || "feed", durationHours: hours })
-    });
-    if (!data) throw new Error("Care failed");
-    if (hours > 0) {
-      showToast(data.message || (hours + "h care started · claim XP later"));
-    } else {
-      showToast((action === "feed" ? "Fed " : "Played with ") + petName + " · +" + (data.xpGained || 0) + " XP");
-    }
-    if (data.pet) fillOwnedModalFromPet(data.pet);
-    updateOwnedSessionInfo(data.pet || data);
-    await refreshWallet();
-    loadOwnedPets().catch(() => {});
-  } catch (e) {
-    showToast(e.message || "Care failed", true);
-  }
-}
-
-async function trainPet(stat, durationHours) {
-  if (!selectedOwned || !selectedOwned.id) {
-    showToast("Open a pet first (My Pets → VIEW).", true);
-    return;
-  }
-  const ownedId = Number(selectedOwned.id);
-  const hours = Number(durationHours || 0);
-  try {
-    showToast(hours > 0 ? ("Starting " + hours + "h train...") : ("Training " + String(stat || "atk").toUpperCase() + "..."));
-    const data = await api("/api/pets/train", {
-      method: "POST",
-      body: JSON.stringify({ ownedPetId: ownedId, stat: stat || "atk", durationHours: hours })
-    });
-    if (!data) throw new Error("Train failed");
-    if (hours > 0) {
-      showToast(data.message || (hours + "h training started · claim later"));
-    } else {
-      var st = String(stat || "atk").toUpperCase();
-      var msg = st + " " + (data.beforeStat != null ? data.beforeStat + "→" + data.afterStat : ("+" + (data.gain || ""))) +
-        " · +" + (data.xpGained || 0) + " XP";
-      if (data.milestones && data.milestones.length) {
-        const b = data.milestones.map(m => "Lv" + m.level + " +" + m.amount).join(", ");
-        msg += " · Milestone " + b + " AMT!";
-      }
-      showToast(msg);
-    }
-    if (data.pet) fillOwnedModalFromPet(data.pet);
-    updateOwnedSessionInfo(data.pet || data);
-    await refreshWallet();
-    loadOwnedPets().catch(() => {});
-  } catch (e) {
-    showToast(e.message || "Train failed", true);
-  }
-}
-
-async function claimPetSession() {
-  if (!selectedOwned || !selectedOwned.id) {
-    showToast("Open a pet first (My Pets → VIEW).", true);
-    return;
-  }
-  try {
-    const data = await api("/api/pets/claim-session", {
-      method: "POST",
-      body: JSON.stringify({ ownedPetId: Number(selectedOwned.id) })
-    });
-    showToast(data.message || ("Claimed +" + (data.xpGained || 0) + " XP · Lv" + (data.level || "")));
-    if (data.pet) fillOwnedModalFromPet(data.pet);
-    if ($("ownedSessionInfo")) $("ownedSessionInfo").textContent = "No active session";
-    await refreshWallet();
-    loadOwnedPets().catch(() => {});
-  } catch (e) {
-    showToast(e.message || "Claim failed", true);
-  }
-}
-
-function updateOwnedSessionInfo(pet) {
-  var el = $("ownedSessionInfo");
-  if (!el) return;
-  if (!pet || !pet.session_ends_at) {
-    el.textContent = "No active session · instant Feed/Train gives XP now";
-    el.style.color = "";
-    return;
-  }
-  var ends = new Date(pet.session_ends_at);
-  var left = ends - Date.now();
-  if (left <= 0) {
-    el.textContent = "✅ READY · tap CLAIM for +" + (pet.session_xp || "?") + " XP";
-    el.style.color = "#7dffa0";
-  } else {
-    var h = Math.floor(left / 3600000);
-    var m = Math.floor((left % 3600000) / 60000);
-    el.textContent = "⏳ " + (pet.session_type || "Session") + " · " + h + "h " + m + "m left · +" + (pet.session_xp || "?") + " XP when claimed";
-    el.style.color = "#ffd54f";
-  }
-}
-
-async function cancelPetSession() {
-  if (!selectedOwned || !selectedOwned.id) {
-    showToast("Open a pet first", true);
-    return;
-  }
-  try {
-    const data = await api("/api/pets/cancel-session", {
-      method: "POST",
-      body: JSON.stringify({ ownedPetId: Number(selectedOwned.id) })
-    });
-    showToast(data.message || "Session cancelled");
-    if ($("ownedSessionInfo")) {
-      $("ownedSessionInfo").textContent = "No active session · instant Feed/Train gives XP now";
-      $("ownedSessionInfo").style.color = "";
-    }
-    loadOwnedPets().catch(function(){});
-  } catch (e) {
-    showToast(e.message || "Cancel failed", true);
-  }
-}
-
-async function claimStarterPet() {
-  const btn = $("claimStarterBtn");
-  try {
-    if (btn) { btn.disabled = true; btn.textContent = "CLAIMING…"; }
-    const data = await api("/api/pets/claim-starter", { method: "POST", body: "{}" });
-    showToast(data.message || ("Starter " + (data.pet && data.pet.name) + " claimed!"));
-    if ($("starterPetCard")) $("starterPetCard").classList.add("hidden");
-    await loadOwnedPets();
-    petTab("owned");
-  } catch (e) {
-    showToast(e.message || "Claim failed", true);
-    if (btn) { btn.disabled = false; btn.textContent = "CLAIM FREE TERRA"; }
-    loadStarterStatus();
-  }
-}
-
-async function loadStarterStatus() {
-  try {
-    const data = await api("/api/pets/starter-status");
-    const card = $("starterPetCard");
-    const btn = $("claimStarterBtn");
-    const hint = $("starterPetHint");
-    if (!card) return;
-    if (data.claimed) {
-      card.classList.add("hidden");
-    } else {
-      card.classList.remove("hidden");
-      if (btn) { btn.disabled = false; btn.textContent = "CLAIM FREE TERRA"; }
-      if (hint) hint.textContent = "One-time free Common pet for every pioneer";
-    }
-  } catch (e) {
-    /* ignore */
-  }
-}
-
-async function buyEnergyPack(pack) {
-  if (!selectedOwned || !selectedOwned.id) {
-    showToast("Open a pet first (My Pets → VIEW).", true);
-    return;
-  }
-  try {
-    const data = await api("/api/pets/energy-pack", {
-      method: "POST",
-      body: JSON.stringify({
-        ownedPetId: Number(selectedOwned.id),
-        pack: pack || "energy"
-      })
-    });
-    showToast(data.message || "Pack applied");
-    if (data.pet) fillOwnedModalFromPet(data.pet);
-    await refreshWallet();
-    loadOwnedPets().catch(() => {});
-  } catch (e) {
-    showToast(e.message || "Pack failed", true);
-  }
-}
-
-
-async function refreshDailyBoss() {
-  try {
-    const d = await api("/api/pets/boss");
-    const el = $("bossInfo");
-    if (!el) return;
-    const b = d.boss || {};
-    el.innerHTML = "<b>" + (b.name || "Boss") + "</b> · " + (b.element || "?") +
-      " · Reward ~" + (b.reward || "?") + " AMT" +
-      "<br>Attempts <b>" + (d.attempts || 0) + "/" + (d.maxAttempts || 3) + "</b>" +
-      (d.defeated ? " · ✅ Defeated today" : "") +
-      (d.hint ? "<br>" + d.hint : "");
-  } catch (e) {
-    if ($("bossInfo")) $("bossInfo").textContent = "Boss: login to load";
-  }
-}
-
-async function fightDailyBoss() {
-  if (!selectedOwned || !selectedOwned.id) {
-    showToast("Open a pet from My Pets first (VIEW), then fight boss", true);
-    return;
-  }
-  const petRef = selectedOwned;
-  const ownedId = Number(petRef.id);
-  try {
-    closeOwnedModal();
-    selectedOwned = petRef;
-    showToast("Daily Boss battle...");
-    const data = await api("/api/pets/boss/fight", {
-      method: "POST",
-      body: JSON.stringify({ ownedPetId: ownedId })
-    });
-    await playBattleArena(data);
-    await refreshWallet();
-    await loadOwnedPets();
-    refreshDailyBoss();
-  } catch (e) {
-    showToast(e.message || "Boss fight failed", true);
-  } finally {
-    selectedOwned = null;
-  }
-}
-
-async function battlePet(tier) {
-  if (!selectedOwned) {
-    showToast("Select a pet from My Pets first", true);
-    return;
-  }
-  const petRef = selectedOwned;
-  const ownedId = Number(petRef.id);
-  const tname = tier || "hunter";
-  try {
-    closeOwnedModal();
-    selectedOwned = petRef;
-    showToast((tname.toUpperCase()) + " battle starting...");
-    const data = await api("/api/pets/battle", {
-      method: "POST",
-      body: JSON.stringify({ ownedPetId: ownedId, tier: tname })
-    });
-    await playBattleArena(data);
-    if (data.chargeBonus) showToast(data.chargeBonus + " · " + (data.chargesLeft ?? "?") + " charges left");
-    else if (data.chargesLeft != null) showToast(data.chargesLeft + " charges left");
-    if (data.milestones && data.milestones.length) {
-      const b = data.milestones.map(m => "Lv" + m.level + " +" + m.amount).join(", ");
-      showToast("Level milestone: " + b + " AMT!");
-    }
-    await refreshWallet();
-    await loadOwnedPets();
-    refreshBattleCharges();
-  } catch (e) {
-    showToast(e.message || "Battle failed", true);
-  } finally {
-    selectedOwned = null;
-  }
-}
-
-
-/* ---- Squad 3v3 / 4v4 ---- */
-
-async function refreshOwnerRep() {
-  try {
-    const d = await api("/api/owner/rep");
-    const el = $("ownerRepInfo");
-    if (el) {
-      el.innerHTML = "<b>" + (d.badge || "Rookie") + "</b> · Rep " + (d.rep || 0) +
-        " · Wins " + (d.wins || 0) + " · Losses " + (d.losses || 0);
-    }
-  } catch (e) {}
-}
-
-var _grindZoneId = 1;
-
-async function loadGrindMap() {
-  try {
-    const d = await api("/api/pets/grind/map");
-    const box = $("grindActiveBox");
-    const grid = $("grindZonesGrid");
-    const active = d.active || [];
-    if (box) {
-      if (!active.length) {
-        box.innerHTML = "No pets grinding. Pick a zone → Deploy from My Pets.";
-      } else {
-        box.innerHTML = active.map(function(g) {
-          const ready = g.ready;
-          const left = ready ? "READY" : (Math.ceil((g.msLeft || 0) / 60000) + "m left");
-          const btn = ready
-            ? '<button class="primary" style="margin:4px 0 0;padding:8px;width:100%" onclick="claimGrind(' + g.id + ')">✅ CLAIM LOOT</button>'
-            : '<span class="muted" style="font-size:10px">Grinding…</span>';
-          return '<div style="margin-bottom:8px;padding:8px;border-radius:10px;background:rgba(80,40,120,.25);border:1px solid rgba(180,100,255,.3)">' +
-            '<b>' + (g.petName || "Pet") + '</b> · Lv' + (g.petLevel || 1) + '<br>' +
-            (g.zoneName || "Zone") + ' · ' + (g.hours || 1) + 'h · <b>' + left + '</b>' + btn + '</div>';
-        }).join("");
-      }
-    }
-    if (grid) {
-      grid.innerHTML = (d.zones || []).map(function(z) {
-        const sel = Number(_grindZoneId) === Number(z.id);
-        return '<button type="button" class="secondary" style="margin:0;padding:10px 8px;text-align:left;font-size:11px;border-color:' +
-          (sel ? 'rgba(255,200,60,.7)' : 'rgba(170,80,255,.3)') + ';background:' + (sel ? 'rgba(80,50,10,.5)' : 'rgba(170,80,255,.1)') +
-          '" onclick="_grindZoneId=' + z.id + ';loadGrindMap()">' +
-          (z.emoji || "🗺️") + ' <b>' + z.name + '</b><br>' +
-          '<span class="muted">Lv' + z.minLevel + '+ · ' + z.expPerHour + ' EXP/h · −' + z.energyCostPerHour + '⚡/h</span></button>';
-      }).join("");
-    }
-  } catch (e) {
-    const box = $("grindActiveBox");
-    if (box) box.textContent = "Map: " + (e.message || "unavailable — redeploy server?");
-  }
-}
-
-async function deployGrind() {
-  const pet = selectedOwned || window._storyPet;
-  if (!pet || !pet.id) {
-    showToast("Open My Pets → select a pet first, then Deploy", true);
-    return;
-  }
-  const hours = Number(($("grindHours") && $("grindHours").value) || 1);
-  try {
-    showToast("Deploying...");
-    const data = await api("/api/pets/grind/deploy", {
-      method: "POST",
-      body: JSON.stringify({ ownedPetId: Number(pet.id), zoneId: Number(_grindZoneId) || 1, hours: hours })
-    });
-    showToast(data.message || "Deployed!");
-    await loadGrindMap();
-    await loadOwnedPets();
-  } catch (e) {
-    showToast((e && e.message) || "Deploy failed", true);
-  }
-}
-
-async function claimGrind(grindId) {
-  try {
-    showToast("Claiming loot...");
-    const data = await api("/api/pets/grind/claim", {
-      method: "POST",
-      body: JSON.stringify({ grindId: Number(grindId) })
-    });
-    showToast(data.message || "Claimed!");
-    await loadGrindMap();
-    await loadOwnedPets();
-    await refreshWallet();
-  } catch (e) {
-    showToast((e && e.message) || "Claim failed", true);
-  }
-}
-
-async function refreshStory() {
-  try {
-    const d = await api("/api/pets/story");
-    const info = $("storyInfo");
-    const fighter = (selectedOwned || window._storyPet);
-    const fname = fighter && fighter.name ? fighter.name : "none — open a pet first";
-    if (info) {
-      info.innerHTML = "Chapter <b>" + d.chapter + "</b> · Clears left <b>" + d.clearsLeft + "</b>/3 · Total " + (d.totalClears || 0) +
-        "<br>Fighter: <b>" + fname + "</b>";
-    }
-    const box = $("storyChapters");
-    if (box) {
-      box.innerHTML = (d.chapters || []).map(function(c) {
-        const lock = c.unlocked ? "✓" : "🔒";
-        return "<div class='balance-row'><span>" + lock + " Ch." + c.id + " " + c.name +
-          "</span><span class='muted'>EXP " + c.exp + " · " + c.reward + " AMT</span></div>";
-      }).join("");
-    }
-    window._storyChapter = d.chapter;
-  } catch (e) {
-    const info = $("storyInfo");
-    if (info) info.textContent = "Story: " + (e.message || "unavailable — redeploy server?");
-  }
-}
-
-function playStoryFromModal() {
-  if (selectedOwned) window._storyPet = selectedOwned;
-  closeOwnedModal();
-  playStoryChapter();
-}
-
-async function playStoryChapter() {
-  const pet = selectedOwned || window._storyPet;
-  if (!pet || !pet.id) {
-    showToast("Open My Pets → open a pet first, then Play Story", true);
-    return;
-  }
-  selectedOwned = pet;
-  window._storyPet = pet;
-  const ownedId = Number(pet.id);
-  try {
-    showToast("Story battle...");
-    const data = await api("/api/pets/story/play", {
-      method: "POST",
-      body: JSON.stringify({
-        ownedPetId: ownedId,
-        chapter: window._storyChapter || 1
-      })
-    });
-    if (data.expGain) showToast("+" + data.expGain + " EXP" + (data.underdog ? " · Underdog!" : ""));
-    await playBattleArena(data);
-    await refreshWallet();
-    await loadOwnedPets();
-    refreshStory(); try{ loadGrindMap(); }catch(e){}
-    refreshOwnerRep();
-    refreshBattleCharges();
-  } catch (e) {
-    showToast(e.message || "Story failed", true);
-  }
-}
-
-function closePetHistory() {
-  const m = $("petHistoryModal");
-  if (m) { m.classList.add("hidden"); m.style.display = "none"; }
-}
-
-async function showPetHistory() {
-  if (!selectedOwned || !selectedOwned.id) {
-    showToast("Open a pet first", true);
-    return;
-  }
-  try {
-    const d = await api("/api/pets/" + selectedOwned.id + "/history");
-    const body = $("petHistoryBody");
-    const modal = $("petHistoryModal");
-    if (!body || !modal) return;
-    const pet = d.pet || {};
-    let html = "<div style='margin-bottom:10px'><b>" + (pet.name || "Pet") +
-      "</b> · " + (d.repBadge || "Rookie") + " · Rep " + (pet.rep || 0) +
-      " · W" + (pet.wins || 0) + "/L" + (pet.losses || 0) + "</div>";
-    const hist = d.history || [];
-    if (!hist.length) {
-      html += "<div>No ownership events yet.</div>";
-    } else {
-      html += hist.map(function(h) {
-        const when = h.created_at ? String(h.created_at).slice(0, 16) : "";
-        const from = h.from_user ? "@" + h.from_user : "—";
-        const to = h.to_user ? "@" + h.to_user : "—";
-        return "<div style='margin:8px 0;padding:8px;background:rgba(255,255,255,.04);border-radius:8px'>" +
-          "<b>" + (h.event_type || "EVENT") + "</b> · " + when + "<br>" +
-          from + " → " + to +
-          (Number(h.price_amt) ? " · " + h.price_amt + " AMT" : "") +
-          (h.note ? "<br><span class='muted'>" + h.note + "</span>" : "") +
-          "</div>";
-      }).join("");
-    }
-    body.innerHTML = html;
-    modal.classList.remove("hidden");
-    modal.style.display = "flex";
-  } catch (e) {
-    showToast(e.message || "History failed", true);
-  }
-}
-
-
-const GEAR_SLOTS = ["weapon","shield","head","body","boots","accessory"];
-
-function gearSvg(shape, color) {
-  color = color || "#aaa";
-  const c = color;
-  if (shape === "sword") {
-    return '<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#fff"/><stop offset="40%" stop-color="'+c+'"/><stop offset="100%" stop-color="#333"/></linearGradient></defs><rect x="14" y="2" width="4" height="18" rx="1" fill="url(#g)"/><rect x="12" y="18" width="8" height="3" fill="#8d6e63"/><rect x="14.5" y="21" width="3" height="8" fill="#5d4037"/></svg>';
-  }
-  if (shape === "spear") {
-    return '<svg viewBox="0 0 32 32"><polygon points="16,2 19,10 16,9 13,10" fill="'+c+'"/><rect x="15" y="9" width="2" height="18" fill="#8d6e63"/></svg>';
-  }
-  if (shape === "shield") {
-    return '<svg viewBox="0 0 32 32"><path d="M16 2 L28 8 V16 C28 24 16 30 16 30 S4 24 4 16 V8 Z" fill="'+c+'" stroke="rgba(255,255,255,.3)" stroke-width="1"/><path d="M16 6 L24 10 V16 C24 21 16 26 16 26 S8 21 8 16 V10 Z" fill="rgba(0,0,0,.2)"/></svg>';
-  }
-  if (shape === "helm") {
-    return '<svg viewBox="0 0 32 32"><path d="M6 18 Q6 6 16 6 Q26 6 26 18 L26 22 L6 22 Z" fill="'+c+'"/><rect x="10" y="14" width="5" height="3" fill="#111"/><rect x="17" y="14" width="5" height="3" fill="#111"/></svg>';
-  }
-  if (shape === "crown") {
-    return '<svg viewBox="0 0 32 32"><path d="M4 22 L4 12 L10 18 L16 8 L22 18 L28 12 L28 22 Z" fill="'+c+'" stroke="#fff3" stroke-width="1"/></svg>';
-  }
-  if (shape === "armor") {
-    return '<svg viewBox="0 0 32 32"><path d="M8 8 L16 4 L24 8 L26 12 L22 14 L22 28 L10 28 L10 14 L6 12 Z" fill="'+c+'"/><rect x="14" y="14" width="4" height="10" fill="rgba(0,0,0,.25)"/></svg>';
-  }
-  if (shape === "cloak") {
-    return '<svg viewBox="0 0 32 32"><path d="M10 6 Q16 2 22 6 L24 28 Q16 24 8 28 Z" fill="'+c+'"/><circle cx="16" cy="8" r="3" fill="rgba(255,255,255,.2)"/></svg>';
-  }
-  if (shape === "boots") {
-    return '<svg viewBox="0 0 32 32"><path d="M8 8 H16 V20 H24 V26 H8 Z" fill="'+c+'"/><rect x="8" y="24" width="16" height="4" fill="rgba(0,0,0,.3)"/></svg>';
-  }
-  if (shape === "ring") {
-    return '<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="9" fill="none" stroke="'+c+'" stroke-width="4"/><circle cx="16" cy="7" r="3" fill="'+c+'"/></svg>';
-  }
-  if (shape === "amulet") {
-    return '<svg viewBox="0 0 32 32"><path d="M16 4 L18 12 H14 Z" fill="#ddd"/><circle cx="16" cy="20" r="8" fill="'+c+'"/><circle cx="16" cy="20" r="3" fill="rgba(255,255,255,.4)"/></svg>';
-  }
-  if (shape === "orb") {
-    return '<svg viewBox="0 0 32 32"><defs><radialGradient id="o" cx="35%" cy="35%"><stop offset="0%" stop-color="#fff"/><stop offset="70%" stop-color="'+c+'"/><stop offset="100%" stop-color="#222"/></radialGradient></defs><circle cx="16" cy="16" r="11" fill="url(#o)"/></svg>';
-  }
-  if (shape === "dagger") {
-    return '<svg viewBox="0 0 32 32"><polygon points="16,2 19,14 16,13 13,14" fill="'+c+'"/><rect x="14.5" y="13" width="3" height="6" fill="#8d6e63"/><rect x="12" y="19" width="8" height="2.5" fill="#5d4037"/><rect x="15" y="21" width="2" height="6" fill="#4e342e"/></svg>';
-  }
-  if (shape === "axe") {
-    return '<svg viewBox="0 0 32 32"><path d="M18 4 L28 10 L28 16 L18 14 Z" fill="'+c+'"/><rect x="14" y="6" width="4" height="20" rx="1" fill="#6d4c41"/></svg>';
-  }
-  if (shape === "bow") {
-    return '<svg viewBox="0 0 32 32"><path d="M10 4 Q4 16 10 28" fill="none" stroke="'+c+'" stroke-width="3"/><path d="M10 4 L10 28" fill="none" stroke="#eee" stroke-width="1.5"/><line x1="10" y1="16" x2="26" y2="16" stroke="#ddd" stroke-width="1.5"/><polygon points="26,16 22,14 22,18" fill="'+c+'"/></svg>';
-  }
-  if (shape === "staff") {
-    return '<svg viewBox="0 0 32 32"><rect x="14.5" y="10" width="3" height="20" fill="#6d4c41"/><circle cx="16" cy="7" r="5" fill="'+c+'"/><circle cx="16" cy="7" r="2" fill="rgba(255,255,255,.5)"/></svg>';
-  }
-  if (shape === "wand") {
-    return '<svg viewBox="0 0 32 32"><rect x="15" y="8" width="2" height="20" fill="#a1887f"/><circle cx="16" cy="6" r="4" fill="'+c+'"/><path d="M16 2 L17 5 L16 4 L15 5 Z" fill="#fff"/></svg>';
-  }
-  if (shape === "halberd") {
-    return '<svg viewBox="0 0 32 32"><rect x="15" y="8" width="2" height="22" fill="#5d4037"/><path d="M17 6 L28 12 L17 14 Z" fill="'+c+'"/><polygon points="16,2 18,8 14,8" fill="'+c+'"/></svg>';
-  }
-  return '<svg viewBox="0 0 32 32"><rect x="6" y="6" width="20" height="20" rx="4" fill="'+c+'"/></svg>';
-}
-
-function gearIconHtml(g, size) {
-  if (!g) return '<div class="gear-icon" style="background:#222;width:'+(size||44)+'px;height:'+(size||44)+'px"></div>';
-  const bg = "linear-gradient(145deg," + (g.color||"#666") + "55,#111)";
-  return '<div class="gear-icon" style="background:' + bg + ';width:'+(size||44)+'px;height:'+(size||44)+'px">' +
-    gearSvg(g.shape, g.color) + "</div>";
-}
-
-
-async function loadMaterialsShop() {
-  const box = $("gearShopGrid");
-  if (!box) return;
-  box.innerHTML = "<div class='muted'>Loading materials...</div>";
-  try {
-    const d = await api("/api/gear/materials");
-    const owned = d.materials || [];
-    const have = {};
-    owned.forEach(function(m){ have[m.id] = m.qty; });
-    var html = "";
-    html += "<div class='card-title' style='font-size:13px;margin:8px 0 6px'>YOUR CORES AND GEMS</div>";
-    if (!owned.length) {
-      html += "<div class='muted' style='font-size:11px;margin-bottom:10px'>None yet. Buy below or win battles/boss.</div>";
-    } else {
-      owned.forEach(function(m) {
-        html += "<div class='balance-row'><span class='balance-row-label'>" + (m.name || m.id) +
-          "</span><span class='balance-row-value'>x" + m.qty + "</span></div>";
-      });
-      html += "<div class='muted' style='font-size:10px;margin:8px 0'>Use: My Pet - Upgrade Weapon / Gem sockets</div>";
-    }
-    html += "<div class='card-title' style='font-size:13px;margin:14px 0 6px'>BUY MATERIALS</div>";
-    (d.catalog || []).forEach(function(m) {
-      var q = have[m.id] || 0;
-      html += "<div class='balance-row' style='flex-wrap:wrap;gap:6px;align-items:center'>";
-      html += "<div style='flex:1;min-width:120px'><b>" + m.name + "</b><div class='muted' style='font-size:10px'>";
-      html += (m.desc || "") + " · Have <b>" + q + "</b></div></div>";
-      html += "<button class='small-btn' style='width:auto' onclick=\"buyMaterial('" + m.id + "')\">" + m.priceAmt + " AMT</button></div>";
-    });
-    box.innerHTML = html;
-  } catch (e) {
-    box.innerHTML = "<div class='muted'>" + (e.message || "Failed") + "</div>";
-  }
-}
-
-async function buyMaterial(id) {
-  try {
-    const d = await api("/api/gear/buy-material", {
-      method: "POST",
-      body: JSON.stringify({ materialId: id, qty: 1 })
-    });
-    showToast(d.message || "Bought — check Bag");
-    await refreshWallet();
-    loadMaterialsShop();
-    /* also visible in Bag */
-
-  } catch (e) {
-    showToast(e.message || "Buy failed", true);
-  }
-}
-
-async function upgradeEquipped(slot) {
-  if (!selectedOwned || !selectedOwned.id) {
-    showToast("Open My Pets → VIEW pet → equip weapon muna", true);
-    return;
-  }
-  try {
-    const d = await api("/api/gear/upgrade", {
-      method: "POST",
-      body: JSON.stringify({ ownedPetId: Number(selectedOwned.id), slot: slot || "weapon" })
-    });
-    showToast(d.message || ("Weapon +" + d.upgrade_level + "!"));
-    await refreshWallet();
-    if (selectedOwned.id) loadOwnedGear(selectedOwned.id);
-  } catch (e) {
-    showToast(e.message || "Upgrade failed — equip weapon on this pet first", true);
-  }
-}
-
-async function socketGem(slot, gemIndex, materialId) {
-  if (!selectedOwned || !selectedOwned.id) {
-    showToast("Open My Pets → VIEW pet first, then socket gem on equipped gear.", true);
-    return;
-  }
-  try {
-    const d = await api("/api/gear/socket", {
-      method: "POST",
-      body: JSON.stringify({
-        ownedPetId: Number(selectedOwned.id),
-        slot: slot || "weapon",
-        gemIndex: gemIndex,
-        materialId: materialId
-      })
-    });
-    showToast(d.message || "Socketed");
-    if (selectedOwned.id) loadOwnedGear(selectedOwned.id);
-  } catch (e) {
-    showToast(e.message || "Socket failed", true);
-  }
-}
-
-async function pickSocketGem(slot, gemIndex) {
-  try {
-    const d = await api("/api/gear/materials");
-    const gems = (d.materials || []).filter(function(m){ return m.kind === "gem" && m.qty > 0; });
-    if (!gems.length) {
-      showToast("No gems. Buy at Gems/Cores or win battles.", true);
-      return;
-    }
-    // Use first available gem of preferred type - prompt via simple cycle ATK>HP>DEF
-    var pick = gems[0];
-    var prefer = window._socketPrefer || "atk";
-    for (var i = 0; i < gems.length; i++) {
-      if (gems[i].stat === prefer) { pick = gems[i]; break; }
-    }
-    await socketGem(slot, gemIndex, pick.id);
-  } catch (e) {
-    showToast(e.message || "No gems", true);
-  }
-}
-
-async function loadGearShop(filter) {
-  const box = $("gearShopGrid");
-  if (!box) return;
-  filter = filter || "weapon";
-  box.innerHTML = "<div class='muted'>Loading weapon store...</div>";
-  try {
-    const d = await api("/api/gear/shop");
-    let list = d.gear || [];
-    if (filter === "weapon") {
-      list = list.filter(function(g){ return g.slot === "weapon"; });
-    } else if (filter === "armor") {
-      list = list.filter(function(g){ return g.slot !== "weapon"; });
-    }
-    if (!list.length) {
-      box.innerHTML = "<div class='muted'>No items in this category.</div>";
-      return;
-    }
-    box.innerHTML = list.map(function(g) {
-      return '<div class="balance-row" style="flex-wrap:wrap;gap:8px;align-items:center">' +
-        gearIconHtml(g) +
-        '<div style="flex:1;min-width:120px"><b>' + g.name + '</b><div class="muted" style="font-size:10px">' +
-        g.slot + (g.weaponType ? " · " + g.weaponType : "") + " · " + g.rarity +
-        " · +" + g.atk + "ATK +" + g.def + "DEF +" + g.hp + "HP +" + g.spd + "SPD</div></div>" +
-        '<button class="small-btn" style="width:auto" onclick="buyGear(\'' + g.id + '\')">' + g.priceAmt + " AMT</button></div>";
-    }).join("");
-  } catch (e) {
-    box.innerHTML = "<div class='muted'>" + (e.message || "Failed") + "</div>";
-  }
-}
-
-
-async function useBagMaterial(materialId) {
-  const mid = String(materialId || "");
-  if (!mid) return;
-  window._pendingMaterial = mid;
-  showToast("STEP 2: Tap a GEAR below (yellow) to put core/gem on it");
-  loadGearInventory();
-}
-
-async function applyPendingToGear(gearId) {
-  const mid = window._pendingMaterial;
-  if (!mid) {
-    showToast("STEP 1: Tap a Core or Gem first (yellow list)", true);
-    return;
-  }
-  try {
-    showToast("Applying to item...");
-    var body = { materialId: mid, gearId: String(gearId) };
-    if (selectedOwned && selectedOwned.id) body.ownedPetId = Number(selectedOwned.id);
-    const d = await api("/api/gear/apply-to-item", {
-      method: "POST",
-      body: JSON.stringify(body)
-    });
-    window._pendingMaterial = null;
-    showToast(d.message || "Applied!");
-    try { await refreshWallet(); } catch (e1) {}
-    loadGearInventory();
-  } catch (e) {
-    showToast((e && e.message) || "Failed to apply", true);
-  }
-}
-
-async function loadGearInventory() {
-  const box = $("gearShopGrid");
-  if (!box) return;
-  box.innerHTML = "<div class='muted'>Loading bag...</div>";
-  try {
-    const d = await api("/api/gear/inventory");
-    const list = d.items || [];
-    let mats = d.materials || [];
-    if (!mats.length) {
-      try {
-        const md = await api("/api/gear/materials");
-        mats = md.materials || [];
-      } catch (e2) {}
-    }
-    var html = "";
-    var pending = window._pendingMaterial;
-    if (pending) {
-      html += "<div class='notice' style='margin-bottom:10px'><b>Selected:</b> " + pending +
-        " — now TAP a gear below</div>";
-    }
-    html += "<div class='card-title' style='font-size:13px;margin:6px 0'>BAG · CORES AND GEMS</div>";
-    if (mats.length) {
-      mats.forEach(function(m) {
-        var icon = m.kind === "core" ? "🔶" : "💎";
-        var mid = String(m.id || "").replace(/'/g, "");
-        html += "<div class='balance-row' style='align-items:center;cursor:pointer' onclick=\"useBagMaterial('" + mid + "')\">" +
-          "<span style='font-size:18px;margin-right:8px'>" + icon + "</span>" +
-          "<span class='balance-row-label' style='flex:1'>" + (m.name || m.id) +
-          (m.desc ? "<div class='muted' style='font-size:10px'>" + m.desc + "</div>" : "") +
-          "<div class='muted' style='font-size:10px;color:#ffd54f'>1. Tap gem/core</div>" +
-          "</span><span class='balance-row-value'>x" + m.qty + "</span></div>";
-      });
-    } else {
-      html += "<div class='muted' style='font-size:11px;margin-bottom:12px'>No cores/gems. Buy at Gems/Cores.</div>";
-    }
-    html += "<div class='card-title' style='font-size:13px;margin:8px 0 6px'>BAG · GEAR (2. tap item)</div>";
-    if (!list.length) {
-      html += "<div class='muted'>No gear. Buy from Weapons tab.</div>";
-    } else {
-      html += list.map(function(g) {
-        var up = g.upgrade_level ? (" +" + g.upgrade_level) : "";
-        var gems = "";
-        if (g.gem1 || g.gem2) gems = " · " + (g.gem1 || "-") + " / " + (g.gem2 || "-");
-        var hint = pending
-          ? "<div class='muted' style='font-size:10px;color:#ffd54f'>TAP TO APPLY</div>"
-          : "<div class='muted' style='font-size:10px'>" + g.slot + up + gems + (g.equipped ? " · equipped" : "") + "</div>";
-        return '<div class="balance-row" style="flex-wrap:wrap;gap:8px;align-items:center;cursor:pointer;' +
-          (pending ? "outline:2px solid #ffd54f;" : "") +
-          '" onclick="applyPendingToGear(\'' + g.id + '\')">' +
-          gearIconHtml(g) +
-          '<div style="flex:1;min-width:120px"><b>' + g.name + up + '</b> x' + (g.qty || 1) +
-          hint + "</div></div>";
-      }).join("");
-    }
-    box.innerHTML = html;
-  } catch (e) {
-    box.innerHTML = "<div class='muted'>" + (e.message || "Failed") + "</div>";
-  }
-}
-
-
-async function buyGear(gearId) {
-  try {
-    const d = await api("/api/gear/buy", { method: "POST", body: JSON.stringify({ gearId: gearId }) });
-    showToast(d.message || "Purchased");
-    if (typeof refreshWallet === "function") refreshWallet();
-    loadGearInventory();
-  } catch (e) {
-    showToast(e.message || "Buy failed", true);
-  }
-}
-
-function renderWearPreview(slots) {
-  const wrap = $("ownedWearPreview");
-  if (!wrap) return;
-  const by = {};
-  (slots || []).forEach(function(s) { if (s.gear) by[s.slot] = s.gear; });
-  const artEl = $("ownedModalArt");
-  const art = artEl ? artEl.innerHTML : "";
-  if (artEl) artEl.style.display = "none"; // pet shown inside wear frame
-
-  function slotHtml(slot, g) {
-    if (g) {
-      return '<div class="pet-wear-slot pet-wear-' + slot + '" title="' + (g.name || slot) + '">' +
-        gearSvg(g.shape, g.color) + '</div>';
-    }
-    return '<div class="pet-wear-slot empty-slot pet-wear-' + slot + '" title="' + slot + '"></div>';
-  }
-
-  const equipped = Object.keys(by).length;
-  wrap.innerHTML =
-    '<div class="pet-wear-wrap">' +
-      '<div class="pet-wear-art">' + art + '</div>' +
-      slotHtml("head", by.head) +
-      slotHtml("weapon", by.weapon) +
-      slotHtml("shield", by.shield) +
-      slotHtml("body", by.body) +
-      slotHtml("boots", by.boots) +
-      slotHtml("accessory", by.accessory) +
-    '</div>' +
-    '<div class="pet-wear-label">' +
-      (equipped ? ("Equipped " + equipped + "/6 · visible on pet") : "No gear yet · buy in Weapon Store") +
-    '</div>';
-}
-
-async function loadOwnedGear(ownedId) {
-  const panel = $("ownedGearPanel");
-  const bonus = $("ownedGearBonus");
-  if (!panel) return;
-  try {
-    const d = await api("/api/pets/" + ownedId + "/equipment");
-    renderWearPreview(d.slots);
-    const b = d.bonuses || {};
-    if (bonus) {
-      bonus.innerHTML = "Gear bonus: +" + (b.atk||0) + " ATK · +" + (b.def||0) + " DEF · +" +
-        (b.hp||0) + " HP · +" + (b.spd||0) + " SPD";
-    }
-    let html = '<div class="card-title" style="font-size:12px">Equipment</div><div class="grid" style="grid-template-columns:1fr 1fr;gap:6px">';
-    (d.slots || []).forEach(function(s) {
-      const g = s.gear;
-      html += '<div class="gear-slot"><div class="gear-slot-label">' + s.slot +
-        (s.upgrade_level ? (' +' + s.upgrade_level) : '') + '</div>';
-      if (g) {
-        var g1n = s.gem1 || 'empty';
-        var g2n = s.gem2 || 'empty';
-        html += '<div style="display:flex;gap:6px;align-items:center">' + gearIconHtml(g, 36) +
-          '<div style="flex:1;font-size:11px"><b>' + g.name +
-          (s.upgrade_level ? (' +' + s.upgrade_level) : '') + '</b><br>' +
-          '<span class="muted" style="font-size:10px">Gems: ' + g1n + ' | ' + g2n + '</span><br>' +
-          '<button class="small-btn" style="width:auto;padding:4px 8px;margin-top:4px" onclick="unequipGear(\'' + s.slot + '\')">Unequip</button></div></div>';
-      } else {
-        html += '<div class="muted" style="font-size:10px">Empty — equip from list below</div>';
-      }
-      html += '</div>';
-    });
-    html += '</div>';
-    // inventory quick equip
-    const inv = await api("/api/gear/inventory");
-    const items = inv.items || [];
-    if (items.length) {
-      html += '<div class="muted" style="font-size:11px;margin:8px 0 4px">Tap item to equip</div>';
-      html += items.map(function(g) {
-        return '<button class="secondary" style="margin:4px 0;display:flex;gap:8px;align-items:center;text-align:left" onclick="equipGear(\'' + g.id + '\')">' +
-          gearIconHtml(g, 32) + '<span>' + g.name + ' · ' + g.slot + ' ×' + g.qty + '</span></button>';
-      }).join("");
-    }
-    panel.innerHTML = html;
-  } catch (e) {
-    panel.innerHTML = "<div class='muted'>" + (e.message || "Gear unavailable") + "</div>";
-  }
-
-  try {
-    const panel = $("ownedUpgradePanel");
-    if (panel) {
-      panel.innerHTML = "<div class='muted' style='font-size:10px;margin:6px 0'>Buy Cores/Gems: Market → Weapons store → <b>Gems/Cores</b> tab · or win battles</div>" +
-        "<button class='secondary' style='margin-bottom:6px' onclick=\"upgradeEquipped('weapon')\">⬆️ UPGRADE WEAPON (+Core)</button>" +
-        "<div style='display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px'>" +
-        "<button class='small-btn' style='width:auto' onclick=\"window._socketPrefer='atk';pickSocketGem('weapon',1)\">💎 Gem1 ATK</button>" +
-        "<button class='small-btn' style='width:auto' onclick=\"window._socketPrefer='hp';pickSocketGem('weapon',2)\">💎 Gem2 HP</button>" +
-        "</div>" +
-        "<button class='primary' style='margin-bottom:6px' onclick='goBuyGemsCores()'>🛒 BUY GEMS / CORES</button>";
-    }
-  } catch (e) {}
-}
-
-function goBuyGemsCores() {
-  try { closeOwnedModal(); } catch (e) {}
-  try {
-    if (typeof showSection === "function") showSection("marketSection");
-    else if (typeof petTab === "function") petTab("shop");
-  } catch (e) {}
-  setTimeout(function() {
-    try { loadMaterialsShop(); } catch (e) {}
-  }, 200);
-  showToast("Market → Gems/Cores");
-}
-
-
-
-async function equipGear(gearId) {
-  if (!selectedOwned || !selectedOwned.id) return showToast("No pet selected", true);
-  try {
-    const d = await api("/api/gear/equip", {
-      method: "POST",
-      body: JSON.stringify({ ownedPetId: Number(selectedOwned.id), gearId: gearId })
-    });
-    showToast(d.message || "Equipped");
-    loadOwnedGear(selectedOwned.id);
-  } catch (e) {
-    showToast(e.message || "Equip failed", true);
-  }
-}
-
-async function unequipGear(slot) {
-  if (!selectedOwned || !selectedOwned.id) return;
-  try {
-    await api("/api/gear/unequip", {
-      method: "POST",
-      body: JSON.stringify({ ownedPetId: Number(selectedOwned.id), slot: slot })
-    });
-    showToast("Unequipped " + slot);
-    loadOwnedGear(selectedOwned.id);
-  } catch (e) {
-    showToast(e.message || "Unequip failed", true);
-  }
-}
-
-async function refreshBattleCharges() {
-  try {
-    const d = await api("/api/pets/battle-charges");
-    const el = $("battleChargesInfo");
-    if (el) {
-      el.innerHTML = "<b>" + d.charges + "</b> charges left · Wins today " + (d.wins || 0) +
-        " · Streak " + (d.streak || 0) +
-        "<br><span class='muted' style='font-size:10px'>" + (d.rule || "") + "</span>";
-    }
-  } catch (e) {}
-}
-
-let squadSize = 3;
-let squadPicks = [null, null, null, null];
-
-function setSquadSize(n) {
-  squadSize = n === 4 ? 4 : 3;
-  showToast(squadSize + "v" + squadSize + " mode");
-  renderSquadSlots();
-}
-
-async function loadSquad() {
-  try {
-    const data = await api("/api/pets/squad");
-    const sq = data.squad || [];
-    squadPicks = [null, null, null, null];
-    sq.forEach(function(s) {
-      const slot = Number(s.slot) - 1;
-      if (slot >= 0 && slot < 4) {
-        squadPicks[slot] = {
-          id: s.owned_pet_id,
-          name: s.name,
-          level: s.level,
-          element: s.element
-        };
-      }
-    });
-    if (sq.length === 4) squadSize = 4;
-    else if (sq.length === 3) squadSize = 3;
-    renderSquadSlots();
-    refreshBattleCharges();
-    refreshStory(); try{ loadGrindMap(); }catch(e){}
-    refreshOwnerRep();
-  } catch (e) {
-    renderSquadSlots();
-  }
-}
-
-function renderSquadSlots() {
-  const box = $("squadSlots");
-  if (!box) return;
-  let html = "";
-  for (let i = 0; i < squadSize; i++) {
-    const p = squadPicks[i];
-    html += '<div class="balance-row" style="flex-wrap:wrap;gap:6px">' +
-      '<span class="balance-row-label">Slot ' + (i + 1) + '</span>' +
-      '<span class="balance-row-value" style="font-size:12px">' +
-        (p ? (p.name + " Lv" + (p.level || 1)) : "— empty") +
-      '</span>' +
-      '<button class="small-btn" style="width:auto" onclick="pickSquadSlot(' + i + ')">' +
-        (p ? "Change" : "Pick") + "</button>" +
-      (p ? '<button class="small-btn" style="width:auto" onclick="clearSquadSlot(' + i + ')">✕</button>' : "") +
-      "</div>";
-  }
-  box.innerHTML = html;
-}
-
-function clearSquadSlot(i) {
-  squadPicks[i] = null;
-  renderSquadSlots();
-}
-
-let _squadPickSlot = 0;
-
-function closeSquadPick() {
-  const m = $("squadPickModal");
-  if (m) {
-    m.classList.add("hidden");
-    m.style.display = "none";
-  }
-}
-
-async function pickSquadSlot(i) {
-  _squadPickSlot = i;
-  if (!window.ownedPetsCache || !window.ownedPetsCache.length) {
-    try {
-      await loadOwnedPets();
-    } catch (e) {}
-  }
-  const list = window.ownedPetsCache || [];
-  if (!list.length) {
-    showToast("No pets yet. Buy or claim pets in My Pets first.", true);
-    return;
-  }
-  const title = $("squadPickTitle");
-  if (title) title.textContent = "Pick pet · Slot " + (i + 1);
-  const box = $("squadPickList");
-  if (!box) return;
-  box.innerHTML = list.map(function(p) {
-    const used = squadPicks.some(function(s, idx) {
-      return s && idx !== i && Number(s.id) === Number(p.id);
-    });
-    const name = String(p.name || "Pet").replace(/</g, "");
-    const el = String(p.element || "").replace(/</g, "");
-    return (
-      '<div class="card" style="margin:0 0 8px;padding:12px;opacity:' + (used ? "0.45" : "1") + '">' +
-        '<div style="font-weight:900">' + name + ' <span class="muted">Lv' + (p.level || 1) + '</span></div>' +
-        '<div class="muted" style="font-size:11px;margin:4px 0">' + el +
-          ' · HP ' + (p.hp || "—") + ' · ATK ' + (p.atk || "—") +
-          ' · DEF ' + (p.def || "—") + ' · SPD ' + (p.spd || "—") +
-        '</div>' +
-        (used
-          ? '<div class="muted" style="font-size:11px">Already in squad</div>'
-          : '<button class="primary" style="margin-top:6px" onclick="confirmSquadPick(\'' + p.id + '\')">Select</button>') +
-      '</div>'
+    console.error(
+      "SERVER START FAILED:",
+      error
     );
-  }).join("");
-  const m = $("squadPickModal");
-  if (m) {
-    m.classList.remove("hidden");
-    m.style.display = "flex";
+
+    process.exit(1);
   }
 }
 
-function confirmSquadPick(petId) {
-  const list = window.ownedPetsCache || [];
-  const pet = list.find(function(p) {
-    return String(p.id) === String(petId);
-  });
-  if (!pet) return showToast("Pet not found", true);
-  for (let j = 0; j < squadSize; j++) {
-    if (j !== _squadPickSlot && squadPicks[j] && Number(squadPicks[j].id) === Number(pet.id)) {
-      return showToast("Pet already in squad", true);
-    }
-  }
-  squadPicks[_squadPickSlot] = {
-    id: pet.id,
-    name: pet.name,
-    level: pet.level,
-    element: pet.element
-  };
-  closeSquadPick();
-  renderSquadSlots();
-  showToast((pet.name || "Pet") + " → Slot " + (_squadPickSlot + 1));
-}
-
-async function saveSquad() {
-  const slots = [];
-  for (let i = 0; i < squadSize; i++) {
-    if (!squadPicks[i]) return showToast("Fill slot " + (i + 1), true);
-    slots.push(Number(squadPicks[i].id));
-  }
-  try {
-    const data = await api("/api/pets/squad/set", {
-      method: "POST",
-      body: JSON.stringify({ size: squadSize, slots: slots })
-    });
-    showToast(data.message || "Squad saved");
-  } catch (e) {
-    showToast(e.message || "Save failed", true);
-  }
-}
-
-async function squadBattle(tier) {
-  try {
-    showToast((squadSize) + "v" + squadSize + " starting...");
-    const data = await api("/api/pets/squad/battle", {
-      method: "POST",
-      body: JSON.stringify({ size: squadSize, tier: tier || "hunter" })
-    });
-    if (data.teamSummary) showToast(data.teamSummary);
-    if (data.chargeBonus) showToast(data.chargeBonus + " · " + (data.chargesLeft ?? "?") + " left");
-    await playBattleArena(data);
-    await refreshWallet();
-    await loadOwnedPets();
-    refreshBattleCharges();
-  } catch (e) {
-    showToast(e.message || "Squad battle failed", true);
-  }
-}
-
-async function listPetInArena() {
-  if (!selectedOwned || !selectedOwned.id) {
-    showToast("Open a pet from My Pets first", true);
-    return;
-  }
-  try {
-    const data = await api("/api/pets/arena/list", {
-      method: "POST",
-      body: JSON.stringify({ ownedPetId: Number(selectedOwned.id) })
-    });
-    showToast(data.message || "Listed in PvP Arena");
-    closeOwnedModal();
-  } catch (e) {
-    showToast(e.message || "Arena list failed", true);
-  }
-}
-
-async function unlistMyArena() {
-  try {
-    const data = await api("/api/pets/arena/unlist", {
-      method: "POST",
-      body: JSON.stringify({})
-    });
-    showToast(data.message || "Unlisted from arena");
-    if ($("arenaModal") && !$("arenaModal").classList.contains("hidden")) {
-      openArenaModal();
-    }
-  } catch (e) {
-    showToast(e.message || "Unlist failed", true);
-  }
-}
-
-function closeArenaModal() {
-  const m = $("arenaModal");
-  if (m) {
-    m.classList.add("hidden");
-    m.style.display = "none";
-  }
-  closeArenaPreview();
-}
-
-function closeArenaPreview() {
-  const m = $("arenaPreviewModal");
-  if (m) {
-    m.classList.add("hidden");
-    m.style.display = "none";
-  }
-}
-
-async function openArenaModal() {
-  const m = $("arenaModal");
-  if (!m) return;
-  m.classList.remove("hidden");
-  m.style.display = "flex";
-  const box = $("arenaList");
-  const mine = $("myArenaBox");
-  if (box) box.innerHTML = "<div class='muted'>Loading arena...</div>";
-  if (mine) mine.innerHTML = "";
-  try {
-    // My listing — viewable + unlist
-    try {
-      const mineData = await api("/api/pets/arena/mine");
-      const ml = (mineData.listings || [])[0];
-      if (ml && mine) {
-        mine.innerHTML =
-          '<div class="notice" style="margin:0">' +
-            '<b>Your listed pet</b><br>' +
-            (ml.pet_name || "Pet") + " · Lv" + (ml.level || 1) + " · " + (ml.pet_element || "") + "<br>" +
-            "HP " + ml.hp + " · ATK " + ml.atk + " · DEF " + ml.def + " · SPD " + ml.spd + "<br>" +
-            "Rating " + (ml.rating || 1000) +
-            '<button class="secondary" style="margin-top:8px" onclick="unlistMyArena()">🚫 UNLIST</button>' +
-          "</div>";
-      } else if (mine) {
-        mine.innerHTML = "<div class='muted' style='font-size:11px'>You have no pet listed. Open My Pets → List in PvP Arena.</div>";
-      }
-    } catch (e1) {}
-
-    const data = await api("/api/pets/arena");
-    const list = data.listings || [];
-    if (!list.length) {
-      box.innerHTML = "<div class='muted'>No opponents yet. Be the first to list!</div>";
-      return;
-    }
-    box.innerHTML = list.map(function(a) {
-      const name = String(a.pet_name || "Pet").replace(/</g, "");
-      const user = String(a.username || "miner").replace(/</g, "");
-      const el = String(a.pet_element || "").replace(/</g, "");
-      return (
-        '<div class="card" style="margin:0 0 10px;padding:12px">' +
-          '<div style="font-weight:900;font-size:14px">' + name + ' <span class="muted">Lv' + (a.level || 1) + '</span></div>' +
-          '<div class="muted" style="font-size:11px;margin:4px 0">@' + user + ' · ' + el + ' · Rating ' + (a.rating || 1000) + '</div>' +
-          '<div class="grid" style="grid-template-columns:repeat(4,1fr);gap:6px;margin:8px 0">' +
-            '<div class="stat"><div class="stat-label">HP</div><div class="stat-value" style="font-size:12px">' + a.hp + '</div></div>' +
-            '<div class="stat"><div class="stat-label">ATK</div><div class="stat-value" style="font-size:12px">' + a.atk + '</div></div>' +
-            '<div class="stat"><div class="stat-label">DEF</div><div class="stat-value" style="font-size:12px">' + a.def + '</div></div>' +
-            '<div class="stat"><div class="stat-label">SPD</div><div class="stat-value" style="font-size:12px">' + a.spd + '</div></div>' +
-          '</div>' +
-          '<div class="row" style="gap:8px">' +
-            '<button class="secondary" style="margin:0;flex:1" onclick="viewArenaOpponent(' + a.id + ')">👁️ View</button>' +
-            '<button class="primary" style="margin:0;flex:1" onclick="challengeArena(' + a.id + ')">⚔️ Fight</button>' +
-          '</div>' +
-        '</div>'
-      );
-    }).join("");
-  } catch (e) {
-    if (box) box.innerHTML = "<div class='muted'>" + (e.message || "Failed") + "</div>";
-  }
-}
-
-async function viewArenaOpponent(arenaId) {
-  try {
-    const data = await api("/api/pets/arena/" + Number(arenaId));
-    const o = data.opponent;
-    if (!o) return showToast("Opponent not found", true);
-    const body = $("arenaPreviewBody");
-    const modal = $("arenaPreviewModal");
-    if (!body || !modal) return;
-    body.innerHTML =
-      '<div style="text-align:center;font-weight:900;font-size:18px;margin-bottom:6px">' +
-        String(o.pet_name || "Pet").replace(/</g, "") + "</div>" +
-      '<div class="muted" style="text-align:center;margin-bottom:10px">@' +
-        String(o.username || "miner").replace(/</g, "") +
-        " · Lv" + (o.level || 1) + " · " + String(o.pet_element || "") +
-        " · Rating " + (o.rating || 1000) + "</div>" +
-      '<div class="grid" style="grid-template-columns:repeat(2,1fr);gap:8px">' +
-        '<div class="stat"><div class="stat-label">HP</div><div class="stat-value">' + o.hp + '</div></div>' +
-        '<div class="stat"><div class="stat-label">ATK</div><div class="stat-value">' + o.atk + '</div></div>' +
-        '<div class="stat"><div class="stat-label">DEF</div><div class="stat-value">' + o.def + '</div></div>' +
-        '<div class="stat"><div class="stat-label">SPD</div><div class="stat-value">' + o.spd + '</div></div>' +
-      '</div>' +
-      '<div class="muted" style="font-size:11px;margin-top:10px;text-align:center">Full stats visible · fair fight</div>';
-    const btn = $("arenaPreviewFightBtn");
-    if (btn) btn.onclick = function() { challengeArena(arenaId); };
-    modal.classList.remove("hidden");
-    modal.style.display = "flex";
-  } catch (e) {
-    showToast(e.message || "Could not view opponent", true);
-  }
-}
-
-async function challengeArena(arenaId) {
-  if (!selectedOwned || !selectedOwned.id) {
-    showToast("Open My Pets → select your fighter pet first, then Fight", true);
-    return;
-  }
-  const petRef = selectedOwned;
-  const ownedId = Number(petRef.id);
-  try {
-    closeArenaPreview();
-    closeArenaModal();
-    closeOwnedModal();
-    selectedOwned = petRef;
-    showToast("PvP starting...");
-    const data = await api("/api/pets/arena/challenge", {
-      method: "POST",
-      body: JSON.stringify({ ownedPetId: ownedId, arenaId: Number(arenaId) })
-    });
-    await playBattleArena(data);
-    await refreshWallet();
-    await loadOwnedPets();
-  } catch (e) {
-    showToast(e.message || "PvP failed", true);
-  } finally {
-    selectedOwned = null;
-  }
-}
-
-function closeBattleArena() {
-  const arena = $("battleArena");
-  const result = $("battleResultPanel");
-  if (result) result.classList.add("hidden");
-  if (arena) {
-    arena.classList.add("hidden");
-    arena.style.display = "none";
-  }
-}
-
-
-function clearBattleSkillHighlight(){
-  document.querySelectorAll(".bskill").forEach(function(b){
-    b.style.transform="";
-    b.style.boxShadow="";
-    b.style.filter="";
-  });
-}
-function highlightBattleSkill(skillName, actor){
-  clearBattleSkillHighlight();
-  if(!skillName || actor==="enemy") return;
-  var n=String(skillName).toLowerCase();
-  var id="bskillS1";
-  if(/guard|shield|defend|dodge|armor|veil|tidal guard/.test(n)) id="bskillDODGE";
-  else if(/heal|bloom|bless|restore/.test(n)) id="bskillPET";
-  else if(/inferno|storm|galaxy|burst|nova|ultimate|ult/.test(n)) id="bskillULT";
-  else if(/lash|bolt|tide|spark|ember|strike|pulse/.test(n)) id="bskillS2";
-  else id="bskillS1";
-  var el=$(id);
-  if(el){
-    el.style.transform="scale(1.12)";
-    el.style.boxShadow="0 0 16px rgba(255,200,80,.7)";
-    el.style.filter="brightness(1.25)";
-  }
-}
-
-async function playBattleArena(data) {
-  const arena = $("battleArena");
-  if (!arena) {
-    showToast(data.result + " vs " + data.opponent + " • +" + data.reward + " AMT");
-    return;
-  }
-  arena.classList.remove("hidden");
-  arena.style.display = "flex";
-  $("battleResultPanel").classList.add("hidden");
-
-  const myMax = data.myMaxHp || 100;
-  const enMax = data.enMaxHp || 100;
-  $("battleMyName").textContent = data.petName || "Your Pet";
-  $("battleEnemyName").textContent = data.opponent || "Enemy";
-  // Opponent uses uploaded pet art (same as shop/my pets)
-  const enemyPet = {
-    name: String(data.opponent || "Enemy").replace(/^Wild\s+/i, ""),
-    element: data.opponentElement || "Earth",
-    image: data.opponentImage || ""
-  };
-  $("battleEnemyArt").innerHTML = petArtHtml(enemyPet, 88);
-  $("battleMyArt").innerHTML = selectedOwned
-    ? petArtHtml(selectedOwned, 88)
-    : petArtHtml(
-        { name: data.petName, element: data.petElement, image: data.petImage },
-        88
-      );
-  $("battleMyHpBar").style.width = "100%";
-  $("battleEnemyHpBar").style.width = "100%";
-  $("battleMyHpText").textContent = myMax + " / " + myMax;
-  $("battleEnemyHpText").textContent = enMax + " / " + enMax;
-  $("battleLog").textContent = "Expedition start!";
-  $("battleRoundLabel").textContent = "Round 1";
-
-  const rounds = data.rounds || [];
-  clearBattleSkillHighlight();
-  for (let i = 0; i < rounds.length; i++) {
-    const r = rounds[i];
-    $("battleRoundLabel").textContent = "Round " + (r.round || i + 1);
-    $("battleLog").textContent = r.text || (r.actor === "you" ? "You hit!" : "Enemy hits!");
-    highlightBattleSkill(r.skill || r.text, r.actor);
-    const myPct = Math.max(0, Math.min(100, (r.myHp / myMax) * 100));
-    const enPct = Math.max(0, Math.min(100, (r.enHp / enMax) * 100));
-    $("battleMyHpBar").style.width = myPct + "%";
-    $("battleEnemyHpBar").style.width = enPct + "%";
-    $("battleMyHpText").textContent = Math.round(r.myHp) + " / " + myMax;
-    $("battleEnemyHpText").textContent = Math.round(r.enHp) + " / " + enMax;
-    await new Promise(ok => setTimeout(ok, 700));
-  }
-
-  // Match banner to final HP on screen (feedback: was inverted)
-  let win = data.result === "WIN";
-  if (rounds.length) {
-    const last = rounds[rounds.length - 1];
-    const lastMy = Number(last.myHp);
-    const lastEn = Number(last.enHp);
-    if (lastMy <= 0 && lastEn > 0) win = false;
-    else if (lastEn <= 0 && lastMy > 0) win = true;
-    else if (lastMy <= 0 && lastEn <= 0) win = false;
-  }
-  $("battleResultBadge").textContent = win ? "🏆" : "💀";
-  $("battleResultTitle").textContent = win ? "Victory" : "Defeat";
-  $("battleResultTitle").style.color = win ? "#ffd54f" : "#ff8899";
-  var extra = "";
-  if (data.elementLabel) extra += " · " + data.elementLabel;
-  if (data.winStreak) extra += " · Streak " + data.winStreak;
-  if (data.streakBonusAmt) extra += " · Streak bonus +" + data.streakBonusAmt;
-  if (data.attemptsLeft != null) extra += " · Boss tries left " + data.attemptsLeft;
-  if (data.drops && data.drops.length) extra += " · Loot: " + data.drops.join(", ");
-  $("battleResultReward").textContent =
-    (data.tierLabel ? "[" + data.tierLabel + "] " : "") +
-    "+" + (data.reward || 0) + " AMT" +
-    (data.chargesLeft != null ? " · " + data.chargesLeft + " charges" : "") +
-    (data.chargeBonus ? " · " + data.chargeBonus : "") +
-    extra;
-  $("battleResultPanel").classList.remove("hidden");
-}
-
-
-
-async function updatePetSellPrice() {
-  if (!selectedOwned || !selectedOwned.id) {
-    showToast("Open a listed pet first", true);
-    return;
-  }
-  const price = Number($("sellPrice") && $("sellPrice").value);
-  if (!(price > 0)) {
-    showToast("Enter new price in the box", true);
-    return;
-  }
-  try {
-    const d = await api("/api/pets/update-listing-price", {
-      method: "POST",
-      body: JSON.stringify({
-        ownedPetId: Number(selectedOwned.id),
-        priceAmt: price
-      })
-    });
-    showToast(d.message || ("Price → " + price + " AMT"));
-    if (typeof loadListings === "function") loadListings();
-  } catch (e) {
-    showToast(e.message || "Update failed", true);
-  }
-}
-
-async function cancelPetSell() {
-  if (!selectedOwned || !selectedOwned.id) {
-    showToast("Open a listed pet from My Pets first", true);
-    return;
-  }
-  try {
-    const d = await api("/api/pets/cancel-listing", {
-      method: "POST",
-      body: JSON.stringify({ ownedPetId: Number(selectedOwned.id) })
-    });
-    showToast(d.message || "Sell cancelled");
-    closeOwnedModal();
-    await loadOwnedPets();
-    if (typeof loadListings === "function") loadListings();
-  } catch (e) {
-    showToast(e.message || "Cancel failed", true);
-  }
-}
-
-async function listPetForSale() {
-  if (!selectedOwned || !selectedOwned.id) {
-    showToast("Open a pet from My Pets first", true);
-    return;
-  }
-  const price = Number($("sellPrice") && $("sellPrice").value);
-  if (!(price > 0)) {
-    showToast("Enter a valid price (AMT)", true);
-    return;
-  }
-  try {
-    await api("/api/pets/list", {
-      method: "POST",
-      body: JSON.stringify({
-        ownedPetId: Number(selectedOwned.id),
-        priceAmt: price
-      })
-    });
-    showToast("Listed " + (selectedOwned.name || "pet") + " for " + price + " AMT");
-    closeOwnedModal();
-    await loadOwnedPets();
-    if (typeof loadListings === "function") loadListings();
-  } catch (e) {
-    showToast(e.message || "List failed", true);
-  }
-}
-
-/* ---- Breeding / Eggs ---- */
-let _breedSlot = 1;
-let _breedP1 = null;
-let _breedP2 = null;
-let _eggTimers = {};
-
-function clearBreedSelection() {
-  _breedP1 = null;
-  _breedP2 = null;
-  if ($("breedPet1")) $("breedPet1").value = "";
-  if ($("breedPet2")) $("breedPet2").value = "";
-  if ($("breedArt1")) $("breedArt1").innerHTML = "➕";
-  if ($("breedArt2")) $("breedArt2").innerHTML = "➕";
-  if ($("breedName1")) $("breedName1").textContent = "Tap to select";
-  if ($("breedName2")) $("breedName2").textContent = "Tap to select";
-  if ($("breedSlot1")) $("breedSlot1").classList.remove("filled");
-  if ($("breedSlot2")) $("breedSlot2").classList.remove("filled");
-}
-
-function setBreedSlot(slot, pet) {
-  if (!pet) return;
-  if (slot === 1) {
-    _breedP1 = pet;
-    if ($("breedPet1")) $("breedPet1").value = pet.id;
-    if ($("breedArt1")) $("breedArt1").innerHTML = petArtHtml(pet, 48);
-    if ($("breedName1")) $("breedName1").textContent = pet.name + " · Lv" + (pet.level || 1);
-    if ($("breedSlot1")) $("breedSlot1").classList.add("filled");
-  } else {
-    _breedP2 = pet;
-    if ($("breedPet2")) $("breedPet2").value = pet.id;
-    if ($("breedArt2")) $("breedArt2").innerHTML = petArtHtml(pet, 48);
-    if ($("breedName2")) $("breedName2").textContent = pet.name + " · Lv" + (pet.level || 1);
-    if ($("breedSlot2")) $("breedSlot2").classList.add("filled");
-  }
-}
-
-async function openBreedPicker(slot) {
-  _breedSlot = slot;
-  const modal = $("breedPickerModal");
-  const list = $("breedPickerList");
-  if ($("breedPickerTitle")) $("breedPickerTitle").textContent = "Select Parent " + slot;
-  if (!modal || !list) return;
-  list.innerHTML = '<div class="empty">Loading your pets...</div>';
-  modal.classList.remove("hidden");
-  modal.style.display = "flex";
-  try {
-    // Prefer cached map; else fetch
-    let pets = [];
-    if (window._ownedMap) {
-      const seen = {};
-      pets = Object.keys(window._ownedMap).map(k => window._ownedMap[k]).filter(p => {
-        if (!p || !p.id || seen[p.id]) return false;
-        seen[p.id] = true;
-        return true;
-      });
-    }
-    if (!pets.length) {
-      const data = await api("/api/pets/owned");
-      pets = data.pets || [];
-      window._ownedMap = {};
-      pets.forEach(p => {
-        window._ownedMap[p.id] = p;
-        window._ownedMap[String(p.id)] = p;
-      });
-    }
-    const otherId = slot === 1 ? (_breedP2 && _breedP2.id) : (_breedP1 && _breedP1.id);
-    const available = pets.filter(p => String(p.id) !== String(otherId));
-    if (!available.length) {
-      list.innerHTML = '<div class="empty">Need pets in My Pets first. Buy from Shop.</div>';
-      return;
-    }
-    list.innerHTML = available.map(pet => {
-      const elClass = petElementClass(pet.element);
-      return `<div class="pet-card ${elClass}" style="min-height:auto;cursor:pointer" onclick="pickBreedPet(${pet.id})">
-        <div class="pet-card-top" style="height:100px">
-          <span class="pet-card-element">${esc(pet.element)}</span>
-          <span class="pet-card-badge">Lv ${pet.level || 1}</span>
-          ${petArtHtml(pet, 64)}
-        </div>
-        <div class="pet-card-body" style="padding:10px">
-          <div class="pet-card-name">${esc(pet.name)}</div>
-          <div class="pet-card-price">ID ${pet.id}</div>
-        </div>
-      </div>`;
-    }).join("");
-  } catch (e) {
-    list.innerHTML = '<div class="empty">' + esc(e.message || "Could not load pets") + '</div>';
-  }
-}
-
-function closeBreedPicker() {
-  const modal = $("breedPickerModal");
-  if (modal) {
-    modal.classList.add("hidden");
-    modal.style.display = "none";
-  }
-}
-
-function pickBreedPet(id) {
-  const pet = (window._ownedMap && (window._ownedMap[id] || window._ownedMap[String(id)])) || null;
-  if (!pet) {
-    showToast("Pet not found in list", true);
-    return;
-  }
-  setBreedSlot(_breedSlot, pet);
-  closeBreedPicker();
-}
-
-async function breedPets() {
-  const p1 = Number($("breedPet1") && $("breedPet1").value);
-  const p2 = Number($("breedPet2") && $("breedPet2").value);
-  if (!p1 || !p2) return showToast("Select two different pets first", true);
-  if (p1 === p2) return showToast("Pick two different pets", true);
-  const btn = $("breedBtn");
-  try {
-    if (btn) { btn.disabled = true; btn.textContent = "BREEDING…"; }
-    const data = await api("/api/pets/breed", {
-      method: "POST",
-      body: JSON.stringify({ pet1Id: p1, pet2Id: p2 })
-    });
-    showToast(data.message || "Egg incubating — hatch in 24 hours");
-    clearBreedSelection();
-    await loadEggs();
-    await refreshWallet();
-  } catch (e) {
-    showToast(e.message || "Breed failed", true);
-  } finally {
-    if (btn) { btn.disabled = false; btn.textContent = "🥚 BREED (1 AMT)"; }
-  }
-}
-
-function formatCountdown(ms) {
-  if (ms <= 0) return "00:00:00";
-  const total = Math.floor(ms / 1000);
-  const h = Math.floor(total / 3600);
-  const m = Math.floor((total % 3600) / 60);
-  const s = total % 60;
-  return String(h).padStart(2, "0") + ":" + String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
-}
-
-function stopEggTimers() {
-  Object.keys(_eggTimers).forEach(k => {
-    clearInterval(_eggTimers[k]);
-    delete _eggTimers[k];
-  });
-}
-
-function startEggCountdown(eggId, hatchAtMs, createdMs) {
-  const timerEl = $("eggTimer_" + eggId);
-  const btn = $("hatchBtn_" + eggId);
-  if (!timerEl) return;
-  if (_eggTimers[eggId]) clearInterval(_eggTimers[eggId]);
-  const tick = () => {
-    const left = hatchAtMs - Date.now();
-    if (left <= 0) {
-      timerEl.textContent = "READY";
-      timerEl.classList.add("ready");
-      if (btn && btn.textContent.indexOf("LISTED") < 0) {
-        btn.disabled = false;
-        btn.textContent = "🐣 Deliver baby";
-      }
-      clearInterval(_eggTimers[eggId]);
-      delete _eggTimers[eggId];
-      return;
-    }
-    timerEl.textContent = formatCountdown(left);
-  };
-  tick();
-  _eggTimers[eggId] = setInterval(tick, 1000);
-}
-
-function eggArtEmoji(element) {
-  const map = {
-    Earth: "🪨",
-    Water: "💧",
-    Nature: "🌿",
-    Ice: "❄️",
-    Fire: "🔥",
-    Wind: "💨",
-    Thunder: "⚡", Shadow: "🌑", Light: "✨", Cosmic: "🌌"
-  };
-  return map[element] || "🥚";
-}
-
-function eggCssClass(element) {
-  const e = String(element || "").toLowerCase();
-  if (["earth", "water", "nature", "ice", "fire", "wind", "thunder"].includes(e)) {
-    return e;
-  }
-  return "default";
-}
-
-/** PiPet-style spotted egg (CSS shape, not placeholder icon) */
-function eggArtHtml(element, ready) {
-  const cls = eggCssClass(element);
-  const wrap = ready ? "baby-egg-wrap ready-glow" : "baby-egg-wrap";
-  return `<div class="${wrap}"><div class="pipet-egg ${cls}"></div></div>`;
-}
-
-async function loadEggs() {
-  stopEggTimers();
-  const box = $("eggsList");
-  if (!box) return;
-  try {
-    const data = await api("/api/pets/eggs");
-    const eggs = data.eggs || [];
-    if (!eggs.length) {
-      box.className = "";
-      box.innerHTML =
-        '<div class="empty">No eggs yet. Breed two pets above to start the Baby Room.</div>';
-      return;
-    }
-    box.className = "baby-grid";
-    box.innerHTML = eggs
-      .map((egg) => {
-        const isHatched = egg.status === "HATCHED";
-        const isListed = !!egg.is_listed;
-        const hatchMs = egg.hatch_at ? new Date(egg.hatch_at).getTime() : 0;
-        const ready = !isHatched && hatchMs && hatchMs <= Date.now();
-        let cls = "baby-card";
-        if (ready) cls += " ready";
-        if (isHatched) cls += " hatched";
-        if (isListed) cls += " listed";
-        const gen = egg.gen || 1;
-        const elName = esc(egg.element || "Mystery");
-        return `<div class="${cls}">
-        <div class="baby-gen">🧬 ${gen} Gen</div>
-        <div class="baby-name-row">
-          <span class="baby-lv">LV.1</span>
-          <span class="baby-name">${elName} Egg #${egg.id}</span>
-        </div>
-        ${eggArtHtml(egg.element, ready)}
-        ${
-          isHatched
-            ? `<div class="muted" style="font-size:11px;margin-top:8px">Hatched · see My Pets</div>`
-            : `<div class="baby-timer-pill ${ready ? "ready" : ""}" id="eggTimer_${egg.id}">${
-                ready ? "READY" : "00:00:00"
-              }</div>
-        <button class="baby-deliver" id="hatchBtn_${egg.id}" onclick="hatchEgg(${egg.id})" ${
-                ready && !isListed ? "" : "disabled"
-              }>${
-                isListed
-                  ? "🏪 LISTED FOR SALE"
-                  : ready
-                  ? "🐣 Deliver baby"
-                  : "⏳ Incubating"
-              }</button>
-        ${
-          !isListed
-            ? `<div class="baby-sell-row">
-          <input class="input" id="eggSellPrice_${egg.id}" type="number" min="0.1" step="0.1" placeholder="AMT price">
-          <button class="secondary baby-sell-btn" onclick="listEggForSale(${egg.id})">SELL EGG</button>
-        </div>`
-            : `<button class="secondary" style="margin-top:8px;font-size:11px;width:100%" onclick="cancelEggListing(${egg.id})">Cancel listing</button>`
-        }`
-        }
-      </div>`;
-      })
-      .join("");
-
-    eggs.forEach((egg) => {
-      if (egg.status === "HATCHED" || !egg.hatch_at) return;
-      const hatchMs = new Date(egg.hatch_at).getTime();
-      if (hatchMs > Date.now()) {
-        const createdMs = egg.created_at
-          ? new Date(egg.created_at).getTime()
-          : hatchMs - 24 * 3600 * 1000;
-        startEggCountdown(egg.id, hatchMs, createdMs);
-      } else {
-        const timerEl = $("eggTimer_" + egg.id);
-        if (timerEl) {
-          timerEl.textContent = "READY";
-          timerEl.classList.add("ready");
-        }
-        const btn = $("hatchBtn_" + egg.id);
-        if (btn && !egg.is_listed) {
-          btn.disabled = false;
-          btn.textContent = "🐣 Deliver baby";
-        }
-      }
-    });
-  } catch (e) {
-    box.className = "";
-    box.innerHTML =
-      '<div class="empty">Unable to load eggs. ' + esc(e.message || "") + "</div>";
-  }
-}
-
-async function hatchEgg(eggId) {
-  const btn = $("hatchBtn_" + eggId);
-  try {
-    if (btn) {
-      btn.disabled = true;
-      btn.textContent = "Delivering…";
-    }
-    const data = await api("/api/pets/hatch", {
-      method: "POST",
-      body: JSON.stringify({ eggId: Number(eggId) })
-    });
-    const name = (data.pet && data.pet.name) || "baby";
-    showToast(data.message || ("Delivered " + name + "! Opening My Pets…"));
-    await loadEggs();
-    await loadOwnedPets();
-    petTab("owned");
-    if (data.pet && data.pet.id) {
-      setTimeout(function () {
-        try {
-          openOwnedModal(data.pet.id);
-        } catch (err) {}
-      }, 400);
-    }
-  } catch (e) {
-    showToast(e.message || "Hatch failed", true);
-    if (btn) {
-      btn.disabled = false;
-      btn.textContent = "🐣 Deliver baby";
-    }
-    loadEggs().catch(function () {});
-  }
-}
-
-async function listEggForSale(eggId) {
-  const input = $("eggSellPrice_" + eggId);
-  const price = Number(input && input.value);
-  if (!(price > 0)) {
-    showToast("Enter a valid AMT price", true);
-    return;
-  }
-  try {
-    const data = await api("/api/pets/list-egg", {
-      method: "POST",
-      body: JSON.stringify({ eggId: Number(eggId), priceAmt: price })
-    });
-    showToast(data.message || "Egg listed");
-    await loadEggs();
-    if (typeof loadListings === "function") loadListings();
-  } catch (e) {
-    showToast(e.message || "List egg failed", true);
-  }
-}
-
-async function cancelEggListing(eggId) {
-  try {
-    await api("/api/pets/cancel-egg-listing", {
-      method: "POST",
-      body: JSON.stringify({ eggId: Number(eggId) })
-    });
-    showToast("Listing cancelled");
-    await loadEggs();
-    if (typeof loadListings === "function") loadListings();
-  } catch (e) {
-    showToast(e.message || "Cancel failed", true);
-  }
-}
-
-/* ---- Public listings (live P2P · My Pets) ---- */
-async function loadListings() {
-  const grid = $("listingsGrid");
-  if (!grid) return;
-  try {
-    const data = await api("/api/pets/listings");
-    const list = data.listings || [];
-    if (!list.length) {
-      grid.innerHTML =
-        '<div class="empty">No public listings yet.<br>List a <b>pet</b> (My Pets) or <b>egg</b> (Baby Room).</div>';
-      return;
-    }
-    grid.innerHTML = list
-      .map((L) => {
-        const isEgg = L.listing_type === "EGG";
-        const elClass = petElementClass(L.element);
-        if (isEgg) {
-          const hatchMs = L.hatch_at ? new Date(L.hatch_at).getTime() : 0;
-          const ready = hatchMs && hatchMs <= Date.now();
-          return `<div class="pet-card ${elClass}">
-        <div class="pet-card-top">
-          <span class="pet-card-element">${esc(L.element || "")}</span>
-          <span class="pet-card-badge">EGG</span>
-          <div style="padding:8px 0">${eggArtHtml(L.element, false)}</div>
-        </div>
-        <div class="pet-card-body">
-          <div class="pet-card-name">${esc(L.name || "Egg")}</div>
-          <div class="pet-card-price">${Number(L.price_amt)} AMT</div>
-          <div class="muted" style="font-size:10px;margin-top:4px">${L.gen || 1} Gen · ${
-            ready ? "Ready to hatch" : "Incubating"
-          }</div>
-          <div class="muted" style="font-size:10px">Seller: ${esc(L.seller_username || "?")}</div>
-          <div class="pet-card-footer">
-            <button class="small-btn" onclick="buyEggListing(${L.id})">BUY EGG</button>
-          </div>
-        </div>
-      </div>`;
-        }
-        const pet = {
-          name: L.name,
-          element: L.element,
-          image: L.image,
-          rarity: L.rarity,
-          level: L.level
-        };
-        const isPiMint = String(L.origin || "") === "pi_payment";
-        const rep = Number(L.rep) || 0;
-        const wins = Number(L.wins) || 0;
-        const losses = Number(L.losses) || 0;
-        const lv = Number(L.level) || 1;
-        let repBadge = "Rookie";
-        if (rep >= 500) repBadge = "Mythic Ace";
-        else if (rep >= 250) repBadge = "Legend";
-        else if (rep >= 120) repBadge = "Veteran";
-        else if (rep >= 40) repBadge = "Fighter";
-        // Soft guide only — not a floor price
-        let suggestMin = 0.5, suggestMax = 2;
-        if (lv >= 40) { suggestMin = 8; suggestMax = 25; }
-        else if (lv >= 30) { suggestMin = 5; suggestMax = 15; }
-        else if (lv >= 20) { suggestMin = 3; suggestMax = 10; }
-        else if (lv >= 10) { suggestMin = 1.5; suggestMax = 6; }
-        else if (lv >= 5) { suggestMin = 1; suggestMax = 4; }
-        if (isPiMint) { suggestMin *= 1.25; suggestMax *= 1.35; }
-        const mintLine = isPiMint
-          ? `<div style="margin-top:5px;padding:4px 8px;border-radius:8px;background:rgba(120,80,255,.25);border:1px solid rgba(180,140,255,.5);font-size:11px;font-weight:800;color:#e0d0ff">💜 PI PAID · MAINNET</div>`
-          : "";
-        const levelLine = `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
-          <span style="padding:3px 8px;border-radius:999px;background:linear-gradient(90deg,#5b21b6,#7c3aed);font-size:10px;font-weight:900;color:#fff">Lv ${lv}</span>
-          <span style="padding:3px 8px;border-radius:999px;background:rgba(255,200,60,.15);border:1px solid rgba(255,200,60,.35);font-size:10px;font-weight:800;color:#ffd54a">${esc(L.rarity || "Common")}</span>
-        </div>`;
-        const repLine = `<div class="muted" style="font-size:10px;margin-top:4px">${repBadge} · Rep ${rep} · W${wins}/L${losses}</div>`;
-        const guideLine = `<div class="muted" style="font-size:9px;margin-top:3px">Guide ~${suggestMin.toFixed(1)}–${suggestMax.toFixed(0)} AMT (not a floor)</div>`;
-        const certLine = L.certificate_id
-          ? `<div class="muted" style="font-size:9px;margin-top:2px;font-family:monospace">${esc(String(L.certificate_id).slice(0, 18))}…</div>`
-          : "";
-        return `<div class="pet-card ${elClass}">
-        <div class="pet-card-top">
-          <span class="pet-card-element">${esc(L.element || "")}</span>
-          <span class="pet-card-badge" style="${isPiMint ? "color:#c4b5fd;border-color:rgba(180,140,255,.6)" : ""}">${isPiMint ? "PI PAID" : "PET"}</span>
-          ${petArtHtml(pet, 120)}
-        </div>
-        <div class="pet-card-body">
-          <div class="pet-card-name">${esc(L.name || "Pet")}</div>
-          <div class="pet-card-price">${Number(L.price_amt)} AMT</div>
-          ${levelLine}
-          ${mintLine}
-          ${repLine}
-          ${guideLine}
-          ${certLine}
-          <div class="muted" style="font-size:10px;margin-top:3px">Seller: ${esc(L.seller_username || "?")}</div>
-          <div class="pet-card-footer">
-            <button class="small-btn" onclick="buyListing(${L.id})">BUY PET</button>
-          </div>
-        </div>
-      </div>`;
-      })
-      .join("");
-  } catch (e) {
-    grid.innerHTML =
-      '<div class="empty">Unable to load listings. ' +
-      esc(e.message || "") +
-      "</div>";
-  }
-}
-
-async function buyListing(listingId) {
-  try {
-    const data = await api("/api/pets/buy-listing", {
-      method: "POST",
-      body: JSON.stringify({ listingId: Number(listingId) })
-    });
-    showToast("Pet purchased for " + (data.price != null ? data.price : "") + " AMT");
-    await loadListings();
-    await loadOwnedPets();
-    await refreshWallet();
-  } catch (e) {
-    showToast(e.message || "Buy failed", true);
-  }
-}
-
-async function buyEggListing(listingId) {
-  try {
-    const data = await api("/api/pets/buy-egg-listing", {
-      method: "POST",
-      body: JSON.stringify({ listingId: Number(listingId) })
-    });
-    showToast(data.message || "Egg purchased");
-    await loadListings();
-    await loadEggs();
-    await refreshWallet();
-  } catch (e) {
-    showToast(e.message || "Buy egg failed", true);
-  }
-}
-
-function marketInfo(name) {
-  showToast(name + " • Use Pet tabs");
-}
-
-/* ============================================================
-   START
-============================================================ */
-
-document.addEventListener(
-"DOMContentLoaded",
-()=>{
-
-selectPool("30D");
-
-// Capture ?ref= from URL early (before login)
-getPendingReferralCode();
-
-restoreSession();
-
-}
-);
-
-/* ============================================================
-   CLEANUP
-============================================================ */
-
-window.addEventListener(
-"beforeunload",
-()=>{
-
-if(miningInterval){
-clearInterval(miningInterval);
-}
-
-}
-);
-
-</script>
-</body>
-</html>
+startServer();
