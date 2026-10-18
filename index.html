@@ -7464,7 +7464,7 @@ async function refreshBattleCharges() {
     const d = await api("/api/pets/battle-charges");
     const el = $("battleChargesInfo");
     if (el) {
-      el.innerHTML = "<b>" + d.charges + "</b> charges left · Wins today " + (d.wins || 0) +
+      el.innerHTML = (d.unlimited ? "<b>Unlimited</b> battles" : ("<b>" + d.charges + "</b> charges left")) + " · Wins today " + (d.wins || 0) +
         " · Streak " + (d.streak || 0) +
         "<br><span class='muted' style='font-size:10px'>" + (d.rule || "") + "</span>";
     }
