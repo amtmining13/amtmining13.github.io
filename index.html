@@ -4224,19 +4224,26 @@ async function doLuckySpin(){
       return;
     }
 
-    // Animate wheel
+    // Animate wheel — map prize key to visual segment (must match server SPIN_PRIZES order)
     const wheel = $("luckyWheel");
-    const prizeIndex = Number(data.prizeIndex || 0);
-    // 8 segments, pointer at top; stop so segment center is at top
+    const VISUAL = ["amt_5","amt_25","egg","amt_10","free_spin","amt_50","amt_15","jackpot"];
+    let prizeIndex = VISUAL.indexOf(String(data.prize || ""));
+    if (prizeIndex < 0) prizeIndex = Number(data.prizeIndex || 0);
     const seg = 360 / 8;
-    const target = 360 * 6 + (360 - (prizeIndex * seg + seg/2));
-    _spinTurns = (_spinTurns || 0) + target;
+    const prizeCenter = prizeIndex * seg + seg / 2; // deg on unrotated wheel
+    // CSS rotate positive = clockwise. Point at prizeCenter moves to top when R = -prizeCenter.
+    const desiredMod = (360 - prizeCenter) % 360;
+    const currentMod = ((_spinTurns || 0) % 360 + 360) % 360;
+    let delta = (desiredMod - currentMod + 360) % 360;
+    if (delta < 30) delta += 360; // always show a real spin
+    delta += 360 * 5;
+    _spinTurns = (_spinTurns || 0) + delta;
     if(wheel){
-      wheel.style.transition = "transform 4s cubic-bezier(.15,.85,.25,1)";
+      wheel.style.transition = "transform 4.2s cubic-bezier(.12,.85,.2,1)";
       wheel.style.transform = "rotate(" + _spinTurns + "deg)";
     }
 
-    await new Promise(r => setTimeout(r, 4200));
+    await new Promise(r => setTimeout(r, 4400));
 
     const label = data.prizeLabel || data.prize || "Prize";
     if($("spinResult")){
