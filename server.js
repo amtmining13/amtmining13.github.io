@@ -8613,9 +8613,11 @@ async function ensureArenaTables() {
   await pool.query(`ALTER TABLE pet_battle_daily ADD COLUMN IF NOT EXISTS bonus_earned INT DEFAULT 0`);
 }
 
-const BATTLE_BASE_CHARGES = 5;
-const BATTLE_MAX_CHARGES = 15;
-const BATTLE_MAX_BONUS = 10;
+/* Community request: unlimited PvE battles (no daily charge cap). */
+const BATTLE_UNLIMITED = true;
+const BATTLE_BASE_CHARGES = BATTLE_UNLIMITED ? 9999 : 5;
+const BATTLE_MAX_CHARGES = BATTLE_UNLIMITED ? 9999 : 15;
+const BATTLE_MAX_BONUS = BATTLE_UNLIMITED ? 0 : 10;
 
 async function getBattleDay(client, memberId) {
   const day = new Date().toISOString().slice(0, 10);
@@ -8631,12 +8633,29 @@ async function getBattleDay(client, memberId) {
     `SELECT * FROM pet_battle_daily WHERE member_id = $1 AND battle_date = $2::date`,
     [memberId, day]
   );
-  return { day, row: r.rows[0] };
+  let row = r.rows[0];
+  if (BATTLE_UNLIMITED && row && Number(row.charges) < 9999) {
+    await q(
+      `UPDATE pet_battle_daily SET charges = 9999
+       WHERE member_id = $1 AND battle_date = $2::date`,
+      [memberId, day]
+    );
+    row = { ...row, charges: 9999 };
+  }
+  return { day, row };
 }
 
 /** Spend 1 charge; return error string or null */
 async function spendBattleCharge(client, memberId) {
   const { day, row } = await getBattleDay(client, memberId);
+  if (BATTLE_UNLIMITED) {
+    await client.query(
+      `UPDATE pet_battle_daily SET cpu_count = cpu_count + 1
+       WHERE member_id = $1 AND battle_date = $2::date`,
+      [memberId, day]
+    );
+    return { error: null, charges: 9999, day, unlimited: true };
+  }
   let charges = Number(row.charges);
   if (Number.isNaN(charges) || row.charges == null) charges = BATTLE_BASE_CHARGES;
   if (charges <= 0) {
@@ -9439,7 +9458,10 @@ app.get("/api/pets/battle-charges", requireAuth, async (req, res) => {
       bonusEarned: Number(row.bonus_earned || 0),
       baseCharges: BATTLE_BASE_CHARGES,
       maxCharges: BATTLE_MAX_CHARGES,
-      rule: "Start with 5 charges. Each win +1 charge (max 15). 3-win streak +1 extra. Resets daily."
+      unlimited: !!BATTLE_UNLIMITED,
+      rule: BATTLE_UNLIMITED
+        ? "Unlimited battles — play as much as you want. Pet energy still applies."
+        : "Start with 5 charges. Each win +1 charge (max 15). 3-win streak +1 extra. Resets daily."
     });
   } catch (e) {
     res.status(500).json({ ok: false, error: "Could not load charges." });
