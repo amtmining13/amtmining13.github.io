@@ -445,50 +445,58 @@ async function verifyPiAccessToken(
   const token = String(accessToken).trim();
   const base = String(PI_API_BASE || "https://api.minepi.com").replace(/\/$/, "");
 
-  const response = await fetch(
-    `${base}/v2/me`,
-    {
-      method: "GET",
+  // Try /v2/me then /me (some tokens respond on one path only)
+  const paths = ["/v2/me", "/me"];
+  let lastStatus = 0;
+  let lastBody = {};
+  let data = null;
 
-      headers: {
-        Accept: "application/json",
-        Authorization:
-          `Bearer ${token}`
+  for (const path of paths) {
+    try {
+      const response = await fetch(`${base}${path}`, {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`
+        }
+      });
+      const text = await response.text();
+      let parsed;
+      try {
+        parsed = JSON.parse(text);
+      } catch {
+        parsed = { raw: text };
       }
+      lastStatus = response.status;
+      lastBody = parsed;
+      if (response.ok && parsed && parsed.uid) {
+        data = parsed;
+        break;
+      }
+    } catch (fetchErr) {
+      console.warn("verifyPi fetch", path, fetchErr.message);
     }
-  );
-
-  const text =
-    await response.text();
-
-  let data;
-
-  try {
-    data = JSON.parse(text);
-  } catch {
-    data = { raw: text };
   }
 
-  if (
-    !response.ok ||
-    !data?.uid
-  ) {
+  if (!data || !data.uid) {
     console.error("AUTH ERROR detail:", {
-      status: response.status,
-      body: data,
+      status: lastStatus,
+      body: lastBody,
       apiBase: base,
       tokenPrefix: String(token).slice(0, 12) + "…",
-      hasApiKey: !!PI_API_KEY
+      tokenLen: token.length,
+      hasApiKey: !!PI_API_KEY,
+      keyPrefix: String(PI_API_KEY || "").slice(0, 6)
     });
     const hint =
-      response.status === 401
-        ? " Pi rejected token. Check Render: PI_API_BASE=https://api.minepi.com and Mainnet PI_API_KEY from the same app as domain amtmining13.github.io"
+      lastStatus === 401
+        ? " Token rejected by Pi. Fix: Developer Portal → SAME Mainnet app as domain amtmining13.github.io → regenerate API key → paste on Render PI_API_KEY → redeploy → clear Pi Browser cache → login again."
         : "";
     throw new HttpError(
       401,
-      (data?.error ||
-        data?.message ||
-        `Pi authentication failed (${response.status}).`) + hint
+      (lastBody?.error ||
+        lastBody?.message ||
+        `Pi authentication failed (${lastStatus || 401}).`) + hint
     );
   }
 
@@ -12476,15 +12484,17 @@ app.use(
 
 const SPIN_MAX_PER_DAY = 3;
 // 8 segments — AMT rewards + free spin + rare 100 jackpot
+/* MUST match wheel label order (clockwise from top):
+   0:5  1:25  2:EGG  3:10  4:FREE  5:50  6:15  7:100 */
 const SPIN_PRIZES = [
-  { key: "amt_5",    label: "+5 AMT",     type: "amt", amount: 5,    weight: 16 },
-  { key: "amt_10",   label: "+10 AMT",    type: "amt", amount: 10,   weight: 14 },
-  { key: "amt_25",   label: "+25 AMT",    type: "amt", amount: 25,   weight: 11 },
-  { key: "egg",      label: "Free Egg!",  type: "egg", amount: 0,    weight: 10 },
-  { key: "free_spin", label: "FREE SPIN!", type: "free_spin", amount: 0, weight: 14 },
-  { key: "amt_50",   label: "+50 AMT",    type: "amt", amount: 50,   weight: 7 },
-  { key: "jackpot",  label: "JACKPOT +100 AMT!", type: "amt", amount: 100, weight: 3 },
-  { key: "amt_15",   label: "+15 AMT",    type: "amt", amount: 15,   weight: 15 }
+  { key: "amt_5",     label: "+5 AMT",              type: "amt",       amount: 5,   weight: 16 },
+  { key: "amt_25",    label: "+25 AMT",             type: "amt",       amount: 25,  weight: 11 },
+  { key: "egg",       label: "Free Egg!",           type: "egg",       amount: 0,   weight: 10 },
+  { key: "amt_10",    label: "+10 AMT",             type: "amt",       amount: 10,  weight: 14 },
+  { key: "free_spin", label: "FREE SPIN!",          type: "free_spin", amount: 0,   weight: 14 },
+  { key: "amt_50",    label: "+50 AMT",             type: "amt",       amount: 50,  weight: 7 },
+  { key: "amt_15",    label: "+15 AMT",             type: "amt",       amount: 15,  weight: 15 },
+  { key: "jackpot",   label: "JACKPOT +100 AMT!",   type: "amt",       amount: 100, weight: 3 }
 ];
 
 function pickSpinPrize(){
