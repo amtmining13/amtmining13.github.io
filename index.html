@@ -2181,6 +2181,7 @@ SELECT 180D
   <b>Eggs:</b> Eggs tab → set price → SELL EGG ·
   Pay with <b>in-app AMT</b>
 </div>
+<p class="muted" style="font-size:11px;margin:0 0 8px">🔒 P2P trades use <b>AMT escrow</b> — buyer funds held, pet/egg transferred, then seller paid (atomic).</p>
 <div id="listingsGrid" class="market-grid"><div class="empty">Loading listings...</div></div>
 </div>
 
@@ -3719,7 +3720,7 @@ async function loadTxHistory() {
       const kind = (tx.kind || tx.direction || "").toUpperCase();
       const cur = (tx.currency || "AMT").toUpperCase();
       const isOut = kind === "SEND" || kind === "PET" || kind === "SHOP" || kind === "PI_PAY" || (Number(tx.amount) < 0 && kind !== "RECEIVE");
-      const isReward = kind === "REWARD" || kind === "LUCKY_SPIN" || kind === "DAILY" || kind === "AIRDROP" || (tx.type && String(tx.type).indexOf("SPIN") >= 0);
+      const isReward = kind === "REWARD" || kind === "LUCKY_SPIN" || kind === "ESCROW_HOLD" || kind === "ESCROW_RELEASE" || kind === "DAILY" || kind === "AIRDROP" || (tx.type && String(tx.type).indexOf("SPIN") >= 0);
       let dir, color;
       if (kind === "PET" || kind === "PI_PAY") {
         dir = "🐾 " + (tx.label || "PET");
@@ -8460,7 +8461,7 @@ async function buyListing(listingId) {
       method: "POST",
       body: JSON.stringify({ listingId: Number(listingId) })
     });
-    showToast("Pet purchased for " + (data.price != null ? data.price : "") + " AMT");
+    showToast((data && data.message) || ("Escrow complete · " + (data.price != null ? data.price : "") + " AMT"));
     await loadListings();
     await loadOwnedPets();
     await refreshWallet();
