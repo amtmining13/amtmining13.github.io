@@ -2735,10 +2735,39 @@ app.get(
           `,
           [req.member.id]
         );
+        // Enrich escrow rows with counterparty username (who you bought from / sold to)
+        const escrowRefs = led.rows
+          .filter((r) => r.type === "ESCROW_HOLD" || r.type === "ESCROW_RELEASE")
+          .map((r) => r.reference)
+          .filter(Boolean);
+        const escrowMap = {};
+        if (escrowRefs.length) {
+          try {
+            const er = await pool.query(
+              `SELECT e.hold_ref, e.release_ref, e.listing_kind, e.price_amt,
+                      e.buyer_member_id, e.seller_member_id,
+                      b.username AS buyer_username,
+                      s.username AS seller_username
+               FROM market_escrows e
+               LEFT JOIN members b ON b.id = e.buyer_member_id
+               LEFT JOIN members s ON s.id = e.seller_member_id
+               WHERE e.hold_ref = ANY($1::text[]) OR e.release_ref = ANY($1::text[])`,
+              [escrowRefs]
+            );
+            for (const row of er.rows) {
+              if (row.hold_ref) escrowMap[row.hold_ref] = row;
+              if (row.release_ref) escrowMap[row.release_ref] = row;
+            }
+          } catch (eEsc) {
+            console.warn("escrow enrich:", eEsc.message);
+          }
+        }
+
         rewards = led.rows.map((row) => {
           const typ = String(row.type || "REWARD");
           let label = typ;
           let kind = "REWARD";
+          let memoExtra = "";
           if (typ === "LUCKY_SPIN") label = "LUCKY SPIN";
           else if (typ === "DAILY" || typ === "DAILY_REWARD") label = "DAILY REWARD";
           else if (typ === "AIRDROP") label = "AIRDROP";
@@ -2748,8 +2777,22 @@ app.get(
           else if (typ === "PET_PURCHASE") { label = "PET BUY (AMT)"; kind = "PET"; }
           else if (typ === "PET_BUY_LISTING") { label = "PET BUY LISTING"; kind = "PET"; }
           else if (typ === "PET_SALE") { label = "PET SALE"; kind = "PET"; }
-          else if (typ === "ESCROW_HOLD") { label = "ESCROW HOLD"; kind = "PET"; }
-          else if (typ === "ESCROW_RELEASE") { label = "ESCROW RELEASE"; kind = "PET"; }
+          else if (typ === "ESCROW_HOLD") {
+            kind = "PET";
+            const info = escrowMap[row.reference] || {};
+            const seller = info.seller_username || "seller";
+            const what = info.listing_kind === "EGG" ? "Egg" : "Pet";
+            label = "BUY " + what + " FROM @" + seller;
+            memoExtra = "Escrow · from @" + seller;
+          }
+          else if (typ === "ESCROW_RELEASE") {
+            kind = "PET";
+            const info = escrowMap[row.reference] || {};
+            const buyer = info.buyer_username || "buyer";
+            const what = info.listing_kind === "EGG" ? "Egg" : "Pet";
+            label = "SOLD " + what + " TO @" + buyer;
+            memoExtra = "Escrow · to @" + buyer;
+          }
           else if (typ === "EGG_BUY") { label = "EGG BUY"; kind = "PET"; }
           else if (typ === "EGG_SALE") { label = "EGG SALE"; kind = "PET"; }
           else if (typ === "PET_CARE") { label = "PET CARE"; kind = "PET"; }
@@ -2764,7 +2807,7 @@ app.get(
             currency: "AMT",
             txId: row.reference || ("LEDGER-" + row.id),
             amount: Number(row.amount),
-            memo: label + (row.reference ? " · " + row.reference : ""),
+            memo: memoExtra || (label + (row.reference ? " · " + row.reference : "")),
             status: "OK",
             createdAt: row.created_at,
             direction: Number(row.amount) >= 0 ? "RECEIVE" : "SEND"
