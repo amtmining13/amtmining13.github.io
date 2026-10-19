@@ -3719,8 +3719,9 @@ async function loadTxHistory() {
     box.innerHTML = list.map(function(tx) {
       const kind = (tx.kind || tx.direction || "").toUpperCase();
       const cur = (tx.currency || "AMT").toUpperCase();
-      const isOut = kind === "SEND" || kind === "PET" || kind === "SHOP" || kind === "PI_PAY" || (Number(tx.amount) < 0 && kind !== "RECEIVE");
-      const isReward = kind === "REWARD" || kind === "LUCKY_SPIN" || kind === "ESCROW_HOLD" || kind === "ESCROW_RELEASE" || kind === "DAILY" || kind === "AIRDROP" || (tx.type && String(tx.type).indexOf("SPIN") >= 0);
+      const amt = Number(tx.amount);
+      const isOut = amt < 0 || kind === "SEND";
+      const isReward = kind === "REWARD" || kind === "LUCKY_SPIN" || kind === "DAILY" || kind === "AIRDROP" || (tx.type && String(tx.type).indexOf("SPIN") >= 0);
       let dir, color;
       if (kind === "PET" || kind === "PI_PAY") {
         dir = "🐾 " + (tx.label || "PET");
@@ -3731,17 +3732,16 @@ async function loadTxHistory() {
       } else if (isReward || kind === "REWARD") {
         dir = "🎁 " + (tx.label || tx.type || "REWARD");
         color = "#ffd64e";
-      } else if (isOut || kind === "SEND") {
+      } else if (kind === "SEND" || (isOut && kind !== "PET")) {
         dir = "↑ SEND";
         color = "#ff8a80";
       } else {
         dir = "↓ RECEIVE";
         color = "#69f0ae";
       }
-      const amt = Number(tx.amount);
-      const sign = amt < 0 || isOut ? "-" : (amt > 0 ? "+" : "");
+      const sign = amt < 0 ? "-" : (amt > 0 ? "+" : "");
       const amtStr = sign + (isFinite(amt) ? Math.abs(amt) : tx.amount);
-      const amtColor = (amt < 0 || isOut) ? "#ff8a80" : "#69f0ae";
+      const amtColor = amt < 0 ? "#ff8a80" : "#69f0ae";
       const other = tx.direction === "SEND" ? tx.recipientAddress : tx.senderAddress;
       const when = tx.createdAt ? new Date(tx.createdAt).toLocaleString() : "";
       return '<div class="balance-row" style="flex-direction:column;align-items:stretch;gap:4px;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.08)">' +
