@@ -2726,7 +2726,7 @@ app.get(
             AND type IN (
               'LUCKY_SPIN','DAILY','DAILY_REWARD','AIRDROP',
               'MINING','MINING_CLAIM','AD_BONUS','REFERRAL',
-              'PET_PURCHASE','PET_BUY_LISTING','PET_SALE','EGG_BUY','EGG_SALE',
+              'PET_PURCHASE','PET_BUY_LISTING','PET_SALE','EGG_BUY','EGG_SALE','ESCROW_HOLD','ESCROW_RELEASE',
               'PET_CARE','PET_TRAIN','PET_BREED','PET_BOSS',
               'GEAR_BUY','GEM_BUY','CORE_BUY','WEAPON_BUY'
             )
@@ -2748,6 +2748,8 @@ app.get(
           else if (typ === "PET_PURCHASE") { label = "PET BUY (AMT)"; kind = "PET"; }
           else if (typ === "PET_BUY_LISTING") { label = "PET BUY LISTING"; kind = "PET"; }
           else if (typ === "PET_SALE") { label = "PET SALE"; kind = "PET"; }
+          else if (typ === "ESCROW_HOLD") { label = "ESCROW HOLD"; kind = "PET"; }
+          else if (typ === "ESCROW_RELEASE") { label = "ESCROW RELEASE"; kind = "PET"; }
           else if (typ === "EGG_BUY") { label = "EGG BUY"; kind = "PET"; }
           else if (typ === "EGG_SALE") { label = "EGG SALE"; kind = "PET"; }
           else if (typ === "PET_CARE") { label = "PET CARE"; kind = "PET"; }
@@ -7077,6 +7079,21 @@ async function ensurePetTables() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
 
+    CREATE TABLE IF NOT EXISTS market_escrows (
+      id BIGSERIAL PRIMARY KEY,
+      listing_id BIGINT,
+      listing_kind TEXT NOT NULL DEFAULT 'PET',
+      buyer_member_id BIGINT NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+      seller_member_id BIGINT NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+      asset_id BIGINT NOT NULL,
+      price_amt NUMERIC(20,8) NOT NULL,
+      status TEXT NOT NULL DEFAULT 'PENDING',
+      hold_ref TEXT,
+      release_ref TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      completed_at TIMESTAMPTZ
+    );
+
     CREATE TABLE IF NOT EXISTS pet_battles (
       id BIGSERIAL PRIMARY KEY,
       member_id BIGINT NOT NULL REFERENCES members(id) ON DELETE CASCADE,
@@ -8343,6 +8360,10 @@ app.post("/api/pets/buy-egg-listing", requireAuth, async (req, res) => {
       return res.status(400).json({ ok: false, error: "Cannot buy your own egg." });
     }
     const price = Number(L.price_amt);
+    if (!Number.isFinite(price) || price <= 0) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Invalid price." });
+    }
     const balance = await getBalance(req.member.id, client);
     if (balance < price) {
       await client.query("ROLLBACK");
@@ -8356,36 +8377,58 @@ app.post("/api/pets/buy-egg-listing", requireAuth, async (req, res) => {
       await client.query("ROLLBACK");
       return res.status(400).json({ ok: false, error: "Egg no longer available." });
     }
-    await client.query(
-      `INSERT INTO amt_ledger (member_id, amount, type, reference) VALUES ($1,$2,'EGG_SALE',$3)`,
-      [L.seller_member_id, price, makeReference("AMT-EGG-SALE")]
+    if (Number(egg.rows[0].member_id) !== Number(L.seller_member_id)) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Egg ownership mismatch." });
+    }
+
+    const holdRef = "ESCROW-EGG-HOLD-" + listingId + "-" + req.member.id + "-" + Date.now();
+    const releaseRef = "ESCROW-EGG-REL-" + listingId + "-" + L.seller_member_id + "-" + Date.now();
+    const esc = await client.query(
+      `INSERT INTO market_escrows
+        (listing_id, listing_kind, buyer_member_id, seller_member_id, asset_id, price_amt, status, hold_ref, release_ref)
+       VALUES ($1,'EGG',$2,$3,$4,$5,'PENDING',$6,$7)
+       RETURNING id`,
+      [listingId, req.member.id, L.seller_member_id, L.egg_id, price, holdRef, releaseRef]
     );
+    const escrowId = esc.rows[0].id;
+
     await client.query(
-      `INSERT INTO amt_ledger (member_id, amount, type, reference) VALUES ($1,$2,'EGG_BUY',$3)`,
-      [req.member.id, -price, makeReference("AMT-EGG-BUY")]
+      `INSERT INTO amt_ledger (member_id, amount, type, reference) VALUES ($1,$2,'ESCROW_HOLD',$3)`,
+      [req.member.id, -price, holdRef]
     );
     await client.query(
       `UPDATE pet_eggs SET member_id = $1, is_listed = FALSE WHERE id = $2`,
       [req.member.id, L.egg_id]
     );
     await client.query(
+      `INSERT INTO amt_ledger (member_id, amount, type, reference) VALUES ($1,$2,'ESCROW_RELEASE',$3)`,
+      [L.seller_member_id, price, releaseRef]
+    );
+    await client.query(
       `UPDATE egg_listings SET status = 'SOLD' WHERE id = $1`,
       [listingId]
+    );
+    await client.query(
+      `UPDATE market_escrows SET status = 'COMPLETED', completed_at = NOW() WHERE id = $1`,
+      [escrowId]
     );
     await client.query("COMMIT");
     res.json({
       ok: true,
       purchased: true,
+      escrow: true,
+      escrowId,
       price,
       eggId: L.egg_id,
-      message: "Egg purchased — check Baby Room (Eggs tab)"
+      message: "Escrow complete · Egg in Baby Room · Seller paid " + price + " AMT"
     });
   } catch (e) {
     try {
       await client.query("ROLLBACK");
     } catch {}
     console.error("BUY EGG:", e);
-    res.status(500).json({ ok: false, error: "Buy egg failed. " + (e.message || "") });
+    res.status(500).json({ ok: false, error: "Escrow egg buy failed. " + (e.message || "") });
   } finally {
     client.release();
   }
@@ -8443,13 +8486,22 @@ app.get("/api/pets/listings", async (req, res) => {
   }
 });
 
-/* ---------- Buy from public sell ---------- */
+/* ---------- Buy from public sell (AMT ESCROW protected) ----------
+   Flow in one atomic tx:
+   1) Lock listing
+   2) Hold buyer AMT (ESCROW_HOLD)
+   3) Transfer pet → buyer
+   4) Release AMT → seller (ESCROW_RELEASE / PET_SALE)
+   5) Mark listing SOLD + escrow COMPLETED
+   If any step fails → full rollback (buyer keeps AMT, pet stays with seller).
+-------------------------------------------------------------- */
 app.post("/api/pets/buy-listing", requireAuth, async (req, res) => {
   const listingId = Number(req.body?.listingId);
   if (!Number.isInteger(listingId)) return res.status(400).json({ ok: false, error: "listingId required." });
 
   const client = await pool.connect();
   try {
+    await ensurePetTables();
     await client.query("BEGIN");
     const listing = await client.query(
       `SELECT * FROM pet_listings WHERE id = $1 AND status = 'ACTIVE' FOR UPDATE`,
@@ -8464,22 +8516,45 @@ app.post("/api/pets/buy-listing", requireAuth, async (req, res) => {
       await client.query("ROLLBACK");
       return res.status(400).json({ ok: false, error: "Cannot buy your own listing." });
     }
+    const petLock = await client.query(
+      `SELECT id, member_id, is_listed FROM owned_pets WHERE id = $1 FOR UPDATE`,
+      [L.owned_pet_id]
+    );
+    if (!petLock.rows.length || Number(petLock.rows[0].member_id) !== Number(L.seller_member_id)) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Pet no longer available from seller." });
+    }
     const price = Number(L.price_amt);
+    if (!Number.isFinite(price) || price <= 0) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Invalid listing price." });
+    }
     const balance = await getBalance(req.member.id, client);
     if (balance < price) {
       await client.query("ROLLBACK");
       return res.status(400).json({ ok: false, error: "Insufficient AMT." });
     }
-    // Pay seller
-    await client.query(
-      `INSERT INTO amt_ledger (member_id, amount, type, reference) VALUES ($1,$2,'PET_SALE',$3)`,
-      [L.seller_member_id, price, makeReference("AMT-SALE")]
+
+    const holdRef = "ESCROW-PET-HOLD-" + listingId + "-" + req.member.id + "-" + Date.now();
+    const releaseRef = "ESCROW-PET-REL-" + listingId + "-" + L.seller_member_id + "-" + Date.now();
+
+    // Create escrow record (PENDING → COMPLETED in same tx)
+    const esc = await client.query(
+      `INSERT INTO market_escrows
+        (listing_id, listing_kind, buyer_member_id, seller_member_id, asset_id, price_amt, status, hold_ref, release_ref)
+       VALUES ($1,'PET',$2,$3,$4,$5,'PENDING',$6,$7)
+       RETURNING id`,
+      [listingId, req.member.id, L.seller_member_id, L.owned_pet_id, price, holdRef, releaseRef]
     );
+    const escrowId = esc.rows[0].id;
+
+    // 1) Hold buyer funds
     await client.query(
-      `INSERT INTO amt_ledger (member_id, amount, type, reference) VALUES ($1,$2,'PET_BUY_LISTING',$3)`,
-      [req.member.id, -price, makeReference("AMT-BUY")]
+      `INSERT INTO amt_ledger (member_id, amount, type, reference) VALUES ($1,$2,'ESCROW_HOLD',$3)`,
+      [req.member.id, -price, holdRef]
     );
-    // Transfer ownership + history
+
+    // 2) Transfer pet under escrow
     await client.query(
       `UPDATE owned_pets SET member_id = $1, is_listed = FALSE WHERE id = $2`,
       [req.member.id, L.owned_pet_id]
@@ -8492,19 +8567,39 @@ app.post("/api/pets/buy-listing", requireAuth, async (req, res) => {
         req.member.id,
         "SALE",
         price,
-        "Public sell"
+        "Escrow marketplace sale #" + escrowId
       );
     } catch (e) { console.error("ownership sale:", e.message); }
+
+    // 3) Release funds to seller
+    await client.query(
+      `INSERT INTO amt_ledger (member_id, amount, type, reference) VALUES ($1,$2,'ESCROW_RELEASE',$3)`,
+      [L.seller_member_id, price, releaseRef]
+    );
+    // Seller credit is ESCROW_RELEASE (shows in history). No double credit.
+
     await client.query(
       `UPDATE pet_listings SET status = 'SOLD' WHERE id = $1`,
       [listingId]
     );
+    await client.query(
+      `UPDATE market_escrows SET status = 'COMPLETED', completed_at = NOW() WHERE id = $1`,
+      [escrowId]
+    );
+
     await client.query("COMMIT");
-    res.json({ ok: true, purchased: true, price });
+    res.json({
+      ok: true,
+      purchased: true,
+      escrow: true,
+      escrowId,
+      price,
+      message: "Escrow complete · Pet transferred · Seller paid " + price + " AMT"
+    });
   } catch (e) {
     try { await client.query("ROLLBACK"); } catch {}
     console.error("BUY LISTING ERROR:", e);
-    res.status(500).json({ ok: false, error: "Purchase failed." });
+    res.status(500).json({ ok: false, error: "Escrow purchase failed. " + (e.message || "") });
   } finally {
     client.release();
   }
