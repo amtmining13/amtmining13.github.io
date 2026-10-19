@@ -4254,6 +4254,11 @@ async function doLuckySpin(){
     }
     if(data.freeSpin){
       showToast("FREE SPIN! +1 extra spin today 🎡");
+    } else if(data.eggGranted || data.prize === "egg"){
+      showToast(data.eggGranted
+        ? "🥚 Free Egg saved! Open Pets → Eggs / Baby Room (24h hatch)"
+        : (label || "Egg prize"));
+      try{ if(typeof loadEggs === "function") loadEggs(); }catch(e){}
     } else {
       showToast(label);
     }
@@ -8204,7 +8209,7 @@ async function loadEggs() {
     if (!eggs.length) {
       box.className = "";
       box.innerHTML =
-        '<div class="empty">No eggs yet. Breed two pets above to start the Baby Room.</div>';
+        '<div class="empty">No eggs yet.<br>Breed two pets <b>or</b> win an Egg on Lucky Spin.<br>Spin eggs appear here (Baby Room · 24h hatch).</div>';
       return;
     }
     box.className = "baby-grid";
