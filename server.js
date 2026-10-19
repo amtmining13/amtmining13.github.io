@@ -12766,16 +12766,26 @@ app.post("/api/spin/claim", requireAuth, async (req, res) => {
         );
       }
     }
-    // egg / charge: best-effort flags on member or skip if no table
+    // Free egg from spin → Baby Room (must include element — NOT NULL column)
+    let eggGranted = false;
+    let eggId = null;
     if (prize.type === "egg") {
       try {
-        await client.query(
-          `INSERT INTO pet_eggs (member_id, status, hatch_at, created_at)
-           VALUES ($1, 'incubating', NOW() + INTERVAL '24 hours', NOW())`,
-          [req.member.id]
+        await ensurePetTables();
+        const ELEMENTS = ["Earth","Water","Nature","Ice","Fire","Wind","Thunder"];
+        const element = ELEMENTS[Math.floor(Math.random() * ELEMENTS.length)];
+        const eggIns = await client.query(
+          `INSERT INTO pet_eggs (member_id, element, rarity, status, hatch_at, gen, is_listed)
+           VALUES ($1, $2, 'Common', 'INCUBATING', NOW() + INTERVAL '24 hours', 1, FALSE)
+           RETURNING id, element, hatch_at`,
+          [req.member.id, element]
         );
+        if (eggIns.rows.length) {
+          eggGranted = true;
+          eggId = eggIns.rows[0].id;
+        }
       } catch (eggErr) {
-        console.warn("spin egg grant:", eggErr.message);
+        console.error("spin egg grant FAILED:", eggErr.message);
       }
     }
     if (prize.type === "charge") {
@@ -12797,13 +12807,17 @@ app.post("/api/spin/claim", requireAuth, async (req, res) => {
     res.json({
       ok: true,
       prize: prize.key,
-      prizeLabel: prize.label,
+      prizeLabel: prize.type === "egg"
+        ? (eggGranted ? "Free Egg! → Pets → Eggs / Baby Room (24h)" : "Egg prize (save failed — contact admin)")
+        : prize.label,
       prizeIndex: index,
       amount: prize.amount || 0,
       spinsLeft: left,
       usedToday: newUsed,
       bonusSpins: newBonus,
-      freeSpin: prize.type === "free_spin"
+      freeSpin: prize.type === "free_spin",
+      eggGranted: !!eggGranted,
+      eggId: eggId
     });
   } catch (e) {
     try { await client.query("ROLLBACK"); } catch (_) {}
