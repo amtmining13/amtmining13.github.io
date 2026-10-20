@@ -2468,6 +2468,10 @@ SELECT 180D
 <button type="button" class="secondary pet-tap-btn" onclick="trainPet('atk',12)">⚔️ ATK 12h (0.7)</button>
 <button type="button" class="secondary pet-tap-btn" onclick="trainPet('def',24)">🛡️ DEF 24h (1.2)</button>
 </div>
+<div class="muted" style="font-size:12px;margin:10px 0 4px;font-weight:800;color:#ffd54a">Star Rank ★</div>
+<div id="ownedStarsLine" style="margin-bottom:6px;font-size:16px">★☆☆☆☆</div>
+<div class="muted" style="font-size:11px;margin-bottom:8px;line-height:1.35">Upgrade with <b>Mineral Ore</b> + <b>Upgrade Core</b> + AMT (from Map grind / shop). Max ★★★★★. Each star boosts HP/ATK/DEF/SPD.</div>
+<button type="button" class="primary pet-tap-btn" style="width:100%;margin-bottom:10px" onclick="starUpgradePet()">⭐ STAR UPGRADE</button>
 <button class="primary" style="margin-bottom:8px" onclick="claimPetSession()">✅ CLAIM CARE/TRAIN XP</button>
 <button class="secondary" style="margin-bottom:8px" onclick="cancelPetSession()">⏹ CANCEL SESSION</button>
 <div id="ownedSessionInfo" class="muted" style="font-size:11px;margin-bottom:8px"></div>
@@ -6428,6 +6432,7 @@ async function loadOwnedPets() {
         }</div>
           ${petStatsRow(pet)}
           <div class="pet-card-footer">
+            <div style="margin:3px 0">${starsHtml(pet.stars != null ? pet.stars : 1)}</div>
             <div class="muted" style="font-size:10px;margin:4px 0">🍖 ${pet.hunger != null ? pet.hunger : 100} · 💧 ${pet.thirst != null ? pet.thirst : 100}${String(pet.pet_status||'')==='RUNAWAY'?' · 🚨 AWAY':''}</div>
             <button class="small-btn" onclick="event.stopPropagation();openOwnedModal(${pid})">VIEW / CARE / BATTLE</button>
           </div>
@@ -6506,6 +6511,7 @@ function openOwnedModal(id) {
   if ($("ownedLv")) $("ownedLv").textContent = pet.level || 1;
   if ($("ownedEnergy")) $("ownedEnergy").textContent = pet.energy ?? 100;
   if ($("ownedHappy")) $("ownedHappy").textContent = pet.happiness ?? 100;
+  if ($("ownedStarsLine")) $("ownedStarsLine").innerHTML = starsHtml(pet.stars != null ? pet.stars : 1);
   if ($("ownedHunger")) $("ownedHunger").textContent = pet.hunger ?? 100;
   if ($("ownedThirst")) $("ownedThirst").textContent = pet.thirst ?? 100;
   if ($("ownedNeedsWarn")) {
@@ -6613,6 +6619,39 @@ function fillOwnedModalFromPet(pet) {
   openOwnedModal(pet.id);
 }
 
+
+
+function starsHtml(n) {
+  n = Math.max(1, Math.min(5, Number(n) || 1));
+  var s = "";
+  for (var i = 1; i <= 5; i++) s += i <= n ? "★" : "☆";
+  return '<span style="color:#ffd54a;letter-spacing:1px;font-size:12px;font-weight:900">' + s + '</span>';
+}
+
+async function starUpgradePet() {
+  if (!selectedOwned || !selectedOwned.id) {
+    showToast("Open a pet first.", true);
+    return;
+  }
+  try {
+    showToast("Upgrading stars...");
+    const d = await api("/api/pets/star-upgrade", {
+      method: "POST",
+      body: JSON.stringify({ ownedPetId: Number(selectedOwned.id) })
+    });
+    showToast(d.message || ("Now " + (d.starsLabel || "")));
+    if (d.pet) {
+      selectedOwned = d.pet;
+      window._ownedMap[d.pet.id] = d.pet;
+      if (typeof fillOwnedModalFromPet === "function") fillOwnedModalFromPet(d.pet);
+      else openOwnedModal(d.pet.id);
+    }
+    await refreshWallet();
+    loadOwnedPets().catch(function(){});
+  } catch (e) {
+    showToast(e.message || "Star upgrade failed", true);
+  }
+}
 
 async function rescuePet() {
   if (!selectedOwned || !selectedOwned.id) {
@@ -8496,6 +8535,7 @@ async function loadListings() {
         const levelLine = `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
           <span style="padding:3px 8px;border-radius:999px;background:linear-gradient(90deg,#5b21b6,#7c3aed);font-size:10px;font-weight:900;color:#fff">Lv ${lv}</span>
           <span style="padding:3px 8px;border-radius:999px;background:rgba(255,200,60,.15);border:1px solid rgba(255,200,60,.35);font-size:10px;font-weight:800;color:#ffd54a">${esc(L.rarity || "Common")}</span>
+          <span style="padding:3px 8px;border-radius:999px;background:rgba(255,213,80,.12);font-size:11px;color:#ffd54a">${"★".repeat(Math.max(1,Math.min(5,Number(L.stars)||1)))}</span>
         </div>`;
         const repLine = `<div class="muted" style="font-size:10px;margin-top:4px">${repBadge} · Rep ${rep} · W${wins}/L${losses}</div>`;
         const guideLine = `<div class="muted" style="font-size:9px;margin-top:3px">Guide ~${suggestMin.toFixed(1)}–${suggestMax.toFixed(0)} AMT (not a floor)</div>`;
