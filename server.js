@@ -432,50 +432,91 @@ async function piApiRequest(
 PI AUTHENTICATION
 ========================================================= */
 
-async function verifyPiAccessToken(
-  accessToken
-) {
+function extractPiUser(payload) {
+  if (!payload || typeof payload !== "object") return null;
+  // Direct
+  if (payload.uid) {
+    return {
+      uid: payload.uid,
+      username: payload.username || null,
+      walletAddress: payload.wallet_address || payload.walletAddress || null
+    };
+  }
+  // Nested user
+  if (payload.user && payload.user.uid) {
+    return {
+      uid: payload.user.uid,
+      username: payload.user.username || payload.username || null,
+      walletAddress:
+        payload.user.wallet_address ||
+        payload.user.walletAddress ||
+        payload.wallet_address ||
+        null
+    };
+  }
+  // Nested data
+  if (payload.data && payload.data.uid) {
+    return {
+      uid: payload.data.uid,
+      username: payload.data.username || null,
+      walletAddress: payload.data.wallet_address || null
+    };
+  }
+  if (payload.data && payload.data.user && payload.data.user.uid) {
+    return {
+      uid: payload.data.user.uid,
+      username: payload.data.user.username || null,
+      walletAddress: payload.data.user.wallet_address || null
+    };
+  }
+  return null;
+}
+
+async function verifyPiAccessToken(accessToken) {
   if (!accessToken) {
-    throw new HttpError(
-      401,
-      "Pi access token is required."
-    );
+    throw new HttpError(401, "Pi access token is required.");
   }
 
-  const token = String(accessToken).trim();
-  const base = String(PI_API_BASE || "https://api.minepi.com").replace(/\/$/, "");
+  let token = String(accessToken).trim();
+  // If client accidentally sent "Bearer xxx"
+  if (/^bearer\s+/i.test(token)) token = token.replace(/^bearer\s+/i, "").trim();
+  // If client sent JSON blob by mistake
+  if (token.startsWith("{") && token.includes("accessToken")) {
+    try {
+      const obj = JSON.parse(token);
+      if (obj.accessToken) token = String(obj.accessToken).trim();
+    } catch (_) {}
+  }
 
-  // Try /v2/me then /me (some tokens respond on one path only)
+  const base = String(PI_API_BASE || "https://api.minepi.com").replace(/\/$/, "");
   const paths = ["/v2/me", "/me"];
   let lastStatus = 0;
   let lastBody = {};
-  let data = null;
+  let lastRaw = "";
+  let resolved = null;
 
   for (const path of paths) {
     try {
-      const response = await fetch(`${base}${path}`, {
+      const response = await fetch(base + path, {
         method: "GET",
         headers: {
           Accept: "application/json",
-          Authorization: `Bearer ${token}`
+          Authorization: "Bearer " + token
         }
       });
       const text = await response.text();
+      lastRaw = text.slice(0, 300);
       let parsed;
       try {
         parsed = JSON.parse(text);
       } catch {
-        parsed = { raw: text };
+        parsed = { raw: text.slice(0, 200) };
       }
       lastStatus = response.status;
       lastBody = parsed;
-      // Pi docs: body may be { uid, username } OR { user: { uid, username } }
-      const uid =
-        (parsed && parsed.uid) ||
-        (parsed && parsed.user && parsed.user.uid) ||
-        null;
-      if (response.ok && uid) {
-        data = parsed;
+      const found = extractPiUser(parsed);
+      if (response.ok && found && found.uid) {
+        resolved = found;
         break;
       }
     } catch (fetchErr) {
@@ -483,59 +524,39 @@ async function verifyPiAccessToken(
     }
   }
 
-  const resolvedUid =
-    (data && data.uid) ||
-    (data && data.user && data.user.uid) ||
-    null;
-  const resolvedUsername =
-    (data && data.username) ||
-    (data && data.user && data.user.username) ||
-    null;
-  const resolvedWallet =
-    (data && (data.wallet_address || data.walletAddress)) ||
-    (data && data.user && (data.user.wallet_address || data.user.walletAddress)) ||
-    null;
-
-  if (!data || !resolvedUid) {
+  if (!resolved || !resolved.uid) {
     console.error("AUTH ERROR detail:", {
       status: lastStatus,
       bodyKeys: lastBody && typeof lastBody === "object" ? Object.keys(lastBody) : [],
       body: lastBody,
+      rawPreview: lastRaw,
       apiBase: base,
-      tokenPrefix: String(token).slice(0, 12) + "…",
+      tokenPrefix: token.slice(0, 16) + "…",
       tokenLen: token.length,
       hasApiKey: !!PI_API_KEY,
       keyPrefix: String(PI_API_KEY || "").slice(0, 6)
     });
-    const hint =
-      lastStatus === 401
-        ? " Token rejected by Pi. Fix: Developer Portal → SAME Mainnet app as domain amtmining13.github.io → regenerate API key → paste on Render PI_API_KEY → redeploy → clear Pi Browser cache → login again."
-        : lastStatus === 200
-        ? " Pi returned 200 but uid missing (shape fix applied on next deploy). Clear cache & login again."
-        : "";
+    let hint = "";
+    if (lastStatus === 401) {
+      hint =
+        " Token rejected. Check: 1) PI_API_BASE=https://api.minepi.com 2) Mainnet app API key on Render 3) Login only inside Pi Browser 4) Clear cache & login again.";
+    } else if (lastStatus === 200) {
+      hint =
+        " Pi HTTP 200 but no uid in body. Often wrong network (sandbox token vs mainnet API) or HTML/error page. Confirm PI_API_BASE and sandbox:false, then fresh Login with Pi.";
+    } else if (!lastStatus) {
+      hint = " No response from Pi API — network/DNS issue on Render.";
+    }
     throw new HttpError(
       401,
-      (lastBody?.error ||
-        lastBody?.message ||
-        (lastBody?.user && !lastBody?.user?.uid ? "Invalid user payload from Pi." : null) ||
-        `Pi authentication failed (${lastStatus || 401}).`) + hint
+      (lastBody && (lastBody.error || lastBody.message)) ||
+        ("Pi authentication failed (" + (lastStatus || 401) + ").") + hint
     );
   }
 
   return {
-    uid: String(resolvedUid),
-
-    username: cleanUsername(
-      resolvedUsername
-    ),
-
-    /*
-     * This is the VERIFIED Pi wallet address
-     * returned by the Pi API.
-     *
-     * It is NOT the AMT- ledger address.
-     */
-    walletAddress: resolvedWallet
+    uid: String(resolved.uid),
+    username: cleanUsername(resolved.username),
+    walletAddress: resolved.walletAddress || null
   };
 }
 
