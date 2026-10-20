@@ -2769,7 +2769,7 @@ app.get(
               'LUCKY_SPIN','DAILY','DAILY_REWARD','AIRDROP',
               'MINING','MINING_CLAIM','AD_BONUS','REFERRAL',
               'PET_PURCHASE','PET_BUY_LISTING','PET_SALE','EGG_BUY','EGG_SALE','ESCROW_HOLD','ESCROW_RELEASE',
-              'PET_CARE','PET_RESCUE','PET_TRAIN','PET_BREED','PET_BOSS',
+              'PET_CARE','PET_RESCUE','PET_STAR','PET_TRAIN','PET_BREED','PET_BOSS',
               'GEAR_BUY','GEM_BUY','CORE_BUY','WEAPON_BUY'
             )
           ORDER BY created_at DESC
@@ -2839,6 +2839,7 @@ app.get(
           else if (typ === "EGG_SALE") { label = "EGG SALE"; kind = "PET"; }
           else if (typ === "PET_CARE") { label = "PET CARE"; kind = "PET"; }
           else if (typ === "PET_RESCUE") { label = "PET RESCUE"; kind = "PET"; }
+          else if (typ === "PET_STAR") { label = "STAR UPGRADE"; kind = "PET"; }
           else if (typ === "PET_TRAIN") { label = "PET TRAIN"; kind = "PET"; }
           else if (typ === "PET_BREED") { label = "PET BREED"; kind = "PET"; }
           else if (typ === "PET_BOSS") { label = "BOSS BATTLE"; kind = "PET"; }
@@ -7200,6 +7201,7 @@ async function ensurePetTables() {
     `ALTER TABLE owned_pets ADD COLUMN IF NOT EXISTS thirst INT NOT NULL DEFAULT 100`,
     `ALTER TABLE owned_pets ADD COLUMN IF NOT EXISTS pet_status TEXT NOT NULL DEFAULT 'ACTIVE'`,
     `ALTER TABLE owned_pets ADD COLUMN IF NOT EXISTS last_needs_at TIMESTAMPTZ DEFAULT NOW()`,
+    `ALTER TABLE owned_pets ADD COLUMN IF NOT EXISTS stars INT NOT NULL DEFAULT 1`,
     `ALTER TABLE owned_pets ADD COLUMN IF NOT EXISTS happiness INT NOT NULL DEFAULT 100`,
     `ALTER TABLE owned_pets ADD COLUMN IF NOT EXISTS is_listed BOOLEAN NOT NULL DEFAULT FALSE`,
     `ALTER TABLE owned_pets ADD COLUMN IF NOT EXISTS purchased_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`,
@@ -8591,7 +8593,7 @@ app.get("/api/pets/listings", async (req, res) => {
       SELECT l.id, l.price_amt, l.created_at, l.status,
              'PET' AS listing_type,
              p.name, p.element, p.rarity, p.hp, p.atk, p.def, p.spd, p.ability, p.image, p.level,
-             p.origin, p.rep, p.wins, p.losses, p.certificate_id,
+             p.origin, p.rep, p.wins, p.losses, p.certificate_id, p.stars,
              m.username AS seller_username,
              NULL::BIGINT AS egg_id,
              NULL::TIMESTAMPTZ AS hatch_at,
@@ -9728,6 +9730,114 @@ app.get("/api/pets/battle-charges", requireAuth, async (req, res) => {
 /* ---------- Claim care/train session ---------- */
 
 /* Rescue runaway pet — 1 AMT, restores needs */
+
+/* ---- Star upgrade ★1–★5 ----
+   Cost: mineral_ore + upgrade_core + AMT
+   Each star: +HP +ATK +DEF +SPD bonuses
+------------------------------------------------ */
+function starUpgradeCost(currentStars) {
+  const s = Math.max(1, Math.min(4, Number(currentStars) || 1));
+  // cost to go from s → s+1
+  const table = {
+    1: { minerals: 2, cores: 1, amt: 0.3, hp: 15, atk: 4, def: 4, spd: 3 },
+    2: { minerals: 4, cores: 2, amt: 0.6, hp: 25, atk: 6, def: 6, spd: 4 },
+    3: { minerals: 7, cores: 3, amt: 1.2, hp: 40, atk: 9, def: 9, spd: 6 },
+    4: { minerals: 12, cores: 5, amt: 2.5, hp: 60, atk: 14, def: 14, spd: 9 }
+  };
+  return table[s] || table[1];
+}
+
+app.post("/api/pets/star-upgrade", requireAuth, async (req, res) => {
+  const ownedId = Number(req.body?.ownedPetId);
+  if (!Number.isFinite(ownedId) || ownedId < 1) {
+    return res.status(400).json({ ok: false, error: "ownedPetId required." });
+  }
+  const client = await pool.connect();
+  try {
+    await ensurePetTables();
+    await ensureGearTables();
+    await client.query("BEGIN");
+    const petR = await client.query(
+      `SELECT * FROM owned_pets WHERE id = $1 AND member_id = $2 FOR UPDATE`,
+      [ownedId, req.member.id]
+    );
+    if (!petR.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ ok: false, error: "Pet not found." });
+    }
+    const pet = petR.rows[0];
+    if (String(pet.pet_status || "ACTIVE") === "RUNAWAY") {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Rescue pet first before star upgrade." });
+    }
+    let stars = Number(pet.stars != null ? pet.stars : 1);
+    if (stars < 1) stars = 1;
+    if (stars >= 5) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Already max ★5." });
+    }
+    const cost = starUpgradeCost(stars);
+    await spendMaterial(client, req.member.id, "mineral_ore", cost.minerals);
+    await spendMaterial(client, req.member.id, "upgrade_core", cost.cores);
+    const bal = await getBalance(req.member.id, client);
+    if (bal < cost.amt) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({
+        ok: false,
+        error: "Need " + cost.amt + " AMT (have " + bal + "). Also need " + cost.minerals + " Mineral + " + cost.cores + " Core."
+      });
+    }
+    await client.query(
+      `INSERT INTO amt_ledger (member_id, amount, type, reference) VALUES ($1,$2,'PET_STAR',$3)`,
+      [req.member.id, -cost.amt, makeReference("AMT-STAR")]
+    );
+    const newStars = stars + 1;
+    await client.query(
+      `UPDATE owned_pets SET
+        stars = $1,
+        hp = COALESCE(hp,0) + $2,
+        atk = COALESCE(atk,0) + $3,
+        def = COALESCE(def,0) + $4,
+        spd = COALESCE(spd,0) + $5
+       WHERE id = $6`,
+      [newStars, cost.hp, cost.atk, cost.def, cost.spd, ownedId]
+    );
+    const after = await client.query(`SELECT * FROM owned_pets WHERE id = $1`, [ownedId]);
+    await client.query("COMMIT");
+    res.json({
+      ok: true,
+      stars: newStars,
+      starsLabel: "★".repeat(newStars),
+      cost,
+      pet: after.rows[0],
+      message: "Star up! Now " + "★".repeat(newStars) + " (" + newStars + "/5) · +" + cost.hp + " HP +" + cost.atk + " ATK +" + cost.def + " DEF"
+    });
+  } catch (e) {
+    try { await client.query("ROLLBACK"); } catch (_) {}
+    console.error("STAR UP:", e);
+    res.status(e.status || 500).json({ ok: false, error: e.message || "Star upgrade failed." });
+  } finally {
+    client.release();
+  }
+});
+
+app.get("/api/pets/star-cost/:ownedPetId", requireAuth, async (req, res) => {
+  try {
+    const ownedId = Number(req.params.ownedPetId);
+    const r = await pool.query(
+      `SELECT stars FROM owned_pets WHERE id = $1 AND member_id = $2`,
+      [ownedId, req.member.id]
+    );
+    if (!r.rows.length) return res.status(404).json({ ok: false, error: "Pet not found." });
+    let stars = Number(r.rows[0].stars != null ? r.rows[0].stars : 1);
+    if (stars >= 5) return res.json({ ok: true, stars: 5, max: true, cost: null });
+    const cost = starUpgradeCost(stars);
+    res.json({ ok: true, stars, max: false, nextStars: stars + 1, cost });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message || "Failed." });
+  }
+});
+
 app.post("/api/pets/rescue", requireAuth, async (req, res) => {
   const ownedId = Number(req.body?.ownedPetId);
   if (!Number.isFinite(ownedId) || ownedId < 1) {
