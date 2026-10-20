@@ -7981,7 +7981,7 @@ app.post("/api/pets/train", requireAuth, async (req, res) => {
     return res.status(400).json({ ok: false, error: "durationHours must be 0, 8, 12, or 24." });
   }
 
-  const cost = hours === 0 ? 0.5 : (hours === 8 ? 1.0 : hours === 12 ? 1.5 : 2.5);
+  const cost = hours === 0 ? 0.1 : (hours === 8 ? 0.4 : hours === 12 ? 0.7 : 1.2);
   const xpGain = hours === 0 ? 28 : (hours === 8 ? 70 : hours === 12 ? 110 : 200);
   const client = await pool.connect();
   try {
