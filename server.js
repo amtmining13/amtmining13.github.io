@@ -469,7 +469,12 @@ async function verifyPiAccessToken(
       }
       lastStatus = response.status;
       lastBody = parsed;
-      if (response.ok && parsed && parsed.uid) {
+      // Pi docs: body may be { uid, username } OR { user: { uid, username } }
+      const uid =
+        (parsed && parsed.uid) ||
+        (parsed && parsed.user && parsed.user.uid) ||
+        null;
+      if (response.ok && uid) {
         data = parsed;
         break;
       }
@@ -478,9 +483,23 @@ async function verifyPiAccessToken(
     }
   }
 
-  if (!data || !data.uid) {
+  const resolvedUid =
+    (data && data.uid) ||
+    (data && data.user && data.user.uid) ||
+    null;
+  const resolvedUsername =
+    (data && data.username) ||
+    (data && data.user && data.user.username) ||
+    null;
+  const resolvedWallet =
+    (data && (data.wallet_address || data.walletAddress)) ||
+    (data && data.user && (data.user.wallet_address || data.user.walletAddress)) ||
+    null;
+
+  if (!data || !resolvedUid) {
     console.error("AUTH ERROR detail:", {
       status: lastStatus,
+      bodyKeys: lastBody && typeof lastBody === "object" ? Object.keys(lastBody) : [],
       body: lastBody,
       apiBase: base,
       tokenPrefix: String(token).slice(0, 12) + "…",
@@ -491,20 +510,23 @@ async function verifyPiAccessToken(
     const hint =
       lastStatus === 401
         ? " Token rejected by Pi. Fix: Developer Portal → SAME Mainnet app as domain amtmining13.github.io → regenerate API key → paste on Render PI_API_KEY → redeploy → clear Pi Browser cache → login again."
+        : lastStatus === 200
+        ? " Pi returned 200 but uid missing (shape fix applied on next deploy). Clear cache & login again."
         : "";
     throw new HttpError(
       401,
       (lastBody?.error ||
         lastBody?.message ||
+        (lastBody?.user && !lastBody?.user?.uid ? "Invalid user payload from Pi." : null) ||
         `Pi authentication failed (${lastStatus || 401}).`) + hint
     );
   }
 
   return {
-    uid: String(data.uid),
+    uid: String(resolvedUid),
 
     username: cleanUsername(
-      data.username
+      resolvedUsername
     ),
 
     /*
@@ -513,8 +535,7 @@ async function verifyPiAccessToken(
      *
      * It is NOT the AMT- ledger address.
      */
-    walletAddress:
-      data.wallet_address || null
+    walletAddress: resolvedWallet
   };
 }
 
@@ -2727,7 +2748,7 @@ app.get(
               'LUCKY_SPIN','DAILY','DAILY_REWARD','AIRDROP',
               'MINING','MINING_CLAIM','AD_BONUS','REFERRAL',
               'PET_PURCHASE','PET_BUY_LISTING','PET_SALE','EGG_BUY','EGG_SALE','ESCROW_HOLD','ESCROW_RELEASE',
-              'PET_CARE','PET_TRAIN','PET_BREED','PET_BOSS',
+              'PET_CARE','PET_RESCUE','PET_TRAIN','PET_BREED','PET_BOSS',
               'GEAR_BUY','GEM_BUY','CORE_BUY','WEAPON_BUY'
             )
           ORDER BY created_at DESC
@@ -2796,6 +2817,7 @@ app.get(
           else if (typ === "EGG_BUY") { label = "EGG BUY"; kind = "PET"; }
           else if (typ === "EGG_SALE") { label = "EGG SALE"; kind = "PET"; }
           else if (typ === "PET_CARE") { label = "PET CARE"; kind = "PET"; }
+          else if (typ === "PET_RESCUE") { label = "PET RESCUE"; kind = "PET"; }
           else if (typ === "PET_TRAIN") { label = "PET TRAIN"; kind = "PET"; }
           else if (typ === "PET_BREED") { label = "PET BREED"; kind = "PET"; }
           else if (typ === "PET_BOSS") { label = "BOSS BATTLE"; kind = "PET"; }
@@ -6945,7 +6967,10 @@ async function ensureGearTables() {
 const GEAR_MAX_UPGRADE = 15;
 
 const AMT_MATERIALS = {
-  pet_food: { id: "pet_food", name: "Pet Food", kind: "consumable", priceAmt: 0.2, desc: "Feed pet · restore energy / care" },
+  pet_food: { id: "pet_food", name: "Pet Food", kind: "consumable", priceAmt: 0.2, desc: "Feed pet · +Hunger +Energy" },
+  water_crystal: { id: "water_crystal", name: "Water Crystal", kind: "consumable", priceAmt: 0.15, desc: "Give water · +Thirst" },
+  mineral_ore: { id: "mineral_ore", name: "Mineral Ore", kind: "material", priceAmt: 0.25, desc: "Map loot · craft / trade later" },
+  energy_shard: { id: "energy_shard", name: "Energy Shard", kind: "consumable", priceAmt: 0.3, desc: "Restore pet energy" },
   upgrade_core: { id: "upgrade_core", name: "Upgrade Core", kind: "core", priceAmt: 0.5, desc: "Upgrade weapon/armor +1 (max +15)" },
   gem_atk_1: { id: "gem_atk_1", name: "Attack Gem Lv1", kind: "gem", stat: "atk", bonus: 2, level: 1, priceAmt: 0.4, desc: "+2 ATK when socketed" },
   gem_atk_2: { id: "gem_atk_2", name: "Attack Gem Lv2", kind: "gem", stat: "atk", bonus: 5, level: 2, priceAmt: 1.2, desc: "+5 ATK when socketed" },
@@ -7150,6 +7175,10 @@ async function ensurePetTables() {
   // Ensure columns exist if table was created by older schema
   const alts = [
     `ALTER TABLE owned_pets ADD COLUMN IF NOT EXISTS energy INT NOT NULL DEFAULT 100`,
+    `ALTER TABLE owned_pets ADD COLUMN IF NOT EXISTS hunger INT NOT NULL DEFAULT 100`,
+    `ALTER TABLE owned_pets ADD COLUMN IF NOT EXISTS thirst INT NOT NULL DEFAULT 100`,
+    `ALTER TABLE owned_pets ADD COLUMN IF NOT EXISTS pet_status TEXT NOT NULL DEFAULT 'ACTIVE'`,
+    `ALTER TABLE owned_pets ADD COLUMN IF NOT EXISTS last_needs_at TIMESTAMPTZ DEFAULT NOW()`,
     `ALTER TABLE owned_pets ADD COLUMN IF NOT EXISTS happiness INT NOT NULL DEFAULT 100`,
     `ALTER TABLE owned_pets ADD COLUMN IF NOT EXISTS is_listed BOOLEAN NOT NULL DEFAULT FALSE`,
     `ALTER TABLE owned_pets ADD COLUMN IF NOT EXISTS purchased_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`,
@@ -7436,11 +7465,19 @@ app.get("/api/pets/owned", requireAuth, async (req, res) => {
       `SELECT * FROM owned_pets WHERE member_id = $1 ORDER BY id DESC`,
       [req.member.id]
     );
+    const pets = [];
+    for (const row of result.rows) {
+      try {
+        pets.push(await applyNeedsDecay(pool, row));
+      } catch (e) {
+        pets.push(row);
+      }
+    }
     res.json({
       ok: true,
-      count: result.rows.length,
+      count: pets.length,
       memberId: req.member.id,
-      pets: result.rows
+      pets
     });
   } catch (e) {
     console.error("OWNED PETS ERROR:", e);
@@ -7783,9 +7820,40 @@ app.post("/api/pets/energy-pack", requireAuth, async (req, res) => {
 });
 
 /* ---------- Care (feed / play) ---------- */
+
+/* ---- Pet needs: hunger / thirst / runaway ----
+   Decay ~3 hunger + 4 thirst per real hour offline.
+   If both <= 5 after decay → RUNAWAY (recoverable).
+------------------------------------------------ */
+async function applyNeedsDecay(client, petRow) {
+  if (!petRow) return petRow;
+  if (String(petRow.pet_status || "ACTIVE") === "RUNAWAY") return petRow;
+  const q = client.query.bind(client);
+  const last = petRow.last_needs_at ? new Date(petRow.last_needs_at).getTime() : Date.now();
+  const hours = Math.max(0, (Date.now() - last) / 3600000);
+  if (hours < 0.15) return petRow; // < ~9 min skip
+  let hunger = Number(petRow.hunger != null ? petRow.hunger : 100);
+  let thirst = Number(petRow.thirst != null ? petRow.thirst : 100);
+  const dh = Math.floor(hours * 3);
+  const dt = Math.floor(hours * 4);
+  hunger = Math.max(0, hunger - dh);
+  thirst = Math.max(0, thirst - dt);
+  let status = String(petRow.pet_status || "ACTIVE");
+  // Run away if critically neglected
+  if (hunger <= 5 && thirst <= 5 && hours >= 6) {
+    status = "RUNAWAY";
+  }
+  await q(
+    `UPDATE owned_pets SET hunger = $1, thirst = $2, pet_status = $3, last_needs_at = NOW()
+     WHERE id = $4`,
+    [hunger, thirst, status, petRow.id]
+  );
+  return { ...petRow, hunger, thirst, pet_status: status, last_needs_at: new Date().toISOString() };
+}
+
 app.post("/api/pets/care", requireAuth, async (req, res) => {
   const ownedId = Number(req.body?.ownedPetId);
-  const action = String(req.body?.action || "feed").toLowerCase(); // feed | play
+  const action = String(req.body?.action || "feed").toLowerCase(); // feed | water | play
   const hours = Number(req.body?.durationHours || 0); // 0 instant | 4 | 12 | 24
   if (!Number.isFinite(ownedId) || ownedId < 1) {
     return res.status(400).json({ ok: false, error: "ownedPetId required." });
@@ -7793,8 +7861,11 @@ app.post("/api/pets/care", requireAuth, async (req, res) => {
   if (![0, 4, 12, 24].includes(hours)) {
     return res.status(400).json({ ok: false, error: "durationHours must be 0, 4, 12, or 24." });
   }
+  if (!["feed", "water", "play"].includes(action)) {
+    return res.status(400).json({ ok: false, error: "action must be feed, water, or play." });
+  }
 
-  const baseCost = action === "play" ? 0.1 : 0.2;
+  const baseCost = action === "play" ? 0.1 : (action === "water" ? 0.15 : 0.2);
   const cost = hours === 0 ? baseCost : (hours === 4 ? 0.3 : hours === 12 ? 0.6 : 1.0);
   const xpGain = hours === 0
     ? (action === "play" ? 12 : 18)
@@ -7812,7 +7883,15 @@ app.post("/api/pets/care", requireAuth, async (req, res) => {
       await client.query("ROLLBACK");
       return res.status(404).json({ ok: false, error: "Pet not found in your My Pets." });
     }
-    if (pet.rows[0].session_ends_at && new Date(pet.rows[0].session_ends_at) > new Date()) {
+    let petRow = await applyNeedsDecay(client, pet.rows[0]);
+    if (String(petRow.pet_status || "") === "RUNAWAY" && hours > 0) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({
+        ok: false,
+        error: "Pet ran away! Use Rescue (AMT) or instant Feed/Water first."
+      });
+    }
+    if (petRow.session_ends_at && new Date(petRow.session_ends_at) > new Date()) {
       await client.query("ROLLBACK");
       return res.status(400).json({
         ok: false,
@@ -7831,18 +7910,24 @@ app.post("/api/pets/care", requireAuth, async (req, res) => {
       `INSERT INTO amt_ledger (member_id, amount, type, reference) VALUES ($1,$2,'PET_CARE',$3)`,
       [req.member.id, -cost, makeReference("AMT-CARE")]
     );
-    const energyGain = action === "feed" ? 30 : 15;
-    const happyGain = action === "play" ? 30 : 15;
+    const energyGain = action === "feed" ? 30 : (action === "water" ? 10 : 15);
+    const happyGain = action === "play" ? 30 : (action === "water" ? 12 : 15);
 
     if (hours === 0) {
+      const hungerGain = action === "feed" ? 40 : (action === "water" ? 10 : 15);
+      const thirstGain = action === "water" ? 45 : (action === "feed" ? 10 : 12);
       await client.query(
         `UPDATE owned_pets SET
           energy = LEAST(100, COALESCE(energy, 0) + $1),
           happiness = LEAST(100, COALESCE(happiness, 0) + $2),
-          exp = COALESCE(exp, 0) + $3,
+          hunger = LEAST(100, COALESCE(hunger, 50) + $3),
+          thirst = LEAST(100, COALESCE(thirst, 50) + $4),
+          pet_status = 'ACTIVE',
+          last_needs_at = NOW(),
+          exp = COALESCE(exp, 0) + $5,
           session_type = NULL, session_ends_at = NULL, session_xp = 0
-         WHERE id = $4`,
-        [energyGain, happyGain, xpGain, ownedId]
+         WHERE id = $6`,
+        [energyGain, happyGain, hungerGain, thirstGain, xpGain, ownedId]
       );
       const petAfter = await applyLevelAndRarity(client, ownedId, req.member.id);
       await client.query("COMMIT");
@@ -8893,6 +8978,18 @@ app.post("/api/pets/battle", requireAuth, async (req, res) => {
     const tierKey = pickTier(req.body?.tier, pet.level);
     const tier = BATTLE_TIERS[tierKey];
 
+    if (String(pet.pet_status || "ACTIVE") === "RUNAWAY") {
+      return res.status(400).json({
+        ok: false,
+        error: "Pet ran away from lack of care. Rescue or Feed/Water first."
+      });
+    }
+    if (Number(pet.hunger != null ? pet.hunger : 100) < 15 || Number(pet.thirst != null ? pet.thirst : 100) < 15) {
+      return res.status(400).json({
+        ok: false,
+        error: "Pet is too hungry or thirsty to fight. Feed and give water first."
+      });
+    }
     if (Number(pet.energy) < tier.energy) {
       return res.status(400).json({
         ok: false,
@@ -9608,6 +9705,59 @@ app.get("/api/pets/battle-charges", requireAuth, async (req, res) => {
 
 
 /* ---------- Claim care/train session ---------- */
+
+/* Rescue runaway pet — 1 AMT, restores needs */
+app.post("/api/pets/rescue", requireAuth, async (req, res) => {
+  const ownedId = Number(req.body?.ownedPetId);
+  if (!Number.isFinite(ownedId) || ownedId < 1) {
+    return res.status(400).json({ ok: false, error: "ownedPetId required." });
+  }
+  const cost = 1.0;
+  const client = await pool.connect();
+  try {
+    await ensurePetTables();
+    await client.query("BEGIN");
+    const pet = await client.query(
+      `SELECT * FROM owned_pets WHERE id = $1 AND member_id = $2 FOR UPDATE`,
+      [ownedId, req.member.id]
+    );
+    if (!pet.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ ok: false, error: "Pet not found." });
+    }
+    if (String(pet.rows[0].pet_status || "ACTIVE") !== "RUNAWAY") {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Pet did not run away." });
+    }
+    const bal = await getBalance(req.member.id, client);
+    if (bal < cost) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Need 1 AMT to rescue." });
+    }
+    await client.query(
+      `INSERT INTO amt_ledger (member_id, amount, type, reference) VALUES ($1,$2,'PET_RESCUE',$3)`,
+      [req.member.id, -cost, makeReference("AMT-RESCUE")]
+    );
+    await client.query(
+      `UPDATE owned_pets SET
+        pet_status = 'ACTIVE', hunger = 60, thirst = 60,
+        energy = LEAST(100, COALESCE(energy,0) + 20),
+        happiness = LEAST(100, COALESCE(happiness,0) + 20),
+        last_needs_at = NOW()
+       WHERE id = $1`,
+      [ownedId]
+    );
+    await client.query("COMMIT");
+    res.json({ ok: true, message: "Pet rescued! Keep feeding & watering.", cost });
+  } catch (e) {
+    try { await client.query("ROLLBACK"); } catch (_) {}
+    console.error("RESCUE:", e);
+    res.status(500).json({ ok: false, error: "Rescue failed." });
+  } finally {
+    client.release();
+  }
+});
+
 app.post("/api/pets/claim-session", requireAuth, async (req, res) => {
   const ownedId = Number(req.body?.ownedPetId);
   if (!Number.isFinite(ownedId) || ownedId < 1) {
@@ -10386,6 +10536,39 @@ app.post("/api/pets/grind/claim", requireAuth, async (req, res) => {
       await addMaterial(client, req.member.id, "pet_food", foodQty);
       loot.push(foodQty + "x Pet Food");
     }
+    let waterQty = 0;
+    for (let i = 0; i < hours; i++) {
+      if (Math.random() < (zone.foodChance || 0.35) * 0.9) waterQty++;
+    }
+    if (waterQty > 0) {
+      await addMaterial(client, req.member.id, "water_crystal", waterQty);
+      loot.push(waterQty + "x Water Crystal");
+    }
+    let mineralQty = 0;
+    for (let i = 0; i < hours; i++) {
+      if (Math.random() < 0.22) mineralQty++;
+    }
+    if (mineralQty > 0) {
+      await addMaterial(client, req.member.id, "mineral_ore", mineralQty);
+      loot.push(mineralQty + "x Mineral Ore");
+    }
+    let shardQty = 0;
+    for (let i = 0; i < hours; i++) {
+      if (Math.random() < 0.12) shardQty++;
+    }
+    if (shardQty > 0) {
+      await addMaterial(client, req.member.id, "energy_shard", shardQty);
+      loot.push(shardQty + "x Energy Shard");
+    }
+    // grinding also drains needs a bit
+    await client.query(
+      `UPDATE owned_pets SET
+        hunger = GREATEST(0, COALESCE(hunger,100) - $1),
+        thirst = GREATEST(0, COALESCE(thirst,100) - $2),
+        last_needs_at = NOW()
+       WHERE id = $3`,
+      [Math.min(40, hours * 3), Math.min(45, hours * 4), pet.id]
+    );
     let cores = 0;
     for (let i = 0; i < hours; i++) {
       if (Math.random() < zone.coreChance) cores++;
