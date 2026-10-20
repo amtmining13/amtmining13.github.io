@@ -2420,8 +2420,12 @@ SELECT 180D
 
 <div class="muted" style="font-size:10px;margin:6px 0 4px">Care · gains XP (instant or timed)</div>
 <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
-<button class="secondary" style="margin:0;width:auto;padding:8px 10px;font-size:11px" onclick="carePet('feed',0)">🍖 Feed +XP (0.2)</button>
-<button class="secondary" style="margin:0;width:auto;padding:8px 10px;font-size:11px" onclick="carePet('play',0)">🎾 Play +XP (0.1)</button>
+<div id="ownedNeedsWarn" style="font-size:11px;margin:4px 0 8px;font-weight:700"></div>
+<div class="muted" style="font-size:11px;margin-bottom:6px">🍖 Hunger <b id="ownedHunger">—</b> · 💧 Thirst <b id="ownedThirst">—</b></div>
+<button class="secondary" style="margin:0;width:auto;padding:8px 10px;font-size:11px" onclick="carePet('feed',0)">🍖 Feed (0.2)</button>
+<button class="secondary" style="margin:0;width:auto;padding:8px 10px;font-size:11px" onclick="carePet('water',0)">💧 Water (0.15)</button>
+<button class="secondary" style="margin:0;width:auto;padding:8px 10px;font-size:11px" onclick="carePet('play',0)">🎾 Play (0.1)</button>
+<button class="secondary" style="margin:0;width:auto;padding:8px 10px;font-size:11px" onclick="rescuePet()">🆘 Rescue runaway (1 AMT)</button>
 <button class="secondary" style="margin:0;width:auto;padding:8px 10px;font-size:11px" onclick="carePet('feed',4)">Care 4h (0.3)</button>
 <button class="secondary" style="margin:0;width:auto;padding:8px 10px;font-size:11px" onclick="carePet('feed',12)">Care 12h (0.6)</button>
 <button class="secondary" style="margin:0;width:auto;padding:8px 10px;font-size:11px" onclick="carePet('feed',24)">Care 24h (1.0)</button>
@@ -6396,6 +6400,7 @@ async function loadOwnedPets() {
         }</div>
           ${petStatsRow(pet)}
           <div class="pet-card-footer">
+            <div class="muted" style="font-size:10px;margin:4px 0">🍖 ${pet.hunger != null ? pet.hunger : 100} · 💧 ${pet.thirst != null ? pet.thirst : 100}${String(pet.pet_status||'')==='RUNAWAY'?' · 🚨 AWAY':''}</div>
             <button class="small-btn" onclick="event.stopPropagation();openOwnedModal(${pid})">VIEW / CARE / BATTLE</button>
           </div>
         </div>
@@ -6473,6 +6478,22 @@ function openOwnedModal(id) {
   if ($("ownedLv")) $("ownedLv").textContent = pet.level || 1;
   if ($("ownedEnergy")) $("ownedEnergy").textContent = pet.energy ?? 100;
   if ($("ownedHappy")) $("ownedHappy").textContent = pet.happiness ?? 100;
+  if ($("ownedHunger")) $("ownedHunger").textContent = pet.hunger ?? 100;
+  if ($("ownedThirst")) $("ownedThirst").textContent = pet.thirst ?? 100;
+  if ($("ownedNeedsWarn")) {
+    const h = Number(pet.hunger != null ? pet.hunger : 100);
+    const th = Number(pet.thirst != null ? pet.thirst : 100);
+    const runaway = String(pet.pet_status || "") === "RUNAWAY";
+    if (runaway) {
+      $("ownedNeedsWarn").innerHTML = "🚨 <b>RAN AWAY</b> — Rescue (1 AMT) or Feed/Water!";
+      $("ownedNeedsWarn").style.color = "#ff6b6b";
+    } else if (h < 25 || th < 25) {
+      $("ownedNeedsWarn").innerHTML = "⚠️ Hungry/Thirsty — Feed & Water soon or pet may run away!";
+      $("ownedNeedsWarn").style.color = "#ffd54a";
+    } else {
+      $("ownedNeedsWarn").textContent = "";
+    }
+  }
   if ($("ownedId")) $("ownedId").textContent = pet.id;
   if ($("ownedHp")) $("ownedHp").textContent = pet.hp;
   if ($("ownedAtk")) $("ownedAtk").textContent = pet.atk;
@@ -6562,6 +6583,26 @@ function fillOwnedModalFromPet(pet) {
   window._ownedMap[String(pet.id)] = pet;
   selectedOwned = pet;
   openOwnedModal(pet.id);
+}
+
+
+async function rescuePet() {
+  if (!selectedOwned || !selectedOwned.id) {
+    showToast("Open a pet first.", true);
+    return;
+  }
+  try {
+    const d = await api("/api/pets/rescue", {
+      method: "POST",
+      body: JSON.stringify({ ownedPetId: Number(selectedOwned.id) })
+    });
+    showToast(d.message || "Pet rescued!");
+    await loadOwnedPets();
+    openOwnedModal(selectedOwned.id);
+    await refreshWallet();
+  } catch (e) {
+    showToast(e.message || "Rescue failed", true);
+  }
 }
 
 async function carePet(action, durationHours) {
