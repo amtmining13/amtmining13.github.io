@@ -1220,6 +1220,23 @@ animation:ecosystemBlink 1s ease-in-out infinite;
 .mine-hero-btn.primary-act{background:linear-gradient(145deg,rgba(255,200,60,.25),rgba(120,60,200,.2));border-color:rgba(255,210,80,.5);color:#ffe9a0}
 .mine-hero-note{margin-top:10px;font-size:11px;color:#9a90a8;line-height:1.35}
 
+.pet-tap-btn{
+  min-height:52px!important;
+  padding:12px 10px!important;
+  font-size:13px!important;
+  font-weight:800!important;
+  line-height:1.25!important;
+  border-radius:14px!important;
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:rgba(255,213,80,.25);
+  cursor:pointer;
+  position:relative;
+  z-index:5;
+}
+#ownedModal .card, #ownedModal > div{
+  -webkit-overflow-scrolling:touch;
+}
+#ownedModal button{pointer-events:auto!important}
 </style>
 </head>
 
@@ -2382,7 +2399,7 @@ SELECT 180D
 </div>
 
 <!-- Owned Pet Actions Modal -->
-<div id="ownedModal" class="hidden" style="position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;padding:16px">
+<div id="ownedModal" class="hidden" style="position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.75);display:flex;align-items:flex-start;justify-content:center;padding:12px;overflow-y:auto;-webkit-overflow-scrolling:touch">
 <div class="card" style="max-width:400px;width:100%;max-height:90vh;overflow:auto;margin:0">
 <div class="row">
 <div class="card-title" style="margin:0" id="ownedModalName">My Pet</div>
@@ -2418,27 +2435,38 @@ SELECT 180D
 <button class="secondary" style="margin-bottom:8px" onclick="showPetHistory()">📜 OWNERSHIP HISTORY</button>
 <button class="primary" style="margin-bottom:8px" onclick="playStoryFromModal()">📖 PLAY STORY</button>
 
-<div class="muted" style="font-size:10px;margin:6px 0 4px">Care · gains XP (instant or timed)</div>
-<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
-<div id="ownedNeedsWarn" style="font-size:11px;margin:4px 0 8px;font-weight:700"></div>
-<div class="muted" style="font-size:11px;margin-bottom:6px">🍖 Hunger <b id="ownedHunger">—</b> · 💧 Thirst <b id="ownedThirst">—</b></div>
-<button class="secondary" style="margin:0;width:auto;padding:8px 10px;font-size:11px" onclick="carePet('feed',0)">🍖 Feed (0.2)</button>
-<button class="secondary" style="margin:0;width:auto;padding:8px 10px;font-size:11px" onclick="carePet('water',0)">💧 Water (0.15)</button>
-<button class="secondary" style="margin:0;width:auto;padding:8px 10px;font-size:11px" onclick="carePet('play',0)">🎾 Play (0.1)</button>
-<button class="secondary" style="margin:0;width:auto;padding:8px 10px;font-size:11px" onclick="rescuePet()">🆘 Rescue runaway (1 AMT)</button>
-<button class="secondary" style="margin:0;width:auto;padding:8px 10px;font-size:11px" onclick="carePet('feed',4)">Care 4h (0.3)</button>
-<button class="secondary" style="margin:0;width:auto;padding:8px 10px;font-size:11px" onclick="carePet('feed',12)">Care 12h (0.6)</button>
-<button class="secondary" style="margin:0;width:auto;padding:8px 10px;font-size:11px" onclick="carePet('feed',24)">Care 24h (1.0)</button>
+<div class="muted" style="font-size:12px;margin:10px 0 4px;font-weight:800;color:#ffd54a">Care · Food &amp; Water</div>
+<div id="ownedNeedsWarn" style="font-size:12px;margin:4px 0 6px;font-weight:700"></div>
+<div class="muted" style="font-size:12px;margin-bottom:8px">🍖 Hunger <b id="ownedHunger">—</b> · 💧 Thirst <b id="ownedThirst">—</b></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+<button type="button" class="primary pet-tap-btn" onclick="carePet('feed',0)">🍖 FEED<br><span style="font-size:10px;opacity:.9">0.2 AMT</span></button>
+<button type="button" class="primary pet-tap-btn" onclick="carePet('water',0)">💧 WATER<br><span style="font-size:10px;opacity:.9">0.15 AMT</span></button>
+<button type="button" class="secondary pet-tap-btn" onclick="carePet('play',0)">🎾 PLAY<br><span style="font-size:10px;opacity:.9">0.1 AMT</span></button>
+<button type="button" class="secondary pet-tap-btn" onclick="rescuePet()">🆘 RESCUE<br><span style="font-size:10px;opacity:.9">1 AMT</span></button>
 </div>
-<button class="secondary" style="margin-bottom:8px" onclick="buyEnergyPack('energy')">⚡ ENERGY PACK (1 AMT)</button>
-<button class="secondary" style="margin-bottom:8px" onclick="buyEnergyPack('full')">💖 FULL PACK (3 AMT)</button>
-<div class="muted" style="font-size:10px;margin:6px 0 4px">Train · XP + stats</div>
-<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
-<button class="secondary" style="margin:0;width:auto;padding:8px 10px;font-size:11px" onclick="trainPet('atk',0)">⚔️ ATK now (0.5)</button>
-<button class="secondary" style="margin:0;width:auto;padding:8px 10px;font-size:11px" onclick="trainPet('hp',0)">❤️ HP now (0.5)</button>
-<button class="secondary" style="margin:0;width:auto;padding:8px 10px;font-size:11px" onclick="trainPet('atk',8)">Train 8h (1.0)</button>
-<button class="secondary" style="margin:0;width:auto;padding:8px 10px;font-size:11px" onclick="trainPet('atk',12)">Train 12h (1.5)</button>
-<button class="secondary" style="margin:0;width:auto;padding:8px 10px;font-size:11px" onclick="trainPet('atk',24)">Train 24h (2.5)</button>
+<div class="muted" style="font-size:11px;margin:0 0 6px">Timed care → wait → CLAIM</div>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
+<button type="button" class="secondary pet-tap-btn" onclick="carePet('feed',4)">4h<br><span style="font-size:10px">0.3</span></button>
+<button type="button" class="secondary pet-tap-btn" onclick="carePet('feed',12)">12h<br><span style="font-size:10px">0.6</span></button>
+<button type="button" class="secondary pet-tap-btn" onclick="carePet('feed',24)">24h<br><span style="font-size:10px">1.0</span></button>
+</div>
+<button type="button" class="secondary pet-tap-btn" style="width:100%;margin-bottom:8px" onclick="buyEnergyPack('energy')">⚡ ENERGY PACK (1 AMT)</button>
+<button type="button" class="secondary pet-tap-btn" style="width:100%;margin-bottom:12px" onclick="buyEnergyPack('full')">💖 FULL PACK (3 AMT)</button>
+
+<div class="muted" style="font-size:12px;margin:4px 0 4px;font-weight:800;color:#ffd54a">Train · Raise HP &amp; DEF</div>
+<div class="muted" style="font-size:11px;margin-bottom:8px;line-height:1.4">Tap <b>+HP</b> or <b>+DEF</b> for instant boost (0.1 AMT). Need energy — Feed first if low.</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+<button type="button" class="primary pet-tap-btn" onclick="trainPet('hp',0)">❤️ +HP NOW<br><span style="font-size:10px;opacity:.9">0.1 AMT</span></button>
+<button type="button" class="primary pet-tap-btn" onclick="trainPet('def',0)">🛡️ +DEF NOW<br><span style="font-size:10px;opacity:.9">0.1 AMT</span></button>
+<button type="button" class="secondary pet-tap-btn" onclick="trainPet('atk',0)">⚔️ +ATK NOW<br><span style="font-size:10px;opacity:.9">0.1 AMT</span></button>
+<button type="button" class="secondary pet-tap-btn" onclick="trainPet('spd',0)">💨 +SPD NOW<br><span style="font-size:10px;opacity:.9">0.1 AMT</span></button>
+</div>
+<div class="muted" style="font-size:11px;margin:0 0 6px">Long train (more XP → CLAIM later)</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+<button type="button" class="secondary pet-tap-btn" onclick="trainPet('hp',8)">❤️ HP 8h (0.4)</button>
+<button type="button" class="secondary pet-tap-btn" onclick="trainPet('def',8)">🛡️ DEF 8h (0.4)</button>
+<button type="button" class="secondary pet-tap-btn" onclick="trainPet('atk',12)">⚔️ ATK 12h (0.7)</button>
+<button type="button" class="secondary pet-tap-btn" onclick="trainPet('def',24)">🛡️ DEF 24h (1.2)</button>
 </div>
 <button class="primary" style="margin-bottom:8px" onclick="claimPetSession()">✅ CLAIM CARE/TRAIN XP</button>
 <button class="secondary" style="margin-bottom:8px" onclick="cancelPetSession()">⏹ CANCEL SESSION</button>
@@ -6623,7 +6651,8 @@ async function carePet(action, durationHours) {
     if (hours > 0) {
       showToast(data.message || (hours + "h care started · claim XP later"));
     } else {
-      showToast((action === "feed" ? "Fed " : "Played with ") + petName + " · +" + (data.xpGained || 0) + " XP");
+      var actLabel = action === "feed" ? "Fed " : (action === "water" ? "Watered " : "Played with ");
+      showToast(actLabel + petName + " · +" + (data.xpGained || 0) + " XP");
     }
     if (data.pet) fillOwnedModalFromPet(data.pet);
     updateOwnedSessionInfo(data.pet || data);
