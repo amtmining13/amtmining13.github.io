@@ -2497,6 +2497,19 @@ SELECT 180D
   </div>
 </div>
 
+
+<!-- P2P TRADE INBOX -->
+<div id="tradeInboxModal" class="hidden" style="position:fixed;inset:0;z-index:360;background:rgba(0,0,0,.85);display:flex;align-items:flex-start;justify-content:center;padding:16px;overflow:auto">
+  <div class="card" style="max-width:420px;width:100%;margin:0">
+    <div class="row">
+      <div class="card-title" style="margin:0">📬 P2P TRADES</div>
+      <button class="small-btn" style="width:auto" onclick="closeTradeInbox()">✕</button>
+    </div>
+    <p class="muted" style="font-size:11px;margin:8px 0 12px">Open offers · Accept = escrow pay + pet transfer</p>
+    <div id="tradeInboxBox" class="muted">Loading…</div>
+  </div>
+</div>
+
 <!-- Owned Pet Actions Modal -->
 <div id="ownedModal" class="hidden" style="position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.75);display:flex;align-items:flex-start;justify-content:center;padding:12px;overflow-y:auto;-webkit-overflow-scrolling:touch">
 <div class="card" style="max-width:400px;width:100%;max-height:90vh;overflow:auto;margin:0">
@@ -2604,6 +2617,13 @@ SELECT 180D
 <div id="sellPriceGuide" class="muted" style="font-size:10px;margin-top:4px">Guide by level · not a floor · market decides</div>
 </div>
 <button class="secondary" onclick="listPetForSale()">🏪 PUBLIC SELL</button>
+
+<div class="muted" style="font-size:12px;margin:14px 0 6px;font-weight:800;color:#ffd54a">P2P Trade · Escrow</div>
+<div class="muted" style="font-size:11px;margin-bottom:8px">Offer this pet to a specific miner. Buyer pays in-app AMT via escrow.</div>
+<input id="tradeToUser" class="input" type="text" placeholder="Buyer Pi username" style="margin-bottom:8px">
+<input id="tradePrice" class="input" type="number" min="0.1" step="0.1" placeholder="Price AMT" style="margin-bottom:8px">
+<button class="primary" style="margin-bottom:8px" onclick="createPetTrade()">🤝 SEND TRADE OFFER</button>
+<button class="secondary" style="margin-bottom:8px" onclick="openTradeInbox()">📬 MY TRADES</button>
 <button class="secondary" onclick="updatePetSellPrice()">💰 CHANGE PRICE</button>
 <button class="secondary" onclick="cancelPetSell()">🚫 CANCEL SELL</button>
 </div>
@@ -8532,6 +8552,102 @@ async function cancelPetSell() {
     closeOwnedModal();
     await loadOwnedPets();
     if (typeof loadListings === "function") loadListings();
+  } catch (e) {
+    showToast(e.message || "Cancel failed", true);
+  }
+}
+
+
+async function createPetTrade() {
+  try {
+    if (!accessToken) { showToast("Login first", true); return; }
+    if (!selectedOwned || !selectedOwned.id) {
+      showToast("Open a pet from My Pets first", true);
+      return;
+    }
+    var user = ($("tradeToUser") && $("tradeToUser").value || "").trim();
+    var price = Number($("tradePrice") && $("tradePrice").value);
+    if (!user) { showToast("Enter buyer Pi username", true); return; }
+    if (!(price > 0)) { showToast("Enter price > 0", true); return; }
+    var d = await api("/api/pets/trade/create", {
+      method: "POST",
+      body: JSON.stringify({
+        ownedPetId: Number(selectedOwned.id),
+        toUsername: user,
+        priceAmt: price
+      })
+    });
+    showToast(d.message || "Trade offer sent");
+    closeOwnedModal();
+  } catch (e) {
+    showToast(e.message || "Trade failed", true);
+  }
+}
+function closeTradeInbox() {
+  var m = $("tradeInboxModal");
+  if (m) { m.classList.add("hidden"); m.style.display = "none"; }
+}
+async function openTradeInbox() {
+  var m = $("tradeInboxModal");
+  if (!m) return;
+  if (!accessToken) { showToast("Login first", true); return; }
+  m.classList.remove("hidden");
+  m.style.display = "flex";
+  var box = $("tradeInboxBox");
+  if (box) box.innerHTML = "Loading…";
+  try {
+    var d = await api("/api/pets/trade/list");
+    var rows = d.trades || [];
+    if (!rows.length) {
+      box.innerHTML = '<div class="empty">No trades yet.</div>';
+      return;
+    }
+    var me = (currentUser && currentUser.username) ? String(currentUser.username).toLowerCase() : "";
+    box.innerHTML = rows.map(function(tr) {
+      var st = String(tr.status || "");
+      var isBuyer = me && String(tr.buyer_username || "").toLowerCase() === me;
+      var isSeller = me && String(tr.seller_username || "").toLowerCase() === me;
+      var actions = "";
+      if (st === "OPEN" && isBuyer) {
+        actions = '<button class="primary" style="margin-top:8px" onclick="acceptPetTrade(' + tr.id + ')">✅ ACCEPT & PAY (escrow)</button>';
+      }
+      if (st === "OPEN" && (isBuyer || isSeller)) {
+        actions += '<button class="secondary" style="margin-top:6px" onclick="cancelPetTrade(' + tr.id + ')">Cancel</button>';
+      }
+      return '<div style="padding:12px 0;border-bottom:1px solid rgba(255,255,255,.08)">' +
+        '<b>' + esc(tr.pet_name || "Pet") + '</b> · Lv' + (tr.pet_level || 1) + ' · ' + esc(tr.pet_rarity || "") +
+        '<div class="muted" style="font-size:11px">Seller @' + esc(tr.seller_username || "?") +
+        ' → Buyer @' + esc(tr.buyer_username || "?") + '</div>' +
+        '<div style="margin-top:4px"><b>' + Number(tr.price_amt) + ' AMT</b> · ' + st + '</div>' +
+        actions + '</div>';
+    }).join("");
+  } catch (e) {
+    if (box) box.textContent = e.message || "Failed";
+  }
+}
+async function acceptPetTrade(id) {
+  try {
+    showToast("Processing escrow trade…");
+    var d = await api("/api/pets/trade/accept", {
+      method: "POST",
+      body: JSON.stringify({ tradeId: Number(id) })
+    });
+    showToast(d.message || "Trade complete");
+    openTradeInbox();
+    try { await refreshWallet(); } catch (e) {}
+    try { await loadOwnedPets(); } catch (e) {}
+  } catch (e) {
+    showToast(e.message || "Accept failed", true);
+  }
+}
+async function cancelPetTrade(id) {
+  try {
+    var d = await api("/api/pets/trade/cancel", {
+      method: "POST",
+      body: JSON.stringify({ tradeId: Number(id) })
+    });
+    showToast(d.message || "Cancelled");
+    openTradeInbox();
   } catch (e) {
     showToast(e.message || "Cancel failed", true);
   }
