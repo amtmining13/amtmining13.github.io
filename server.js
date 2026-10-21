@@ -2722,20 +2722,22 @@ app.get(
         [req.member.id]
       );
 
-      const transfers = result.rows.map((row) => ({
-        kind: "TRANSFER",
-        txId: row.tx_id,
-        amount: Number(row.amount),
-        memo: row.memo,
-        status: row.status,
-        createdAt: row.created_at,
-        direction:
-          Number(row.sender_member_id) === Number(req.member.id)
-            ? "SEND"
-            : "RECEIVE",
-        senderAddress: row.sender_address,
-        recipientAddress: row.recipient_address
-      }));
+      const transfers = result.rows.map((row) => {
+        const isSend = Number(row.sender_member_id) === Number(req.member.id);
+        const amt = Math.abs(Number(row.amount) || 0);
+        return {
+          kind: "TRANSFER",
+          txId: row.tx_id,
+          amount: isSend ? -amt : amt,
+          memo: row.memo || (isSend ? "Sent AMT" : "Received AMT"),
+          status: row.status,
+          createdAt: row.created_at,
+          direction: isSend ? "SEND" : "RECEIVE",
+          label: isSend ? "SEND AMT" : "RECEIVE AMT",
+          senderAddress: row.sender_address,
+          recipientAddress: row.recipient_address
+        };
+      });
 
       // Ledger rewards / activity + pet / market spends
       let rewards = [];
@@ -2748,8 +2750,9 @@ app.get(
             AND type IN (
               'LUCKY_SPIN','DAILY','DAILY_REWARD','AIRDROP',
               'MINING','MINING_CLAIM','AD_BONUS','REFERRAL',
+              'SEND','RECEIVE',
               'PET_PURCHASE','PET_BUY_LISTING','PET_SALE','EGG_BUY','EGG_SALE','ESCROW_HOLD','ESCROW_RELEASE',
-              'PET_CARE','PET_RESCUE','PET_STAR','PET_TRAIN','PET_BREED','PET_BOSS',
+              'PET_CARE','PET_RESCUE','PET_STAR','PET_TRAIN','PET_BREED','PET_BOSS','PET_TRADE',
               'GEAR_BUY','GEM_BUY','CORE_BUY','WEAPON_BUY'
             )
           ORDER BY created_at DESC
@@ -2817,6 +2820,9 @@ app.get(
           }
           else if (typ === "EGG_BUY") { label = "EGG BUY"; kind = "PET"; }
           else if (typ === "EGG_SALE") { label = "EGG SALE"; kind = "PET"; }
+          else if (typ === "SEND") { label = "SEND AMT"; kind = "SEND"; }
+          else if (typ === "RECEIVE") { label = "RECEIVE AMT"; kind = "RECEIVE"; }
+          else if (typ === "PET_TRADE") { label = "PET TRADE"; kind = "PET"; }
           else if (typ === "PET_CARE") { label = "PET CARE"; kind = "PET"; }
           else if (typ === "PET_RESCUE") { label = "PET RESCUE"; kind = "PET"; }
           else if (typ === "PET_STAR") { label = "STAR UPGRADE"; kind = "PET"; }
@@ -8803,6 +8809,226 @@ app.get("/api/pets/listings", async (req, res) => {
    5) Mark listing SOLD + escrow COMPLETED
    If any step fails → full rollback (buyer keeps AMT, pet stays with seller).
 -------------------------------------------------------------- */
+
+/* ---- P2P Pet Trade with escrow ---- */
+async function ensurePetTradeTables() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS pet_trades (
+      id BIGSERIAL PRIMARY KEY,
+      seller_member_id BIGINT NOT NULL REFERENCES members(id),
+      buyer_member_id BIGINT REFERENCES members(id),
+      owned_pet_id BIGINT NOT NULL,
+      price_amt NUMERIC(18,8) NOT NULL DEFAULT 0,
+      status TEXT NOT NULL DEFAULT 'OPEN',
+      hold_ref TEXT,
+      release_ref TEXT,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      completed_at TIMESTAMPTZ
+    )
+  `);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_pet_trades_seller ON pet_trades(seller_member_id)`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_pet_trades_buyer ON pet_trades(buyer_member_id)`);
+}
+
+app.post("/api/pets/trade/create", requireAuth, async (req, res) => {
+  const ownedPetId = Number(req.body?.ownedPetId);
+  const toUsername = String(req.body?.toUsername || "").trim().toLowerCase();
+  const priceAmt = Number(req.body?.priceAmt);
+  if (!Number.isFinite(ownedPetId) || ownedPetId < 1) {
+    return res.status(400).json({ ok: false, error: "ownedPetId required." });
+  }
+  if (!toUsername) {
+    return res.status(400).json({ ok: false, error: "Buyer Pi username required." });
+  }
+  if (!(priceAmt > 0)) {
+    return res.status(400).json({ ok: false, error: "priceAmt must be > 0." });
+  }
+  const client = await pool.connect();
+  try {
+    await ensurePetTradeTables();
+    await ensurePetTables();
+    await client.query("BEGIN");
+    const buyerQ = await client.query(
+      `SELECT id, username FROM members WHERE LOWER(username) = $1 LIMIT 1`,
+      [toUsername]
+    );
+    if (!buyerQ.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ ok: false, error: "Buyer not found. They must log in to AMT once." });
+    }
+    const buyerId = buyerQ.rows[0].id;
+    if (Number(buyerId) === Number(req.member.id)) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Cannot trade with yourself." });
+    }
+    const petQ = await client.query(
+      `SELECT * FROM owned_pets WHERE id = $1 AND member_id = $2 FOR UPDATE`,
+      [ownedPetId, req.member.id]
+    );
+    if (!petQ.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ ok: false, error: "Pet not found." });
+    }
+    const pet = petQ.rows[0];
+    if (String(pet.is_listed) === "true" || pet.is_listed === true) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Unlist from Public Sell first." });
+    }
+    const open = await client.query(
+      `SELECT id FROM pet_trades WHERE owned_pet_id = $1 AND status = 'OPEN' LIMIT 1`,
+      [ownedPetId]
+    );
+    if (open.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Pet already has an open trade." });
+    }
+    const ins = await client.query(
+      `INSERT INTO pet_trades (seller_member_id, buyer_member_id, owned_pet_id, price_amt, status)
+       VALUES ($1,$2,$3,$4,'OPEN') RETURNING id`,
+      [req.member.id, buyerId, ownedPetId, priceAmt]
+    );
+    await client.query("COMMIT");
+    res.json({
+      ok: true,
+      tradeId: ins.rows[0].id,
+      message: "Trade offer sent to @" + buyerQ.rows[0].username + " for " + priceAmt + " AMT"
+    });
+  } catch (e) {
+    try { await client.query("ROLLBACK"); } catch (_) {}
+    console.error("TRADE CREATE:", e);
+    res.status(500).json({ ok: false, error: e.message || "Trade create failed." });
+  } finally {
+    client.release();
+  }
+});
+
+app.get("/api/pets/trade/list", requireAuth, async (req, res) => {
+  try {
+    await ensurePetTradeTables();
+    const r = await pool.query(
+      `SELECT t.*, op.name AS pet_name, op.level AS pet_level, op.rarity AS pet_rarity,
+              op.element AS pet_element, op.stars AS pet_stars, op.image AS pet_image,
+              s.username AS seller_username, b.username AS buyer_username
+       FROM pet_trades t
+       JOIN owned_pets op ON op.id = t.owned_pet_id
+       JOIN members s ON s.id = t.seller_member_id
+       LEFT JOIN members b ON b.id = t.buyer_member_id
+       WHERE (t.seller_member_id = $1 OR t.buyer_member_id = $1)
+       ORDER BY t.created_at DESC
+       LIMIT 40`,
+      [req.member.id]
+    );
+    res.json({ ok: true, trades: r.rows });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message || "Trade list failed." });
+  }
+});
+
+app.post("/api/pets/trade/accept", requireAuth, async (req, res) => {
+  const tradeId = Number(req.body?.tradeId);
+  if (!Number.isFinite(tradeId) || tradeId < 1) {
+    return res.status(400).json({ ok: false, error: "tradeId required." });
+  }
+  const client = await pool.connect();
+  try {
+    await ensurePetTradeTables();
+    await ensurePetTables();
+    await client.query("BEGIN");
+    const tq = await client.query(
+      `SELECT * FROM pet_trades WHERE id = $1 FOR UPDATE`,
+      [tradeId]
+    );
+    if (!tq.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ ok: false, error: "Trade not found." });
+    }
+    const tr = tq.rows[0];
+    if (String(tr.status) !== "OPEN") {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Trade is not open." });
+    }
+    if (Number(tr.buyer_member_id) !== Number(req.member.id)) {
+      await client.query("ROLLBACK");
+      return res.status(403).json({ ok: false, error: "Only the invited buyer can accept." });
+    }
+    const petQ = await client.query(
+      `SELECT * FROM owned_pets WHERE id = $1 AND member_id = $2 FOR UPDATE`,
+      [tr.owned_pet_id, tr.seller_member_id]
+    );
+    if (!petQ.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Seller no longer owns this pet." });
+    }
+    const price = Number(tr.price_amt);
+    const bal = await getBalance(req.member.id, client);
+    if (bal < price) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Need " + price + " AMT (have " + bal + ")." });
+    }
+    const holdRef = makeReference("AMT-TRADE-HOLD");
+    const releaseRef = makeReference("AMT-TRADE-REL");
+    await client.query(
+      `INSERT INTO amt_ledger (member_id, amount, type, reference) VALUES ($1,$2,'ESCROW_HOLD',$3)`,
+      [req.member.id, -price, holdRef]
+    );
+    await client.query(
+      `UPDATE owned_pets SET member_id = $1, is_listed = false WHERE id = $2`,
+      [req.member.id, tr.owned_pet_id]
+    );
+    await client.query(
+      `INSERT INTO amt_ledger (member_id, amount, type, reference) VALUES ($1,$2,'ESCROW_RELEASE',$3)`,
+      [tr.seller_member_id, price, releaseRef]
+    );
+    await client.query(
+      `UPDATE pet_trades SET status = 'COMPLETED', hold_ref = $1, release_ref = $2, completed_at = NOW() WHERE id = $3`,
+      [holdRef, releaseRef, tradeId]
+    );
+    try {
+      await client.query(
+        `INSERT INTO pet_ownership_history (owned_pet_id, from_member_id, to_member_id, reason, reference)
+         VALUES ($1,$2,$3,'P2P_TRADE',$4)`,
+        [tr.owned_pet_id, tr.seller_member_id, req.member.id, releaseRef]
+      );
+    } catch (_) {}
+    await client.query("COMMIT");
+    res.json({
+      ok: true,
+      message: "Trade complete · paid " + price + " AMT · pet transferred (escrow)",
+      tradeId,
+      priceAmt: price
+    });
+  } catch (e) {
+    try { await client.query("ROLLBACK"); } catch (_) {}
+    console.error("TRADE ACCEPT:", e);
+    res.status(500).json({ ok: false, error: e.message || "Trade accept failed." });
+  } finally {
+    client.release();
+  }
+});
+
+app.post("/api/pets/trade/cancel", requireAuth, async (req, res) => {
+  const tradeId = Number(req.body?.tradeId);
+  if (!Number.isFinite(tradeId) || tradeId < 1) {
+    return res.status(400).json({ ok: false, error: "tradeId required." });
+  }
+  try {
+    await ensurePetTradeTables();
+    const r = await pool.query(
+      `UPDATE pet_trades SET status = 'CANCELLED'
+       WHERE id = $1 AND status = 'OPEN'
+         AND (seller_member_id = $2 OR buyer_member_id = $2)
+       RETURNING id`,
+      [tradeId, req.member.id]
+    );
+    if (!r.rows.length) {
+      return res.status(400).json({ ok: false, error: "Cannot cancel (not open or not yours)." });
+    }
+    res.json({ ok: true, message: "Trade cancelled." });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message || "Cancel failed." });
+  }
+});
+
 app.post("/api/pets/buy-listing", requireAuth, async (req, res) => {
   const listingId = Number(req.body?.listingId);
   if (!Number.isInteger(listingId)) return res.status(400).json({ ok: false, error: "listingId required." });
