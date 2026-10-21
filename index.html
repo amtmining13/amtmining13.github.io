@@ -3955,53 +3955,44 @@ async function loadTxHistory() {
   }
 }
 
+let _sendAmtBusy = false;
 async function sendAMT(){
-
-const recipient=
-$("sendTo").value.trim();
-
-const amount=
-num($("sendAmount").value);
-
-if(!recipient){
-return showToast(
-"Enter the recipient wallet address.",
-true
-);
+if (_sendAmtBusy) {
+  showToast("Send already in progress…", true);
+  return;
 }
-
-if(amount<=0){
-return showToast(
-"Enter a valid AMT amount.",
-true
-);
+const recipient = $("sendTo").value.trim();
+const amount = num($("sendAmount").value);
+if (!recipient) {
+  return showToast("Enter the recipient wallet address.", true);
 }
-
-try{
-
-await api("/api/ledger/send",{
-method:"POST",
-body:JSON.stringify({
-recipient,
-amount
-})
-});
-
-$("sendTo").value="";
-$("sendAmount").value="";
-
-showToast("AMT sent successfully.");
-
-await refreshWallet();
-try { await loadTxHistory(); } catch (e) {}
-
-}catch(error){
-
-showToast(
-error.message,
-true
-);
-
+if (amount <= 0) {
+  return showToast("Enter a valid AMT amount.", true);
+}
+const btn = $("sendAmtBtn");
+_sendAmtBusy = true;
+if (btn) {
+  btn.disabled = true;
+  btn.textContent = "Sending…";
+}
+try {
+  await api("/api/ledger/send", {
+    method: "POST",
+    body: JSON.stringify({ recipient, amount })
+  });
+  $("sendTo").value = "";
+  $("sendAmount").value = "";
+  showToast("AMT sent successfully.");
+  await refreshWallet();
+  try { await loadTxHistory(); } catch (e) {}
+} catch (error) {
+  showToast(error.message || "Send failed", true);
+} finally {
+  _sendAmtBusy = false;
+  if (btn) {
+    btn.disabled = false;
+    btn.textContent = "💸 SEND AMT";
+  }
 }
 }
 
