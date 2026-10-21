@@ -7932,6 +7932,131 @@ async function applyNeedsDecay(client, petRow) {
   return { ...petRow, hunger, thirst, pet_status: status, last_needs_at: new Date().toISOString() };
 }
 
+
+/* ---- Care ALL pets (instant feed / water / play) ---- */
+app.post("/api/pets/care-all", requireAuth, async (req, res) => {
+  const action = String(req.body?.action || "feed").toLowerCase();
+  if (!["feed", "water", "play", "both"].includes(action)) {
+    return res.status(400).json({ ok: false, error: "action must be feed, water, play, or both." });
+  }
+  const client = await pool.connect();
+  try {
+    await ensurePetTables();
+    await client.query("BEGIN");
+    const petsR = await client.query(
+      `SELECT * FROM owned_pets
+       WHERE member_id = $1 AND COALESCE(pet_status, 'ACTIVE') <> 'RUNAWAY'
+       ORDER BY id ASC
+       LIMIT 40`,
+      [req.member.id]
+    );
+    let pets = petsR.rows || [];
+    if (!pets.length) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "No active pets. Rescue runaway pets first." });
+    }
+    // Apply decay then only charge pets that need care (or all for play)
+    const updated = [];
+    for (const p of pets) {
+      updated.push(await applyNeedsDecay(client, p));
+    }
+    let targets = updated;
+    if (action === "feed") {
+      targets = updated.filter(p => Number(p.hunger != null ? p.hunger : 100) < 95);
+    } else if (action === "water") {
+      targets = updated.filter(p => Number(p.thirst != null ? p.thirst : 100) < 95);
+    } else if (action === "both") {
+      targets = updated.filter(p =>
+        Number(p.hunger != null ? p.hunger : 100) < 95 ||
+        Number(p.thirst != null ? p.thirst : 100) < 95
+      );
+    }
+    if (!targets.length) {
+      await client.query("COMMIT");
+      return res.json({
+        ok: true,
+        cared: 0,
+        cost: 0,
+        message: "All pets already full 🍖💧 — nothing to pay."
+      });
+    }
+    const unit =
+      action === "play" ? 0.08 :
+      action === "water" ? 0.12 :
+      action === "both" ? 0.28 :
+      0.15; // feed bulk discount vs 0.2 single
+    const cost = Math.round(unit * targets.length * 100) / 100;
+    const bal = await getBalance(req.member.id, client);
+    if (bal < cost) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({
+        ok: false,
+        error: "Need " + cost + " AMT for " + targets.length + " pets (have " + bal + ")."
+      });
+    }
+    await client.query(
+      `INSERT INTO amt_ledger (member_id, amount, type, reference) VALUES ($1,$2,'PET_CARE',$3)`,
+      [req.member.id, -cost, makeReference("AMT-CAREALL")]
+    );
+    let cared = 0;
+    for (const p of targets) {
+      let hunger = Number(p.hunger != null ? p.hunger : 100);
+      let thirst = Number(p.thirst != null ? p.thirst : 100);
+      let energy = Number(p.energy != null ? p.energy : 100);
+      let happy = Number(p.happiness != null ? p.happiness : 100);
+      if (action === "feed" || action === "both") {
+        hunger = 100;
+        energy = Math.min(100, energy + 15);
+      }
+      if (action === "water" || action === "both") {
+        thirst = 100;
+      }
+      if (action === "play") {
+        happy = Math.min(100, happy + 20);
+        energy = Math.min(100, energy + 8);
+      }
+      await client.query(
+        `UPDATE owned_pets SET
+          hunger = $1, thirst = $2, energy = $3, happiness = $4,
+          last_needs_at = NOW(), pet_status = 'ACTIVE'
+         WHERE id = $5 AND member_id = $6`,
+        [hunger, thirst, energy, happy, p.id, req.member.id]
+      );
+      // small XP on bulk care
+      try {
+        await applyLevelAndRarity(client, p.id, req.member.id);
+      } catch (_) {}
+      cared++;
+    }
+    // grant a bit of exp via direct update for bulk (simpler)
+    for (const p of targets) {
+      await client.query(
+        `UPDATE owned_pets SET exp = COALESCE(exp,0) + $1 WHERE id = $2`,
+        [action === "play" ? 8 : 12, p.id]
+      );
+    }
+    await client.query("COMMIT");
+    const label =
+      action === "both" ? "Fed + Watered" :
+      action === "water" ? "Watered" :
+      action === "play" ? "Played with" : "Fed";
+    res.json({
+      ok: true,
+      cared,
+      totalPets: updated.length,
+      cost,
+      action,
+      message: label + " " + cared + " pet(s) · −" + cost + " AMT"
+    });
+  } catch (e) {
+    try { await client.query("ROLLBACK"); } catch (_) {}
+    console.error("CARE ALL:", e);
+    res.status(500).json({ ok: false, error: e.message || "Care all failed." });
+  } finally {
+    client.release();
+  }
+});
+
 app.post("/api/pets/care", requireAuth, async (req, res) => {
   const ownedId = Number(req.body?.ownedPetId);
   const action = String(req.body?.action || "feed").toLowerCase(); // feed | water | play
