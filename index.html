@@ -1300,6 +1300,17 @@ animation:ecosystemBlink 1s ease-in-out infinite;
 .amt-arena-shake { animation: amtShake .35s ease-out; }
 .amt-art-glow { animation: amtGlowPulse .55s ease-out; border-radius:16px; }
 
+
+#battleArena.hidden, #arenaModal.hidden, #ownedModal.hidden {
+  display: none !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+}
+#ownedModal button, #ownedModal .pet-tap-btn {
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 5;
+}
 </style>
 </head>
 
@@ -6669,6 +6680,8 @@ async function showOwnershipCertificate() {
 }
 
 function openOwnedModal(id) {
+  try { closeBattleArena(); } catch (e) {}
+
   if (!window._ownedMap) window._ownedMap = {};
   // support both number and string ids from Postgres BIGINT
   let pet = window._ownedMap[id] || window._ownedMap[String(id)] || window._ownedMap[Number(id)];
@@ -7166,14 +7179,19 @@ async function fightDailyBoss() {
 }
 
 async function battlePet(tier) {
-  if (!selectedOwned) {
-    showToast("Select a pet from My Pets first", true);
-    return;
-  }
-  const petRef = selectedOwned;
-  const ownedId = Number(petRef.id);
-  const tname = tier || "hunter";
   try {
+    if (!accessToken) {
+      showToast("Login with Pi first", true);
+      return;
+    }
+    if (!selectedOwned || !selectedOwned.id) {
+      showToast("Open a pet from My Pets first", true);
+      return;
+    }
+    const petRef = selectedOwned;
+    const ownedId = Number(petRef.id);
+    const tname = String(tier || "hunter").toLowerCase();
+    closeBattleArena();
     closeOwnedModal();
     selectedOwned = petRef;
     showToast((tname.toUpperCase()) + " battle starting...");
@@ -7181,6 +7199,10 @@ async function battlePet(tier) {
       method: "POST",
       body: JSON.stringify({ ownedPetId: ownedId, tier: tname })
     });
+    if (!data || data.ok === false) {
+      throw new Error((data && (data.error || data.message)) || "Battle failed");
+    }
+    selectedOwned = petRef;
     await playBattleArena(data);
     if (data.chargeBonus) showToast(data.chargeBonus + " · " + (data.chargesLeft ?? "?") + " charges left");
     else if (data.chargesLeft != null) showToast(data.chargesLeft + " charges left");
@@ -7190,11 +7212,11 @@ async function battlePet(tier) {
     }
     await refreshWallet();
     await loadOwnedPets();
-    refreshBattleCharges();
+    try { refreshBattleCharges(); } catch (eR) {}
   } catch (e) {
-    showToast(e.message || "Battle failed", true);
-  } finally {
-    selectedOwned = null;
+    console.error("battlePet", e);
+    showToast((e && e.message) || "Battle failed", true);
+    closeBattleArena();
   }
 }
 
@@ -8022,19 +8044,21 @@ async function squadBattle(tier) {
 }
 
 async function listPetInArena() {
-  if (!selectedOwned || !selectedOwned.id) {
-    showToast("Open a pet from My Pets first", true);
-    return;
-  }
   try {
+    if (!accessToken) { showToast("Login with Pi first", true); return; }
+    if (!selectedOwned || !selectedOwned.id) {
+      showToast("Open a pet from My Pets first", true);
+      return;
+    }
     const data = await api("/api/pets/arena/list", {
       method: "POST",
       body: JSON.stringify({ ownedPetId: Number(selectedOwned.id) })
     });
-    showToast(data.message || "Listed in PvP Arena");
+    showToast((data && data.message) || "Listed in PvP Arena");
     closeOwnedModal();
   } catch (e) {
-    showToast(e.message || "Arena list failed", true);
+    console.error("listPetInArena", e);
+    showToast((e && e.message) || "Arena list failed", true);
   }
 }
 
@@ -8071,10 +8095,22 @@ function closeArenaPreview() {
 }
 
 async function openArenaModal() {
+  try { closeBattleArena();
+    closeOwnedModal();
+  } catch (e) {}
   const m = $("arenaModal");
-  if (!m) return;
+  if (!m) {
+    showToast("Arena UI missing — hard refresh the page", true);
+    return;
+  }
+  if (!accessToken) {
+    showToast("Login with Pi first", true);
+    return;
+  }
   m.classList.remove("hidden");
   m.style.display = "flex";
+  m.style.pointerEvents = "auto";
+  m.style.visibility = "visible";
   const box = $("arenaList");
   const mine = $("myArenaBox");
   if (box) box.innerHTML = "<div class='muted'>Loading arena...</div>";
@@ -8191,11 +8227,19 @@ async function challengeArena(arenaId) {
 function closeBattleArena() {
   const arena = $("battleArena");
   const result = $("battleResultPanel");
-  if (result) result.classList.add("hidden");
+  if (result) {
+    result.classList.add("hidden");
+    try { result.style.display = "none"; } catch (e) {}
+  }
   if (arena) {
     arena.classList.add("hidden");
     arena.style.display = "none";
+    arena.style.pointerEvents = "none";
+    arena.style.visibility = "hidden";
   }
+  var layer = $("battleVfxLayer");
+  if (layer) layer.innerHTML = "";
+  clearBattleSkillHighlight();
 }
 
 
@@ -8299,7 +8343,12 @@ async function playBattleArena(data) {
   }
   arena.classList.remove("hidden");
   arena.style.display = "flex";
-  if ($("battleResultPanel")) $("battleResultPanel").classList.add("hidden");
+  arena.style.pointerEvents = "auto";
+  arena.style.visibility = "visible";
+  if ($("battleResultPanel")) {
+    $("battleResultPanel").classList.add("hidden");
+    try { $("battleResultPanel").style.display = ""; } catch (e) {}
+  }
   var layer = $("battleVfxLayer");
   if (layer) layer.innerHTML = "";
 
@@ -9157,6 +9206,20 @@ function closeWhitepaperModal() {
   if (m) m.style.display = "none";
 }
 
+
+/* FORCE_CLOSE_ARENA_ON_LOAD */
+try { closeBattleArena(); } catch (e) {}
+document.addEventListener("visibilitychange", function(){
+  if (document.visibilityState === "visible") {
+    try {
+      var a = $("battleArena");
+      if (a && a.classList.contains("hidden")) {
+        a.style.display = "none";
+        a.style.pointerEvents = "none";
+      }
+    } catch (e2) {}
+  }
+});
 </script>
 
 <!-- PUBLIC LISTING VIEW MODAL -->
