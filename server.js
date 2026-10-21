@@ -5656,6 +5656,23 @@ function rarityRank(r) {
   const i = PET_RARITIES.indexOf(String(r || "Common"));
   return i < 0 ? 0 : i;
 }
+
+function petTitle(level, stars, rarity) {
+  const lv = Math.max(1, Number(level) || 1);
+  const st = Math.max(1, Math.min(5, Number(stars != null ? stars : 1)));
+  const r = String(rarity || rarityFromLevel(lv) || "Common");
+  if (r === "Mythic" && st >= 5 && lv >= 60) return "Mythic Ace";
+  if (r === "Mythic" && st >= 5) return "Mythic ★5";
+  if (r === "Mythic") return "Mythic";
+  if (r === "Legendary" && st >= 5) return "Legend Ace";
+  if (r === "Legendary") return "Legendary";
+  if (r === "Epic" && st >= 5) return "Epic Ace";
+  if (st >= 5) return "★5 Champion";
+  if (lv >= 40) return "Veteran";
+  if (lv >= 20) return "Fighter";
+  return "";
+}
+
 function rarityFromLevel(level) {
   const lv = Math.max(1, Number(level) || 1);
   if (lv >= 50) return "Mythic";
@@ -7487,6 +7504,41 @@ app.get("/api/pets", async (req, res) => {
 });
 
 /* ---------- My pets (MUST be before /api/pets/:petId) ---------- */
+
+app.get("/api/pets/leaderboard", requireAuth, async (req, res) => {
+  try {
+    await ensurePetTables();
+    const limit = Math.min(30, Math.max(5, Number(req.query.limit) || 15));
+    const r = await pool.query(
+      `SELECT op.id, op.name, op.level, op.stars, op.rarity, op.element,
+              op.hp, op.atk, op.def, m.username
+       FROM owned_pets op
+       JOIN members m ON m.id = op.member_id
+       WHERE COALESCE(op.pet_status, 'ACTIVE') <> 'RUNAWAY'
+       ORDER BY COALESCE(op.level,1) DESC, COALESCE(op.stars,1) DESC, op.id ASC
+       LIMIT $1`,
+      [limit]
+    );
+    const rows = r.rows.map((row, i) => {
+      const title = petTitle(row.level, row.stars, row.rarity);
+      return {
+        rank: i + 1,
+        name: row.name,
+        username: row.username,
+        level: Number(row.level) || 1,
+        stars: Number(row.stars != null ? row.stars : 1),
+        rarity: row.rarity || rarityFromLevel(row.level),
+        element: row.element,
+        title: title || null
+      };
+    });
+    res.json({ ok: true, leaderboard: rows });
+  } catch (e) {
+    console.error("LEADERBOARD:", e);
+    res.status(500).json({ ok: false, error: e.message || "Leaderboard failed." });
+  }
+});
+
 app.get("/api/pets/owned", requireAuth, async (req, res) => {
   try {
     await ensurePetTables();
