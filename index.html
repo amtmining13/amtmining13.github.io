@@ -2122,6 +2122,7 @@ SELECT 180D
 <button class="small-btn" style="width:auto;padding:8px 12px" onclick="petTab('owned')">🐾 My Pets</button>
 <button class="small-btn" style="width:auto;padding:8px 12px" onclick="petTab('eggs')">🥚 Eggs</button>
 <button class="small-btn" style="width:auto;padding:8px 12px" onclick="petTab('listings')">🏪 Public Sell</button>
+<button class="small-btn" style="width:auto;padding:8px 12px" onclick="petTab('board')">🏆 Leaderboard</button>
 </div>
 </div>
 
@@ -2154,6 +2155,16 @@ SELECT 180D
   Level milestones: <b>Lv10 → +2 AMT</b> · <b>Lv20 → +5</b> · <b>Lv50 Mythic → +15</b> (once per pet)
 </div>
 <div id="ownedPetGrid" class="market-grid"><div class="empty">No pets yet. Claim starter or buy from Shop.</div></div>
+</div>
+
+<!-- PUBLIC LEADERBOARD -->
+<div id="petBoardPanel" class="hidden">
+<div class="card">
+<div class="card-title">🏆 COMMUNITY PET LEADERBOARD</div>
+<p class="muted" style="font-size:12px;margin-bottom:10px">Open to all · Top pets by level &amp; stars · Who is Mythic Ace?</p>
+<div id="petLeaderboardPublic" class="muted" style="font-size:12px">Loading…</div>
+<button class="secondary" style="width:100%;margin-top:12px" onclick="loadPetLeaderboard(true)">🔄 REFRESH</button>
+</div>
 </div>
 
 <!-- EGGS / BREED / INCUBATOR -->
@@ -6111,7 +6122,7 @@ function petStatsRow(pet) {
 function petTab(tab) {
   try{ if(arguments[0]==="shop"||arguments[0]==="owned") refreshDailyBoss(); }catch(e){}
   currentPetTab = tab;
-  ["petShopPanel","petOwnedPanel","petEggsPanel","petListingsPanel"].forEach(id => {
+  ["petShopPanel","petOwnedPanel","petEggsPanel","petListingsPanel","petBoardPanel"].forEach(id => {
     const el = $(id);
     if (el) el.classList.add("hidden");
   });
@@ -6119,6 +6130,7 @@ function petTab(tab) {
   if (tab === "owned") { $("petOwnedPanel").classList.remove("hidden"); loadOwnedPets(); }
   if (tab === "eggs") { $("petEggsPanel").classList.remove("hidden"); loadEggs(); }
   if (tab === "listings") { $("petListingsPanel").classList.remove("hidden"); loadListings(); }
+  if (tab === "board") { if($("petBoardPanel")) $("petBoardPanel").classList.remove("hidden"); loadPetLeaderboard(true); }
 }
 
 async function loadPets(elementFilter) {
@@ -6430,33 +6442,41 @@ async function buySelectedPet() {
 
 /* ---- Owned pets ---- */
 
-async function loadPetLeaderboard() {
-  var box = $("petLeaderboardBox");
+async function loadPetLeaderboard(isPublic) {
+  var box = isPublic ? $("petLeaderboardPublic") : $("petLeaderboardBox");
+  if (!box && $("petLeaderboardPublic")) box = $("petLeaderboardPublic");
+  if (!box && $("petLeaderboardBox")) box = $("petLeaderboardBox");
   if (!box) return;
-  if (!accessToken) {
-    box.textContent = "Login with Pi to see leaderboard.";
-    return;
-  }
   box.innerHTML = "Loading…";
   try {
-    var d = await api("/api/pets/leaderboard?limit=15");
+    // Public endpoint — no login required (whole community can see)
+    var res = await fetch((typeof API_BASE!=="undefined"?API_BASE:"") + "/api/pets/leaderboard?limit=20", { cache: "no-store" });
+    var d = {};
+    try { d = await res.json(); } catch (eJ) { d = {}; }
+    if (!res.ok) throw new Error(d.error || d.message || ("HTTP " + res.status));
     var rows = d.leaderboard || [];
     if (!rows.length) {
-      box.textContent = "No pets ranked yet.";
+      box.textContent = "No pets ranked yet. Train and star-up to appear here!";
       return;
     }
-    box.innerHTML = rows.map(function(r) {
+    var html = rows.map(function(r) {
       var medal = r.rank === 1 ? "🥇" : r.rank === 2 ? "🥈" : r.rank === 3 ? "🥉" : ("#" + r.rank);
       var title = r.title ? (' · <span style="color:#ff6bff">' + esc(r.title) + "</span>") : "";
       var stars = "★".repeat(Math.max(1, Math.min(5, Number(r.stars) || 1)));
-      return '<div style="display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06)">'
-        + '<div><b>' + medal + " " + esc(r.name || "Pet") + "</b>"
-        + '<div class="muted" style="font-size:11px">@' + esc(r.username || "?") + title + "</div></div>"
-        + '<div style="text-align:right;font-size:11px"><b>Lv ' + (r.level || 1) + "</b><br>"
-        + '<span style="color:#ffd54a">' + stars + "</span> · " + esc(r.rarity || "") + "</div></div>";
+      return '<div style="display:flex;justify-content:space-between;gap:8px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.08)">'
+        + '<div><b style="font-size:13px">' + medal + " " + esc(r.name || "Pet") + "</b>"
+        + '<div class="muted" style="font-size:11px;margin-top:2px">@' + esc(r.username || "?") + title
+        + (r.element ? (" · " + esc(r.element)) : "") + "</div></div>"
+        + '<div style="text-align:right;font-size:11px;min-width:72px"><b>Lv ' + (r.level || 1) + "</b><br>"
+        + '<span style="color:#ffd54a">' + stars + "</span><br>"
+        + '<span style="color:#c4b5fd">' + esc(r.rarity || "") + "</span></div></div>";
     }).join("");
+    box.innerHTML = html;
+    // Mirror to both boxes if present
+    if ($("petLeaderboardPublic") && box !== $("petLeaderboardPublic")) $("petLeaderboardPublic").innerHTML = html;
+    if ($("petLeaderboardBox") && box !== $("petLeaderboardBox")) $("petLeaderboardBox").innerHTML = html;
   } catch (e) {
-    box.textContent = (e && e.message) || "Failed to load.";
+    box.textContent = (e && e.message) || "Failed to load leaderboard.";
   }
 }
 
