@@ -1237,6 +1237,69 @@ animation:ecosystemBlink 1s ease-in-out infinite;
   -webkit-overflow-scrolling:touch;
 }
 #ownedModal button{pointer-events:auto!important}
+
+/* ---- Battle skill VFX ---- */
+@keyframes amtSkillBannerIn {
+  0% { transform: translate(-50%,-50%) scale(.4); opacity:0; }
+  20% { transform: translate(-50%,-50%) scale(1.08); opacity:1; }
+  70% { transform: translate(-50%,-50%) scale(1); opacity:1; }
+  100% { transform: translate(-50%,-50%) scale(.9); opacity:0; }
+}
+@keyframes amtImpactFlash {
+  0% { opacity:.95; }
+  100% { opacity:0; }
+}
+@keyframes amtDmgFloat {
+  0% { transform: translate(-50%,0) scale(.6); opacity:0; }
+  15% { transform: translate(-50%,-8px) scale(1.15); opacity:1; }
+  100% { transform: translate(-50%,-56px) scale(.9); opacity:0; }
+}
+@keyframes amtShake {
+  0%,100% { transform: translate(0,0); }
+  20% { transform: translate(-6px,2px); }
+  40% { transform: translate(6px,-2px); }
+  60% { transform: translate(-4px,-1px); }
+  80% { transform: translate(4px,1px); }
+}
+@keyframes amtGlowPulse {
+  0%,100% { filter: brightness(1); box-shadow: none; }
+  50% { filter: brightness(1.35); box-shadow: 0 0 28px var(--vfx-col,#ffd54a); }
+}
+.amt-skill-banner {
+  position:absolute; left:50%; top:42%; z-index:450; pointer-events:none;
+  transform:translate(-50%,-50%);
+  padding:12px 22px; border-radius:16px;
+  background:linear-gradient(135deg,rgba(20,10,40,.92),rgba(40,20,70,.95));
+  border:2px solid rgba(255,220,100,.75);
+  color:#ffe9a8; font-weight:900; font-size:16px; letter-spacing:.6px;
+  text-align:center; white-space:nowrap; max-width:90%;
+  animation: amtSkillBannerIn .85s ease-out forwards;
+  box-shadow:0 8px 32px rgba(0,0,0,.55), 0 0 24px rgba(255,200,80,.35);
+}
+.amt-skill-banner.ult {
+  border-color:#ff6bff; color:#ffd0ff;
+  background:linear-gradient(135deg,rgba(60,10,80,.95),rgba(20,5,40,.95));
+  box-shadow:0 8px 36px rgba(255,80,200,.4);
+  font-size:18px;
+}
+.amt-skill-banner.heal { border-color:#6bffb0; color:#c8ffe0; }
+.amt-skill-banner.defend { border-color:#6bc8ff; color:#c8ecff; }
+.amt-impact {
+  position:absolute; inset:0; z-index:440; pointer-events:none;
+  animation: amtImpactFlash .35s ease-out forwards;
+}
+.amt-dmg-float {
+  position:absolute; z-index:455; pointer-events:none;
+  left:50%; font-weight:900; font-size:22px;
+  text-shadow:0 2px 8px #000, 0 0 12px rgba(255,80,80,.6);
+  animation: amtDmgFloat .9s ease-out forwards;
+  color:#ff6b6b;
+}
+.amt-dmg-float.heal { color:#6bffb0; text-shadow:0 2px 8px #000, 0 0 12px rgba(80,255,160,.5); }
+.amt-dmg-float.super { color:#ffd54a; font-size:26px; }
+.amt-arena-shake { animation: amtShake .35s ease-out; }
+.amt-art-glow { animation: amtGlowPulse .55s ease-out; border-radius:16px; }
+
 </style>
 </head>
 
@@ -2325,6 +2388,7 @@ SELECT 180D
 
 <!-- BATTLE ARENA (visual rounds) -->
 <div id="battleArena" class="hidden" style="position:fixed;inset:0;z-index:400;background:linear-gradient(180deg,#0a1628 0%,#122038 40%,#1a2840 100%);display:flex;flex-direction:column;align-items:stretch">
+<div id="battleVfxLayer" style="position:absolute;inset:0;z-index:430;pointer-events:none;overflow:hidden"></div>
   <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;position:relative;z-index:460">
     <button type="button" id="battleExitBtn" style="width:auto;padding:12px 18px;border-radius:12px;background:rgba(220,40,50,.95);border:2px solid rgba(255,120,120,.8);color:#fff;font-weight:900;font-size:14px;z-index:460;position:relative;box-shadow:0 4px 16px rgba(0,0,0,.5)" onclick="closeBattleArena()">← EXIT</button>
     <div id="battleRoundLabel" style="font-weight:900;font-size:13px;color:#c8d8f0">Round 1</div>
@@ -8160,6 +8224,73 @@ function highlightBattleSkill(skillName, actor){
   }
 }
 
+
+function elementVfxColor(el) {
+  var e = String(el || "").toLowerCase();
+  if (e.indexOf("fire") >= 0) return "#ff6b35";
+  if (e.indexOf("water") >= 0 || e.indexOf("ice") >= 0) return "#4cc9f0";
+  if (e.indexOf("nature") >= 0 || e.indexOf("earth") >= 0) return "#6bff8a";
+  if (e.indexOf("thunder") >= 0 || e.indexOf("wind") >= 0) return "#ffe66d";
+  if (e.indexOf("shadow") >= 0) return "#a78bfa";
+  if (e.indexOf("light") >= 0) return "#fff5b8";
+  if (e.indexOf("cosmic") >= 0) return "#ff6bff";
+  return "#ffd54a";
+}
+function skillVfxClass(skillName, text) {
+  var n = String(skillName || text || "").toLowerCase();
+  if (/inferno|storm|galaxy|burst|nova|ultimate|ult|meteor/.test(n)) return "ult";
+  if (/heal|bloom|bless|restore|regener/.test(n)) return "heal";
+  if (/guard|shield|defend|dodge|armor|veil/.test(n)) return "defend";
+  return "";
+}
+function spawnBattleVfx(kind, opts) {
+  opts = opts || {};
+  var layer = $("battleVfxLayer");
+  var arena = $("battleArena");
+  if (!layer || !arena) return;
+  if (kind === "banner") {
+    var b = document.createElement("div");
+    b.className = "amt-skill-banner " + (opts.cls || "");
+    b.textContent = opts.text || "SKILL";
+    layer.appendChild(b);
+    setTimeout(function(){ try{ b.remove(); }catch(e){} }, 900);
+  } else if (kind === "impact") {
+    var flash = document.createElement("div");
+    flash.className = "amt-impact";
+    flash.style.background = opts.color
+      ? ("radial-gradient(circle at " + (opts.side === "left" ? "25%" : "75%") + " 50%, " + opts.color + "cc 0%, transparent 55%)")
+      : "radial-gradient(circle, rgba(255,220,100,.55) 0%, transparent 55%)";
+    layer.appendChild(flash);
+    setTimeout(function(){ try{ flash.remove(); }catch(e){} }, 400);
+  } else if (kind === "dmg") {
+    var d = document.createElement("div");
+    d.className = "amt-dmg-float " + (opts.cls || "");
+    d.textContent = opts.text || "";
+    d.style.left = opts.side === "left" ? "28%" : "72%";
+    d.style.top = "38%";
+    layer.appendChild(d);
+    setTimeout(function(){ try{ d.remove(); }catch(e){} }, 950);
+  } else if (kind === "shake") {
+    arena.classList.remove("amt-arena-shake");
+    void arena.offsetWidth;
+    arena.classList.add("amt-arena-shake");
+    setTimeout(function(){ arena.classList.remove("amt-arena-shake"); }, 400);
+  }
+}
+function glowBattleArt(actor) {
+  var el = actor === "you" ? $("battleMyArt") : $("battleEnemyArt");
+  if (!el) return;
+  el.classList.remove("amt-art-glow");
+  void el.offsetWidth;
+  el.style.setProperty("--vfx-col", elementVfxColor(
+    actor === "you"
+      ? (window._battleMyEl || "")
+      : (window._battleEnEl || "")
+  ));
+  el.classList.add("amt-art-glow");
+  setTimeout(function(){ el.classList.remove("amt-art-glow"); }, 600);
+}
+
 async function playBattleArena(data) {
   const arena = $("battleArena");
   if (!arena) {
@@ -8168,49 +8299,110 @@ async function playBattleArena(data) {
   }
   arena.classList.remove("hidden");
   arena.style.display = "flex";
-  $("battleResultPanel").classList.add("hidden");
+  if ($("battleResultPanel")) $("battleResultPanel").classList.add("hidden");
+  var layer = $("battleVfxLayer");
+  if (layer) layer.innerHTML = "";
 
   const myMax = data.myMaxHp || 100;
   const enMax = data.enMaxHp || 100;
-  $("battleMyName").textContent = data.petName || "Your Pet";
-  $("battleEnemyName").textContent = data.opponent || "Enemy";
-  // Opponent uses uploaded pet art (same as shop/my pets)
+  window._battleMyEl = data.petElement || (selectedOwned && selectedOwned.element) || "Earth";
+  window._battleEnEl = data.opponentElement || "Earth";
+
+  if ($("battleMyName")) $("battleMyName").textContent = data.petName || "Your Pet";
+  if ($("battleEnemyName")) $("battleEnemyName").textContent = data.opponent || "Enemy";
   const enemyPet = {
     name: String(data.opponent || "Enemy").replace(/^Wild\s+/i, ""),
     element: data.opponentElement || "Earth",
     image: data.opponentImage || ""
   };
-  $("battleEnemyArt").innerHTML = petArtHtml(enemyPet, 88);
-  $("battleMyArt").innerHTML = selectedOwned
-    ? petArtHtml(selectedOwned, 88)
-    : petArtHtml(
-        { name: data.petName, element: data.petElement, image: data.petImage },
-        88
-      );
-  $("battleMyHpBar").style.width = "100%";
-  $("battleEnemyHpBar").style.width = "100%";
-  $("battleMyHpText").textContent = myMax + " / " + myMax;
-  $("battleEnemyHpText").textContent = enMax + " / " + enMax;
-  $("battleLog").textContent = "Expedition start!";
-  $("battleRoundLabel").textContent = "Round 1";
+  if ($("battleEnemyArt")) $("battleEnemyArt").innerHTML = petArtHtml(enemyPet, 88);
+  if ($("battleMyArt")) {
+    $("battleMyArt").innerHTML = selectedOwned
+      ? petArtHtml(selectedOwned, 88)
+      : petArtHtml({ name: data.petName, element: data.petElement, image: data.petImage }, 88);
+  }
+  if ($("battleMyHpBar")) $("battleMyHpBar").style.width = "100%";
+  if ($("battleEnemyHpBar")) $("battleEnemyHpBar").style.width = "100%";
+  if ($("battleMyHpText")) $("battleMyHpText").textContent = myMax + " / " + myMax;
+  if ($("battleEnemyHpText")) $("battleEnemyHpText").textContent = enMax + " / " + enMax;
+  if ($("battleLog")) $("battleLog").textContent = "Battle start!";
+  if ($("battleRoundLabel")) $("battleRoundLabel").textContent = "Round 1";
 
   const rounds = data.rounds || [];
   clearBattleSkillHighlight();
+  var prevMy = myMax;
+  var prevEn = enMax;
+
   for (let i = 0; i < rounds.length; i++) {
     const r = rounds[i];
-    $("battleRoundLabel").textContent = "Round " + (r.round || i + 1);
-    $("battleLog").textContent = r.text || (r.actor === "you" ? "You hit!" : "Enemy hits!");
+    if ($("battleRoundLabel")) $("battleRoundLabel").textContent = "Round " + (r.round || i + 1);
+    if ($("battleLog")) $("battleLog").textContent = r.text || (r.actor === "you" ? "You hit!" : "Enemy hits!");
     highlightBattleSkill(r.skill || r.text, r.actor);
-    const myPct = Math.max(0, Math.min(100, (r.myHp / myMax) * 100));
-    const enPct = Math.max(0, Math.min(100, (r.enHp / enMax) * 100));
-    $("battleMyHpBar").style.width = myPct + "%";
-    $("battleEnemyHpBar").style.width = enPct + "%";
-    $("battleMyHpText").textContent = Math.round(r.myHp) + " / " + myMax;
-    $("battleEnemyHpText").textContent = Math.round(r.enHp) + " / " + enMax;
-    await new Promise(ok => setTimeout(ok, 700));
+
+    var skillName = r.skill || null;
+    var txt = String(r.text || "");
+    var isHeal = /heal|\+ ?\d+ hp/i.test(txt) || skillVfxClass(skillName, txt) === "heal";
+    var isDef = skillVfxClass(skillName, txt) === "defend";
+    var isUlt = skillVfxClass(skillName, txt) === "ult";
+    var isSuper = /super/i.test(txt);
+
+    // Attacker glow
+    glowBattleArt(r.actor === "you" ? "you" : "enemy");
+
+    // Skill banner
+    if (skillName) {
+      spawnBattleVfx("banner", {
+        text: (isUlt ? "★ " : "⚔ ") + skillName,
+        cls: skillVfxClass(skillName, txt)
+      });
+    } else if (isSuper) {
+      spawnBattleVfx("banner", { text: "SUPER EFFECTIVE", cls: "ult" });
+    }
+
+    // Impact side = target
+    var targetSide = r.actor === "you" ? "right" : "left";
+    var atkColor = elementVfxColor(r.actor === "you" ? window._battleMyEl : window._battleEnEl);
+    if (!isDef) {
+      spawnBattleVfx("impact", { side: targetSide, color: atkColor });
+      if ((Number(r.dmg) || 0) >= 20 || isUlt || isSuper) spawnBattleVfx("shake");
+    }
+
+    // Damage / heal float on target (or self for heal)
+    var dmgVal = Number(r.dmg) || 0;
+    if (isHeal) {
+      var healMatch = txt.match(/\+(\d+)\s*HP/i);
+      var healAmt = healMatch ? healMatch[1] : "";
+      spawnBattleVfx("dmg", {
+        text: healAmt ? ("+" + healAmt) : "HEAL",
+        side: r.actor === "you" ? "left" : "right",
+        cls: "heal"
+      });
+    } else if (dmgVal > 0) {
+      spawnBattleVfx("dmg", {
+        text: "-" + dmgVal,
+        side: targetSide,
+        cls: isSuper || isUlt ? "super" : ""
+      });
+    } else if (isDef) {
+      spawnBattleVfx("dmg", {
+        text: "DEF UP",
+        side: r.actor === "you" ? "left" : "right",
+        cls: "heal"
+      });
+    }
+
+    prevMy = Number(r.myHp);
+    prevEn = Number(r.enHp);
+    const myPct = Math.max(0, Math.min(100, (prevMy / myMax) * 100));
+    const enPct = Math.max(0, Math.min(100, (prevEn / enMax) * 100));
+    if ($("battleMyHpBar")) $("battleMyHpBar").style.width = myPct + "%";
+    if ($("battleEnemyHpBar")) $("battleEnemyHpBar").style.width = enPct + "%";
+    if ($("battleMyHpText")) $("battleMyHpText").textContent = Math.round(prevMy) + " / " + myMax;
+    if ($("battleEnemyHpText")) $("battleEnemyHpText").textContent = Math.round(prevEn) + " / " + enMax;
+
+    await new Promise(ok => setTimeout(ok, skillName ? 900 : 700));
   }
 
-  // Match banner to final HP on screen (feedback: was inverted)
   let win = data.result === "WIN";
   if (rounds.length) {
     const last = rounds[rounds.length - 1];
@@ -8220,22 +8412,34 @@ async function playBattleArena(data) {
     else if (lastEn <= 0 && lastMy > 0) win = true;
     else if (lastMy <= 0 && lastEn <= 0) win = false;
   }
-  $("battleResultBadge").textContent = win ? "🏆" : "💀";
-  $("battleResultTitle").textContent = win ? "Victory" : "Defeat";
-  $("battleResultTitle").style.color = win ? "#ffd54f" : "#ff8899";
+
+  // Final banner
+  spawnBattleVfx("banner", {
+    text: win ? "🏆 VICTORY" : "💀 DEFEAT",
+    cls: win ? "ult" : ""
+  });
+  if (win) spawnBattleVfx("shake");
+
+  if ($("battleResultBadge")) $("battleResultBadge").textContent = win ? "🏆" : "💀";
+  if ($("battleResultTitle")) {
+    $("battleResultTitle").textContent = win ? "Victory" : "Defeat";
+    $("battleResultTitle").style.color = win ? "#ffd54f" : "#ff8899";
+  }
   var extra = "";
   if (data.elementLabel) extra += " · " + data.elementLabel;
   if (data.winStreak) extra += " · Streak " + data.winStreak;
   if (data.streakBonusAmt) extra += " · Streak bonus +" + data.streakBonusAmt;
   if (data.attemptsLeft != null) extra += " · Boss tries left " + data.attemptsLeft;
   if (data.drops && data.drops.length) extra += " · Loot: " + data.drops.join(", ");
-  $("battleResultReward").textContent =
-    (data.tierLabel ? "[" + data.tierLabel + "] " : "") +
-    "+" + (data.reward || 0) + " AMT" +
-    (data.chargesLeft != null ? " · " + data.chargesLeft + " charges" : "") +
-    (data.chargeBonus ? " · " + data.chargeBonus : "") +
-    extra;
-  $("battleResultPanel").classList.remove("hidden");
+  if ($("battleResultReward")) {
+    $("battleResultReward").textContent =
+      (data.tierLabel ? "[" + data.tierLabel + "] " : "") +
+      "+" + (data.reward || 0) + " AMT" +
+      (data.chargesLeft != null ? " · " + data.chargesLeft + " charges" : "") +
+      (data.chargeBonus ? " · " + data.chargeBonus : "") +
+      extra;
+  }
+  if ($("battleResultPanel")) $("battleResultPanel").classList.remove("hidden");
 }
 
 
