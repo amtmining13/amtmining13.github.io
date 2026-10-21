@@ -1933,6 +1933,13 @@ Pi UID: —
 </div>
 
 <div class="card">
+<div class="card-title">🏆 PET LEADERBOARD</div>
+<p class="muted" style="font-size:12px;margin-bottom:10px">Top pets by level &amp; stars · community flex</p>
+<div id="petLeaderboardBox" class="muted" style="font-size:12px">Login to load…</div>
+<button class="secondary" style="width:100%;margin-top:10px" onclick="loadPetLeaderboard()">🔄 REFRESH LEADERBOARD</button>
+</div>
+
+<div class="card">
 <div class="card-title">📄 WHITEPAPER / UTILITY DOCS</div>
 <p class="muted" style="font-size:12px;margin-bottom:12px">
 AMT Token Utility Documentation — pets, marketplace, staking, rewards, and Testnet on-chain utility.
@@ -2766,7 +2773,7 @@ if(id==="airdropSection"){loadAirdrop();try{loadSpinStatus()}catch(e){}}
 if(id==="referralSection")loadReferral();
   if(id==="walletSection"){ try{ refreshPaymentQr(); }catch(e){} }
 if(id==="circleSection")loadSecurityCircle();
-if(id==="profileSection"){loadProfile();try{refreshDevTreasuryCard();}catch(e){}}
+if(id==="profileSection"){loadProfile();try{refreshDevTreasuryCard();}catch(e){}try{loadPetLeaderboard();}catch(e){}}
 if(id==="stakingSection")loadStaking();
 if(id==="miningSection"){loadMiningStatus();loadDailyStatus();try{preloadPiAds()}catch(e){}}
 if(id==="marketSection")petTab(currentPetTab || "shop");
@@ -6422,6 +6429,37 @@ async function buySelectedPet() {
 }
 
 /* ---- Owned pets ---- */
+
+async function loadPetLeaderboard() {
+  var box = $("petLeaderboardBox");
+  if (!box) return;
+  if (!accessToken) {
+    box.textContent = "Login with Pi to see leaderboard.";
+    return;
+  }
+  box.innerHTML = "Loading…";
+  try {
+    var d = await api("/api/pets/leaderboard?limit=15");
+    var rows = d.leaderboard || [];
+    if (!rows.length) {
+      box.textContent = "No pets ranked yet.";
+      return;
+    }
+    box.innerHTML = rows.map(function(r) {
+      var medal = r.rank === 1 ? "🥇" : r.rank === 2 ? "🥈" : r.rank === 3 ? "🥉" : ("#" + r.rank);
+      var title = r.title ? (' · <span style="color:#ff6bff">' + esc(r.title) + "</span>") : "";
+      var stars = "★".repeat(Math.max(1, Math.min(5, Number(r.stars) || 1)));
+      return '<div style="display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06)">'
+        + '<div><b>' + medal + " " + esc(r.name || "Pet") + "</b>"
+        + '<div class="muted" style="font-size:11px">@' + esc(r.username || "?") + title + "</div></div>"
+        + '<div style="text-align:right;font-size:11px"><b>Lv ' + (r.level || 1) + "</b><br>"
+        + '<span style="color:#ffd54a">' + stars + "</span> · " + esc(r.rarity || "") + "</div></div>";
+    }).join("");
+  } catch (e) {
+    box.textContent = (e && e.message) || "Failed to load.";
+  }
+}
+
 async function loadOwnedPets() {
   const grid = $("ownedPetGrid");
   if (!grid) return;
@@ -6459,6 +6497,7 @@ async function loadOwnedPets() {
         </div>
         <div class="pet-card-body">
           <div class="pet-card-name">${esc(pet.name)}</div>
+          ${petTitleHtml(pet)}
           <div class="pet-card-sub">${esc(pet.rarity || "Common")} · ⚡${
           pet.energy ?? 100
         } · 😊${pet.happiness ?? 100}${
@@ -6548,6 +6587,11 @@ function openOwnedModal(id) {
   if ($("ownedEnergy")) $("ownedEnergy").textContent = pet.energy ?? 100;
   if ($("ownedHappy")) $("ownedHappy").textContent = pet.happiness ?? 100;
   if ($("ownedStarsLine")) $("ownedStarsLine").innerHTML = starsHtml(pet.stars != null ? pet.stars : 1);
+  if ($("ownedPetTitle")) {
+    var tt = petTitleClient(pet.level, pet.stars, pet.rarity);
+    $("ownedPetTitle").textContent = tt ? ("🏅 " + tt) : "";
+    $("ownedPetTitle").style.display = tt ? "block" : "none";
+  }
   if (pet && pet.id) refreshStarCost(pet.id);
   if ($("ownedHunger")) $("ownedHunger").textContent = pet.hunger ?? 100;
   if ($("ownedThirst")) $("ownedThirst").textContent = pet.thirst ?? 100;
@@ -6657,6 +6701,29 @@ function fillOwnedModalFromPet(pet) {
 }
 
 
+
+
+function petTitleClient(level, stars, rarity) {
+  var lv = Math.max(1, Number(level) || 1);
+  var st = Math.max(1, Math.min(5, Number(stars != null ? stars : 1)));
+  var r = String(rarity || "Common");
+  if (r === "Mythic" && st >= 5 && lv >= 60) return "Mythic Ace";
+  if (r === "Mythic" && st >= 5) return "Mythic ★5";
+  if (r === "Mythic") return "Mythic";
+  if (r === "Legendary" && st >= 5) return "Legend Ace";
+  if (r === "Legendary") return "Legendary";
+  if (r === "Epic" && st >= 5) return "Epic Ace";
+  if (st >= 5) return "★5 Champion";
+  if (lv >= 40) return "Veteran";
+  if (lv >= 20) return "Fighter";
+  return "";
+}
+function petTitleHtml(pet) {
+  var t = petTitleClient(pet.level, pet.stars, pet.rarity);
+  if (!t) return "";
+  var color = t.indexOf("Mythic") >= 0 ? "#ff6bff" : t.indexOf("Legend") >= 0 ? "#ffd54a" : "#c4b5fd";
+  return '<div style="margin:2px 0;font-size:10px;font-weight:900;letter-spacing:.3px;color:'+color+'">🏅 '+t+'</div>';
+}
 
 function starsHtml(n) {
   n = Math.max(1, Math.min(5, Number(n) || 1));
