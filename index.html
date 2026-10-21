@@ -2154,6 +2154,12 @@ SELECT 180D
 <div class="notice" style="margin-bottom:10px;font-size:11px">
   Level milestones: <b>Lv10 → +2 AMT</b> · <b>Lv20 → +5</b> · <b>Lv50 Mythic → +15</b> (once per pet)
 </div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+<button type="button" class="primary pet-tap-btn" onclick="careAllPets('both')">🍖💧 CARE ALL PETS</button>
+<button type="button" class="secondary pet-tap-btn" onclick="careAllPets('feed')">🍖 FEED ALL</button>
+<button type="button" class="secondary pet-tap-btn" onclick="careAllPets('water')">💧 WATER ALL</button>
+<button type="button" class="secondary pet-tap-btn" onclick="careAllPets('play')">🎾 PLAY ALL</button>
+</div>
 <div id="ownedPetGrid" class="market-grid"><div class="empty">No pets yet. Claim starter or buy from Shop.</div></div>
 </div>
 
@@ -2456,11 +2462,18 @@ SELECT 180D
 <div class="muted" style="font-size:12px;margin:10px 0 4px;font-weight:800;color:#ffd54a">Care · Food &amp; Water</div>
 <div id="ownedNeedsWarn" style="font-size:12px;margin:4px 0 6px;font-weight:700"></div>
 <div class="muted" style="font-size:12px;margin-bottom:8px">🍖 Hunger <b id="ownedHunger">—</b> · 💧 Thirst <b id="ownedThirst">—</b></div>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
 <button type="button" class="primary pet-tap-btn" onclick="carePet('feed',0)">🍖 FEED<br><span style="font-size:10px;opacity:.9">0.2 AMT</span></button>
 <button type="button" class="primary pet-tap-btn" onclick="carePet('water',0)">💧 WATER<br><span style="font-size:10px;opacity:.9">0.15 AMT</span></button>
 <button type="button" class="secondary pet-tap-btn" onclick="carePet('play',0)">🎾 PLAY<br><span style="font-size:10px;opacity:.9">0.1 AMT</span></button>
 <button type="button" class="secondary pet-tap-btn" onclick="rescuePet()">🆘 RESCUE<br><span style="font-size:10px;opacity:.9">1 AMT</span></button>
+</div>
+<div class="muted" style="font-size:11px;margin:0 0 6px;font-weight:800;color:#7dffb3">ALL PETS · one tap</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+<button type="button" class="primary pet-tap-btn" style="background:linear-gradient(135deg,#2d6a4f,#40916c)" onclick="careAllPets('feed')">🍖 FEED ALL<br><span style="font-size:10px;opacity:.9">~0.15 / pet</span></button>
+<button type="button" class="primary pet-tap-btn" style="background:linear-gradient(135deg,#1d4e89,#4cc9f0)" onclick="careAllPets('water')">💧 WATER ALL<br><span style="font-size:10px;opacity:.9">~0.12 / pet</span></button>
+<button type="button" class="secondary pet-tap-btn" onclick="careAllPets('both')">🍖💧 CARE ALL<br><span style="font-size:10px;opacity:.9">feed+water</span></button>
+<button type="button" class="secondary pet-tap-btn" onclick="careAllPets('play')">🎾 PLAY ALL<br><span style="font-size:10px;opacity:.9">~0.08 / pet</span></button>
 </div>
 <div class="muted" style="font-size:11px;margin:0 0 6px">Timed care → wait → CLAIM</div>
 <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
@@ -6825,6 +6838,39 @@ async function rescuePet() {
     await refreshWallet();
   } catch (e) {
     showToast(e.message || "Rescue failed", true);
+  }
+}
+
+
+async function careAllPets(action) {
+  action = String(action || "both");
+  if (!accessToken) {
+    showToast("Login with Pi first.", true);
+    return;
+  }
+  try {
+    showToast("Caring all pets…");
+    const d = await api("/api/pets/care-all", {
+      method: "POST",
+      body: JSON.stringify({ action: action })
+    });
+    showToast(d.message || ("Cared " + (d.cared || 0) + " pets"));
+    await refreshWallet();
+    loadOwnedPets().catch(function(){});
+    if (selectedOwned && selectedOwned.id) {
+      try {
+        const od = await api("/api/pets/owned");
+        const list = od.pets || od.owned || [];
+        const p = list.find(function(x){ return String(x.id) === String(selectedOwned.id); });
+        if (p) {
+          selectedOwned = p;
+          window._ownedMap[p.id] = p;
+          if (typeof openOwnedModal === "function") openOwnedModal(p.id);
+        }
+      } catch (e2) {}
+    }
+  } catch (e) {
+    showToast(e.message || "Care all failed", true);
   }
 }
 
