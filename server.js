@@ -1277,53 +1277,27 @@ app.get("/", async (req, res) => {
 HEALTH
 ========================================================= */
 
-async function healthHandler(
-  req,
-  res
-) {
+async function healthHandler(req, res) {
   let db = "OK";
-
   try {
-    await pool.query(
-      "SELECT 1"
-    );
+    // Fail fast — don't hang login/wake on slow free-tier DB
+    await Promise.race([
+      pool.query("SELECT 1"),
+      new Promise((_, rej) => setTimeout(() => rej(new Error("db_timeout")), 4000))
+    ]);
   } catch {
     db = "ERROR";
   }
-
-  res
-    .status(
-      db === "OK"
-        ? 200
-        : 503
-    )
-    .json({
-      ok:
-        db === "OK",
-
-      service:
-        "AMT Mainnet Backend",
-
-      database:
-        db,
-
-      piApiKeyConfigured:
-        Boolean(
-          PI_API_KEY
-        ),
-
-      network:
-        "Pi Mainnet",
-
-      environment:
-        "MAINNET",
-
-      staking:
-        true,
-
-      timestamp:
-        nowIso()
-    });
+  res.status(db === "OK" ? 200 : 503).json({
+    ok: db === "OK",
+    service: "AMT Mainnet Backend",
+    database: db,
+    piApiKeyConfigured: Boolean(PI_API_KEY),
+    network: "Pi Mainnet",
+    environment: "MAINNET",
+    staking: true,
+    timestamp: nowIso()
+  });
 }
 
 app.get(
