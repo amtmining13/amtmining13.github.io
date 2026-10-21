@@ -7505,7 +7505,7 @@ app.get("/api/pets", async (req, res) => {
 
 /* ---------- My pets (MUST be before /api/pets/:petId) ---------- */
 
-app.get("/api/pets/leaderboard", requireAuth, async (req, res) => {
+app.get("/api/pets/leaderboard", async (req, res) => {
   try {
     await ensurePetTables();
     const limit = Math.min(30, Math.max(5, Number(req.query.limit) || 15));
