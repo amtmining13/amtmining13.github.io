@@ -1331,6 +1331,12 @@ app.get(
   healthHandler
 );
 
+
+/* Keep-alive target for UptimeRobot / cron (every 5–10 min) */
+app.get("/api/ping", (req, res) => {
+  res.status(200).json({ ok: true, ts: Date.now(), service: "AMT" });
+});
+
 app.get(
   "/api/health",
   healthHandler
