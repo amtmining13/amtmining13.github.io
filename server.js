@@ -6991,9 +6991,9 @@ const GEAR_MAX_UPGRADE = 15;
 const AMT_MATERIALS = {
   pet_food: { id: "pet_food", name: "Pet Food", kind: "consumable", priceAmt: 0.2, desc: "Feed pet · +Hunger +Energy" },
   water_crystal: { id: "water_crystal", name: "Water Crystal", kind: "consumable", priceAmt: 0.15, desc: "Give water · +Thirst" },
-  mineral_ore: { id: "mineral_ore", name: "Mineral Ore", kind: "material", priceAmt: 0.25, desc: "Map loot · craft / trade later" },
+  mineral_ore: { id: "mineral_ore", name: "Mineral Ore", kind: "material", priceAmt: 0.12, desc: "Star upgrade / map loot" },
   energy_shard: { id: "energy_shard", name: "Energy Shard", kind: "consumable", priceAmt: 0.3, desc: "Restore pet energy" },
-  upgrade_core: { id: "upgrade_core", name: "Upgrade Core", kind: "core", priceAmt: 0.5, desc: "Upgrade weapon/armor +1 (max +15)" },
+  upgrade_core: { id: "upgrade_core", name: "Upgrade Core", kind: "core", priceAmt: 0.25, desc: "Star upgrade / gear +1 (max +15)" },
   gem_atk_1: { id: "gem_atk_1", name: "Attack Gem Lv1", kind: "gem", stat: "atk", bonus: 2, level: 1, priceAmt: 0.4, desc: "+2 ATK when socketed" },
   gem_atk_2: { id: "gem_atk_2", name: "Attack Gem Lv2", kind: "gem", stat: "atk", bonus: 5, level: 2, priceAmt: 1.2, desc: "+5 ATK when socketed" },
   gem_atk_3: { id: "gem_atk_3", name: "Attack Gem Lv3", kind: "gem", stat: "atk", bonus: 10, level: 3, priceAmt: 3.0, desc: "+10 ATK when socketed" },
@@ -9737,12 +9737,12 @@ app.get("/api/pets/battle-charges", requireAuth, async (req, res) => {
 ------------------------------------------------ */
 function starUpgradeCost(currentStars) {
   const s = Math.max(1, Math.min(4, Number(currentStars) || 1));
-  // cost to go from s → s+1
+  // cost to go from s → s+1 (sustainable early game)
   const table = {
-    1: { minerals: 2, cores: 1, amt: 0.3, hp: 15, atk: 4, def: 4, spd: 3 },
-    2: { minerals: 4, cores: 2, amt: 0.6, hp: 25, atk: 6, def: 6, spd: 4 },
-    3: { minerals: 7, cores: 3, amt: 1.2, hp: 40, atk: 9, def: 9, spd: 6 },
-    4: { minerals: 12, cores: 5, amt: 2.5, hp: 60, atk: 14, def: 14, spd: 9 }
+    1: { minerals: 1, cores: 1, amt: 0.15, hp: 15, atk: 4, def: 4, spd: 3 },
+    2: { minerals: 2, cores: 1, amt: 0.35, hp: 25, atk: 6, def: 6, spd: 4 },
+    3: { minerals: 4, cores: 2, amt: 0.7, hp: 40, atk: 9, def: 9, spd: 6 },
+    4: { minerals: 8, cores: 3, amt: 1.5, hp: 60, atk: 14, def: 14, spd: 9 }
   };
   return table[s] || table[1];
 }
@@ -9777,16 +9777,32 @@ app.post("/api/pets/star-upgrade", requireAuth, async (req, res) => {
       return res.status(400).json({ ok: false, error: "Already max ★5." });
     }
     const cost = starUpgradeCost(stars);
-    await spendMaterial(client, req.member.id, "mineral_ore", cost.minerals);
-    await spendMaterial(client, req.member.id, "upgrade_core", cost.cores);
+    // Friendly pre-check (bag / shop)
+    const matRows = await client.query(
+      `SELECT material_id, qty FROM member_materials
+       WHERE member_id = $1 AND material_id IN ('mineral_ore','upgrade_core')`,
+      [req.member.id]
+    );
+    const haveMap = {};
+    for (const row of matRows.rows) haveMap[row.material_id] = Number(row.qty) || 0;
+    const haveMin = haveMap.mineral_ore || 0;
+    const haveCore = haveMap.upgrade_core || 0;
     const bal = await getBalance(req.member.id, client);
-    if (bal < cost.amt) {
+    const missing = [];
+    if (haveMin < cost.minerals) missing.push("Mineral Ore " + haveMin + "/" + cost.minerals);
+    if (haveCore < cost.cores) missing.push("Upgrade Core " + haveCore + "/" + cost.cores);
+    if (bal < cost.amt) missing.push("AMT " + bal + "/" + cost.amt);
+    if (missing.length) {
       await client.query("ROLLBACK");
       return res.status(400).json({
         ok: false,
-        error: "Need " + cost.amt + " AMT (have " + bal + "). Also need " + cost.minerals + " Mineral + " + cost.cores + " Core."
+        error: "Need for next ★: " + missing.join(" · ") + ". Buy in Items/Materials shop or loot from Map grind.",
+        need: cost,
+        have: { mineral_ore: haveMin, upgrade_core: haveCore, amt: bal }
       });
     }
+    await spendMaterial(client, req.member.id, "mineral_ore", cost.minerals);
+    await spendMaterial(client, req.member.id, "upgrade_core", cost.cores);
     await client.query(
       `INSERT INTO amt_ledger (member_id, amount, type, reference) VALUES ($1,$2,'PET_STAR',$3)`,
       [req.member.id, -cost.amt, makeReference("AMT-STAR")]
@@ -9814,8 +9830,9 @@ app.post("/api/pets/star-upgrade", requireAuth, async (req, res) => {
     });
   } catch (e) {
     try { await client.query("ROLLBACK"); } catch (_) {}
-    console.error("STAR UP:", e);
-    res.status(e.status || 500).json({ ok: false, error: e.message || "Star upgrade failed." });
+    const code = e.status || 500;
+    if (code >= 500) console.error("STAR UP:", e);
+    res.status(code).json({ ok: false, error: e.message || "Star upgrade failed." });
   } finally {
     client.release();
   }
