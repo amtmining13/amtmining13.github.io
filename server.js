@@ -451,42 +451,76 @@ PI AUTHENTICATION
 
 function extractPiUser(payload) {
   if (!payload || typeof payload !== "object") return null;
-  // Direct
-  if (payload.uid) {
+
+  function pack(uid, username, wallet) {
+    if (!uid) return null;
     return {
-      uid: payload.uid,
-      username: payload.username || null,
-      walletAddress: payload.wallet_address || payload.walletAddress || null
+      uid: String(uid),
+      username: username || null,
+      walletAddress: wallet || null
     };
+  }
+
+  // Direct
+  if (payload.uid || payload.sub || payload.user_uid || payload.userId) {
+    return pack(
+      payload.uid || payload.sub || payload.user_uid || payload.userId,
+      payload.username || payload.preferred_username || payload.name || null,
+      payload.wallet_address || payload.walletAddress || null
+    );
   }
   // Nested user
-  if (payload.user && payload.user.uid) {
-    return {
-      uid: payload.user.uid,
-      username: payload.user.username || payload.username || null,
-      walletAddress:
-        payload.user.wallet_address ||
-        payload.user.walletAddress ||
-        payload.wallet_address ||
-        null
-    };
+  if (payload.user && typeof payload.user === "object") {
+    const u = payload.user;
+    if (u.uid || u.sub || u.id) {
+      return pack(
+        u.uid || u.sub || u.id,
+        u.username || payload.username || null,
+        u.wallet_address || u.walletAddress || payload.wallet_address || null
+      );
+    }
   }
-  // Nested data
-  if (payload.data && payload.data.uid) {
-    return {
-      uid: payload.data.uid,
-      username: payload.data.username || null,
-      walletAddress: payload.data.wallet_address || null
-    };
+  // Nested data / data.user
+  if (payload.data && typeof payload.data === "object") {
+    if (payload.data.uid || payload.data.sub) {
+      return pack(
+        payload.data.uid || payload.data.sub,
+        payload.data.username || null,
+        payload.data.wallet_address || null
+      );
+    }
+    if (payload.data.user && (payload.data.user.uid || payload.data.user.sub)) {
+      return pack(
+        payload.data.user.uid || payload.data.user.sub,
+        payload.data.user.username || null,
+        payload.data.user.wallet_address || null
+      );
+    }
   }
-  if (payload.data && payload.data.user && payload.data.user.uid) {
-    return {
-      uid: payload.data.user.uid,
-      username: payload.data.user.username || null,
-      walletAddress: payload.data.user.wallet_address || null
-    };
+  // credentials.user (some Pi SDK shapes)
+  if (payload.credentials && payload.credentials.user) {
+    const u = payload.credentials.user;
+    if (u.uid || u.sub) {
+      return pack(u.uid || u.sub, u.username || null, u.wallet_address || null);
+    }
   }
   return null;
+}
+
+/** Best-effort decode of Pi access token JWT payload (no signature verify — used only as uid hint) */
+function peekTokenClaims(token) {
+  try {
+    const parts = String(token || "").split(".");
+    if (parts.length < 2) return null;
+    let b64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    while (b64.length % 4) b64 += "=";
+    const json = Buffer.from(b64, "base64").toString("utf8");
+    const obj = JSON.parse(json);
+    if (!obj || typeof obj !== "object") return null;
+    return obj;
+  } catch (_) {
+    return null;
+  }
 }
 
 async function verifyPiAccessToken(accessToken) {
@@ -506,38 +540,67 @@ async function verifyPiAccessToken(accessToken) {
   }
 
   const base = String(PI_API_BASE || "https://api.minepi.com").replace(/\/$/, "");
-  const paths = ["/v2/me", "/me"];
+  // Prefer Mainnet; also try socialchain host if env mis-set historically
+  const bases = [base];
+  if (base.indexOf("api.minepi.com") >= 0) {
+    /* main only */
+  } else if (base.indexOf("socialchain") >= 0) {
+    bases.push("https://api.minepi.com");
+  }
+  const paths = ["/v2/me", "/me", "/v2/user/me"];
   let lastStatus = 0;
   let lastBody = {};
   let lastRaw = "";
   let resolved = null;
 
-  for (const path of paths) {
-    try {
-      const response = await fetch(base + path, {
-        method: "GET",
-        headers: {
-          Accept: "application/json",
-          Authorization: "Bearer " + token
-        }
-      });
-      const text = await response.text();
-      lastRaw = text.slice(0, 300);
-      let parsed;
+  for (const b of bases) {
+    for (const path of paths) {
       try {
-        parsed = JSON.parse(text);
-      } catch {
-        parsed = { raw: text.slice(0, 200) };
+        const response = await fetch(String(b).replace(/\/$/, "") + path, {
+          method: "GET",
+          headers: {
+            Accept: "application/json",
+            Authorization: "Bearer " + token,
+            ...(PI_API_KEY ? { "X-API-Key": PI_API_KEY } : {})
+          }
+        });
+        const text = await response.text();
+        lastRaw = text.slice(0, 400);
+        let parsed;
+        try {
+          parsed = JSON.parse(text);
+        } catch {
+          parsed = { raw: text.slice(0, 200) };
+        }
+        lastStatus = response.status;
+        lastBody = parsed;
+        const found = extractPiUser(parsed);
+        if (response.ok && found && found.uid) {
+          resolved = found;
+          break;
+        }
+      } catch (fetchErr) {
+        console.warn("verifyPi fetch", path, fetchErr.message);
       }
-      lastStatus = response.status;
-      lastBody = parsed;
-      const found = extractPiUser(parsed);
-      if (response.ok && found && found.uid) {
-        resolved = found;
-        break;
+    }
+    if (resolved) break;
+  }
+
+  // Fallback: read uid from access token JWT claims if Pi /me returned odd 200 body
+  if (!resolved || !resolved.uid) {
+    const claims = peekTokenClaims(token);
+    if (claims) {
+      const fromJwt = extractPiUser(claims) || extractPiUser({ user: claims });
+      if (fromJwt && fromJwt.uid) {
+        // Only accept JWT fallback when Pi HTTP was 200 (token not rejected)
+        if (lastStatus === 200 || lastStatus === 0) {
+          console.warn("AUTH: using JWT claim uid fallback", {
+            uid: String(fromJwt.uid).slice(0, 8) + "…",
+            status: lastStatus
+          });
+          resolved = fromJwt;
+        }
       }
-    } catch (fetchErr) {
-      console.warn("verifyPi fetch", path, fetchErr.message);
     }
   }
 
@@ -559,7 +622,7 @@ async function verifyPiAccessToken(accessToken) {
         " Token rejected. Check: 1) PI_API_BASE=https://api.minepi.com 2) Mainnet app API key on Render 3) Login only inside Pi Browser 4) Clear cache & login again.";
     } else if (lastStatus === 200) {
       hint =
-        " Pi HTTP 200 but no uid in body. Often wrong network (sandbox token vs mainnet API) or HTML/error page. Confirm PI_API_BASE and sandbox:false, then fresh Login with Pi.";
+        " Pi HTTP 200 but no uid in body. Confirm Mainnet app in Pi Developer Portal, PI_API_KEY is Mainnet key, frontend sandbox:false, then hard refresh + Login with Pi.";
     } else if (!lastStatus) {
       hint = " No response from Pi API — network/DNS issue on Render.";
     }
@@ -2781,7 +2844,6 @@ app.get(
             AND type IN (
               'LUCKY_SPIN','DAILY','DAILY_REWARD','AIRDROP',
               'MINING','MINING_CLAIM','AD_BONUS','REFERRAL',
-              'SEND','RECEIVE',
               'PET_PURCHASE','PET_BUY_LISTING','PET_SALE','EGG_BUY','EGG_SALE','ESCROW_HOLD','ESCROW_RELEASE',
               'PET_CARE','PET_RESCUE','PET_STAR','PET_TRAIN','PET_BREED','PET_BOSS','PET_TRADE',
               'GEAR_BUY','GEM_BUY','CORE_BUY','WEAPON_BUY'
@@ -2915,11 +2977,22 @@ app.get(
         console.warn("pi payment history:", payErr.message);
       }
 
-      const merged = transfers.concat(rewards).concat(piPays).sort((a, b) => {
+      const mergedRaw = transfers.concat(rewards).concat(piPays).sort((a, b) => {
         const ta = new Date(a.createdAt || 0).getTime();
         const tb = new Date(b.createdAt || 0).getTime();
         return tb - ta;
-      }).slice(0, 80);
+      });
+      // Dedupe: same transfer can appear as amt_transfers + ledger SEND/RECEIVE
+      const seen = new Set();
+      const merged = [];
+      for (const tx of mergedRaw) {
+        const id = String(tx.txId || "").replace(/:SEND$/i, "").replace(/:RECEIVE$/i, "").toUpperCase();
+        const key = id + "|" + String(tx.direction || tx.kind || "") + "|" + String(Math.abs(Number(tx.amount) || 0));
+        if (id && seen.has(key)) continue;
+        if (id) seen.add(key);
+        merged.push(tx);
+        if (merged.length >= 80) break;
+      }
 
       res.json({ ok: true, transactions: merged });
     } catch (e) {
