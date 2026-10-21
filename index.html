@@ -2832,7 +2832,7 @@ async function loginWithPi(){
     setLoginStatus("Checking server…");
     var root = null;
     // Try paths that exist on old AND new deploys (/api/health is older; /api/ping is new)
-    var wakePaths = ["/api/health", "/api/ping", "/health", "/"];
+    var wakePaths = ["/api/ping", "/", "/api/health", "/health"];
     for(var a=0;a<8;a++){
       try{
         setLoginStatus("Waking free Render… ("+(a+1)+"/8 · up to 60s)");
