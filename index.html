@@ -2470,7 +2470,12 @@ SELECT 180D
 </div>
 <div class="muted" style="font-size:12px;margin:10px 0 4px;font-weight:800;color:#ffd54a">Star Rank ★</div>
 <div id="ownedStarsLine" style="margin-bottom:6px;font-size:16px">★☆☆☆☆</div>
-<div class="muted" style="font-size:11px;margin-bottom:8px;line-height:1.35">Upgrade with <b>Mineral Ore</b> + <b>Upgrade Core</b> + AMT (from Map grind / shop). Max ★★★★★. Each star boosts HP/ATK/DEF/SPD.</div>
+<div id="ownedStarCost" class="muted" style="font-size:11px;margin-bottom:6px;line-height:1.4">Next ★ needs Mineral Ore + Upgrade Core + AMT</div>
+<div class="muted" style="font-size:11px;margin-bottom:8px;line-height:1.35">Loot from <b>Map</b> or buy materials below. Max ★★★★★ · each star boosts stats.</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+<button type="button" class="secondary pet-tap-btn" onclick="buyStarMaterial('mineral_ore',1)">🪨 Buy 1 Mineral<br><span style="font-size:10px">0.12 AMT</span></button>
+<button type="button" class="secondary pet-tap-btn" onclick="buyStarMaterial('upgrade_core',1)">🔩 Buy 1 Core<br><span style="font-size:10px">0.25 AMT</span></button>
+</div>
 <button type="button" class="primary pet-tap-btn" style="width:100%;margin-bottom:10px" onclick="starUpgradePet()">⭐ STAR UPGRADE</button>
 <button class="primary" style="margin-bottom:8px" onclick="claimPetSession()">✅ CLAIM CARE/TRAIN XP</button>
 <button class="secondary" style="margin-bottom:8px" onclick="cancelPetSession()">⏹ CANCEL SESSION</button>
@@ -6512,6 +6517,7 @@ function openOwnedModal(id) {
   if ($("ownedEnergy")) $("ownedEnergy").textContent = pet.energy ?? 100;
   if ($("ownedHappy")) $("ownedHappy").textContent = pet.happiness ?? 100;
   if ($("ownedStarsLine")) $("ownedStarsLine").innerHTML = starsHtml(pet.stars != null ? pet.stars : 1);
+  if (pet && pet.id) refreshStarCost(pet.id);
   if ($("ownedHunger")) $("ownedHunger").textContent = pet.hunger ?? 100;
   if ($("ownedThirst")) $("ownedThirst").textContent = pet.thirst ?? 100;
   if ($("ownedNeedsWarn")) {
@@ -6628,6 +6634,37 @@ function starsHtml(n) {
   return '<span style="color:#ffd54a;letter-spacing:1px;font-size:12px;font-weight:900">' + s + '</span>';
 }
 
+async function buyStarMaterial(materialId, qty) {
+  try {
+    showToast("Buying...");
+    const d = await api("/api/gear/buy-material", {
+      method: "POST",
+      body: JSON.stringify({ materialId: materialId, qty: qty || 1 })
+    });
+    showToast(d.message || "Bought");
+    await refreshWallet();
+    if (selectedOwned && selectedOwned.id) refreshStarCost(selectedOwned.id);
+  } catch (e) {
+    showToast(e.message || "Buy failed", true);
+  }
+}
+
+async function refreshStarCost(ownedId) {
+  const el = $("ownedStarCost");
+  if (!el || !ownedId) return;
+  try {
+    const d = await api("/api/pets/star-cost/" + encodeURIComponent(ownedId));
+    if (d.max) {
+      el.textContent = "Max ★★★★★ reached";
+      return;
+    }
+    const c = d.cost || {};
+    el.innerHTML = "Next ★" + (d.nextStars || "") + " needs: <b>" + (c.minerals || 0) + " Mineral</b> · <b>" + (c.cores || 0) + " Core</b> · <b>" + (c.amt || 0) + " AMT</b>";
+  } catch (e) {
+    el.textContent = "Next ★ needs Mineral Ore + Upgrade Core + AMT";
+  }
+}
+
 async function starUpgradePet() {
   if (!selectedOwned || !selectedOwned.id) {
     showToast("Open a pet first.", true);
@@ -6645,6 +6682,7 @@ async function starUpgradePet() {
       window._ownedMap[d.pet.id] = d.pet;
       if (typeof fillOwnedModalFromPet === "function") fillOwnedModalFromPet(d.pet);
       else openOwnedModal(d.pet.id);
+      refreshStarCost(d.pet.id);
     }
     await refreshWallet();
     loadOwnedPets().catch(function(){});
