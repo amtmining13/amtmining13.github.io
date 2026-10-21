@@ -249,8 +249,25 @@ const pool = new Pool({
   connectionString: DATABASE_URL,
   ssl: DATABASE_URL
     ? { rejectUnauthorized: false }
-    : undefined
+    : undefined,
+  // Free Render + free Postgres: keep pool small, fail fast, recycle idle
+  max: 5,
+  min: 0,
+  idleTimeoutMillis: 20000,
+  connectionTimeoutMillis: 12000,
+  allowExitOnIdle: true
 });
+
+pool.on("error", (err) => {
+  console.error("PG POOL ERROR:", err && err.message ? err.message : err);
+});
+
+// Soft keep-alive so free DB / pool doesn't stay dead after idle (best-effort)
+setInterval(() => {
+  pool.query("SELECT 1").catch((e) => {
+    console.warn("PG keepalive fail:", e && e.message ? e.message : e);
+  });
+}, 4 * 60 * 1000);
 
 /* =========================================================
 EXPRESS
@@ -1279,19 +1296,33 @@ HEALTH
 
 async function healthHandler(req, res) {
   let db = "OK";
+  let dbError = null;
   try {
-    // Fail fast — don't hang login/wake on slow free-tier DB
     await Promise.race([
       pool.query("SELECT 1"),
-      new Promise((_, rej) => setTimeout(() => rej(new Error("db_timeout")), 4000))
+      new Promise((_, rej) => setTimeout(() => rej(new Error("db_timeout")), 8000))
     ]);
-  } catch {
+  } catch (e) {
     db = "ERROR";
+    dbError = (e && e.message) ? String(e.message) : "db_unreachable";
+    // One retry after short wait (cold DB)
+    try {
+      await new Promise((r) => setTimeout(r, 1500));
+      await Promise.race([
+        pool.query("SELECT 1"),
+        new Promise((_, rej) => setTimeout(() => rej(new Error("db_timeout")), 8000))
+      ]);
+      db = "OK";
+      dbError = null;
+    } catch (e2) {
+      dbError = (e2 && e2.message) ? String(e2.message) : dbError;
+    }
   }
   res.status(db === "OK" ? 200 : 503).json({
     ok: db === "OK",
     service: "AMT Mainnet Backend",
     database: db,
+    databaseError: dbError,
     piApiKeyConfigured: Boolean(PI_API_KEY),
     network: "Pi Mainnet",
     environment: "MAINNET",
@@ -13883,7 +13914,24 @@ async function startServer() {
   try {
     await initializeDatabase();
 
-    app.listen(
+    
+/* AMT_ERR_HANDLER */
+app.use((err, req, res, next) => {
+  const status = Number(err && err.status) || 500;
+  if (status >= 500) {
+    console.error("UNHANDLED:", err && err.message ? err.message : err);
+  } else {
+    console.warn("HTTP", status, err && err.message ? err.message : "", req.method, req.path);
+  }
+  if (res.headersSent) return next(err);
+  res.status(status).json({
+    ok: false,
+    error: (err && err.message) || "Request failed.",
+    ...(err && err.extra ? err.extra : {})
+  });
+});
+
+app.listen(
       PORT,
       "0.0.0.0",
       () => {
