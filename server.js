@@ -2805,10 +2805,14 @@ app.get(
           t.sender_member_id,
           t.recipient_member_id,
           sw.wallet_address AS sender_address,
-          rw.wallet_address AS recipient_address
+          rw.wallet_address AS recipient_address,
+          sm.username AS sender_username,
+          rm.username AS recipient_username
         FROM amt_transfers t
         JOIN amt_wallets sw ON sw.member_id = t.sender_member_id
         JOIN amt_wallets rw ON rw.member_id = t.recipient_member_id
+        LEFT JOIN members sm ON sm.id = t.sender_member_id
+        LEFT JOIN members rm ON rm.id = t.recipient_member_id
         WHERE t.sender_member_id = $1 OR t.recipient_member_id = $1
         ORDER BY t.created_at DESC
         LIMIT 50
@@ -2819,6 +2823,8 @@ app.get(
       const transfers = result.rows.map((row) => {
         const isSend = Number(row.sender_member_id) === Number(req.member.id);
         const amt = Math.abs(Number(row.amount) || 0);
+        const senderUser = row.sender_username ? String(row.sender_username) : null;
+        const recipientUser = row.recipient_username ? String(row.recipient_username) : null;
         return {
           kind: "TRANSFER",
           txId: row.tx_id,
@@ -2829,7 +2835,11 @@ app.get(
           direction: isSend ? "SEND" : "RECEIVE",
           label: isSend ? "SEND AMT" : "RECEIVE AMT",
           senderAddress: row.sender_address,
-          recipientAddress: row.recipient_address
+          recipientAddress: row.recipient_address,
+          senderUsername: senderUser,
+          recipientUsername: recipientUser,
+          counterpartyUsername: isSend ? recipientUser : senderUser,
+          counterpartyAddress: isSend ? row.recipient_address : row.sender_address
         };
       });
 
