@@ -3915,10 +3915,11 @@ async function loadTxHistory() {
       return;
     }
     box.innerHTML = list.map(function(tx) {
-      const kind = (tx.kind || tx.direction || "").toUpperCase();
+      const kind = (tx.kind || "").toUpperCase();
+      const direction = (tx.direction || "").toUpperCase();
       const cur = (tx.currency || "AMT").toUpperCase();
       const amt = Number(tx.amount);
-      const isOut = amt < 0 || kind === "SEND";
+      const isOut = amt < 0 || direction === "SEND" || kind === "SEND";
       const isReward = kind === "REWARD" || kind === "LUCKY_SPIN" || kind === "DAILY" || kind === "AIRDROP" || (tx.type && String(tx.type).indexOf("SPIN") >= 0);
       let dir, color;
       if (kind === "PET" || kind === "PI_PAY") {
@@ -3930,23 +3931,40 @@ async function loadTxHistory() {
       } else if (isReward || kind === "REWARD") {
         dir = "🎁 " + (tx.label || tx.type || "REWARD");
         color = "#ffd64e";
-      } else if (kind === "SEND" || (isOut && kind !== "PET")) {
+      } else if (kind === "TRANSFER" || direction === "SEND" || direction === "RECEIVE" || kind === "SEND" || kind === "RECEIVE") {
+        dir = isOut ? "↑ SEND" : "↓ RECEIVE";
+        color = isOut ? "#ff8a80" : "#69f0ae";
+      } else if (isOut) {
         dir = "↑ SEND";
         color = "#ff8a80";
       } else {
         dir = "↓ RECEIVE";
         color = "#69f0ae";
       }
-      const sign = amt < 0 ? "-" : (amt > 0 ? "+" : "");
+      const showNeg = isOut;
+      const sign = showNeg ? "-" : (amt !== 0 ? "+" : "");
       const amtStr = sign + (isFinite(amt) ? Math.abs(amt) : tx.amount);
-      const amtColor = amt < 0 ? "#ff8a80" : "#69f0ae";
-      const other = tx.direction === "SEND" ? tx.recipientAddress : tx.senderAddress;
+      const amtColor = showNeg ? "#ff8a80" : "#69f0ae";
+      // Prefer Pi username; fall back to AMT address
+      const cpUser = tx.counterpartyUsername
+        || (isOut ? tx.recipientUsername : tx.senderUsername)
+        || null;
+      const cpAddr = tx.counterpartyAddress
+        || (isOut ? tx.recipientAddress : tx.senderAddress)
+        || "";
+      const whoLine = cpUser
+        ? ((isOut ? "To: @" : "From: @") + String(cpUser))
+        : (cpAddr ? ((isOut ? "To: " : "From: ") + cpAddr) : "");
+      const addrLine = (cpUser && cpAddr)
+        ? ('<div class="muted" style="font-size:9px;word-break:break-all;opacity:.75">' + cpAddr + '</div>')
+        : "";
       const when = tx.createdAt ? new Date(tx.createdAt).toLocaleString() : "";
       return '<div class="balance-row" style="flex-direction:column;align-items:stretch;gap:4px;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.08)">' +
         '<div style="display:flex;justify-content:space-between;gap:8px">' +
         '<span style="color:' + color + ';font-weight:700">' + dir + '</span>' +
         '<span style="color:' + amtColor + ';font-weight:700">' + amtStr + ' ' + cur + '</span></div>' +
-        (other ? '<div class="muted" style="font-size:10px;word-break:break-all">To/From: ' + other + '</div>' : '') +
+        (whoLine ? '<div style="font-size:12px;font-weight:700;color:#e8f0ff">' + whoLine + '</div>' : '') +
+        addrLine +
         (tx.memo ? '<div class="muted" style="font-size:10px">' + String(tx.memo) + '</div>' : '') +
         '<div class="muted" style="font-size:10px">' + when + (tx.txId ? " · " + String(tx.txId).slice(0,24) : "") + '</div></div>';
     }).join("");
