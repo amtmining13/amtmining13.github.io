@@ -1528,6 +1528,34 @@ CLAIM DAILY REWARD
 <div class="daily-schedule muted" id="dailyScheduleHint">Day 1: 2 · … · Day 7: 12 AMT · then reset</div>
 </div>
 
+<!-- DAILY MISSIONS -->
+<div class="card" id="missionsCard">
+<div class="row" style="align-items:flex-start">
+<div>
+<div class="card-title" style="margin:0">📋 DAILY MISSIONS</div>
+<div class="muted" style="margin-top:4px;font-size:11px">Resets UTC midnight · Claim each · Clear all for bonus</div>
+</div>
+</div>
+<div id="missionsList" style="margin-top:10px"><div class="muted">Loading missions...</div></div>
+<button id="missionBonusBtn" class="secondary" style="margin-top:10px;display:none" onclick="claimMissionBonus()">🎁 CLAIM ALL-CLEAR BONUS</button>
+</div>
+
+<!-- MAP DUNGEON -->
+<div class="card" id="dungeonCard">
+<div class="card-title">🗺️ MAP · DUNGEON</div>
+<div class="muted" style="font-size:11px;margin-bottom:10px">Send a pet to explore · AFK loot (food, water, energy, gems, AMT)</div>
+<label class="muted" style="font-size:11px">Pet ID</label>
+<input id="dungeonPetId" class="input" type="number" placeholder="Owned pet id (from My Pets)">
+<label class="muted" style="font-size:11px;margin-top:8px">Duration</label>
+<select id="dungeonDuration" class="input">
+  <option value="1h">1 hour · 0.2 AMT</option>
+  <option value="2h">2 hours · 0.4 AMT</option>
+  <option value="4h">4 hours · 0.7 AMT</option>
+</select>
+<button class="primary" style="margin-top:10px" onclick="startDungeon()">🚀 SEND TO MAP</button>
+<div id="dungeonRuns" style="margin-top:12px"><div class="muted">No active runs</div></div>
+</div>
+
 <!-- MINING SESSION -->
 <div class="card">
 <div class="card-title">MINING SESSION</div>
@@ -2894,7 +2922,7 @@ if(id==="referralSection")loadReferral();
 if(id==="circleSection")loadSecurityCircle();
 if(id==="profileSection"){loadProfile();try{refreshDevTreasuryCard();}catch(e){}try{loadPetLeaderboard();}catch(e){}}
 if(id==="stakingSection")loadStaking();
-if(id==="miningSection"){loadMiningStatus();loadDailyStatus();try{preloadPiAds()}catch(e){}}
+if(id==="miningSection"){loadMiningStatus();loadDailyStatus();loadMissions();loadDungeon();try{preloadPiAds()}catch(e){}}
 if(id==="marketSection")petTab(currentPetTab || "shop");
 }
 
@@ -4083,6 +4111,106 @@ async function loadDailyStatus(){
     console.log("Daily status:",e);
     if($("dailyStatusLabel")) $("dailyStatusLabel").textContent=e.message||"Unavailable";
   }
+}
+
+
+async function loadMissions(){
+  const box = document.getElementById("missionsList");
+  const bonusBtn = document.getElementById("missionBonusBtn");
+  if(!box || !accessToken) return;
+  try{
+    const d = await api("/api/missions/status");
+    const list = d.missions || [];
+    box.innerHTML = list.map(function(m){
+      const pct = Math.min(100, Math.round(100*(m.progress||0)/Math.max(1,m.target||1)));
+      const done = !!m.complete;
+      const claimed = !!m.claimed;
+      let btn = "";
+      if(done && !claimed){
+        btn = "<button class=\"small-btn\" style=\"width:auto;padding:6px 10px\" onclick=\"claimMission('"+m.id+"')\">Claim +"+m.rewardAmt+"</button>";
+      } else if(claimed){
+        btn = '<span style="color:#69f0ae;font-size:11px;font-weight:700">✓ Claimed</span>';
+      } else {
+        btn = '<span class="muted" style="font-size:11px">'+m.progress+'/'+m.target+'</span>';
+      }
+      return '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06)">'+
+        '<div style="flex:1"><div style="font-weight:700;font-size:13px">'+m.label+'</div>'+
+        '<div class="progress" style="height:6px;margin-top:4px"><span style="width:'+pct+'%;display:block;height:100%;background:linear-gradient(90deg,#7c4dff,#ffd64e)"></span></div></div>'+btn+'</div>';
+    }).join("") || '<div class="empty">No missions</div>';
+    if(bonusBtn){
+      if(d.bonus && d.bonus.available){
+        bonusBtn.style.display = "block";
+        bonusBtn.textContent = "🎁 CLAIM ALL-CLEAR BONUS (+"+(d.bonus.amount||3)+" AMT)";
+      } else if(d.bonus && d.bonus.claimed){
+        bonusBtn.style.display = "block";
+        bonusBtn.disabled = true;
+        bonusBtn.textContent = "✓ Bonus claimed today";
+      } else {
+        bonusBtn.style.display = "none";
+        bonusBtn.disabled = false;
+      }
+    }
+  }catch(e){
+    box.innerHTML = '<div class="muted">'+(e.message||"Missions unavailable")+'</div>';
+  }
+}
+async function claimMission(id){
+  try{
+    const d = await api("/api/missions/claim",{method:"POST",body:JSON.stringify({missionId:id})});
+    showToast(d.message||("+"+(d.amount||0)+" AMT"));
+    loadMissions();
+    if(typeof loadWallet==="function") try{loadWallet()}catch(e){}
+  }catch(e){ showToast(e.message||"Claim failed",true); }
+}
+async function claimMissionBonus(){
+  try{
+    const d = await api("/api/missions/claim-bonus",{method:"POST",body:"{}"});
+    showToast(d.message||"Bonus claimed");
+    loadMissions();
+  }catch(e){ showToast(e.message||"Bonus failed",true); }
+}
+async function loadDungeon(){
+  const box = document.getElementById("dungeonRuns");
+  if(!box || !accessToken) return;
+  try{
+    const d = await api("/api/dungeon/status");
+    const runs = d.runs || [];
+    if(!runs.length){
+      box.innerHTML = '<div class="muted" style="font-size:12px">No active dungeon runs. Send a pet above.</div>';
+      return;
+    }
+    box.innerHTML = runs.map(function(r){
+      const left = r.remainingMs || 0;
+      const h = Math.floor(left/3600000), m = Math.floor((left%3600000)/60000);
+      const timer = r.ready ? "READY" : (h+"h "+m+"m left");
+      const btn = r.ready
+        ? '<button class="small-btn" style="width:auto;padding:6px 10px" onclick="claimDungeon('+r.id+')">🎁 CLAIM LOOT</button>'
+        : '<span class="muted" style="font-size:11px">'+timer+'</span>';
+      return '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06)">'+
+        '<div><b>'+(r.petName||("Pet #"+r.petId))+'</b> · '+r.durationKey+
+        '<div class="muted" style="font-size:10px">'+timer+'</div></div>'+btn+'</div>';
+    }).join("");
+  }catch(e){
+    box.innerHTML = '<div class="muted">'+(e.message||"Dungeon unavailable")+'</div>';
+  }
+}
+async function startDungeon(){
+  const petId = Number(document.getElementById("dungeonPetId")&&document.getElementById("dungeonPetId").value);
+  const duration = (document.getElementById("dungeonDuration")&&document.getElementById("dungeonDuration").value)||"1h";
+  if(!petId){ showToast("Enter owned pet ID",true); return; }
+  try{
+    const d = await api("/api/dungeon/start",{method:"POST",body:JSON.stringify({petId:petId,duration:duration})});
+    showToast(d.message||"Pet sent to map");
+    loadDungeon();
+  }catch(e){ showToast(e.message||"Start failed",true); }
+}
+async function claimDungeon(runId){
+  try{
+    const d = await api("/api/dungeon/claim",{method:"POST",body:JSON.stringify({runId:runId})});
+    const loot = (d.loot||[]).map(function(x){return x.qty+" "+x.item;}).join(", ");
+    showToast(d.message+(loot?(" · "+loot):""));
+    loadDungeon();
+  }catch(e){ showToast(e.message||"Claim failed",true); }
 }
 
 async function claimDailyReward(){
