@@ -2089,7 +2089,7 @@ App: amtmining13.github.io
 <section id="stakingSection" class="section">
 <div class="hero">
 <h1>AMT <span>STAKING</span></h1>
-<p>Fixed-term staking</p>
+<p>Fixed-term staking · Early withdraw = principal only</p>
 
 </div>
 
@@ -2587,6 +2587,7 @@ SELECT 180D
 </div>
 <div class="muted" style="font-size:11px;margin:0 0 6px;font-weight:800;color:#7dffb3">ALL PETS · one tap</div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+<div class="muted" style="font-size:10px;margin-bottom:6px;width:100%">Care All: up to <b>200</b> pets/tap · neediest first · list sorted high→low level</div>
 <button type="button" class="primary pet-tap-btn" style="background:linear-gradient(135deg,#2d6a4f,#40916c)" onclick="careAllPets('feed')">🍖 FEED ALL<br><span style="font-size:10px;opacity:.9">~0.15 / pet</span></button>
 <button type="button" class="primary pet-tap-btn" style="background:linear-gradient(135deg,#1d4e89,#4cc9f0)" onclick="careAllPets('water')">💧 WATER ALL<br><span style="font-size:10px;opacity:.9">~0.12 / pet</span></button>
 <button type="button" class="secondary pet-tap-btn" onclick="careAllPets('both')">🍖💧 CARE ALL<br><span style="font-size:10px;opacity:.9">feed+water</span></button>
@@ -5873,12 +5874,11 @@ ${fmt(principal)} AMT
 <button
 class="${unlocked?"primary":"secondary"}"
 style="margin-top:10px"
-${unlocked?"":"disabled"}
-onclick="unstake('${esc(stake.id)}')"
+onclick="unstake('${esc(stake.id)}', ${unlocked ? "true" : "false"})"
 >
 ${unlocked?
 "💰 UNSTAKE + REWARD":
-"🔒 LOCKED"}
+"💸 EARLY WITHDRAW (no reward)"}
 </button>
 
 </div>
@@ -5942,13 +5942,14 @@ true
 }
 }
 
-async function unstake(stakeId){
+async function unstake(stakeId, isUnlocked){
 
-if(
-!confirm(
-"Unstake this AMT stake and receive principal + earned reward?"
-)
-)return;
+const unlocked = isUnlocked === true || isUnlocked === "true";
+const msg = unlocked
+  ? "Unstake and receive principal + reward?"
+  : "EARLY WITHDRAW: You get PRINCIPAL only. Reward is forfeited. Continue?";
+
+if(!confirm(msg)) return;
 
 try{
 
@@ -5961,13 +5962,8 @@ stakeId
 });
 
 showToast(
-"Unstaked successfully. "+
-fmt(
-data.totalPayout??
-data.amount??
-0
-)+
-" AMT returned."
+data.message ||
+("Unstaked · +" + fmt(data.total ?? data.totalPayout ?? data.amount ?? 0) + " AMT")
 );
 
 await loadStaking();
@@ -6736,7 +6732,13 @@ async function loadOwnedPets() {
     }
     grid.innerHTML = '<div class="empty">Loading your pets...</div>';
     const data = await api("/api/pets/owned");
-    const pets = data.pets || data.owned || [];
+    let pets = data.pets || data.owned || [];
+    // Highest level first (then stars)
+    pets = pets.slice().sort(function(a,b){
+      const lv = (Number(b.level)||1) - (Number(a.level)||1);
+      if (lv !== 0) return lv;
+      return (Number(b.stars)||1) - (Number(a.stars)||1);
+    });
     window.ownedPetsCache = pets.slice();
     window._ownedMap = {};
     pets.forEach(p => {
