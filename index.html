@@ -1311,6 +1311,7 @@ animation:ecosystemBlink 1s ease-in-out infinite;
   position: relative;
   z-index: 5;
 }
+.toast,#toast{z-index:99999!important;position:fixed!important}
 </style>
 </head>
 
@@ -7145,31 +7146,54 @@ async function trainPet(stat, durationHours) {
   }
   const ownedId = Number(selectedOwned.id);
   const hours = Number(durationHours || 0);
+  const stKey = String(stat || "atk").toLowerCase();
   try {
-    showToast(hours > 0 ? ("Starting " + hours + "h train...") : ("Training " + String(stat || "atk").toUpperCase() + "..."));
+    showToast(hours > 0 ? ("Starting " + hours + "h train...") : ("Training " + stKey.toUpperCase() + "..."));
     const data = await api("/api/pets/train", {
       method: "POST",
-      body: JSON.stringify({ ownedPetId: ownedId, stat: stat || "atk", durationHours: hours })
+      body: JSON.stringify({ ownedPetId: ownedId, stat: stKey, durationHours: hours })
     });
-    if (!data) throw new Error("Train failed");
+    if (!data || data.ok === false) throw new Error((data && (data.error || data.message)) || "Train failed");
     if (hours > 0) {
-      showToast(data.message || (hours + "h training started · claim later"));
+      showToast(data.message || (hours + "h training started · claim later when timer ends"));
     } else {
-      var st = String(stat || "atk").toUpperCase();
-      var msg = st + " " + (data.beforeStat != null ? data.beforeStat + "→" + data.afterStat : ("+" + (data.gain || ""))) +
-        " · +" + (data.xpGained || 0) + " XP";
+      var st = stKey.toUpperCase();
+      var msg = "✅ " + st + " " + (data.beforeStat != null ? (data.beforeStat + " → " + data.afterStat) : ("+" + (data.gain || ""))) +
+        " · +" + (data.xpGained || 0) + " XP · -" + (data.cost != null ? data.cost : "0.1") + " AMT";
       if (data.milestones && data.milestones.length) {
-        const b = data.milestones.map(m => "Lv" + m.level + " +" + m.amount).join(", ");
+        const b = data.milestones.map(function(m){ return "Lv" + m.level + " +" + m.amount; }).join(", ");
         msg += " · Milestone " + b + " AMT!";
       }
       showToast(msg);
+      // Force visible stat update on modal even if map was stale
+      if (data.afterStat != null) {
+        var map = { hp: "ownedHp", atk: "ownedAtk", def: "ownedDef", spd: "ownedSpd" };
+        var elId = map[stKey];
+        if (elId && $(elId)) $(elId).textContent = data.afterStat;
+        if (selectedOwned) selectedOwned[stKey] = data.afterStat;
+        if (data.pet) {
+          data.pet[stKey] = data.afterStat;
+        }
+      }
     }
-    if (data.pet) fillOwnedModalFromPet(data.pet);
+    if (data.pet) {
+      if (window._ownedMap) {
+        window._ownedMap[data.pet.id] = data.pet;
+        window._ownedMap[String(data.pet.id)] = data.pet;
+      }
+      selectedOwned = data.pet;
+      fillOwnedModalFromPet(data.pet);
+      // Re-apply afterStat in case RETURNING was stale mid-tx (safety)
+      if (hours === 0 && data.afterStat != null) {
+        var map2 = { hp: "ownedHp", atk: "ownedAtk", def: "ownedDef", spd: "ownedSpd" };
+        if (map2[stKey] && $(map2[stKey])) $(map2[stKey]).textContent = data.afterStat;
+      }
+    }
     updateOwnedSessionInfo(data.pet || data);
-    await refreshWallet();
-    loadOwnedPets().catch(() => {});
+    try { await refreshWallet(); } catch (e) {}
+    loadOwnedPets().catch(function(){});
   } catch (e) {
-    showToast(e.message || "Train failed", true);
+    showToast((e && e.message) || "Train failed", true);
   }
 }
 
