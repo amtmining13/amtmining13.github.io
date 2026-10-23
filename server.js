@@ -5460,37 +5460,20 @@ app.post(
           stake.unlock_at
         ).getTime();
 
-      if (
-        Date.now() <
-        unlockTime
-      ) {
-        throw new HttpError(
-          400,
-          "Stake is still locked.",
-          {
-            unlockAt:
-              stake.unlock_at,
-
-            remainingSeconds:
-              Math.ceil(
-                (
-                  unlockTime -
-                  Date.now()
-                ) / 1000
-              )
-          }
-        );
-      }
-
       const principal =
         Number(
           stake.principal
         );
 
-      const reward =
+      const fullReward =
         Number(
           stake.reward_amount
         );
+
+      // Early withdraw allowed: principal only (forfeit reward)
+      // After unlock: principal + full reward
+      const isEarly = Date.now() < unlockTime;
+      const reward = isEarly ? 0 : fullReward;
 
       const total =
         Number(
@@ -5502,7 +5485,7 @@ app.post(
 
       const reference =
         makeReference(
-          "AMT-UNSTAKE"
+          isEarly ? "AMT-UNSTAKE-EARLY" : "AMT-UNSTAKE"
         );
 
       await client.query(
@@ -5518,13 +5501,14 @@ app.post(
           (
             $1,
             $2,
-            'STAKING_PAYOUT',
-            $3
+            $3,
+            $4
           )
         `,
         [
           req.member.id,
           total,
+          isEarly ? "STAKING_EARLY_WITHDRAW" : "STAKING_PAYOUT",
           reference
         ]
       );
@@ -5533,11 +5517,11 @@ app.post(
         `
         UPDATE amt_stakes
         SET
-          status = 'COMPLETED',
+          status = $2,
           unstaked_at = NOW()
         WHERE id = $1
         `,
-        [stakeId]
+        [stakeId, isEarly ? "EARLY_WITHDRAWN" : "COMPLETED"]
       );
 
       await client.query(
@@ -5555,11 +5539,15 @@ app.post(
         unstaked:
           true,
 
+        early: isEarly,
+
         stakeId,
 
         principal,
 
         reward,
+
+        rewardForfeited: isEarly ? fullReward : 0,
 
         total,
 
@@ -5568,7 +5556,11 @@ app.post(
         balance,
 
         status:
-          "COMPLETED",
+          isEarly ? "EARLY_WITHDRAWN" : "COMPLETED",
+
+        message: isEarly
+          ? ("Early withdraw · +" + principal + " AMT principal returned · reward forfeited")
+          : ("Unstaked · +" + total + " AMT (principal + reward)"),
 
         network:
           "Pi Mainnet",
@@ -7640,7 +7632,8 @@ app.get("/api/pets/owned", requireAuth, async (req, res) => {
   try {
     await ensurePetTables();
     const result = await pool.query(
-      `SELECT * FROM owned_pets WHERE member_id = $1 ORDER BY id DESC`,
+      `SELECT * FROM owned_pets WHERE member_id = $1
+       ORDER BY COALESCE(level,1) DESC, COALESCE(stars,1) DESC, id DESC`,
       [req.member.id]
     );
     const pets = [];
@@ -8043,8 +8036,11 @@ app.post("/api/pets/care-all", requireAuth, async (req, res) => {
     const petsR = await client.query(
       `SELECT * FROM owned_pets
        WHERE member_id = $1 AND COALESCE(pet_status, 'ACTIVE') <> 'RUNAWAY'
-       ORDER BY id ASC
-       LIMIT 40`,
+       ORDER BY
+         LEAST(COALESCE(hunger,100), COALESCE(thirst,100)) ASC,
+         COALESCE(level,1) DESC,
+         id ASC
+       LIMIT 200`,
       [req.member.id]
     );
     let pets = petsR.rows || [];
