@@ -8340,12 +8340,20 @@ app.post("/api/pets/train", requireAuth, async (req, res) => {
       );
       const petAfter = await applyLevelAndRarity(client, ownedId, req.member.id);
       await client.query("COMMIT");
+      const afterStat = beforeStat + gain;
       return res.json({
-        ok: true, trained: stat, gain, cost, durationHours: 0, xpGained: xpGain,
+        ok: true,
+        trained: stat,
+        gain,
+        cost,
+        durationHours: 0,
+        xpGained: xpGain,
         beforeStat: beforeStat,
-        afterStat: beforeStat + gain,
-        pet: petAfter, level: petAfter && petAfter.level,
-        milestones: (petAfter && petAfter._milestones) || []
+        afterStat: afterStat,
+        pet: petAfter,
+        level: petAfter && petAfter.level,
+        milestones: (petAfter && petAfter._milestones) || [],
+        message: stat.toUpperCase() + " " + beforeStat + "→" + afterStat + " · +" + xpGain + " XP · -" + cost + " AMT"
       });
     }
 
@@ -10464,10 +10472,16 @@ app.post("/api/pets/claim-session", requireAuth, async (req, res) => {
     }
     const petAfter = await applyLevelAndRarity(client, ownedId, req.member.id);
     await client.query("COMMIT");
+    let claimMsg = "Session claimed · +" + xp + " XP";
+    if (isTrain && st && ["hp", "atk", "def", "spd"].includes(st)) {
+      const g = st === "hp" ? 12 : (st === "atk" ? 6 : 4);
+      claimMsg = "Train claimed · " + st.toUpperCase() + " +" + g + " · +" + xp + " XP";
+    }
     res.json({
       ok: true, xpGained: xp, pet: petAfter,
       level: petAfter && petAfter.level,
-      message: "Session claimed · +" + xp + " XP"
+      trained: isTrain ? st : null,
+      message: claimMsg
     });
   } catch (e) {
     try { await client.query("ROLLBACK"); } catch {}
