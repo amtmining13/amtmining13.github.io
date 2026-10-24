@@ -4523,7 +4523,7 @@ showToast(
 "AMT mining started."
 );
 
-await loadMiningStatus();
+await loadMiningStatus(); try{ loadMissions(); }catch(e){};
 
 // Show Pi Ad on mining click (bonus still 1x/day on server)
 try{ await showDailyMiningAd(); }catch(e){ console.warn(e); }
@@ -4629,7 +4629,7 @@ async function doLuckySpin(){
 
     const data = await api("/api/spin/claim", { method:"POST", body: JSON.stringify({}) });
     if(!data || !data.ok){
-      showToast((data && data.error) || "Spin failed", true);
+      try{loadMissions()}catch(e){};showToast((data && data.error) || "Spin failed", true);
       _spinBusy = false;
       loadSpinStatus();
       return;
@@ -4655,6 +4655,7 @@ async function doLuckySpin(){
     }
 
     await new Promise(r => setTimeout(r, 4400));
+    try{ loadMissions(); }catch(e){}
 
     const label = data.prizeLabel || data.prize || "Prize";
     if($("spinResult")){
@@ -7166,7 +7167,7 @@ async function careAllPets(action) {
     });
     showToast(d.message || ("Cared " + (d.cared || 0) + " pets"));
     await refreshWallet();
-    loadOwnedPets().catch(function(){});
+    loadOwnedPets().catch(function(){}); try{ loadMissions(); }catch(e){}
     if (selectedOwned && selectedOwned.id) {
       try {
         const od = await api("/api/pets/owned");
