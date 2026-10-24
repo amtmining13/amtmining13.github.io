@@ -3699,6 +3699,7 @@ app.post(
       await client.query(
         "COMMIT"
       );
+      try { await bumpMission(req.member.id, "mine", 1); } catch (_) {}
 
       const balance =
         await getBalance(
@@ -8066,6 +8067,7 @@ app.post("/api/pets/care-all", requireAuth, async (req, res) => {
     }
     if (!targets.length) {
       await client.query("COMMIT");
+    if (cared > 0) { try { await bumpMission(req.member.id, "care", 1); } catch (_) {} }
       return res.json({
         ok: true,
         cared: 0,
@@ -14029,67 +14031,8 @@ app.use((err, req, res, next) => {
   });
 });
 
-app.listen(
-      PORT,
-      "0.0.0.0",
-      () => {
-        console.log(
-          "=================================================="
-        );
 
-        console.log(
-          "AMT MAINNET BACKEND ONLINE"
-        );
-
-        console.log(
-          `Port: ${PORT}`
-        );
-
-        console.log(
-          "Environment: MAINNET"
-        );
-
-        console.log(
-          "Network: Pi Mainnet"
-        );
-
-        console.log(
-          "Version: 2.5.0-mainnet"
-        );
-
-        console.log(
-          `Mining rate: ${AMT_MINING_RATE} AMT/hour`
-        );
-
-        console.log(
-          `Airdrop: ${AIRDROP_AMOUNT_AMT} AMT (48h claim window)`
-        );
-
-        console.log(
-          "Staking: ENABLED"
-        );
-
-        console.log(
-          "30D: 5%"
-        );
-
-        console.log(
-          "90D: 10%"
-        );
-
-        console.log(
-          "180D: 15%"
-        );
-
-        console.log(
-          "Legacy login compatibility: ENABLED"
-        );
-
-
-/* =========================================================
-   DAILY MISSIONS + MAP DUNGEON
-========================================================= */
-
+/* === DAILY MISSIONS + DUNGEON (hoisted before listen) === */
 const DAILY_MISSIONS = [
   { id: "mine", label: "Start mining once", target: 1, rewardAmt: 1 },
   { id: "spin", label: "Spin the wheel once", target: 1, rewardAmt: 1 },
@@ -14143,20 +14086,28 @@ async function ensureMissionTables() {
 
 async function bumpMission(memberId, missionId, amount) {
   try {
+    if (!memberId || !missionId) return;
     await ensureMissionTables();
     const def = DAILY_MISSIONS.find((m) => m.id === missionId);
-    if (!def) return;
+    if (!def) {
+      console.warn("bumpMission unknown id", missionId);
+      return;
+    }
     const today = utcDateString();
     amount = Math.max(1, Number(amount) || 1);
     await pool.query(
-      `INSERT INTO daily_missions (member_id, mission_date, mission_id, progress, target)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO daily_missions (member_id, mission_date, mission_id, progress, target, claimed)
+       VALUES ($1, $2::date, $3, $4, $5, FALSE)
        ON CONFLICT (member_id, mission_date, mission_id)
-       DO UPDATE SET progress = LEAST(daily_missions.target, daily_missions.progress + $4)`,
+       DO UPDATE SET
+         progress = LEAST(daily_missions.target, daily_missions.progress + EXCLUDED.progress),
+         target = EXCLUDED.target
+       WHERE daily_missions.claimed = FALSE`,
       [memberId, today, missionId, amount, def.target]
     );
+    console.log("bumpMission ok", missionId, "member", memberId, "date", today);
   } catch (e) {
-    console.warn("bumpMission:", e.message || e);
+    console.error("bumpMission FAIL:", missionId, e.message || e);
   }
 }
 
@@ -14532,23 +14483,16 @@ app.post("/api/dungeon/claim", requireAuth, async (req, res) => {
   }
 });
 
-
-        console.log(
-          "Pi wallet address response: ENABLED"
-        );
-
-        console.log(
-          "=================================================="
-        );
-      }
-    );
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log("==================================================");
+      console.log("AMT MAINNET BACKEND ONLINE");
+      console.log("Port: " + PORT);
+      console.log("Daily missions + dungeon: ENABLED");
+      console.log("==================================================");
+    });
 
   } catch (error) {
-    console.error(
-      "SERVER START FAILED:",
-      error
-    );
-
+    console.error("SERVER START FAILED:", error);
     process.exit(1);
   }
 }
