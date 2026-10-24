@@ -2901,6 +2901,9 @@ app.get(
           else if (typ === "DAILY" || typ === "DAILY_REWARD") label = "DAILY REWARD";
           else if (typ === "MYSTERY_CHEST") label = "MYSTERY CHEST";
           else if (typ === "DUNGEON_LOOT") label = "DUNGEON LOOT";
+          else if (typ === "WAR_LOOT") label = "WAR LOOT";
+          else if (typ === "WAR_UPGRADE") label = "WAR UPGRADE";
+          else if (typ === "WAR_REPAIR") label = "WAR REPAIR";
           else if (typ === "DAILY_GOAL_BONUS") label = "DAILY GOALS BONUS";
           else if (typ === "MISSION" || typ === "MISSION_BONUS") label = "DAILY MISSION";
           else if (typ === "STAKING_PAYOUT") label = "STAKING PAYOUT";
@@ -14653,6 +14656,380 @@ app.post("/api/dungeon/claim", requireAuth, async (req, res) => {
     client.release();
   }
 });
+
+
+/* =========================================================
+   WAR OUTPOST — Phase 1
+========================================================= */
+async function ensureWarTables() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS war_outposts (
+      id BIGSERIAL PRIMARY KEY,
+      member_id BIGINT NOT NULL UNIQUE REFERENCES members(id) ON DELETE CASCADE,
+      hp INT NOT NULL DEFAULT 100,
+      max_hp INT NOT NULL DEFAULT 100,
+      defense INT NOT NULL DEFAULT 10,
+      trophy INT NOT NULL DEFAULT 0,
+      level INT NOT NULL DEFAULT 1,
+      last_raid_at TIMESTAMPTZ,
+      last_defend_at TIMESTAMPTZ,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE TABLE IF NOT EXISTS war_attacks (
+      id BIGSERIAL PRIMARY KEY,
+      attacker_id BIGINT NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+      defender_id BIGINT NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+      damage INT NOT NULL DEFAULT 0,
+      loot_amt NUMERIC(18,8) NOT NULL DEFAULT 0,
+      result TEXT NOT NULL,
+      attacker_trophy_delta INT NOT NULL DEFAULT 0,
+      defender_trophy_delta INT NOT NULL DEFAULT 0,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_war_attacks_attacker ON war_attacks(attacker_id, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_war_attacks_defender ON war_attacks(defender_id, created_at DESC);
+  `);
+}
+
+async function getOrCreateOutpost(memberId, client) {
+  const db = client || pool;
+  let r = await db.query(`SELECT * FROM war_outposts WHERE member_id = $1`, [memberId]);
+  if (r.rows.length) return r.rows[0];
+  r = await db.query(
+    `INSERT INTO war_outposts (member_id) VALUES ($1)
+     ON CONFLICT (member_id) DO UPDATE SET updated_at = NOW()
+     RETURNING *`,
+    [memberId]
+  );
+  return r.rows[0];
+}
+
+const WAR_UPGRADE_COST = 2; // in-app AMT
+const WAR_RAID_COOLDOWN_MS = 15 * 60 * 1000; // 15 min between raids
+
+app.get("/api/war/status", requireAuth, async (req, res) => {
+  try {
+    await ensureWarTables();
+    const outpost = await getOrCreateOutpost(req.member.id);
+    const log = await pool.query(
+      `SELECT a.*, 
+              atk.username AS attacker_username,
+              def.username AS defender_username
+       FROM war_attacks a
+       LEFT JOIN members atk ON atk.id = a.attacker_id
+       LEFT JOIN members def ON def.id = a.defender_id
+       WHERE a.attacker_id = $1 OR a.defender_id = $1
+       ORDER BY a.created_at DESC
+       LIMIT 20`,
+      [req.member.id]
+    );
+    let nextRaidIn = 0;
+    if (outpost.last_raid_at) {
+      const left = WAR_RAID_COOLDOWN_MS - (Date.now() - new Date(outpost.last_raid_at).getTime());
+      if (left > 0) nextRaidIn = Math.ceil(left / 1000);
+    }
+    res.json({
+      ok: true,
+      outpost: {
+        hp: outpost.hp,
+        maxHp: outpost.max_hp,
+        defense: outpost.defense,
+        trophy: outpost.trophy,
+        level: outpost.level
+      },
+      upgradeCost: WAR_UPGRADE_COST,
+      nextRaidIn,
+      log: log.rows.map((row) => ({
+        id: row.id,
+        result: row.result,
+        damage: row.damage,
+        lootAmt: Number(row.loot_amt),
+        isAttacker: Number(row.attacker_id) === Number(req.member.id),
+        otherUsername: Number(row.attacker_id) === Number(req.member.id)
+          ? row.defender_username
+          : row.attacker_username,
+        trophyDelta: Number(row.attacker_id) === Number(req.member.id)
+          ? row.attacker_trophy_delta
+          : row.defender_trophy_delta,
+        createdAt: row.created_at
+      }))
+    });
+  } catch (e) {
+    console.error("WAR STATUS:", e);
+    res.status(500).json({ ok: false, error: e.message || "war status failed" });
+  }
+});
+
+app.post("/api/war/upgrade", requireAuth, async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await ensureWarTables();
+    await client.query("BEGIN");
+    await client.query(`SELECT id FROM members WHERE id = $1 FOR UPDATE`, [req.member.id]);
+    const outpost = await getOrCreateOutpost(req.member.id, client);
+    const cost = WAR_UPGRADE_COST;
+    const bal = await getBalance(req.member.id, client);
+    if (bal < cost) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Need " + cost + " AMT to upgrade (have " + bal + ")." });
+    }
+    await client.query(
+      `INSERT INTO amt_ledger (member_id, amount, type, reference)
+       VALUES ($1, $2, 'WAR_UPGRADE', $3)`,
+      [req.member.id, -cost, makeReference("AMT-WARUP")]
+    );
+    const newDef = Number(outpost.defense) + 5;
+    const newMax = Number(outpost.max_hp) + 20;
+    const newHp = Math.min(newMax, Number(outpost.hp) + 20);
+    const newLevel = Number(outpost.level) + 1;
+    const upd = await client.query(
+      `UPDATE war_outposts
+       SET defense = $1, max_hp = $2, hp = $3, level = $4, updated_at = NOW()
+       WHERE member_id = $5 RETURNING *`,
+      [newDef, newMax, newHp, newLevel, req.member.id]
+    );
+    await client.query("COMMIT");
+    const balance = await getBalance(req.member.id);
+    res.json({
+      ok: true,
+      cost,
+      balance,
+      outpost: {
+        hp: upd.rows[0].hp,
+        maxHp: upd.rows[0].max_hp,
+        defense: upd.rows[0].defense,
+        trophy: upd.rows[0].trophy,
+        level: upd.rows[0].level
+      },
+      message: "Outpost upgraded! Def +" + 5 + " · HP +" + 20
+    });
+  } catch (e) {
+    try { await client.query("ROLLBACK"); } catch (_) {}
+    console.error("WAR UPGRADE:", e);
+    res.status(500).json({ ok: false, error: e.message || "upgrade failed" });
+  } finally {
+    client.release();
+  }
+});
+
+app.get("/api/war/targets", requireAuth, async (req, res) => {
+  try {
+    await ensureWarTables();
+    await getOrCreateOutpost(req.member.id);
+    const rows = await pool.query(
+      `SELECT o.member_id, o.hp, o.max_hp, o.defense, o.trophy, o.level, m.username
+       FROM war_outposts o
+       JOIN members m ON m.id = o.member_id
+       WHERE o.member_id <> $1 AND o.hp > 0
+       ORDER BY ABS(o.trophy - COALESCE((SELECT trophy FROM war_outposts WHERE member_id = $1), 0)) ASC,
+                RANDOM()
+       LIMIT 8`,
+      [req.member.id]
+    );
+    // If few outposts, also allow targeting members without outpost (create on raid)
+    let list = rows.rows;
+    if (list.length < 3) {
+      const extra = await pool.query(
+        `SELECT m.id AS member_id, m.username,
+                100 AS hp, 100 AS max_hp, 10 AS defense, 0 AS trophy, 1 AS level
+         FROM members m
+         WHERE m.id <> $1
+           AND NOT EXISTS (SELECT 1 FROM war_outposts w WHERE w.member_id = m.id)
+         ORDER BY RANDOM()
+         LIMIT $2`,
+        [req.member.id, 5 - list.length]
+      );
+      list = list.concat(extra.rows);
+    }
+    res.json({
+      ok: true,
+      targets: list.map((r) => ({
+        memberId: r.member_id,
+        username: r.username || ("miner#" + r.member_id),
+        hp: r.hp,
+        maxHp: r.max_hp,
+        defense: r.defense,
+        trophy: r.trophy,
+        level: r.level
+      }))
+    });
+  } catch (e) {
+    console.error("WAR TARGETS:", e);
+    res.status(500).json({ ok: false, error: e.message || "targets failed" });
+  }
+});
+
+app.post("/api/war/raid", requireAuth, async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await ensureWarTables();
+    const targetId = Number(req.body?.targetId);
+    if (!targetId || targetId === Number(req.member.id)) {
+      return res.status(400).json({ ok: false, error: "Pick a valid target." });
+    }
+    await client.query("BEGIN");
+    await client.query(`SELECT id FROM members WHERE id = $1 FOR UPDATE`, [req.member.id]);
+
+    const myO = await getOrCreateOutpost(req.member.id, client);
+    if (myO.last_raid_at) {
+      const left = WAR_RAID_COOLDOWN_MS - (Date.now() - new Date(myO.last_raid_at).getTime());
+      if (left > 0) {
+        await client.query("ROLLBACK");
+        return res.status(400).json({
+          ok: false,
+          error: "Raid cooldown — wait " + Math.ceil(left / 60000) + " min."
+        });
+      }
+    }
+
+    // lock target member row then outpost
+    const tgtMem = await client.query(`SELECT id, username FROM members WHERE id = $1 FOR UPDATE`, [targetId]);
+    if (!tgtMem.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ ok: false, error: "Target not found." });
+    }
+    const defO = await getOrCreateOutpost(targetId, client);
+
+    // Auto battle: attack power from my level/defense, vs their defense
+    const atkPower = 15 + Number(myO.level) * 3 + Math.floor(Number(myO.defense) / 4);
+    const defPower = 8 + Number(defO.defense);
+    let damage = Math.max(5, atkPower - Math.floor(defPower * 0.35) + Math.floor(Math.random() * 10) - 3);
+    damage = Math.min(damage, Number(defO.hp));
+    const newHp = Math.max(0, Number(defO.hp) - damage);
+    const win = damage >= 12 || newHp <= Number(defO.max_hp) * 0.4;
+
+    let loot = 0;
+    let atkTrophy = 0;
+    let defTrophy = 0;
+    if (win) {
+      loot = Math.round((0.15 + Math.random() * 0.35) * 100) / 100; // 0.15–0.50 AMT
+      atkTrophy = 8 + Math.floor(Math.random() * 5);
+      defTrophy = -5;
+      await client.query(
+        `INSERT INTO amt_ledger (member_id, amount, type, reference)
+         VALUES ($1, $2, 'WAR_LOOT', $3)`,
+        [req.member.id, loot, makeReference("AMT-WARLOOT")]
+      );
+    } else {
+      atkTrophy = -3;
+      defTrophy = 4;
+      loot = 0;
+    }
+
+    await client.query(
+      `UPDATE war_outposts SET hp = $1, trophy = GREATEST(0, trophy + $2), last_defend_at = NOW(), updated_at = NOW()
+       WHERE member_id = $3`,
+      [newHp, defTrophy, targetId]
+    );
+    await client.query(
+      `UPDATE war_outposts SET trophy = GREATEST(0, trophy + $1), last_raid_at = NOW(), updated_at = NOW()
+       WHERE member_id = $2`,
+      [atkTrophy, req.member.id]
+    );
+    // slow HP regen for defender if wiped
+    if (newHp === 0) {
+      await client.query(
+        `UPDATE war_outposts SET hp = GREATEST(20, FLOOR(max_hp * 0.25)) WHERE member_id = $1`,
+        [targetId]
+      );
+    }
+
+    await client.query(
+      `INSERT INTO war_attacks
+        (attacker_id, defender_id, damage, loot_amt, result, attacker_trophy_delta, defender_trophy_delta)
+       VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+      [
+        req.member.id,
+        targetId,
+        damage,
+        loot,
+        win ? "WIN" : "LOSS",
+        atkTrophy,
+        defTrophy
+      ]
+    );
+
+    await client.query("COMMIT");
+    const balance = await getBalance(req.member.id);
+    const myAfter = await getOrCreateOutpost(req.member.id);
+    res.json({
+      ok: true,
+      result: win ? "WIN" : "LOSS",
+      damage,
+      lootAmt: loot,
+      trophyDelta: atkTrophy,
+      targetUsername: tgtMem.rows[0].username,
+      balance,
+      outpost: {
+        hp: myAfter.hp,
+        maxHp: myAfter.max_hp,
+        defense: myAfter.defense,
+        trophy: myAfter.trophy,
+        level: myAfter.level
+      },
+      message: win
+        ? ("Victory vs @" + (tgtMem.rows[0].username || "miner") + " · +" + loot + " AMT · Trophy " + (atkTrophy >= 0 ? "+" : "") + atkTrophy)
+        : ("Raid failed vs @" + (tgtMem.rows[0].username || "miner") + " · Trophy " + atkTrophy)
+    });
+  } catch (e) {
+    try { await client.query("ROLLBACK"); } catch (_) {}
+    console.error("WAR RAID:", e);
+    res.status(500).json({ ok: false, error: e.message || "raid failed" });
+  } finally {
+    client.release();
+  }
+});
+
+app.post("/api/war/repair", requireAuth, async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await ensureWarTables();
+    const cost = 1;
+    await client.query("BEGIN");
+    await client.query(`SELECT id FROM members WHERE id = $1 FOR UPDATE`, [req.member.id]);
+    const o = await getOrCreateOutpost(req.member.id, client);
+    if (Number(o.hp) >= Number(o.max_hp)) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Outpost already full HP." });
+    }
+    const bal = await getBalance(req.member.id, client);
+    if (bal < cost) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Need " + cost + " AMT to repair." });
+    }
+    await client.query(
+      `INSERT INTO amt_ledger (member_id, amount, type, reference)
+       VALUES ($1, $2, 'WAR_REPAIR', $3)`,
+      [req.member.id, -cost, makeReference("AMT-WARREP")]
+    );
+    const healed = Math.min(Number(o.max_hp), Number(o.hp) + 30);
+    const upd = await client.query(
+      `UPDATE war_outposts SET hp = $1, updated_at = NOW() WHERE member_id = $2 RETURNING *`,
+      [healed, req.member.id]
+    );
+    await client.query("COMMIT");
+    res.json({
+      ok: true,
+      cost,
+      outpost: {
+        hp: upd.rows[0].hp,
+        maxHp: upd.rows[0].max_hp,
+        defense: upd.rows[0].defense,
+        trophy: upd.rows[0].trophy,
+        level: upd.rows[0].level
+      },
+      message: "Repaired +" + (healed - Number(o.hp)) + " HP"
+    });
+  } catch (e) {
+    try { await client.query("ROLLBACK"); } catch (_) {}
+    console.error("WAR REPAIR:", e);
+    res.status(500).json({ ok: false, error: e.message || "repair failed" });
+  } finally {
+    client.release();
+  }
+});
+
 
     app.listen(PORT, "0.0.0.0", () => {
       console.log("==================================================");
