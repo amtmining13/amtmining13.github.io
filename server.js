@@ -2856,7 +2856,8 @@ app.get(
               'MINING','MINING_CLAIM','AD_BONUS','REFERRAL',
               'PET_PURCHASE','PET_BUY_LISTING','PET_SALE','EGG_BUY','EGG_SALE','ESCROW_HOLD','ESCROW_RELEASE',
               'PET_CARE','PET_RESCUE','PET_STAR','PET_TRAIN','PET_BREED','PET_BOSS','PET_TRADE',
-              'GEAR_BUY','GEM_BUY','CORE_BUY','WEAPON_BUY'
+              'GEAR_BUY','GEM_BUY','CORE_BUY','WEAPON_BUY',
+              'MYSTERY_CHEST','DAILY_GOAL_BONUS','MISSION','MISSION_BONUS','STAKING_PAYOUT','STAKING_EARLY_WITHDRAW'
             )
           ORDER BY created_at DESC
           LIMIT 80
@@ -2898,6 +2899,11 @@ app.get(
           let memoExtra = "";
           if (typ === "LUCKY_SPIN") label = "LUCKY SPIN";
           else if (typ === "DAILY" || typ === "DAILY_REWARD") label = "DAILY REWARD";
+          else if (typ === "MYSTERY_CHEST") label = "MYSTERY CHEST";
+          else if (typ === "DAILY_GOAL_BONUS") label = "DAILY GOALS BONUS";
+          else if (typ === "MISSION" || typ === "MISSION_BONUS") label = "DAILY MISSION";
+          else if (typ === "STAKING_PAYOUT") label = "STAKING PAYOUT";
+          else if (typ === "STAKING_EARLY_WITHDRAW") label = "STAKING EARLY WITHDRAW";
           else if (typ === "AIRDROP") label = "AIRDROP";
           else if (typ === "AD_BONUS") label = "AD BONUS";
           else if (typ === "REFERRAL") label = "REFERRAL";
@@ -14595,7 +14601,15 @@ app.post("/api/dungeon/claim", requireAuth, async (req, res) => {
 
     await client.query("COMMIT");
     const balance = await getBalance(req.member.id);
-    res.json({ ok: true, loot, balance, message: "Dungeon complete! Loot collected." });
+    const lootText = (Array.isArray(loot) ? loot : [])
+      .map((x) => (x.qty || 1) + " " + (x.item || "item"))
+      .join(", ");
+    res.json({
+      ok: true,
+      loot: loot || [],
+      balance,
+      message: lootText ? ("Dungeon loot: " + lootText) : "Dungeon complete!"
+    });
   } catch (e) {
     try { await client.query("ROLLBACK"); } catch {}
     console.error("DUNGEON CLAIM:", e);
