@@ -5771,6 +5771,7 @@ function petTitle(level, stars, rarity) {
 
 function rarityFromLevel(level) {
   const lv = Math.max(1, Number(level) || 1);
+  if (lv >= 100) return "Ascendant";
   if (lv >= 50) return "Mythic";
   if (lv >= 40) return "Legendary";
   if (lv >= 30) return "Epic";
@@ -5785,7 +5786,9 @@ function evolvedRarity(_baseRarity, level) {
 const PET_LEVEL_MILESTONES = [
   { level: 10, amount: 2, key: "LV10" },
   { level: 20, amount: 5, key: "LV20" },
-  { level: 50, amount: 15, key: "LV50" }
+  { level: 50, amount: 15, key: "LV50" },
+  { level: 100, amount: 25, key: "LV100" },
+  { level: 150, amount: 50, key: "LV150" }
 ];
 
 async function creditPetLevelMilestones(db, memberId, ownedId, newLevel) {
@@ -5820,9 +5823,13 @@ async function applyLevelAndRarity(client, ownedId, memberId) {
   const oldLevel = Number(level) || 1;
   level = oldLevel;
   exp = Number(exp) || 0;
-  // Multi level-up if lots of exp
-  while (exp >= level * 50 && level < 99) {
-    exp -= level * 50;
+  // Multi level-up if lots of exp (max Lv 150)
+  // Cost scales: pre-99 = level*50, post-99 = level*80 (slower endgame)
+  const MAX_PET_LEVEL = 150;
+  while (level < MAX_PET_LEVEL) {
+    const need = level < 99 ? level * 50 : level * 80;
+    if (exp < need) break;
+    exp -= need;
     level += 1;
   }
   const newRarity = rarityFromLevel(level);
