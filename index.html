@@ -1570,16 +1570,33 @@ CLAIM DAILY REWARD
 <div class="daily-schedule muted" id="dailyScheduleHint">Day 1: 2 · … · Day 7: 12 AMT · then reset</div>
 </div>
 
-<!-- DAILY MISSIONS -->
+<!-- DAILY GOALS -->
 <div class="card" id="missionsCard">
 <div class="row" style="align-items:flex-start">
 <div>
-<div class="card-title" style="margin:0">📋 DAILY MISSIONS</div>
-<div class="muted" style="margin-top:4px;font-size:11px">Resets UTC midnight · Claim each · Clear all for bonus</div>
+<div class="card-title" style="margin:0">🎯 DAILY GOALS</div>
+<div class="muted" style="margin-top:4px;font-size:11px">Do any <b>3 of 4</b> today · Claim <b>+5 AMT</b> · Resets UTC midnight</div>
 </div>
+<div id="goalsCountBadge" class="streak-badge">0/4</div>
 </div>
-<div id="missionsList" style="margin-top:10px"><div class="muted">Loading missions...</div></div>
-<button id="missionBonusBtn" class="secondary" style="margin-top:10px;display:none" onclick="claimMissionBonus()">🎁 CLAIM ALL-CLEAR BONUS</button>
+<div id="missionsList" style="margin-top:10px"><div class="muted">Loading goals...</div></div>
+<button id="missionBonusBtn" class="primary" style="margin-top:10px;display:none" onclick="claimMissionBonus()">🎁 CLAIM +5 AMT BONUS</button>
+</div>
+
+<!-- MYSTERY CHEST -->
+<div class="card" id="chestCard" style="border:1px solid rgba(255,214,78,.25)">
+<div class="row" style="align-items:flex-start">
+<div>
+<div class="card-title" style="margin:0" id="chestTitle">📦 MYSTERY CHEST</div>
+<div class="muted" style="margin-top:4px;font-size:11px" id="chestSub">Open once per day · surprise inside</div>
+</div>
+<div id="chestSecretBadge" class="streak-badge" style="display:none">✨ SECRET</div>
+</div>
+<div id="chestBody" style="margin-top:12px;text-align:center">
+  <div style="font-size:48px;line-height:1.2;margin:8px 0" id="chestEmoji">📦</div>
+  <div class="muted" id="chestStatusText">Tap to open today's surprise</div>
+</div>
+<button id="chestOpenBtn" class="primary" style="margin-top:12px" onclick="openMysteryChest()">✨ OPEN CHEST</button>
 </div>
 
 <!-- MAP DUNGEON -->
@@ -2988,7 +3005,7 @@ if(id==="referralSection")loadReferral();
 if(id==="circleSection")loadSecurityCircle();
 if(id==="profileSection"){loadProfile();try{refreshDevTreasuryCard();}catch(e){}try{loadPetLeaderboard();}catch(e){}}
 if(id==="stakingSection")loadStaking();
-if(id==="miningSection"){loadMiningStatus();loadDailyStatus();loadMissions();loadDungeon();try{preloadPiAds()}catch(e){}}
+if(id==="miningSection"){loadMiningStatus();loadDailyStatus();loadMissions();loadChestStatus();loadDungeon();try{preloadPiAds()}catch(e){}}
 if(id==="marketSection")petTab(currentPetTab || "shop");
 }
 
@@ -4189,44 +4206,82 @@ async function loadDailyStatus(){
 }
 
 
+
+async function loadChestStatus(){
+  const title = document.getElementById("chestTitle");
+  const sub = document.getElementById("chestSub");
+  const body = document.getElementById("chestStatusText");
+  const emoji = document.getElementById("chestEmoji");
+  const btn = document.getElementById("chestOpenBtn");
+  const badge = document.getElementById("chestSecretBadge");
+  if(!body || !accessToken) return;
+  try{
+    const d = await api("/api/chest/status");
+    if(title) title.textContent = d.secretDay ? "✨ SECRET REWARD DAY" : "📦 MYSTERY CHEST";
+    if(sub) sub.textContent = d.subtitle || "";
+    if(badge) badge.style.display = d.secretDay ? "block" : "none";
+    if(d.opened && d.reward){
+      if(emoji) emoji.textContent = d.secretDay ? "🌟" : "✅";
+      body.textContent = "Today: " + (d.reward.label || "Opened");
+      if(btn){ btn.disabled = true; btn.textContent = "✓ OPENED TODAY"; }
+    } else {
+      if(emoji) emoji.textContent = d.secretDay ? "🎁" : "📦";
+      body.textContent = d.secretDay ? "Secret Day — higher rewards!" : "Tap to open today's surprise";
+      if(btn){ btn.disabled = false; btn.textContent = "✨ OPEN CHEST"; }
+    }
+  }catch(e){
+    body.textContent = e.message || "Chest unavailable";
+  }
+}
+async function openMysteryChest(){
+  const btn = document.getElementById("chestOpenBtn");
+  try{
+    if(btn) btn.disabled = true;
+    showToast("Opening chest...");
+    const d = await api("/api/chest/open", { method:"POST", body:"{}" });
+    showToast(d.message || ("You got: " + (d.reward && d.reward.label)));
+    if(typeof refreshWallet === "function") try{ await refreshWallet(); }catch(e){}
+    await loadChestStatus();
+  }catch(e){
+    showToast(e.message || "Open failed", true);
+    if(btn) btn.disabled = false;
+    await loadChestStatus();
+  }
+}
+
 async function loadMissions(){
   const box = document.getElementById("missionsList");
   const bonusBtn = document.getElementById("missionBonusBtn");
+  const badge = document.getElementById("goalsCountBadge");
   if(!box || !accessToken) return;
   try{
     const d = await api("/api/missions/status");
-    const list = d.missions || [];
-    box.innerHTML = list.map(function(m){
-      const pct = Math.min(100, Math.round(100*(m.progress||0)/Math.max(1,m.target||1)));
-      const done = !!m.complete;
-      const claimed = !!m.claimed;
-      let btn = "";
-      if(done && !claimed){
-        btn = "<button class=\"small-btn\" style=\"width:auto;padding:6px 10px\" onclick=\"claimMission('"+m.id+"')\">Claim +"+m.rewardAmt+"</button>";
-      } else if(claimed){
-        btn = '<span style="color:#69f0ae;font-size:11px;font-weight:700">✓ Claimed</span>';
-      } else {
-        btn = '<span class="muted" style="font-size:11px">'+m.progress+'/'+m.target+'</span>';
-      }
-      return '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06)">'+
-        '<div style="flex:1"><div style="font-weight:700;font-size:13px">'+m.label+'</div>'+
-        '<div class="progress" style="height:6px;margin-top:4px"><span style="width:'+pct+'%;display:block;height:100%;background:linear-gradient(90deg,#7c4dff,#ffd64e)"></span></div></div>'+btn+'</div>';
-    }).join("") || '<div class="empty">No missions</div>';
+    const goals = d.goals || d.missions || [];
+    const doneCount = d.doneCount != null ? d.doneCount : goals.filter(function(g){ return g.done || g.complete; }).length;
+    if(badge) badge.textContent = doneCount + "/4";
+    box.innerHTML = goals.map(function(g){
+      const done = !!(g.done || g.complete);
+      return '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)">' +
+        '<div style="font-weight:700;font-size:13px;color:' + (done ? "#69f0ae" : "#fff") + '">' + (done ? "✅ " : "○ ") + (g.label || g.id) + '</div>' +
+        '<span style="font-size:12px;font-weight:800;color:' + (done ? "#69f0ae" : "rgba(255,255,255,.35)") + '">' + (done ? "DONE" : "—") + '</span></div>';
+    }).join("") || '<div class="empty">No goals</div>';
     if(bonusBtn){
       if(d.bonus && d.bonus.available){
         bonusBtn.style.display = "block";
-        bonusBtn.textContent = "🎁 CLAIM ALL-CLEAR BONUS (+"+(d.bonus.amount||3)+" AMT)";
+        bonusBtn.disabled = false;
+        bonusBtn.textContent = "🎁 CLAIM +" + (d.bonus.amount || 5) + " AMT BONUS";
       } else if(d.bonus && d.bonus.claimed){
         bonusBtn.style.display = "block";
         bonusBtn.disabled = true;
         bonusBtn.textContent = "✓ Bonus claimed today";
       } else {
-        bonusBtn.style.display = "none";
-        bonusBtn.disabled = false;
+        bonusBtn.style.display = "block";
+        bonusBtn.disabled = true;
+        bonusBtn.textContent = "🎁 Bonus at " + (d.need || 3) + "/4 goals (" + doneCount + "/4 now)";
       }
     }
   }catch(e){
-    box.innerHTML = '<div class="muted">'+(e.message||"Missions unavailable")+'</div>';
+    box.innerHTML = '<div class="muted">' + (e.message || "Goals unavailable") + '</div>';
   }
 }
 async function claimMission(id){
