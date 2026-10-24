@@ -2265,6 +2265,42 @@ SELECT 180D
 </section>
 
 
+
+<section id="warSection" class="section hidden">
+  <div class="hero">
+    <h1>WAR <span>OUTPOST</span></h1>
+    <p>Phase 1 · Build · Defend · Raid</p>
+  </div>
+
+  <div class="card" style="border:1px solid rgba(251,191,36,.3)">
+    <div class="card-title">🏰 YOUR OUTPOST</div>
+    <div class="grid3" style="margin-top:10px">
+      <div class="stat"><div class="stat-label">HP</div><div class="stat-value" id="warHp">—</div></div>
+      <div class="stat"><div class="stat-label">DEFENSE</div><div class="stat-value" id="warDef">—</div></div>
+      <div class="stat"><div class="stat-label">TROPHY</div><div class="stat-value" id="warTrophy">—</div></div>
+    </div>
+    <div class="muted" style="margin-top:8px;font-size:12px">Level <b id="warLevel">1</b> · Upgrade cost: <b id="warUpCost">2</b> AMT</div>
+    <div class="grid" style="margin-top:12px;gap:8px">
+      <button type="button" class="primary" onclick="warUpgrade()">⬆️ UPGRADE (+Def +HP)</button>
+      <button type="button" class="secondary" onclick="warRepair()">🔧 REPAIR HP (1 AMT)</button>
+    </div>
+    <div class="muted" style="margin-top:8px;font-size:11px" id="warRaidCd"></div>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <div class="card-title" style="margin:0">🎯 RAID TARGETS</div>
+      <button type="button" class="small-btn" onclick="loadWarTargets()">Refresh</button>
+    </div>
+    <div class="muted" style="font-size:11px;margin:6px 0 10px">Auto battle · 15 min cooldown · small AMT loot on win</div>
+    <div id="warTargetsList"><div class="muted">Loading targets...</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📜 ATTACK LOG</div>
+    <div id="warLogList"><div class="muted">No battles yet.</div></div>
+  </div>
+</section>
 <section id="partnersSection" class="section">
 <div class="hero">
 <h1>LOCAL <span>PARTNERS</span></h1>
@@ -2788,6 +2824,9 @@ Open Coixa to swap and add liquidity for on-chain AMT pairs. In-app mining AMT i
 <button class="nav-btn" data-section="stakingSection" onclick="showSection('stakingSection',this)">
 <span class="icon">🔒</span>Staking
 </button>
+<button class="nav-btn" data-section="warSection" onclick="showSection('warSection',this)">
+<span class="icon">⚔️</span>War
+</button>
 
 </div>
 
@@ -3012,6 +3051,7 @@ if(id==="referralSection")loadReferral();
 if(id==="circleSection")loadSecurityCircle();
 if(id==="profileSection"){loadProfile();try{refreshDevTreasuryCard();}catch(e){}try{loadPetLeaderboard();}catch(e){}}
 if(id==="stakingSection")loadStaking();
+if(id==="warSection"){loadWarStatus();loadWarTargets();}
 if(id==="miningSection"){loadMiningStatus();loadDailyStatus();loadChestStatus();loadDungeon();try{preloadPiAds()}catch(e){}}
 if(id==="marketSection")petTab(currentPetTab || "shop");
 }
@@ -4229,6 +4269,99 @@ function copyOwnedPetId(){
     showToast("Pet ID: "+id);
   }
 }
+
+async function loadWarStatus(){
+  try{
+    if(!accessToken) return;
+    const d = await api("/api/war/status");
+    const o = d.outpost || {};
+    if($("warHp")) $("warHp").textContent = (o.hp!=null?o.hp:"—") + "/" + (o.maxHp!=null?o.maxHp:"—");
+    if($("warDef")) $("warDef").textContent = o.defense != null ? o.defense : "—";
+    if($("warTrophy")) $("warTrophy").textContent = o.trophy != null ? o.trophy : "—";
+    if($("warLevel")) $("warLevel").textContent = o.level != null ? o.level : "1";
+    if($("warUpCost")) $("warUpCost").textContent = d.upgradeCost != null ? d.upgradeCost : "2";
+    if($("warRaidCd")){
+      if(d.nextRaidIn > 0){
+        const m = Math.ceil(d.nextRaidIn/60);
+        $("warRaidCd").textContent = "Next raid in ~" + m + " min";
+      } else {
+        $("warRaidCd").textContent = "Raid ready";
+      }
+    }
+    const logBox = $("warLogList");
+    if(logBox){
+      const log = d.log || [];
+      if(!log.length){
+        logBox.innerHTML = '<div class="empty">No battles yet. Raid a target!</div>';
+      } else {
+        logBox.innerHTML = log.map(function(x){
+          const side = x.isAttacker ? "You → @" : "@";
+          const other = x.otherUsername || "miner";
+          const res = x.result === "WIN" ? (x.isAttacker ? "✅ WIN" : "🛡️ Lost defense") : (x.isAttacker ? "❌ LOSS" : "🛡️ Defended");
+          const loot = x.lootAmt ? (" · " + x.lootAmt + " AMT") : "";
+          const trop = x.trophyDelta != null ? (" · 🏆" + (x.trophyDelta>=0?"+":"") + x.trophyDelta) : "";
+          const when = x.createdAt ? new Date(x.createdAt).toLocaleString() : "";
+          return '<div style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)">' +
+            '<div style="font-weight:800">' + res + " · " + side + other + (x.isAttacker?"":" → you") + '</div>' +
+            '<div class="muted" style="font-size:11px">Dmg ' + (x.damage||0) + loot + trop + '</div>' +
+            '<div class="muted" style="font-size:10px">' + when + '</div></div>';
+        }).join("");
+      }
+    }
+  }catch(e){
+    showToast(e.message||"War status failed", true);
+  }
+}
+async function loadWarTargets(){
+  const box = $("warTargetsList");
+  if(!box) return;
+  try{
+    box.innerHTML = '<div class="muted">Loading...</div>';
+    const d = await api("/api/war/targets");
+    const list = d.targets || [];
+    if(!list.length){
+      box.innerHTML = '<div class="empty">No targets yet. Invite more miners!</div>';
+      return;
+    }
+    box.innerHTML = list.map(function(t){
+      return '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.06)">' +
+        '<div><div style="font-weight:800">@' + esc(t.username) + '</div>' +
+        '<div class="muted" style="font-size:11px">Lv' + t.level + ' · HP ' + t.hp + '/' + t.maxHp + ' · Def ' + t.defense + ' · 🏆' + t.trophy + '</div></div>' +
+        '<button type="button" class="small-btn" style="background:linear-gradient(135deg,#b45309,#f59e0b);color:#111;font-weight:800" onclick="warRaid(' + t.memberId + ')">⚔️ RAID</button></div>';
+    }).join("");
+  }catch(e){
+    box.innerHTML = '<div class="empty">' + (e.message||"Failed") + '</div>';
+  }
+}
+async function warUpgrade(){
+  try{
+    showToast("Upgrading...");
+    const d = await api("/api/war/upgrade",{method:"POST",body:"{}"});
+    showToast(d.message||"Upgraded");
+    try{ await refreshWallet(); }catch(e){}
+    await loadWarStatus();
+  }catch(e){ showToast(e.message||"Upgrade failed", true); }
+}
+async function warRepair(){
+  try{
+    const d = await api("/api/war/repair",{method:"POST",body:"{}"});
+    showToast(d.message||"Repaired");
+    try{ await refreshWallet(); }catch(e){}
+    await loadWarStatus();
+  }catch(e){ showToast(e.message||"Repair failed", true); }
+}
+async function warRaid(targetId){
+  try{
+    showToast("Raiding...");
+    const d = await api("/api/war/raid",{method:"POST",body:JSON.stringify({targetId:targetId})});
+    showToast(d.message||d.result||"Raid done");
+    try{ await refreshWallet(); }catch(e){}
+    await loadWarStatus();
+    await loadWarTargets();
+  }catch(e){ showToast(e.message||"Raid failed", true); await loadWarStatus(); }
+}
+
+
 async function loadChestStatus(){
   const title = document.getElementById("chestTitle");
   const sub = document.getElementById("chestSub");
