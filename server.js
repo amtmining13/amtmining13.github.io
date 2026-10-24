@@ -14084,202 +14084,324 @@ async function ensureMissionTables() {
   `);
 }
 
+async function ensureDailyGoalsTable() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS daily_goals (
+      id BIGSERIAL PRIMARY KEY,
+      member_id BIGINT NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+      goal_date DATE NOT NULL,
+      mine BOOLEAN NOT NULL DEFAULT FALSE,
+      spin BOOLEAN NOT NULL DEFAULT FALSE,
+      care BOOLEAN NOT NULL DEFAULT FALSE,
+      battle BOOLEAN NOT NULL DEFAULT FALSE,
+      bonus_claimed BOOLEAN NOT NULL DEFAULT FALSE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE (member_id, goal_date)
+    );
+    CREATE TABLE IF NOT EXISTS dungeon_runs (
+      id BIGSERIAL PRIMARY KEY,
+      member_id BIGINT NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+      owned_pet_id BIGINT NOT NULL REFERENCES owned_pets(id) ON DELETE CASCADE,
+      duration_key TEXT NOT NULL,
+      started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      ends_at TIMESTAMPTZ NOT NULL,
+      status TEXT NOT NULL DEFAULT 'ACTIVE',
+      loot_json TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE TABLE IF NOT EXISTS mystery_chests (
+      id BIGSERIAL PRIMARY KEY,
+      member_id BIGINT NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+      chest_date DATE NOT NULL,
+      reward_key TEXT NOT NULL,
+      reward_label TEXT NOT NULL,
+      amount NUMERIC(18,8) NOT NULL DEFAULT 0,
+      is_secret_day BOOLEAN NOT NULL DEFAULT FALSE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE (member_id, chest_date)
+    );
+  `);
+}
+
+function isSecretRewardDay(d = new Date()) {
+  return d.getUTCDay() === 0; // Sunday UTC
+}
+
+function rollMysteryReward(secret) {
+  const pool = secret
+    ? [
+        { key: "amt_2", label: "2 AMT", amount: 2, w: 25 },
+        { key: "amt_5", label: "5 AMT", amount: 5, w: 30 },
+        { key: "amt_10", label: "10 AMT", amount: 10, w: 18 },
+        { key: "amt_25", label: "25 AMT", amount: 25, w: 8 },
+        { key: "gem", label: "Mystery Gem ×1", amount: 0, w: 10 },
+        { key: "core", label: "Upgrade Core ×1", amount: 0, w: 6 },
+        { key: "egg", label: "Mystery Egg", amount: 0, w: 2 },
+        { key: "jackpot", label: "SECRET JACKPOT 50 AMT", amount: 50, w: 1 }
+      ]
+    : [
+        { key: "amt_1", label: "1 AMT", amount: 1, w: 30 },
+        { key: "amt_2", label: "2 AMT", amount: 2, w: 28 },
+        { key: "amt_3", label: "3 AMT", amount: 3, w: 18 },
+        { key: "amt_5", label: "5 AMT", amount: 5, w: 10 },
+        { key: "gem", label: "Mystery Gem ×1", amount: 0, w: 8 },
+        { key: "core", label: "Upgrade Core ×1", amount: 0, w: 4 },
+        { key: "egg", label: "Mystery Egg", amount: 0, w: 1.5 },
+        { key: "jackpot", label: "JACKPOT 20 AMT", amount: 20, w: 0.5 }
+      ];
+  const total = pool.reduce((a, p) => a + p.w, 0);
+  let r = Math.random() * total;
+  for (const p of pool) {
+    r -= p.w;
+    if (r <= 0) return p;
+  }
+  return pool[0];
+}
+
 async function bumpMission(memberId, missionId, amount) {
   try {
     if (!memberId || !missionId) return;
-    await ensureMissionTables();
-    const def = DAILY_MISSIONS.find((m) => m.id === missionId);
-    if (!def) {
-      console.warn("bumpMission unknown id", missionId);
-      return;
-    }
+    await ensureDailyGoalsTable();
+    const col = { mine: "mine", spin: "spin", care: "care", battle: "battle" }[String(missionId)];
+    if (!col) return;
     const today = utcDateString();
-    amount = Math.max(1, Number(amount) || 1);
     await pool.query(
-      `INSERT INTO daily_missions (member_id, mission_date, mission_id, progress, target, claimed)
-       VALUES ($1, $2::date, $3, $4, $5, FALSE)
-       ON CONFLICT (member_id, mission_date, mission_id)
-       DO UPDATE SET
-         progress = LEAST(daily_missions.target, daily_missions.progress + EXCLUDED.progress),
-         target = EXCLUDED.target
-       WHERE daily_missions.claimed = FALSE`,
-      [memberId, today, missionId, amount, def.target]
+      `INSERT INTO daily_goals (member_id, goal_date, ${col})
+       VALUES ($1, $2::date, TRUE)
+       ON CONFLICT (member_id, goal_date)
+       DO UPDATE SET ${col} = TRUE`,
+      [memberId, today]
     );
-    console.log("bumpMission ok", missionId, "member", memberId, "date", today);
+    console.log("dailyGoal", col, memberId, today);
   } catch (e) {
-    console.error("bumpMission FAIL:", missionId, e.message || e);
+    console.error("dailyGoal FAIL", missionId, e.message || e);
   }
 }
 
+
 app.get("/api/missions/status", requireAuth, async (req, res) => {
   try {
-    await ensureMissionTables();
+    await ensureDailyGoalsTable();
     const today = utcDateString();
-    const rows = await pool.query(
-      `SELECT mission_id, progress, target, claimed FROM daily_missions
-       WHERE member_id = $1 AND mission_date = $2`,
+    const r = await pool.query(
+      `SELECT mine, spin, care, battle, bonus_claimed FROM daily_goals
+       WHERE member_id = $1 AND goal_date = $2::date`,
       [req.member.id, today]
     );
-    const byId = {};
-    rows.rows.forEach((r) => { byId[r.mission_id] = r; });
-    const missions = DAILY_MISSIONS.map((m) => {
-      const r = byId[m.id];
-      const progress = r ? Number(r.progress) : 0;
-      const target = r ? Number(r.target) : m.target;
-      const claimed = r ? !!r.claimed : false;
-      return {
-        id: m.id,
-        label: m.label,
-        progress: Math.min(progress, target),
-        target,
-        complete: progress >= target,
-        claimed,
-        rewardAmt: m.rewardAmt
-      };
-    });
-    const allDone = missions.every((m) => m.complete);
-    const allClaimed = missions.every((m) => m.claimed || !m.complete);
-    const bonusRow = await pool.query(
-      `SELECT claimed FROM daily_mission_bonus WHERE member_id = $1 AND mission_date = $2`,
-      [req.member.id, today]
-    );
-    const bonusClaimed = bonusRow.rows[0] ? !!bonusRow.rows[0].claimed : false;
+    const row = r.rows[0] || {};
+    const goals = [
+      { id: "mine", label: "Start or claim mining today", done: !!row.mine, rewardAmt: 0 },
+      { id: "spin", label: "Spin the wheel once", done: !!row.spin, rewardAmt: 0 },
+      { id: "care", label: "Care a pet (or Care All)", done: !!row.care, rewardAmt: 0 },
+      { id: "battle", label: "Win 1 pet battle", done: !!row.battle, rewardAmt: 0 }
+    ];
+    const doneCount = goals.filter(g => g.done).length;
+    const need = 3;
+    const bonusClaimed = !!row.bonus_claimed;
+    const bonusReady = doneCount >= need && !bonusClaimed;
     res.json({
       ok: true,
       date: today,
-      missions,
-      allDone,
-      bonus: { amount: MISSION_ALL_BONUS, claimed: bonusClaimed, available: allDone && !bonusClaimed }
+      mode: "goals",
+      goals,
+      // compat for old UI
+      missions: goals.map(g => ({
+        id: g.id,
+        label: g.label,
+        progress: g.done ? 1 : 0,
+        target: 1,
+        complete: g.done,
+        claimed: false,
+        rewardAmt: 0
+      })),
+      doneCount,
+      need,
+      bonus: {
+        amount: 5,
+        claimed: bonusClaimed,
+        available: bonusReady
+      },
+      allDone: doneCount >= need
     });
   } catch (e) {
-    console.error("MISSIONS STATUS:", e);
-    res.status(500).json({ ok: false, error: e.message || "missions failed" });
+    console.error("GOALS STATUS:", e);
+    res.status(500).json({ ok: false, error: e.message || "goals failed" });
   }
 });
 
 app.post("/api/missions/claim", requireAuth, async (req, res) => {
-  const client = await pool.connect();
-  try {
-    await ensureMissionTables();
-    const missionId = String(req.body?.missionId || "");
-    const def = DAILY_MISSIONS.find((m) => m.id === missionId);
-    if (!def) return res.status(400).json({ ok: false, error: "Unknown mission" });
-    const today = utcDateString();
-    await client.query("BEGIN");
-    await client.query(`SELECT id FROM members WHERE id = $1 FOR UPDATE`, [req.member.id]);
-    const row = await client.query(
-      `SELECT progress, target, claimed FROM daily_missions
-       WHERE member_id = $1 AND mission_date = $2 AND mission_id = $3 FOR UPDATE`,
-      [req.member.id, today, missionId]
-    );
-    if (!row.rows.length || Number(row.rows[0].progress) < Number(row.rows[0].target)) {
-      await client.query("ROLLBACK");
-      return res.status(400).json({ ok: false, error: "Mission not complete yet" });
-    }
-    if (row.rows[0].claimed) {
-      await client.query("ROLLBACK");
-      return res.status(400).json({ ok: false, error: "Already claimed" });
-    }
-    const ref = makeReference("AMT-MISSION");
-    await client.query(
-      `UPDATE daily_missions SET claimed = TRUE
-       WHERE member_id = $1 AND mission_date = $2 AND mission_id = $3`,
-      [req.member.id, today, missionId]
-    );
-    await client.query(
-      `INSERT INTO amt_ledger (member_id, amount, type, reference)
-       VALUES ($1, $2, 'MISSION', $3)`,
-      [req.member.id, def.rewardAmt, ref]
-    );
-    await client.query("COMMIT");
-    const balance = await getBalance(req.member.id);
-    res.json({ ok: true, missionId, amount: def.rewardAmt, balance, message: "Mission +" + def.rewardAmt + " AMT" });
-  } catch (e) {
-    try { await client.query("ROLLBACK"); } catch {}
-    console.error("MISSION CLAIM:", e);
-    res.status(500).json({ ok: false, error: e.message || "claim failed" });
-  } finally {
-    client.release();
-  }
+  // Individual mission claims removed — use all-clear bonus only
+  return res.json({
+    ok: false,
+    error: "Complete 3 goals then claim the daily bonus below."
+  });
 });
 
 app.post("/api/missions/claim-bonus", requireAuth, async (req, res) => {
   const client = await pool.connect();
   try {
-    await ensureMissionTables();
+    await ensureDailyGoalsTable();
     const today = utcDateString();
     await client.query("BEGIN");
     await client.query(`SELECT id FROM members WHERE id = $1 FOR UPDATE`, [req.member.id]);
-    const rows = await client.query(
-      `SELECT mission_id, progress, target FROM daily_missions
-       WHERE member_id = $1 AND mission_date = $2`,
+    let row = await client.query(
+      `SELECT mine, spin, care, battle, bonus_claimed FROM daily_goals
+       WHERE member_id = $1 AND goal_date = $2::date FOR UPDATE`,
       [req.member.id, today]
     );
-    const byId = {};
-    rows.rows.forEach((r) => { byId[r.mission_id] = r; });
-    const allDone = DAILY_MISSIONS.every((m) => {
-      const r = byId[m.id];
-      return r && Number(r.progress) >= Number(r.target || m.target);
-    });
-    if (!allDone) {
+    if (!row.rows.length) {
       await client.query("ROLLBACK");
-      return res.status(400).json({ ok: false, error: "Complete all missions first" });
+      return res.status(400).json({ ok: false, error: "No goals progress yet today." });
     }
-    const existing = await client.query(
-      `SELECT claimed FROM daily_mission_bonus WHERE member_id = $1 AND mission_date = $2 FOR UPDATE`,
-      [req.member.id, today]
-    );
-    if (existing.rows[0]?.claimed) {
+    const g = row.rows[0];
+    if (g.bonus_claimed) {
       await client.query("ROLLBACK");
-      return res.status(400).json({ ok: false, error: "Bonus already claimed" });
+      return res.status(400).json({ ok: false, error: "Daily bonus already claimed." });
     }
+    const done = [g.mine, g.spin, g.care, g.battle].filter(Boolean).length;
+    if (done < 3) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Need 3/4 goals done (you have " + done + "/4)." });
+    }
+    const amount = 5;
     await client.query(
-      `INSERT INTO daily_mission_bonus (member_id, mission_date, claimed)
-       VALUES ($1, $2, TRUE)
-       ON CONFLICT (member_id, mission_date) DO UPDATE SET claimed = TRUE`,
+      `UPDATE daily_goals SET bonus_claimed = TRUE WHERE member_id = $1 AND goal_date = $2::date`,
       [req.member.id, today]
     );
-    const ref = makeReference("AMT-MBONUS");
     await client.query(
       `INSERT INTO amt_ledger (member_id, amount, type, reference)
-       VALUES ($1, $2, 'MISSION_BONUS', $3)`,
-      [req.member.id, MISSION_ALL_BONUS, ref]
+       VALUES ($1, $2, 'DAILY_GOAL_BONUS', $3)`,
+      [req.member.id, amount, makeReference("AMT-GGOAL")]
     );
     await client.query("COMMIT");
     const balance = await getBalance(req.member.id);
-    res.json({ ok: true, amount: MISSION_ALL_BONUS, balance, message: "All missions bonus +" + MISSION_ALL_BONUS + " AMT" });
+    res.json({
+      ok: true,
+      amount,
+      balance,
+      message: "Daily Goals bonus +" + amount + " AMT"
+    });
   } catch (e) {
     try { await client.query("ROLLBACK"); } catch {}
-    console.error("MISSION BONUS:", e);
+    console.error("GOAL BONUS:", e);
     res.status(500).json({ ok: false, error: e.message || "bonus failed" });
   } finally {
     client.release();
   }
 });
 
-function rollDungeonLoot(mult) {
-  const loot = [];
-  const food = Math.max(1, Math.round((1 + Math.random() * 2) * mult));
-  const water = Math.max(1, Math.round((1 + Math.random() * 2) * mult));
-  loot.push({ item: "food", qty: food });
-  loot.push({ item: "water", qty: water });
-  if (Math.random() < 0.55 * Math.min(1.2, mult)) {
-    loot.push({ item: "energy", qty: Math.max(1, Math.round(mult)) });
+
+app.get("/api/chest/status", requireAuth, async (req, res) => {
+  try {
+    await ensureDailyGoalsTable();
+    const today = utcDateString();
+    const secret = isSecretRewardDay();
+    const row = await pool.query(
+      `SELECT reward_key, reward_label, amount, is_secret_day, created_at
+       FROM mystery_chests WHERE member_id = $1 AND chest_date = $2::date`,
+      [req.member.id, today]
+    );
+    const opened = row.rows[0] || null;
+    res.json({
+      ok: true,
+      date: today,
+      secretDay: secret,
+      title: secret ? "Secret Reward Day" : "Mystery Chest",
+      subtitle: secret
+        ? "Sunday special — higher chance of big surprises!"
+        : "Open once per day · surprise inside",
+      opened: !!opened,
+      reward: opened
+        ? { key: opened.reward_key, label: opened.reward_label, amount: Number(opened.amount) }
+        : null
+    });
+  } catch (e) {
+    console.error("CHEST STATUS:", e);
+    res.status(500).json({ ok: false, error: e.message || "chest status failed" });
   }
-  if (Math.random() < 0.25 * Math.min(1.2, mult)) {
-    loot.push({ item: "gem", qty: 1 });
+});
+
+app.post("/api/chest/open", requireAuth, async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await ensureDailyGoalsTable();
+    const today = utcDateString();
+    const secret = isSecretRewardDay();
+    await client.query("BEGIN");
+    await client.query(`SELECT id FROM members WHERE id = $1 FOR UPDATE`, [req.member.id]);
+    const exists = await client.query(
+      `SELECT id, reward_label, amount FROM mystery_chests
+       WHERE member_id = $1 AND chest_date = $2::date FOR UPDATE`,
+      [req.member.id, today]
+    );
+    if (exists.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({
+        ok: false,
+        error: "Already opened today. Come back after UTC midnight.",
+        reward: { label: exists.rows[0].reward_label, amount: Number(exists.rows[0].amount) }
+      });
+    }
+    const prize = rollMysteryReward(secret);
+    await client.query(
+      `INSERT INTO mystery_chests (member_id, chest_date, reward_key, reward_label, amount, is_secret_day)
+       VALUES ($1, $2::date, $3, $4, $5, $6)`,
+      [req.member.id, today, prize.key, prize.label, prize.amount || 0, secret]
+    );
+    if (prize.amount > 0) {
+      await client.query(
+        `INSERT INTO amt_ledger (member_id, amount, type, reference)
+         VALUES ($1, $2, 'MYSTERY_CHEST', $3)`,
+        [req.member.id, prize.amount, makeReference("AMT-CHEST")]
+      );
+    }
+    if (prize.key === "gem" || prize.key === "core") {
+      try {
+        await client.query(
+          `INSERT INTO pet_inventory (member_id, gear_id, qty)
+           VALUES ($1, $2, 1)
+           ON CONFLICT (member_id, gear_id)
+           DO UPDATE SET qty = pet_inventory.qty + 1`,
+          [req.member.id, prize.key === "gem" ? "gem" : "upgrade_core"]
+        );
+      } catch (_) {}
+    }
+    if (prize.key === "egg") {
+      try {
+        await ensurePetTables();
+        const ELEMENTS = ["Earth","Water","Nature","Ice","Fire","Wind","Thunder"];
+        const element = ELEMENTS[Math.floor(Math.random() * ELEMENTS.length)];
+        await client.query(
+          `INSERT INTO pet_eggs (member_id, element, rarity, status, hatch_at, gen, is_listed)
+           VALUES ($1, $2, 'Common', 'INCUBATING', NOW() + INTERVAL '24 hours', 1, FALSE)`,
+          [req.member.id, element]
+        );
+      } catch (eggErr) {
+        console.warn("chest egg:", eggErr.message);
+      }
+    }
+    await client.query("COMMIT");
+    const balance = await getBalance(req.member.id);
+    res.json({
+      ok: true,
+      secretDay: secret,
+      reward: { key: prize.key, label: prize.label, amount: prize.amount || 0 },
+      balance,
+      message: (secret ? "✨ SECRET DAY! " : "📦 ") + prize.label
+    });
+  } catch (e) {
+    try { await client.query("ROLLBACK"); } catch {}
+    console.error("CHEST OPEN:", e);
+
+    res.status(500).json({ ok: false, error: e.message || "open failed" });
+  } finally {
+    client.release();
   }
-  if (Math.random() < 0.15 * Math.min(1.2, mult)) {
-    loot.push({ item: "upgrade_core", qty: 1 });
-  }
-  const amt = Math.round((0.3 + Math.random() * 0.7) * mult * 10) / 10;
-  if (amt > 0) loot.push({ item: "amt", qty: amt });
-  return loot;
-}
+});
 
 app.get("/api/dungeon/status", requireAuth, async (req, res) => {
   try {
-    await ensureMissionTables();
+    await ensureDailyGoalsTable();
     const active = await pool.query(
       `SELECT d.*, p.name AS pet_name, p.element, p.level, p.image
        FROM dungeon_runs d
@@ -14311,7 +14433,7 @@ app.get("/api/dungeon/status", requireAuth, async (req, res) => {
 app.post("/api/dungeon/start", requireAuth, async (req, res) => {
   const client = await pool.connect();
   try {
-    await ensureMissionTables();
+    await ensureDailyGoalsTable();
     const petId = Number(req.body?.petId);
     const durationKey = String(req.body?.duration || "1h");
     const dur = DUNGEON_DURATIONS[durationKey];
@@ -14391,7 +14513,7 @@ app.post("/api/dungeon/start", requireAuth, async (req, res) => {
 app.post("/api/dungeon/claim", requireAuth, async (req, res) => {
   const client = await pool.connect();
   try {
-    await ensureMissionTables();
+    await ensureDailyGoalsTable();
     const runId = Number(req.body?.runId);
     if (!runId) return res.status(400).json({ ok: false, error: "runId required" });
     await client.query("BEGIN");
