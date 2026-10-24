@@ -2636,7 +2636,7 @@ SELECT 180D
 <div class="stat"><div class="stat-label">Lv</div><div class="stat-value" id="ownedLv">1</div></div>
 <div class="stat"><div class="stat-label">Energy</div><div class="stat-value" id="ownedEnergy">100</div></div>
 <div class="stat"><div class="stat-label">Happy</div><div class="stat-value" id="ownedHappy">100</div></div>
-<div class="stat"><div class="stat-label">ID</div><div class="stat-value" id="ownedId" style="font-size:11px">—</div></div>
+<div class="stat"><div class="stat-label">ID</div><div class="stat-value" id="ownedId" style="font-size:11px;cursor:pointer;text-decoration:underline" onclick="copyOwnedPetId()" title="Tap to copy">—</div></div>
 </div>
 <div class="grid" style="margin-bottom:12px">
 <div class="stat"><div class="stat-label">HP</div><div class="stat-value" id="ownedHp">—</div></div>
@@ -4040,7 +4040,10 @@ async function loadTxHistory() {
       const cur = (tx.currency || "AMT").toUpperCase();
       const amt = Number(tx.amount);
       const isOut = amt < 0 || direction === "SEND" || kind === "SEND";
-      const isReward = kind === "REWARD" || kind === "LUCKY_SPIN" || kind === "DAILY" || kind === "AIRDROP" || (tx.type && String(tx.type).indexOf("SPIN") >= 0);
+      const typU = String(tx.type || tx.label || "").toUpperCase();
+      const isReward = kind === "REWARD" || kind === "LUCKY_SPIN" || kind === "DAILY" || kind === "AIRDROP"
+        || typU.indexOf("SPIN") >= 0 || typU.indexOf("CHEST") >= 0 || typU.indexOf("GOAL") >= 0
+        || typU.indexOf("MISSION") >= 0 || typU.indexOf("MINING") >= 0;
       let dir, color;
       if (kind === "PET" || kind === "PI_PAY") {
         dir = "🐾 " + (tx.label || "PET");
@@ -4207,6 +4210,18 @@ async function loadDailyStatus(){
 
 
 
+function copyOwnedPetId(){
+  const el = document.getElementById("ownedId");
+  const id = (el && el.textContent) ? String(el.textContent).trim() : (selectedOwned && selectedOwned.id ? String(selectedOwned.id) : "");
+  if(!id || id === "—"){ showToast("No pet ID", true); return; }
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(id).then(function(){ showToast("Pet ID copied: "+id); }).catch(function(){
+      try{ const ta=document.createElement("textarea"); ta.value=id; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); document.body.removeChild(ta); showToast("Pet ID copied: "+id); }catch(e){ showToast(id); }
+    });
+  } else {
+    showToast("Pet ID: "+id);
+  }
+}
 async function loadChestStatus(){
   const title = document.getElementById("chestTitle");
   const sub = document.getElementById("chestSub");
@@ -4239,8 +4254,9 @@ async function openMysteryChest(){
     if(btn) btn.disabled = true;
     showToast("Opening chest...");
     const d = await api("/api/chest/open", { method:"POST", body:"{}" });
-    showToast(d.message || ("You got: " + (d.reward && d.reward.label)));
+    showToast(d.message || ("You got: " + ((d.reward && d.reward.label) || "reward")));
     if(typeof refreshWallet === "function") try{ await refreshWallet(); }catch(e){}
+    try{ loadTxHistory(); }catch(e){}
     await loadChestStatus();
   }catch(e){
     showToast(e.message || "Open failed", true);
@@ -4337,8 +4353,11 @@ async function startDungeon(){
 async function claimDungeon(runId){
   try{
     const d = await api("/api/dungeon/claim",{method:"POST",body:JSON.stringify({runId:runId})});
-    const loot = (d.loot||[]).map(function(x){return x.qty+" "+x.item;}).join(", ");
-    showToast(d.message+(loot?(" · "+loot):""));
+    const loot = (d.loot||[]).map(function(x){return (x.qty||1)+" "+(x.item||"item");}).join(", ");
+    const msg = (d && d.message) ? d.message : (loot ? ("Loot: " + loot) : "Dungeon claimed");
+    showToast(msg);
+    try{ await refreshWallet(); }catch(e){}
+    try{ loadTxHistory(); }catch(e){}
     loadDungeon();
   }catch(e){ showToast(e.message||"Claim failed",true); }
 }
