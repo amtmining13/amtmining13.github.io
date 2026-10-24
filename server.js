@@ -2857,7 +2857,7 @@ app.get(
               'PET_PURCHASE','PET_BUY_LISTING','PET_SALE','EGG_BUY','EGG_SALE','ESCROW_HOLD','ESCROW_RELEASE',
               'PET_CARE','PET_RESCUE','PET_STAR','PET_TRAIN','PET_BREED','PET_BOSS','PET_TRADE',
               'GEAR_BUY','GEM_BUY','CORE_BUY','WEAPON_BUY',
-              'MYSTERY_CHEST','DAILY_GOAL_BONUS','MISSION','MISSION_BONUS','STAKING_PAYOUT','STAKING_EARLY_WITHDRAW'
+              'MYSTERY_CHEST','DAILY_GOAL_BONUS','DUNGEON_LOOT','MISSION','MISSION_BONUS','STAKING_PAYOUT','STAKING_EARLY_WITHDRAW'
             )
           ORDER BY created_at DESC
           LIMIT 80
@@ -2900,6 +2900,7 @@ app.get(
           if (typ === "LUCKY_SPIN") label = "LUCKY SPIN";
           else if (typ === "DAILY" || typ === "DAILY_REWARD") label = "DAILY REWARD";
           else if (typ === "MYSTERY_CHEST") label = "MYSTERY CHEST";
+          else if (typ === "DUNGEON_LOOT") label = "DUNGEON LOOT";
           else if (typ === "DAILY_GOAL_BONUS") label = "DAILY GOALS BONUS";
           else if (typ === "MISSION" || typ === "MISSION_BONUS") label = "DAILY MISSION";
           else if (typ === "STAKING_PAYOUT") label = "STAKING PAYOUT";
@@ -8073,7 +8074,6 @@ app.post("/api/pets/care-all", requireAuth, async (req, res) => {
     }
     if (!targets.length) {
       await client.query("COMMIT");
-    if (cared > 0) { try { await bumpMission(req.member.id, "care", 1); } catch (_) {} }
       return res.json({
         ok: true,
         cared: 0,
@@ -8137,6 +8137,9 @@ app.post("/api/pets/care-all", requireAuth, async (req, res) => {
       );
     }
     await client.query("COMMIT");
+    if (cared > 0) {
+      try { await bumpMission(req.member.id, "care", 1); } catch (_) {}
+    }
     const label =
       action === "both" ? "Fed + Watered" :
       action === "water" ? "Watered" :
@@ -14131,6 +14134,31 @@ async function ensureDailyGoalsTable() {
 
 function isSecretRewardDay(d = new Date()) {
   return d.getUTCDay() === 0; // Sunday UTC
+}
+
+
+function rollDungeonLoot(lootMult) {
+  const mult = Math.max(0.5, Number(lootMult) || 1);
+  const picks = [];
+  // 1–3 food
+  picks.push({ item: "food", qty: Math.max(1, Math.round((1 + Math.floor(Math.random() * 3)) * mult)) });
+  // water
+  if (Math.random() < 0.85) {
+    picks.push({ item: "water", qty: Math.max(1, Math.round((1 + Math.floor(Math.random() * 2)) * mult)) });
+  }
+  // energy
+  if (Math.random() < 0.7) {
+    picks.push({ item: "energy", qty: Math.max(1, Math.round((1 + Math.floor(Math.random() * 2)) * mult)) });
+  }
+  // small AMT
+  if (Math.random() < 0.55) {
+    const amt = Math.round((0.2 + Math.random() * 0.8 * mult) * 100) / 100;
+    if (amt > 0) picks.push({ item: "amt", qty: amt });
+  }
+  // rare gem / core
+  if (Math.random() < 0.12 * mult) picks.push({ item: "gem", qty: 1 });
+  if (Math.random() < 0.08 * mult) picks.push({ item: "upgrade_core", qty: 1 });
+  return picks;
 }
 
 function rollMysteryReward(secret) {
