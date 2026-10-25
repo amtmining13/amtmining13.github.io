@@ -2303,8 +2303,8 @@ SELECT 180D
     </div>
 
     <div class="grid" style="margin-top:12px;gap:8px">
-      <button type="button" class="primary" onclick="warUpgrade()">⬆️ UPGRADE (+5 Def · +20 HP)</button>
-      <button type="button" class="secondary" onclick="warRepair()">🔧 REPAIR (+30 HP · 1 AMT)</button>
+      <button type="button" class="primary" onclick="warUpgrade()">⬆️ UPGRADE (+5 Def · +20 HP · cheap)</button>
+      <button type="button" class="secondary" onclick="warRepair()">🔧 REPAIR (+30 HP · 0.2 AMT)</button>
     </div>
     <div class="muted" style="margin-top:10px;font-size:11px;text-align:center" id="warRaidCd">Raid ready</div>
   </div>
@@ -4266,7 +4266,7 @@ async function loadWarStatus(){
     if($("warRankTitle")) $("warRankTitle").textContent = o.rankTitle || "Recruit";
     if($("warMyRank")) $("warMyRank").textContent = o.myRank != null ? o.myRank : "—";
     if($("warFortEmoji")) $("warFortEmoji").textContent = warFortEmoji(o.level);
-    if($("warUpCost")) $("warUpCost").textContent = d.upgradeCost != null ? d.upgradeCost : "2";
+    if($("warUpCost")) $("warUpCost").textContent = d.upgradeCost != null ? d.upgradeCost : "0.5";
     if($("warRaidCd")){
       const left = d.raidsLeft != null ? d.raidsLeft : "?";
       const per = d.raidsPerDay != null ? d.raidsPerDay : 12;
