@@ -13506,18 +13506,19 @@ app.use(
 ========================================================= */
 
 const SPIN_MAX_PER_DAY = 3;
-// 8 segments — AMT rewards + free spin + rare 100 jackpot
+// 8 segments — AMT rewards + free spin + rare 2000 jackpot
 /* MUST match wheel label order (clockwise from top):
-   0:5  1:25  2:EGG  3:10  4:FREE  5:50  6:15  7:100 */
+   0:5  1:25  2:EGG  3:10  4:FREE  5:50  6:15  7:2000 */
 const SPIN_PRIZES = [
-  { key: "amt_5",     label: "+5 AMT",              type: "amt",       amount: 5,   weight: 16 },
-  { key: "amt_25",    label: "+25 AMT",             type: "amt",       amount: 25,  weight: 11 },
+  { key: "amt_5",     label: "+5 AMT",              type: "amt",       amount: 5,   weight: 18 },
+  { key: "amt_25",    label: "+25 AMT",             type: "amt",       amount: 25,  weight: 12 },
   { key: "egg",       label: "Free Egg!",           type: "egg",       amount: 0,   weight: 10 },
-  { key: "amt_10",    label: "+10 AMT",             type: "amt",       amount: 10,  weight: 14 },
+  { key: "amt_10",    label: "+10 AMT",             type: "amt",       amount: 10,  weight: 15 },
   { key: "free_spin", label: "FREE SPIN!",          type: "free_spin", amount: 0,   weight: 14 },
-  { key: "amt_50",    label: "+50 AMT",             type: "amt",       amount: 50,  weight: 7 },
+  { key: "amt_50",    label: "+50 AMT",             type: "amt",       amount: 50,  weight: 8 },
   { key: "amt_15",    label: "+15 AMT",             type: "amt",       amount: 15,  weight: 15 },
-  { key: "jackpot",   label: "JACKPOT +100 AMT!",   type: "amt",       amount: 100, weight: 3 }
+  // Rare recovery jackpot (War/Pet spend) — low weight so economy stays stable
+  { key: "jackpot",   label: "JACKPOT +2000 AMT!",  type: "amt",       amount: 2000, weight: 1 }
 ];
 
 function pickSpinPrize(){
