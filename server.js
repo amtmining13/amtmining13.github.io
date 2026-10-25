@@ -14706,7 +14706,8 @@ async function getOrCreateOutpost(memberId, client) {
 }
 
 const WAR_UPGRADE_COST = 2; // in-app AMT
-const WAR_RAID_COOLDOWN_MS = 15 * 60 * 1000; // 15 min between raids
+const WAR_RAID_COOLDOWN_MS = 3 * 60 * 1000; // 3 min between raids
+const WAR_RAIDS_PER_DAY = 12; // max raids per UTC day
 
 app.get("/api/war/status", requireAuth, async (req, res) => {
   try {
@@ -14729,6 +14730,18 @@ app.get("/api/war/status", requireAuth, async (req, res) => {
       const left = WAR_RAID_COOLDOWN_MS - (Date.now() - new Date(outpost.last_raid_at).getTime());
       if (left > 0) nextRaidIn = Math.ceil(left / 1000);
     }
+    const dayStart = new Date();
+    dayStart.setUTCHours(0, 0, 0, 0);
+    let raidsToday = 0;
+    try {
+      const rc = await pool.query(
+        `SELECT COUNT(*)::int AS c FROM war_attacks
+         WHERE attacker_id = $1 AND created_at >= $2`,
+        [req.member.id, dayStart.toISOString()]
+      );
+      raidsToday = rc.rows[0]?.c || 0;
+    } catch (_) {}
+    const raidsLeft = Math.max(0, WAR_RAIDS_PER_DAY - raidsToday);
     // Trophy rank title
     const trop = Number(outpost.trophy) || 0;
     let rankTitle = "Recruit";
@@ -14776,6 +14789,9 @@ app.get("/api/war/status", requireAuth, async (req, res) => {
       },
       upgradeCost: WAR_UPGRADE_COST,
       nextRaidIn,
+      raidsToday: raidsToday,
+      raidsLeft: raidsLeft,
+      raidsPerDay: WAR_RAIDS_PER_DAY,
       board: board,
       log: log.rows.map((row) => ({
         id: row.id,
@@ -14913,11 +14929,26 @@ app.post("/api/war/raid", requireAuth, async (req, res) => {
       const left = WAR_RAID_COOLDOWN_MS - (Date.now() - new Date(myO.last_raid_at).getTime());
       if (left > 0) {
         await client.query("ROLLBACK");
+        const sec = Math.ceil(left / 1000);
         return res.status(400).json({
           ok: false,
-          error: "Raid cooldown — wait " + Math.ceil(left / 60000) + " min."
+          error: "Cooldown " + sec + "s — try again soon."
         });
       }
+    }
+    const dayStart = new Date();
+    dayStart.setUTCHours(0, 0, 0, 0);
+    const raidCount = await client.query(
+      `SELECT COUNT(*)::int AS c FROM war_attacks
+       WHERE attacker_id = $1 AND created_at >= $2`,
+      [req.member.id, dayStart.toISOString()]
+    );
+    if ((raidCount.rows[0]?.c || 0) >= WAR_RAIDS_PER_DAY) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({
+        ok: false,
+        error: "Daily raid limit (" + WAR_RAIDS_PER_DAY + "). Resets UTC midnight."
+      });
     }
 
     // lock target member row then outpost
