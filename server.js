@@ -14691,7 +14691,41 @@ async function ensureWarTables() {
     CREATE INDEX IF NOT EXISTS idx_war_attacks_attacker ON war_attacks(attacker_id, created_at DESC);
     CREATE INDEX IF NOT EXISTS idx_war_attacks_defender ON war_attacks(defender_id, created_at DESC);
   `);
+  // Phase 2 columns
+  await pool.query(`
+    ALTER TABLE war_outposts ADD COLUMN IF NOT EXISTS gold INT NOT NULL DEFAULT 200;
+    ALTER TABLE war_outposts ADD COLUMN IF NOT EXISTS elixir INT NOT NULL DEFAULT 150;
+    ALTER TABLE war_outposts ADD COLUMN IF NOT EXISTS warriors INT NOT NULL DEFAULT 3;
+    ALTER TABLE war_outposts ADD COLUMN IF NOT EXISTS archers INT NOT NULL DEFAULT 2;
+    ALTER TABLE war_outposts ADD COLUMN IF NOT EXISTS tanks INT NOT NULL DEFAULT 0;
+    ALTER TABLE war_outposts ADD COLUMN IF NOT EXISTS last_collect_at TIMESTAMPTZ;
+  `);
 }
+
+function warArmyPower(o) {
+  const w = Number(o.warriors) || 0;
+  const a = Number(o.archers) || 0;
+  const t = Number(o.tanks) || 0;
+  // Warrior frontline, Archer hero DPS, Tank soak
+  return w * 4 + a * 7 + t * 6 + Number(o.level) * 3 + Math.floor(Number(o.defense) / 4);
+}
+
+function warOutpostPublic(o) {
+  return {
+    hp: o.hp,
+    maxHp: o.max_hp,
+    defense: o.defense,
+    trophy: o.trophy,
+    level: o.level,
+    gold: o.gold != null ? o.gold : 0,
+    elixir: o.elixir != null ? o.elixir : 0,
+    warriors: o.warriors != null ? o.warriors : 0,
+    archers: o.archers != null ? o.archers : 0,
+    tanks: o.tanks != null ? o.tanks : 0,
+    armyPower: warArmyPower(o)
+  };
+}
+
 
 async function getOrCreateOutpost(memberId, client) {
   const db = client || pool;
@@ -14780,11 +14814,7 @@ app.get("/api/war/status", requireAuth, async (req, res) => {
     res.json({
       ok: true,
       outpost: {
-        hp: outpost.hp,
-        maxHp: outpost.max_hp,
-        defense: outpost.defense,
-        trophy: outpost.trophy,
-        level: outpost.level,
+        ...warOutpostPublic(outpost),
         rankTitle: rankTitle,
         myRank: myRank
       },
@@ -14849,14 +14879,8 @@ app.post("/api/war/upgrade", requireAuth, async (req, res) => {
       ok: true,
       cost,
       balance,
-      outpost: {
-        hp: upd.rows[0].hp,
-        maxHp: upd.rows[0].max_hp,
-        defense: upd.rows[0].defense,
-        trophy: upd.rows[0].trophy,
-        level: upd.rows[0].level
-      },
-      message: "Outpost upgraded! Def +" + 5 + " · HP +" + 20
+      outpost: warOutpostPublic(upd.rows[0]),
+      message: "Outpost upgraded! Def +5 · HP +20"
     });
   } catch (e) {
     try { await client.query("ROLLBACK"); } catch (_) {}
@@ -14960,19 +14984,23 @@ app.post("/api/war/raid", requireAuth, async (req, res) => {
     }
     const defO = await getOrCreateOutpost(targetId, client);
 
-    // Auto battle: attack power from my level/defense, vs their defense
-    const atkPower = 15 + Number(myO.level) * 3 + Math.floor(Number(myO.defense) / 4);
-    const defPower = 8 + Number(defO.defense);
-    let damage = Math.max(5, atkPower - Math.floor(defPower * 0.35) + Math.floor(Math.random() * 10) - 3);
+    // Phase 2: army power (Archer hero carries DPS)
+    const atkPower = 12 + warArmyPower(myO);
+    const defPower = 8 + Number(defO.defense) + Math.floor(warArmyPower(defO) * 0.25);
+    let damage = Math.max(5, atkPower - Math.floor(defPower * 0.3) + Math.floor(Math.random() * 12) - 3);
     damage = Math.min(damage, Number(defO.hp));
     const newHp = Math.max(0, Number(defO.hp) - damage);
-    const win = damage >= 12 || newHp <= Number(defO.max_hp) * 0.4;
+    const win = damage >= 14 || newHp <= Number(defO.max_hp) * 0.4;
 
     let loot = 0;
+    let goldLoot = 0;
+    let elixirLoot = 0;
     let atkTrophy = 0;
     let defTrophy = 0;
     if (win) {
-      loot = Math.round((0.15 + Math.random() * 0.35) * 100) / 100; // 0.15–0.50 AMT
+      loot = Math.round((0.12 + Math.random() * 0.28) * 100) / 100;
+      goldLoot = 25 + Math.floor(Math.random() * 40) + Number(myO.archers || 0) * 2;
+      elixirLoot = 15 + Math.floor(Math.random() * 30) + Number(myO.warriors || 0);
       atkTrophy = 8 + Math.floor(Math.random() * 5);
       defTrophy = -5;
       await client.query(
@@ -14987,14 +15015,17 @@ app.post("/api/war/raid", requireAuth, async (req, res) => {
     }
 
     await client.query(
-      `UPDATE war_outposts SET hp = $1, trophy = GREATEST(0, trophy + $2), last_defend_at = NOW(), updated_at = NOW()
-       WHERE member_id = $3`,
-      [newHp, defTrophy, targetId]
+      `UPDATE war_outposts SET hp = $1, trophy = GREATEST(0, trophy + $2),
+        gold = GREATEST(0, gold - $3), elixir = GREATEST(0, elixir - $4),
+        last_defend_at = NOW(), updated_at = NOW()
+       WHERE member_id = $5`,
+      [newHp, defTrophy, win ? Math.floor(goldLoot * 0.35) : 0, win ? Math.floor(elixirLoot * 0.35) : 0, targetId]
     );
     await client.query(
-      `UPDATE war_outposts SET trophy = GREATEST(0, trophy + $1), last_raid_at = NOW(), updated_at = NOW()
-       WHERE member_id = $2`,
-      [atkTrophy, req.member.id]
+      `UPDATE war_outposts SET trophy = GREATEST(0, trophy + $1), last_raid_at = NOW(),
+        gold = gold + $2, elixir = elixir + $3, updated_at = NOW()
+       WHERE member_id = $4`,
+      [atkTrophy, goldLoot, elixirLoot, req.member.id]
     );
     // slow HP regen for defender if wiped
     if (newHp === 0) {
@@ -15027,18 +15058,15 @@ app.post("/api/war/raid", requireAuth, async (req, res) => {
       result: win ? "WIN" : "LOSS",
       damage,
       lootAmt: loot,
+      goldLoot,
+      elixirLoot,
+      armyPower: warArmyPower(myO),
       trophyDelta: atkTrophy,
       targetUsername: tgtMem.rows[0].username,
       balance,
-      outpost: {
-        hp: myAfter.hp,
-        maxHp: myAfter.max_hp,
-        defense: myAfter.defense,
-        trophy: myAfter.trophy,
-        level: myAfter.level
-      },
+      outpost: warOutpostPublic(myAfter),
       message: win
-        ? ("Victory vs @" + (tgtMem.rows[0].username || "miner") + " · +" + loot + " AMT · Trophy " + (atkTrophy >= 0 ? "+" : "") + atkTrophy)
+        ? ("Victory vs @" + (tgtMem.rows[0].username || "miner") + " · +" + loot + " AMT · +" + goldLoot + " Gold · Trophy " + (atkTrophy >= 0 ? "+" : "") + atkTrophy)
         : ("Raid failed vs @" + (tgtMem.rows[0].username || "miner") + " · Trophy " + atkTrophy)
     });
   } catch (e) {
@@ -15047,6 +15075,86 @@ app.post("/api/war/raid", requireAuth, async (req, res) => {
     res.status(500).json({ ok: false, error: e.message || "raid failed" });
   } finally {
     client.release();
+  }
+});
+
+
+/* Phase 2 — collect resources + train troops */
+app.post("/api/war/collect", requireAuth, async (req, res) => {
+  try {
+    await ensureWarTables();
+    const o = await getOrCreateOutpost(req.member.id);
+    const last = o.last_collect_at ? new Date(o.last_collect_at).getTime() : 0;
+    const elapsedMin = Math.max(0, Math.floor((Date.now() - last) / 60000));
+    // Cap 8h passive
+    const mins = Math.min(elapsedMin || 30, 480);
+    const goldGain = Math.floor(mins * (1.2 + Number(o.level) * 0.15));
+    const elixirGain = Math.floor(mins * (0.9 + Number(o.level) * 0.1));
+    const upd = await pool.query(
+      `UPDATE war_outposts
+       SET gold = gold + $1, elixir = elixir + $2, last_collect_at = NOW(), updated_at = NOW()
+       WHERE member_id = $3 RETURNING *`,
+      [Math.max(10, goldGain), Math.max(8, elixirGain), req.member.id]
+    );
+    res.json({
+      ok: true,
+      goldGain: Math.max(10, goldGain),
+      elixirGain: Math.max(8, elixirGain),
+      outpost: warOutpostPublic(upd.rows[0]),
+      message: "Collected +" + Math.max(10, goldGain) + " Gold · +" + Math.max(8, elixirGain) + " Elixir"
+    });
+  } catch (e) {
+    console.error("WAR COLLECT:", e);
+    res.status(500).json({ ok: false, error: e.message || "collect failed" });
+  }
+});
+
+const WAR_TRAIN = {
+  warrior: { gold: 40, elixir: 20, field: "warriors", label: "Warrior" },
+  archer:  { gold: 55, elixir: 35, field: "archers",  label: "Archer Hero" },
+  tank:    { gold: 80, elixir: 50, field: "tanks",    label: "Tank" }
+};
+
+app.post("/api/war/train", requireAuth, async (req, res) => {
+  try {
+    await ensureWarTables();
+    const unit = String(req.body?.unit || "").toLowerCase();
+    const qty = Math.min(10, Math.max(1, Number(req.body?.qty) || 1));
+    const conf = WAR_TRAIN[unit];
+    if (!conf) return res.status(400).json({ ok: false, error: "Train warrior, archer, or tank." });
+    const o = await getOrCreateOutpost(req.member.id);
+    const needG = conf.gold * qty;
+    const needE = conf.elixir * qty;
+    if (Number(o.gold) < needG || Number(o.elixir) < needE) {
+      return res.status(400).json({
+        ok: false,
+        error: "Need " + needG + " Gold + " + needE + " Elixir (have " + o.gold + "/" + o.elixir + ")."
+      });
+    }
+    const maxArmy = 5 + Number(o.level) * 3;
+    const total = Number(o.warriors||0) + Number(o.archers||0) + Number(o.tanks||0);
+    if (total + qty > maxArmy) {
+      return res.status(400).json({
+        ok: false,
+        error: "Army cap " + maxArmy + " (upgrade outpost level). Now " + total + "."
+      });
+    }
+    const upd = await pool.query(
+      `UPDATE war_outposts
+       SET gold = gold - $1, elixir = elixir - $2, ${conf.field} = ${conf.field} + $3, updated_at = NOW()
+       WHERE member_id = $4 RETURNING *`,
+      [needG, needE, qty, req.member.id]
+    );
+    res.json({
+      ok: true,
+      unit,
+      qty,
+      outpost: warOutpostPublic(upd.rows[0]),
+      message: "Trained " + qty + "x " + conf.label + " 🏹"
+    });
+  } catch (e) {
+    console.error("WAR TRAIN:", e);
+    res.status(500).json({ ok: false, error: e.message || "train failed" });
   }
 });
 
@@ -15081,13 +15189,7 @@ app.post("/api/war/repair", requireAuth, async (req, res) => {
     res.json({
       ok: true,
       cost,
-      outpost: {
-        hp: upd.rows[0].hp,
-        maxHp: upd.rows[0].max_hp,
-        defense: upd.rows[0].defense,
-        trophy: upd.rows[0].trophy,
-        level: upd.rows[0].level
-      },
+      outpost: warOutpostPublic(upd.rows[0]),
       message: "Repaired +" + (healed - Number(o.hp)) + " HP"
     });
   } catch (e) {
