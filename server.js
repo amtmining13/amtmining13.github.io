@@ -14729,6 +14729,40 @@ app.get("/api/war/status", requireAuth, async (req, res) => {
       const left = WAR_RAID_COOLDOWN_MS - (Date.now() - new Date(outpost.last_raid_at).getTime());
       if (left > 0) nextRaidIn = Math.ceil(left / 1000);
     }
+    // Trophy rank title
+    const trop = Number(outpost.trophy) || 0;
+    let rankTitle = "Recruit";
+    if (trop >= 500) rankTitle = "Warlord";
+    else if (trop >= 300) rankTitle = "Commander";
+    else if (trop >= 150) rankTitle = "Captain";
+    else if (trop >= 80) rankTitle = "Knight";
+    else if (trop >= 30) rankTitle = "Scout";
+
+    // Top trophy board
+    let board = [];
+    try {
+      const br = await pool.query(
+        `SELECT o.trophy, o.level, o.defense, m.username
+         FROM war_outposts o
+         JOIN members m ON m.id = o.member_id
+         ORDER BY o.trophy DESC, o.level DESC
+         LIMIT 10`
+      );
+      board = br.rows.map((r, i) => ({
+        rank: i + 1,
+        username: r.username || "miner",
+        trophy: r.trophy,
+        level: r.level,
+        defense: r.defense
+      }));
+    } catch (_) {}
+
+    const myRankRow = await pool.query(
+      `SELECT COUNT(*)::int AS higher FROM war_outposts WHERE trophy > $1`,
+      [outpost.trophy]
+    );
+    const myRank = (myRankRow.rows[0]?.higher || 0) + 1;
+
     res.json({
       ok: true,
       outpost: {
@@ -14736,10 +14770,13 @@ app.get("/api/war/status", requireAuth, async (req, res) => {
         maxHp: outpost.max_hp,
         defense: outpost.defense,
         trophy: outpost.trophy,
-        level: outpost.level
+        level: outpost.level,
+        rankTitle: rankTitle,
+        myRank: myRank
       },
       upgradeCost: WAR_UPGRADE_COST,
       nextRaidIn,
+      board: board,
       log: log.rows.map((row) => ({
         id: row.id,
         result: row.result,
