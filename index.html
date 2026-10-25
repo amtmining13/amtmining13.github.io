@@ -2319,9 +2319,35 @@ SELECT 180D
     <div class="muted" style="font-size:10px;margin-top:6px;text-align:center">Passive stockpile · collect anytime</div>
   </div>
 
+  <div class="card" style="border:1px solid rgba(52,211,153,.45);background:linear-gradient(165deg,rgba(6,40,30,.95),rgba(12,10,24,.98))">
+    <div class="row">
+      <div class="card-title" style="margin:0;color:#6ee7b7">🏹 ARCHER HERO</div>
+      <div class="muted" style="font-size:11px">Lv <b id="warHeroLv" style="color:#fff">1</b></div>
+    </div>
+    <div style="display:flex;gap:12px;align-items:center;margin-top:10px">
+      <div style="width:64px;height:64px;border-radius:16px;background:radial-gradient(circle at 40% 30%,rgba(110,231,183,.35),rgba(0,0,0,.4));border:1px solid rgba(110,231,183,.4);display:grid;place-items:center;font-size:34px">🧝‍♀️</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:900;font-size:15px;color:#a7f3d0">Your Archer Hero</div>
+        <div class="muted" style="font-size:11px;margin-top:2px">XP <span id="warHeroXp">0</span> / <span id="warHeroXpNext">65</span></div>
+        <div style="margin-top:6px;height:6px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden">
+          <div id="warHeroXpBar" style="height:100%;width:0%;background:linear-gradient(90deg,#34d399,#6ee7b7)"></div>
+        </div>
+        <div class="muted" style="font-size:10px;margin-top:6px">Active: <b id="warHeroSkillLabel" style="color:#6ee7b7">🎯 Snipe</b></div>
+      </div>
+    </div>
+    <div class="muted" style="font-size:10px;margin:10px 0 6px">Choose skill before raids:</div>
+    <div class="grid3" style="gap:6px">
+      <button type="button" class="small-btn" id="skillBtnSnipe" onclick="warSetSkill('snipe')">🎯 Snipe<br><span style="font-size:9px;opacity:.85">+Dmg</span></button>
+      <button type="button" class="small-btn" id="skillBtnVolley" onclick="warSetSkill('volley')">🏹 Volley<br><span style="font-size:9px;opacity:.85">+Loot</span></button>
+      <button type="button" class="small-btn" id="skillBtnMark" onclick="warSetSkill('mark')">💥 Mark<br><span style="font-size:9px;opacity:.85">Pierce Def</span></button>
+    </div>
+    <button type="button" class="primary" style="margin-top:12px" onclick="warHeroUpgrade()">⬆️ UPGRADE HERO (Gold + Elixir)</button>
+    <div class="muted" style="font-size:10px;margin-top:6px;text-align:center" id="warHeroUpCost">Raid also grants Hero XP</div>
+  </div>
+
   <div class="card" style="border:1px solid rgba(34,211,238,.28)">
     <div class="row">
-      <div class="card-title" style="margin:0">🏹 ARMY · ARCHER HERO</div>
+      <div class="card-title" style="margin:0">⚔️ TROOPS</div>
       <div class="muted" style="font-size:11px">Power <b id="warArmyPower" style="color:#67e8f9">0</b></div>
     </div>
     <div class="grid3" style="margin-top:10px">
@@ -4311,6 +4337,27 @@ async function loadWarStatus(){
     if($("warArchers")) $("warArchers").textContent = o.archers != null ? o.archers : "0";
     if($("warTanks")) $("warTanks").textContent = o.tanks != null ? o.tanks : "0";
     if($("warArmyPower")) $("warArmyPower").textContent = o.armyPower != null ? o.armyPower : "0";
+    const hero = o.hero || {};
+    if($("warHeroLv")) $("warHeroLv").textContent = hero.level != null ? hero.level : "1";
+    if($("warHeroXp")) $("warHeroXp").textContent = hero.xp != null ? hero.xp : "0";
+    if($("warHeroXpNext")) $("warHeroXpNext").textContent = hero.xpNext != null ? hero.xpNext : "65";
+    if($("warHeroXpBar")){
+      const pct = hero.xpNext ? Math.min(100, Math.round((Number(hero.xp)||0)/hero.xpNext*100)) : 0;
+      $("warHeroXpBar").style.width = pct + "%";
+    }
+    if($("warHeroSkillLabel")) $("warHeroSkillLabel").textContent = (hero.skillIcon||"🎯") + " " + (hero.skillName||"Snipe");
+    if(hero.skillId) window._warHeroSkill = hero.skillId;
+    if($("warHeroUpCost")){
+      const hl = Number(hero.level)||1;
+      $("warHeroUpCost").textContent = "Upgrade cost: " + (30+hl*15) + " Gold + " + (25+hl*12) + " Elixir · or earn XP from raids";
+    }
+    ["snipe","volley","mark"].forEach(function(sk){
+      const btn = $("skillBtn" + sk.charAt(0).toUpperCase() + sk.slice(1));
+      if(!btn) return;
+      const on = (hero.skillId||"snipe") === sk;
+      btn.style.borderColor = on ? "rgba(110,231,183,.7)" : "";
+      btn.style.background = on ? "rgba(16,185,129,.25)" : "";
+    });
     if($("warRaidCd")){
       const left = d.raidsLeft != null ? d.raidsLeft : "?";
       const per = d.raidsPerDay != null ? d.raidsPerDay : 12;
@@ -4417,6 +4464,22 @@ async function warRepair(){
     await loadWarStatus();
   }catch(e){ showToast(e.message||"Repair failed", true); }
 }
+async function warHeroUpgrade(){
+  try{
+    showToast("Upgrading hero...");
+    const d = await api("/api/war/hero/upgrade",{method:"POST",body:"{}"});
+    showToast(d.message||"Hero upgraded");
+    await loadWarStatus();
+  }catch(e){ showToast(e.message||"Hero upgrade failed", true); }
+}
+async function warSetSkill(skill){
+  try{
+    window._warHeroSkill = skill;
+    const d = await api("/api/war/hero/skill",{method:"POST",body:JSON.stringify({skill:skill})});
+    showToast(d.message||("Skill: "+skill));
+    await loadWarStatus();
+  }catch(e){ showToast(e.message||"Skill failed", true); }
+}
 async function warCollect(){
   try{
     showToast("Collecting...");
@@ -4444,6 +4507,7 @@ function showWarRaidResult(d){
     '<div style="font-size:42px">' + (win ? "🏆" : "💥") + '</div>' +
     '<div style="font-size:20px;font-weight:900;margin-top:6px;color:' + (win?"#69f0ae":"#ff8a80") + '">' + (win?"VICTORY":"DEFEAT") + '</div>' +
     '<div class="muted" style="margin-top:6px">vs @' + esc(d.targetUsername||"miner") + '</div>' +
+    (d.skillUsed ? ('<div style="margin-top:6px;font-size:12px;font-weight:800;color:#6ee7b7">' + (d.skillIcon||"") + " " + d.skillUsed + " · Hero Lv" + (d.heroLevel||1) + '</div>') : '') +
     '<div style="margin-top:12px;display:flex;justify-content:center;gap:18px;flex-wrap:wrap">' +
     '<div><div class="muted" style="font-size:10px">DAMAGE</div><div style="font-weight:900;font-size:18px">' + (d.damage||0) + '</div></div>' +
     '<div><div class="muted" style="font-size:10px">LOOT</div><div style="font-weight:900;font-size:18px;color:#ffd64e">' + (d.lootAmt||0) + ' AMT</div></div>' +
@@ -4458,7 +4522,8 @@ function showWarRaidResult(d){
 async function warRaid(targetId){
   try{
     showToast("⚔️ Deploying raid...");
-    const d = await api("/api/war/raid",{method:"POST",body:JSON.stringify({targetId:targetId})});
+    const skill = (window._warHeroSkill || "snipe");
+    const d = await api("/api/war/raid",{method:"POST",body:JSON.stringify({targetId:targetId,skill:skill})});
     showWarRaidResult(d);
     showToast(d.message||d.result||"Raid done");
     try{ await refreshWallet(); }catch(e){}
