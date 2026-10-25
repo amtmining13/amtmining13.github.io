@@ -14706,7 +14706,7 @@ async function getOrCreateOutpost(memberId, client) {
   return r.rows[0];
 }
 
-const WAR_UPGRADE_COST = 2; // in-app AMT
+const WAR_UPGRADE_COST = 0.5; // soft economy pre-value; raise later on Mainnet value
 const WAR_RAID_COOLDOWN_MS = 3 * 60 * 1000; // 3 min between raids
 const WAR_RAIDS_PER_DAY = 12; // max raids per UTC day
 
@@ -15054,7 +15054,7 @@ app.post("/api/war/repair", requireAuth, async (req, res) => {
   const client = await pool.connect();
   try {
     await ensureWarTables();
-    const cost = 1;
+    const cost = 0.2;
     await client.query("BEGIN");
     await client.query(`SELECT id FROM members WHERE id = $1 FOR UPDATE`, [req.member.id]);
     const o = await getOrCreateOutpost(req.member.id, client);
