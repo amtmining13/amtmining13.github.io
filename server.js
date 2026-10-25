@@ -14699,18 +14699,37 @@ async function ensureWarTables() {
     ALTER TABLE war_outposts ADD COLUMN IF NOT EXISTS archers INT NOT NULL DEFAULT 2;
     ALTER TABLE war_outposts ADD COLUMN IF NOT EXISTS tanks INT NOT NULL DEFAULT 0;
     ALTER TABLE war_outposts ADD COLUMN IF NOT EXISTS last_collect_at TIMESTAMPTZ;
+    ALTER TABLE war_outposts ADD COLUMN IF NOT EXISTS hero_level INT NOT NULL DEFAULT 1;
+    ALTER TABLE war_outposts ADD COLUMN IF NOT EXISTS hero_xp INT NOT NULL DEFAULT 0;
+    ALTER TABLE war_outposts ADD COLUMN IF NOT EXISTS hero_skill TEXT NOT NULL DEFAULT 'snipe';
   `);
 }
+
+const WAR_HERO_SKILLS = {
+  snipe:  { id: "snipe",  name: "Snipe",  desc: "Bonus damage vs outpost HP", icon: "🎯" },
+  volley: { id: "volley", name: "Volley", desc: "Bonus Gold + Elixir on win", icon: "🏹" },
+  mark:   { id: "mark",   name: "Mark",   desc: "Ignore part of enemy defense", icon: "💥" }
+};
+
+function warHeroXpNeeded(level) {
+  return 40 + Number(level) * 25;
+}
+
 
 function warArmyPower(o) {
   const w = Number(o.warriors) || 0;
   const a = Number(o.archers) || 0;
   const t = Number(o.tanks) || 0;
-  // Warrior frontline, Archer hero DPS, Tank soak
-  return w * 4 + a * 7 + t * 6 + Number(o.level) * 3 + Math.floor(Number(o.defense) / 4);
+  const hl = Number(o.hero_level) || 1;
+  // Troops + Archer Hero level (hero is the real DPS core)
+  return w * 4 + a * 5 + t * 6 + hl * 12 + Number(o.level) * 3 + Math.floor(Number(o.defense) / 4);
 }
 
 function warOutpostPublic(o) {
+  const hl = Number(o.hero_level) || 1;
+  const hx = Number(o.hero_xp) || 0;
+  const skillId = String(o.hero_skill || "snipe");
+  const skill = WAR_HERO_SKILLS[skillId] || WAR_HERO_SKILLS.snipe;
   return {
     hp: o.hp,
     maxHp: o.max_hp,
@@ -14722,7 +14741,18 @@ function warOutpostPublic(o) {
     warriors: o.warriors != null ? o.warriors : 0,
     archers: o.archers != null ? o.archers : 0,
     tanks: o.tanks != null ? o.tanks : 0,
-    armyPower: warArmyPower(o)
+    armyPower: warArmyPower(o),
+    hero: {
+      name: "Archer Hero",
+      level: hl,
+      xp: hx,
+      xpNext: warHeroXpNeeded(hl),
+      skillId: skill.id,
+      skillName: skill.name,
+      skillDesc: skill.desc,
+      skillIcon: skill.icon,
+      skills: Object.values(WAR_HERO_SKILLS)
+    }
   };
 }
 
@@ -14984,10 +15014,16 @@ app.post("/api/war/raid", requireAuth, async (req, res) => {
     }
     const defO = await getOrCreateOutpost(targetId, client);
 
-    // Phase 2: army power (Archer hero carries DPS)
-    const atkPower = 12 + warArmyPower(myO);
+    // Actual Archer Hero + skill
+    const skillId = String(req.body?.skill || myO.hero_skill || "snipe").toLowerCase();
+    const skill = WAR_HERO_SKILLS[skillId] || WAR_HERO_SKILLS.snipe;
+    const heroLv = Number(myO.hero_level) || 1;
+    let defMul = 0.3;
+    if (skill.id === "mark") defMul = 0.18; // ignore more defense
+    const atkPower = 12 + warArmyPower(myO) + (skill.id === "snipe" ? (8 + heroLv * 2) : 0);
     const defPower = 8 + Number(defO.defense) + Math.floor(warArmyPower(defO) * 0.25);
-    let damage = Math.max(5, atkPower - Math.floor(defPower * 0.3) + Math.floor(Math.random() * 12) - 3);
+    let damage = Math.max(5, atkPower - Math.floor(defPower * defMul) + Math.floor(Math.random() * 12) - 3);
+    if (skill.id === "snipe") damage += 5 + heroLv;
     damage = Math.min(damage, Number(defO.hp));
     const newHp = Math.max(0, Number(defO.hp) - damage);
     const win = damage >= 14 || newHp <= Number(defO.max_hp) * 0.4;
@@ -14999,8 +15035,12 @@ app.post("/api/war/raid", requireAuth, async (req, res) => {
     let defTrophy = 0;
     if (win) {
       loot = Math.round((0.12 + Math.random() * 0.28) * 100) / 100;
-      goldLoot = 25 + Math.floor(Math.random() * 40) + Number(myO.archers || 0) * 2;
-      elixirLoot = 15 + Math.floor(Math.random() * 30) + Number(myO.warriors || 0);
+      goldLoot = 25 + Math.floor(Math.random() * 40) + Number(myO.archers || 0) * 2 + heroLv * 2;
+      elixirLoot = 15 + Math.floor(Math.random() * 30) + Number(myO.warriors || 0) + heroLv;
+      if (skill.id === "volley") {
+        goldLoot = Math.floor(goldLoot * 1.45);
+        elixirLoot = Math.floor(elixirLoot * 1.45);
+      }
       atkTrophy = 8 + Math.floor(Math.random() * 5);
       defTrophy = -5;
       await client.query(
@@ -15021,11 +15061,21 @@ app.post("/api/war/raid", requireAuth, async (req, res) => {
        WHERE member_id = $5`,
       [newHp, defTrophy, win ? Math.floor(goldLoot * 0.35) : 0, win ? Math.floor(elixirLoot * 0.35) : 0, targetId]
     );
+    // Hero XP on every raid; more on win
+    let hx = Number(myO.hero_xp) || 0;
+    let hl = Number(myO.hero_level) || 1;
+    hx += win ? (18 + Math.floor(damage / 5)) : 6;
+    while (hx >= warHeroXpNeeded(hl) && hl < 50) {
+      hx -= warHeroXpNeeded(hl);
+      hl += 1;
+    }
     await client.query(
       `UPDATE war_outposts SET trophy = GREATEST(0, trophy + $1), last_raid_at = NOW(),
-        gold = gold + $2, elixir = elixir + $3, updated_at = NOW()
-       WHERE member_id = $4`,
-      [atkTrophy, goldLoot, elixirLoot, req.member.id]
+        gold = gold + $2, elixir = elixir + $3,
+        hero_xp = $4, hero_level = $5, hero_skill = $6,
+        updated_at = NOW()
+       WHERE member_id = $7`,
+      [atkTrophy, goldLoot, elixirLoot, hx, hl, skill.id, req.member.id]
     );
     // slow HP regen for defender if wiped
     if (newHp === 0) {
@@ -15061,6 +15111,9 @@ app.post("/api/war/raid", requireAuth, async (req, res) => {
       goldLoot,
       elixirLoot,
       armyPower: warArmyPower(myO),
+      skillUsed: skill.name,
+      skillIcon: skill.icon,
+      heroLevel: hl,
       trophyDelta: atkTrophy,
       targetUsername: tgtMem.rows[0].username,
       balance,
@@ -15078,6 +15131,73 @@ app.post("/api/war/raid", requireAuth, async (req, res) => {
   }
 });
 
+
+
+app.post("/api/war/hero/upgrade", requireAuth, async (req, res) => {
+  try {
+    await ensureWarTables();
+    const o = await getOrCreateOutpost(req.member.id);
+    const hl = Number(o.hero_level) || 1;
+    if (hl >= 50) return res.status(400).json({ ok: false, error: "Hero max level 50." });
+    const costG = 30 + hl * 15;
+    const costE = 25 + hl * 12;
+    if (Number(o.gold) < costG || Number(o.elixir) < costE) {
+      return res.status(400).json({
+        ok: false,
+        error: "Need " + costG + " Gold + " + costE + " Elixir to upgrade hero."
+      });
+    }
+    const need = warHeroXpNeeded(hl);
+    // Instant level-up purchase (spend resources)
+    const upd = await pool.query(
+      `UPDATE war_outposts
+       SET gold = gold - $1, elixir = elixir - $2,
+           hero_level = hero_level + 1, hero_xp = 0, updated_at = NOW()
+       WHERE member_id = $3 RETURNING *`,
+      [costG, costE, req.member.id]
+    );
+    res.json({
+      ok: true,
+      outpost: warOutpostPublic(upd.rows[0]),
+      message: "Archer Hero → Level " + (hl + 1) + "!"
+    });
+  } catch (e) {
+    console.error("HERO UPGRADE:", e);
+    res.status(500).json({ ok: false, error: e.message || "hero upgrade failed" });
+  }
+});
+
+app.post("/api/war/hero/skill", requireAuth, async (req, res) => {
+  try {
+    await ensureWarTables();
+    const skillId = String(req.body?.skill || "").toLowerCase();
+    if (!WAR_HERO_SKILLS[skillId]) {
+      return res.status(400).json({ ok: false, error: "Pick snipe, volley, or mark." });
+    }
+    const upd = await pool.query(
+      `UPDATE war_outposts SET hero_skill = $1, updated_at = NOW()
+       WHERE member_id = $2 RETURNING *`,
+      [skillId, req.member.id]
+    );
+    if (!upd.rows.length) {
+      await getOrCreateOutpost(req.member.id);
+      const upd2 = await pool.query(
+        `UPDATE war_outposts SET hero_skill = $1, updated_at = NOW()
+         WHERE member_id = $2 RETURNING *`,
+        [skillId, req.member.id]
+      );
+      return res.json({ ok: true, outpost: warOutpostPublic(upd2.rows[0]), message: "Skill set: " + WAR_HERO_SKILLS[skillId].name });
+    }
+    res.json({
+      ok: true,
+      outpost: warOutpostPublic(upd.rows[0]),
+      message: "Active skill: " + WAR_HERO_SKILLS[skillId].name
+    });
+  } catch (e) {
+    console.error("HERO SKILL:", e);
+    res.status(500).json({ ok: false, error: e.message || "skill failed" });
+  }
+});
 
 /* Phase 2 — collect resources + train troops */
 app.post("/api/war/collect", requireAuth, async (req, res) => {
