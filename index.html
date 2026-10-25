@@ -2269,35 +2269,64 @@ SELECT 180D
 <section id="warSection" class="section">
   <div class="hero">
     <h1>WAR <span>OUTPOST</span></h1>
-    <p>Phase 1 · Build · Defend · Raid</p>
+    <p>Phase 1 · Build · Defend · Raid · Rank up</p>
   </div>
 
-  <div class="card" style="border:1px solid rgba(251,191,36,.3)">
-    <div class="card-title">🏰 YOUR OUTPOST</div>
-    <div class="grid3" style="margin-top:10px">
-      <div class="stat"><div class="stat-label">HP</div><div class="stat-value" id="warHp">—</div></div>
+  <div class="card" style="border:1px solid rgba(251,191,36,.35);background:linear-gradient(165deg,rgba(40,22,8,.95),rgba(18,12,28,.98))">
+    <div style="display:flex;gap:14px;align-items:center">
+      <div id="warFortEmoji" style="width:72px;height:72px;border-radius:18px;background:linear-gradient(145deg,rgba(251,191,36,.2),rgba(124,58,237,.15));border:1px solid rgba(251,191,36,.35);display:flex;align-items:center;justify-content:center;font-size:40px;flex-shrink:0">🏕️</div>
+      <div style="flex:1;min-width:0">
+        <div class="muted" style="font-size:10px;letter-spacing:1.2px;font-weight:800">YOUR OUTPOST</div>
+        <div style="font-size:18px;font-weight:900;color:#f5d76e;margin-top:2px" id="warRankTitle">Recruit</div>
+        <div class="muted" style="font-size:12px;margin-top:2px">Lv <b id="warLevel" style="color:#fff">1</b> · Rank #<b id="warMyRank" style="color:#fff">—</b></div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:22px;font-weight:900;color:#ffd64e" id="warTrophy">0</div>
+        <div class="muted" style="font-size:10px">🏆 TROPHY</div>
+      </div>
+    </div>
+
+    <div style="margin-top:14px">
+      <div class="row" style="margin-bottom:4px">
+        <span class="muted" style="font-size:11px;font-weight:700">HP</span>
+        <span style="font-size:12px;font-weight:800" id="warHp">—</span>
+      </div>
+      <div style="height:10px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden">
+        <div id="warHpBar" style="height:100%;width:100%;border-radius:999px;background:linear-gradient(90deg,#22c55e,#84cc16);transition:width .35s ease"></div>
+      </div>
+    </div>
+
+    <div class="grid3" style="margin-top:12px">
       <div class="stat"><div class="stat-label">DEFENSE</div><div class="stat-value" id="warDef">—</div></div>
-      <div class="stat"><div class="stat-label">TROPHY</div><div class="stat-value" id="warTrophy">—</div></div>
+      <div class="stat"><div class="stat-label">LEVEL</div><div class="stat-value" id="warLevel2">—</div></div>
+      <div class="stat"><div class="stat-label">UPGRADE</div><div class="stat-value" style="font-size:14px"><span id="warUpCost">2</span> AMT</div></div>
     </div>
-    <div class="muted" style="margin-top:8px;font-size:12px">Level <b id="warLevel">1</b> · Upgrade cost: <b id="warUpCost">2</b> AMT</div>
+
     <div class="grid" style="margin-top:12px;gap:8px">
-      <button type="button" class="primary" onclick="warUpgrade()">⬆️ UPGRADE (+Def +HP)</button>
-      <button type="button" class="secondary" onclick="warRepair()">🔧 REPAIR HP (1 AMT)</button>
+      <button type="button" class="primary" onclick="warUpgrade()">⬆️ UPGRADE (+5 Def · +20 HP)</button>
+      <button type="button" class="secondary" onclick="warRepair()">🔧 REPAIR (+30 HP · 1 AMT)</button>
     </div>
-    <div class="muted" style="margin-top:8px;font-size:11px" id="warRaidCd"></div>
+    <div class="muted" style="margin-top:10px;font-size:11px;text-align:center" id="warRaidCd">Raid ready</div>
   </div>
+
+  <div id="warRaidResult" class="card" style="display:none;border:1px solid rgba(255,214,78,.4)"></div>
 
   <div class="card">
     <div class="row">
       <div class="card-title" style="margin:0">🎯 RAID TARGETS</div>
       <button type="button" class="small-btn" onclick="loadWarTargets()">Refresh</button>
     </div>
-    <div class="muted" style="font-size:11px;margin:6px 0 10px">Auto battle · 15 min cooldown · small AMT loot on win</div>
+    <div class="muted" style="font-size:11px;margin:6px 0 10px">Auto battle · 15 min cooldown · win = AMT loot + trophies</div>
     <div id="warTargetsList"><div class="muted">Loading targets...</div></div>
   </div>
 
   <div class="card">
-    <div class="card-title">📜 ATTACK LOG</div>
+    <div class="card-title">🏆 TROPHY BOARD</div>
+    <div id="warBoardList"><div class="muted">Loading...</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📜 BATTLE LOG</div>
     <div id="warLogList"><div class="muted">No battles yet.</div></div>
   </div>
 </section>
@@ -4270,22 +4299,63 @@ function copyOwnedPetId(){
   }
 }
 
+function warFortEmoji(level){
+  const lv = Number(level)||1;
+  if(lv >= 20) return "🏰";
+  if(lv >= 12) return "🏯";
+  if(lv >= 7) return "🏛️";
+  if(lv >= 4) return "⛺";
+  return "🏕️";
+}
+function warHpColor(pct){
+  if(pct > 60) return "linear-gradient(90deg,#22c55e,#84cc16)";
+  if(pct > 30) return "linear-gradient(90deg,#eab308,#f59e0b)";
+  return "linear-gradient(90deg,#ef4444,#f97316)";
+}
 async function loadWarStatus(){
   try{
     if(!accessToken) return;
     const d = await api("/api/war/status");
     const o = d.outpost || {};
-    if($("warHp")) $("warHp").textContent = (o.hp!=null?o.hp:"—") + "/" + (o.maxHp!=null?o.maxHp:"—");
+    const hp = Number(o.hp)||0;
+    const maxHp = Math.max(1, Number(o.maxHp)||1);
+    const pct = Math.max(0, Math.min(100, Math.round(hp/maxHp*100)));
+    if($("warHp")) $("warHp").textContent = hp + " / " + maxHp + " (" + pct + "%)";
+    if($("warHpBar")){
+      $("warHpBar").style.width = pct + "%";
+      $("warHpBar").style.background = warHpColor(pct);
+    }
     if($("warDef")) $("warDef").textContent = o.defense != null ? o.defense : "—";
-    if($("warTrophy")) $("warTrophy").textContent = o.trophy != null ? o.trophy : "—";
+    if($("warTrophy")) $("warTrophy").textContent = o.trophy != null ? o.trophy : "0";
     if($("warLevel")) $("warLevel").textContent = o.level != null ? o.level : "1";
+    if($("warLevel2")) $("warLevel2").textContent = o.level != null ? o.level : "1";
+    if($("warRankTitle")) $("warRankTitle").textContent = o.rankTitle || "Recruit";
+    if($("warMyRank")) $("warMyRank").textContent = o.myRank != null ? o.myRank : "—";
+    if($("warFortEmoji")) $("warFortEmoji").textContent = warFortEmoji(o.level);
     if($("warUpCost")) $("warUpCost").textContent = d.upgradeCost != null ? d.upgradeCost : "2";
     if($("warRaidCd")){
       if(d.nextRaidIn > 0){
         const m = Math.ceil(d.nextRaidIn/60);
-        $("warRaidCd").textContent = "Next raid in ~" + m + " min";
+        $("warRaidCd").textContent = "⏳ Next raid in ~" + m + " min";
       } else {
-        $("warRaidCd").textContent = "Raid ready";
+        $("warRaidCd").textContent = "✅ Raid ready — pick a target below";
+      }
+    }
+    // Trophy board
+    const boardBox = $("warBoardList");
+    if(boardBox){
+      const board = d.board || [];
+      if(!board.length){
+        boardBox.innerHTML = '<div class="empty">No ranked outposts yet.</div>';
+      } else {
+        boardBox.innerHTML = board.map(function(b){
+          const medal = b.rank===1?"🥇":b.rank===2?"🥈":b.rank===3?"🥉":("#"+b.rank);
+          return '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)">' +
+            '<div style="width:36px;text-align:center;font-weight:900;font-size:14px">' + medal + '</div>' +
+            '<div style="flex:1;min-width:0"><div style="font-weight:800">@' + esc(b.username) + '</div>' +
+            '<div class="muted" style="font-size:11px">Lv' + b.level + ' · Def ' + b.defense + '</div></div>' +
+            '<div style="font-weight:900;color:#ffd64e">🏆 ' + b.trophy + '</div></div>';
+        }).join("");
       }
     }
     const logBox = $("warLogList");
@@ -4295,14 +4365,20 @@ async function loadWarStatus(){
         logBox.innerHTML = '<div class="empty">No battles yet. Raid a target!</div>';
       } else {
         logBox.innerHTML = log.map(function(x){
-          const side = x.isAttacker ? "You → @" : "@";
           const other = x.otherUsername || "miner";
-          const res = x.result === "WIN" ? (x.isAttacker ? "✅ WIN" : "🛡️ Lost defense") : (x.isAttacker ? "❌ LOSS" : "🛡️ Defended");
-          const loot = x.lootAmt ? (" · " + x.lootAmt + " AMT") : "";
+          const winAtk = x.result === "WIN" && x.isAttacker;
+          const winDef = x.result === "LOSS" && !x.isAttacker;
+          const res = x.isAttacker
+            ? (x.result === "WIN" ? "✅ RAID WIN" : "❌ RAID LOSS")
+            : (x.result === "WIN" ? "💥 RAIDED" : "🛡️ DEFENDED");
+          const color = (winAtk || winDef) ? "#69f0ae" : (x.isAttacker ? "#ff8a80" : "#ffd64e");
+          const loot = x.lootAmt ? (" · +" + x.lootAmt + " AMT") : "";
           const trop = x.trophyDelta != null ? (" · 🏆" + (x.trophyDelta>=0?"+":"") + x.trophyDelta) : "";
           const when = x.createdAt ? new Date(x.createdAt).toLocaleString() : "";
-          return '<div style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)">' +
-            '<div style="font-weight:800">' + res + " · " + side + other + (x.isAttacker?"":" → you") + '</div>' +
+          const arrow = x.isAttacker ? ("You → @" + other) : ("@" + other + " → you");
+          return '<div style="padding:12px 0;border-bottom:1px solid rgba(255,255,255,.06)">' +
+            '<div style="font-weight:900;color:' + color + '">' + res + '</div>' +
+            '<div style="font-size:13px;font-weight:700;margin-top:2px">' + arrow + '</div>' +
             '<div class="muted" style="font-size:11px">Dmg ' + (x.damage||0) + loot + trop + '</div>' +
             '<div class="muted" style="font-size:10px">' + when + '</div></div>';
         }).join("");
@@ -4323,11 +4399,18 @@ async function loadWarTargets(){
       box.innerHTML = '<div class="empty">No targets yet. Invite more miners!</div>';
       return;
     }
-    box.innerHTML = list.map(function(t){
-      return '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.06)">' +
-        '<div><div style="font-weight:800">@' + esc(t.username) + '</div>' +
-        '<div class="muted" style="font-size:11px">Lv' + t.level + ' · HP ' + t.hp + '/' + t.maxHp + ' · Def ' + t.defense + ' · 🏆' + t.trophy + '</div></div>' +
-        '<button type="button" class="small-btn" style="background:linear-gradient(135deg,#b45309,#f59e0b);color:#111;font-weight:800" onclick="warRaid(' + t.memberId + ')">⚔️ RAID</button></div>';
+    box.innerHTML = list.map(function(tg){
+      const hp = Number(tg.hp)||0;
+      const maxHp = Math.max(1, Number(tg.maxHp)||1);
+      const pct = Math.round(hp/maxHp*100);
+      return '<div style="padding:12px;margin-bottom:10px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08)">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px">' +
+        '<div style="min-width:0"><div style="font-weight:900;font-size:15px">@' + esc(tg.username) + '</div>' +
+        '<div class="muted" style="font-size:11px;margin-top:2px">Lv' + tg.level + ' · Def ' + tg.defense + ' · 🏆' + tg.trophy + '</div></div>' +
+        '<button type="button" class="small-btn" style="background:linear-gradient(135deg,#b45309,#f59e0b);color:#111;font-weight:900;padding:10px 14px" onclick="warRaid(' + tg.memberId + ')">⚔️ RAID</button></div>' +
+        '<div style="margin-top:8px;height:6px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden">' +
+        '<div style="height:100%;width:' + pct + '%;background:' + (pct>60?"#22c55e":pct>30?"#eab308":"#ef4444") + ';border-radius:999px"></div></div>' +
+        '<div class="muted" style="font-size:10px;margin-top:4px">HP ' + hp + '/' + maxHp + '</div></div>';
     }).join("");
   }catch(e){
     box.innerHTML = '<div class="empty">' + (e.message||"Failed") + '</div>';
@@ -4335,7 +4418,7 @@ async function loadWarTargets(){
 }
 async function warUpgrade(){
   try{
-    showToast("Upgrading...");
+    showToast("Upgrading outpost...");
     const d = await api("/api/war/upgrade",{method:"POST",body:"{}"});
     showToast(d.message||"Upgraded");
     try{ await refreshWallet(); }catch(e){}
@@ -4350,10 +4433,31 @@ async function warRepair(){
     await loadWarStatus();
   }catch(e){ showToast(e.message||"Repair failed", true); }
 }
+function showWarRaidResult(d){
+  const box = $("warRaidResult");
+  if(!box) return;
+  const win = d.result === "WIN";
+  box.style.display = "block";
+  box.style.borderColor = win ? "rgba(105,240,174,.45)" : "rgba(255,138,128,.4)";
+  box.innerHTML =
+    '<div style="text-align:center;padding:8px 0">' +
+    '<div style="font-size:42px">' + (win ? "🏆" : "💥") + '</div>' +
+    '<div style="font-size:20px;font-weight:900;margin-top:6px;color:' + (win?"#69f0ae":"#ff8a80") + '">' + (win?"VICTORY":"DEFEAT") + '</div>' +
+    '<div class="muted" style="margin-top:6px">vs @' + esc(d.targetUsername||"miner") + '</div>' +
+    '<div style="margin-top:12px;display:flex;justify-content:center;gap:18px;flex-wrap:wrap">' +
+    '<div><div class="muted" style="font-size:10px">DAMAGE</div><div style="font-weight:900;font-size:18px">' + (d.damage||0) + '</div></div>' +
+    '<div><div class="muted" style="font-size:10px">LOOT</div><div style="font-weight:900;font-size:18px;color:#ffd64e">' + (d.lootAmt||0) + ' AMT</div></div>' +
+    '<div><div class="muted" style="font-size:10px">TROPHY</div><div style="font-weight:900;font-size:18px">' + ((d.trophyDelta>=0?"+":"")+(d.trophyDelta||0)) + '</div></div>' +
+    '</div>' +
+    '<button type="button" class="secondary" style="margin-top:14px;width:100%" onclick="document.getElementById(\'warRaidResult\').style.display=\'none\'">Close</button>' +
+    '</div>';
+  try{ box.scrollIntoView({behavior:"smooth",block:"nearest"}); }catch(e){}
+}
 async function warRaid(targetId){
   try{
-    showToast("Raiding...");
+    showToast("⚔️ Deploying raid...");
     const d = await api("/api/war/raid",{method:"POST",body:JSON.stringify({targetId:targetId})});
+    showWarRaidResult(d);
     showToast(d.message||d.result||"Raid done");
     try{ await refreshWallet(); }catch(e){}
     await loadWarStatus();
