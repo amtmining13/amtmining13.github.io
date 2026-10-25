@@ -2269,7 +2269,7 @@ SELECT 180D
 <section id="warSection" class="section">
   <div class="hero">
     <h1>WAR <span>OUTPOST</span></h1>
-    <p>Phase 1 · Build · Defend · Raid · Rank up</p>
+    <p>Phase 2 · Gold · Elixir · Archer Hero · Raid</p>
   </div>
 
   <div class="card" style="border:1px solid rgba(251,191,36,.35);background:linear-gradient(165deg,rgba(40,22,8,.95),rgba(18,12,28,.98))">
@@ -2307,6 +2307,44 @@ SELECT 180D
       <button type="button" class="secondary" onclick="warRepair()">🔧 REPAIR (+30 HP · 0.2 AMT)</button>
     </div>
     <div class="muted" style="margin-top:10px;font-size:11px;text-align:center" id="warRaidCd">Raid ready</div>
+  </div>
+
+  <div class="card" style="border:1px solid rgba(52,211,153,.3)">
+    <div class="card-title">💰 RESOURCES · PHASE 2</div>
+    <div class="grid" style="grid-template-columns:1fr 1fr;gap:10px;margin-top:8px">
+      <div class="stat"><div class="stat-label">GOLD</div><div class="stat-value" id="warGold" style="color:#fbbf24">0</div></div>
+      <div class="stat"><div class="stat-label">ELIXIR</div><div class="stat-value" id="warElixir" style="color:#c084fc">0</div></div>
+    </div>
+    <button type="button" class="primary" style="margin-top:12px" onclick="warCollect()">⛏️ COLLECT RESOURCES</button>
+    <div class="muted" style="font-size:10px;margin-top:6px;text-align:center">Passive stockpile · collect anytime</div>
+  </div>
+
+  <div class="card" style="border:1px solid rgba(34,211,238,.28)">
+    <div class="row">
+      <div class="card-title" style="margin:0">🏹 ARMY · ARCHER HERO</div>
+      <div class="muted" style="font-size:11px">Power <b id="warArmyPower" style="color:#67e8f9">0</b></div>
+    </div>
+    <div class="grid3" style="margin-top:10px">
+      <div class="stat" style="text-align:center">
+        <div style="font-size:28px">⚔️</div>
+        <div class="stat-label">WARRIOR</div>
+        <div class="stat-value" id="warWarriors">0</div>
+        <button type="button" class="small-btn" style="margin-top:6px" onclick="warTrain('warrior')">+1 · 40G 20E</button>
+      </div>
+      <div class="stat" style="text-align:center;border:1px solid rgba(52,211,153,.4);border-radius:12px;padding:8px">
+        <div style="font-size:28px">🏹</div>
+        <div class="stat-label" style="color:#6ee7b7">ARCHER HERO</div>
+        <div class="stat-value" id="warArchers" style="color:#6ee7b7">0</div>
+        <button type="button" class="small-btn" style="margin-top:6px;background:linear-gradient(135deg,#047857,#34d399);color:#052e1a;font-weight:900" onclick="warTrain('archer')">+1 · 55G 35E</button>
+      </div>
+      <div class="stat" style="text-align:center">
+        <div style="font-size:28px">🛡️</div>
+        <div class="stat-label">TANK</div>
+        <div class="stat-value" id="warTanks">0</div>
+        <button type="button" class="small-btn" style="margin-top:6px" onclick="warTrain('tank')">+1 · 80G 50E</button>
+      </div>
+    </div>
+    <div class="muted" style="font-size:10px;margin-top:10px;text-align:center">Archer Hero = highest DPS · Army cap rises with outpost level</div>
   </div>
 
   <div id="warRaidResult" class="card" style="display:none;border:1px solid rgba(255,214,78,.4)"></div>
@@ -4267,6 +4305,12 @@ async function loadWarStatus(){
     if($("warMyRank")) $("warMyRank").textContent = o.myRank != null ? o.myRank : "—";
     if($("warFortEmoji")) $("warFortEmoji").textContent = warFortEmoji(o.level);
     if($("warUpCost")) $("warUpCost").textContent = d.upgradeCost != null ? d.upgradeCost : "0.5";
+    if($("warGold")) $("warGold").textContent = o.gold != null ? o.gold : "0";
+    if($("warElixir")) $("warElixir").textContent = o.elixir != null ? o.elixir : "0";
+    if($("warWarriors")) $("warWarriors").textContent = o.warriors != null ? o.warriors : "0";
+    if($("warArchers")) $("warArchers").textContent = o.archers != null ? o.archers : "0";
+    if($("warTanks")) $("warTanks").textContent = o.tanks != null ? o.tanks : "0";
+    if($("warArmyPower")) $("warArmyPower").textContent = o.armyPower != null ? o.armyPower : "0";
     if($("warRaidCd")){
       const left = d.raidsLeft != null ? d.raidsLeft : "?";
       const per = d.raidsPerDay != null ? d.raidsPerDay : 12;
@@ -4373,6 +4417,22 @@ async function warRepair(){
     await loadWarStatus();
   }catch(e){ showToast(e.message||"Repair failed", true); }
 }
+async function warCollect(){
+  try{
+    showToast("Collecting...");
+    const d = await api("/api/war/collect",{method:"POST",body:"{}"});
+    showToast(d.message||"Collected");
+    await loadWarStatus();
+  }catch(e){ showToast(e.message||"Collect failed", true); }
+}
+async function warTrain(unit){
+  try{
+    showToast("Training...");
+    const d = await api("/api/war/train",{method:"POST",body:JSON.stringify({unit:unit,qty:1})});
+    showToast(d.message||"Trained");
+    await loadWarStatus();
+  }catch(e){ showToast(e.message||"Train failed", true); }
+}
 function showWarRaidResult(d){
   const box = $("warRaidResult");
   if(!box) return;
@@ -4387,6 +4447,8 @@ function showWarRaidResult(d){
     '<div style="margin-top:12px;display:flex;justify-content:center;gap:18px;flex-wrap:wrap">' +
     '<div><div class="muted" style="font-size:10px">DAMAGE</div><div style="font-weight:900;font-size:18px">' + (d.damage||0) + '</div></div>' +
     '<div><div class="muted" style="font-size:10px">LOOT</div><div style="font-weight:900;font-size:18px;color:#ffd64e">' + (d.lootAmt||0) + ' AMT</div></div>' +
+    '<div><div class="muted" style="font-size:10px">GOLD</div><div style="font-weight:900;font-size:18px;color:#fbbf24">+' + (d.goldLoot||0) + '</div></div>' +
+    '<div><div class="muted" style="font-size:10px">ELIXIR</div><div style="font-weight:900;font-size:18px;color:#c084fc">+' + (d.elixirLoot||0) + '</div></div>' +
     '<div><div class="muted" style="font-size:10px">TROPHY</div><div style="font-weight:900;font-size:18px">' + ((d.trophyDelta>=0?"+":"")+(d.trophyDelta||0)) + '</div></div>' +
     '</div>' +
     '<button type="button" class="secondary" style="margin-top:14px;width:100%" onclick="document.getElementById(\'warRaidResult\').style.display=\'none\'">Close</button>' +
