@@ -2269,7 +2269,7 @@ SELECT 180D
 <section id="warSection" class="section">
   <div class="hero">
     <h1>WAR <span>OUTPOST</span></h1>
-    <p>Phase 3 · 24/7 War · Fort · Revenge · Streak</p>
+    <p>24/7 War · Fort · Revenge · Streak · Optional Shield</p>
   </div>
 
   <div class="card" style="border:1px solid rgba(251,191,36,.35);background:linear-gradient(165deg,rgba(40,22,8,.95),rgba(18,12,28,.98))">
@@ -2315,7 +2315,7 @@ SELECT 180D
   </div>
 
   <div class="card" style="border:1px solid rgba(52,211,153,.3)">
-    <div class="card-title">💰 RESOURCES · PHASE 2</div>
+    <div class="card-title">💰 RESOURCES</div>
     <div class="grid" style="grid-template-columns:1fr 1fr;gap:10px;margin-top:8px">
       <div class="stat"><div class="stat-label">GOLD</div><div class="stat-value" id="warGold" style="color:#fbbf24">0</div></div>
       <div class="stat"><div class="stat-label">ELIXIR</div><div class="stat-value" id="warElixir" style="color:#c084fc">0</div></div>
@@ -2382,7 +2382,7 @@ SELECT 180D
 
   <div class="card" style="border:1px solid rgba(251,191,36,.3)">
     <div class="row">
-      <div class="card-title" style="margin:0">🏰 FORT · PHASE 3</div>
+      <div class="card-title" style="margin:0">🏰 FORT</div>
       <div class="muted" style="font-size:11px">🔥 Streak <b id="warStreak">0</b></div>
     </div>
     <div class="grid3" style="margin-top:10px;gap:8px">
@@ -4426,6 +4426,14 @@ async function loadWarStatus(){
       } else {
         $("warRaidCd").textContent = "✅ Raid ready · " + left + "/" + per + " left" + streakTxt + shieldTxt;
       }
+      const shOn = d.shieldSeconds > 0;
+      if($("warShieldOnBtn")){
+        $("warShieldOnBtn").style.opacity = shOn ? "0.55" : "1";
+        $("warShieldOnBtn").textContent = shOn ? "🛡️ SHIELD ACTIVE" : "🛡️ SHIELD ON (12h)";
+      }
+      if($("warShieldOffBtn")){
+        $("warShieldOffBtn").style.borderColor = shOn ? "rgba(52,211,153,.5)" : "";
+      }
     }
     // Trophy board
     const boardBox = $("warBoardList");
@@ -4494,8 +4502,8 @@ async function loadWarTargets(){
         '<div style="min-width:0"><div style="font-weight:900;font-size:15px">@' + esc(tg.username) + '</div>' +
         '<div class="muted" style="font-size:11px;margin-top:2px">Lv' + tg.level + ' · Def ' + tg.defense + ' · PWR ' + (tg.power!=null?tg.power:'—') + ' · 🏆' + tg.trophy +
         (tg.shieldSeconds>0 ? (' · 🛡️ ' + Math.ceil(tg.shieldSeconds/3600) + 'h') : '') + '</div></div>' +
-        '<button type="button" class="small-btn" style="background:linear-gradient(135deg,#b45309,#f59e0b);color:#111;font-weight:900;padding:10px 14px" ' +
-        (tg.shieldSeconds>0?'disabled style="opacity:.5"':'') + ' onclick="warRaid(' + tg.memberId + ')">' +
+        '<button type="button" class="small-btn" style="flex-shrink:0;background:' + (tg.shieldSeconds>0?'rgba(100,100,120,.4)':'linear-gradient(135deg,#b45309,#f59e0b)') + ';color:' + (tg.shieldSeconds>0?'#aaa':'#111') + ';font-weight:900;padding:10px 14px;opacity:' + (tg.shieldSeconds>0?'0.7':'1') + '" ' +
+        (tg.shieldSeconds>0?'disabled ':'') + 'onclick="warRaid(' + tg.memberId + ')">' +
         (tg.shieldSeconds>0?'🛡️ SHIELD':'⚔️ RAID') + '</button></div>' +
         '<div style="margin-top:8px;height:6px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden">' +
         '<div style="height:100%;width:' + pct + '%;background:' + (pct>60?"#22c55e":pct>30?"#eab308":"#ef4444") + ';border-radius:999px"></div></div>' +
@@ -4549,11 +4557,13 @@ async function loadWarRevenge(){
       return;
     }
     box.innerHTML = list.map(function(tg){
-      return '<div class="row" style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)">' +
-        '<div style="flex:1;min-width:0">' +
-        '<div style="font-weight:800">@' + esc(tg.username) + '</div>' +
-        '<div class="muted" style="font-size:11px">Lv' + tg.level + ' · Def ' + tg.defense + ' · 🏆' + tg.trophy + '</div></div>' +
-        '<button type="button" class="small-btn" style="background:linear-gradient(135deg,#991b1b,#ef4444);color:#fff;font-weight:900" onclick="warRaid(' + tg.memberId + ')">💀 REVENGE</button></div>';
+      return '<div style="padding:12px;margin-bottom:10px;border-radius:14px;background:rgba(239,68,68,.08);border:1px solid rgba(248,113,113,.25)">' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">' +
+        '<div style="min-width:0;flex:1">' +
+        '<div style="font-weight:900;font-size:15px">@' + esc(tg.username) + '</div>' +
+        '<div class="muted" style="font-size:11px;margin-top:4px;line-height:1.4">Lv' + tg.level + ' · Def ' + tg.defense +
+        ' · PWR ' + (tg.power!=null?tg.power:'—') + '<br>🏆 ' + tg.trophy + '</div></div>' +
+        '<button type="button" class="small-btn" style="flex-shrink:0;background:linear-gradient(135deg,#991b1b,#ef4444);color:#fff;font-weight:900;padding:10px 12px;white-space:nowrap" onclick="warRaid(' + tg.memberId + ')">💀 REVENGE</button></div></div>';
     }).join("");
   }catch(e){
     box.innerHTML = '<div class="empty">' + esc(e.message||"Failed") + '</div>';
