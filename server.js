@@ -2904,6 +2904,7 @@ app.get(
           else if (typ === "WAR_LOOT") label = "WAR LOOT";
           else if (typ === "WAR_UPGRADE") label = "WAR UPGRADE";
           else if (typ === "WAR_REPAIR") label = "WAR REPAIR";
+          else if (typ === "WAR_REFUND") label = "WAR REFUND";
           else if (typ === "DAILY_GOAL_BONUS") label = "DAILY GOALS BONUS";
           else if (typ === "MISSION" || typ === "MISSION_BONUS") label = "DAILY MISSION";
           else if (typ === "STAKING_PAYOUT") label = "STAKING PAYOUT";
@@ -14770,23 +14771,129 @@ async function getOrCreateOutpost(memberId, client) {
   return r.rows[0];
 }
 
+
+/** One-time: refund WAR_UPGRADE/WAR_REPAIR spend, reset outpost combat stats, cap future at Lv100 */
+async function warSoftResetAndRefundOnce() {
+  try {
+    await ensureWarTables();
+    // Already ran?
+    const flag = await pool.query(
+      `SELECT 1 FROM amt_ledger WHERE reference = 'WAR-SOFT-RESET-V1' LIMIT 1`
+    );
+    if (flag.rows.length) return;
+
+    const spends = await pool.query(
+      `SELECT member_id, COALESCE(SUM(ABS(amount)),0)::float AS spent
+       FROM amt_ledger
+       WHERE type IN ('WAR_UPGRADE', 'WAR_REPAIR')
+       GROUP BY member_id
+       HAVING COALESCE(SUM(ABS(amount)),0) > 0`
+    );
+
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      // Marker so we never double-refund
+      await client.query(
+        `INSERT INTO amt_ledger (member_id, amount, type, reference)
+         SELECT id, 0, 'SYSTEM', 'WAR-SOFT-RESET-V1' FROM members ORDER BY id ASC LIMIT 1
+         ON CONFLICT DO NOTHING`
+      );
+      // If unique on reference fails for amount 0, try another approach
+      for (const row of spends.rows) {
+        const mid = row.member_id;
+        const spent = Math.round(Number(row.spent) * 1e8) / 1e8;
+        if (spent <= 0) continue;
+        const ref = "WAR-REFUND-" + mid + "-V1";
+        const exists = await client.query(
+          `SELECT id FROM amt_ledger WHERE reference = $1 LIMIT 1`,
+          [ref]
+        );
+        if (exists.rows.length) continue;
+        await client.query(
+          `INSERT INTO amt_ledger (member_id, amount, type, reference)
+           VALUES ($1, $2, 'WAR_REFUND', $3)`,
+          [mid, spent, ref]
+        );
+        // Back to zero combat stats (keep trophy / army / hero / resources)
+        await client.query(
+          `UPDATE war_outposts SET
+             level = 1,
+             hp = $1,
+             max_hp = $1,
+             defense = $2,
+             updated_at = NOW()
+           WHERE member_id = $3`,
+          [WAR_BASE_HP, WAR_BASE_DEF, mid]
+        );
+      }
+      // Clamp anyone with no spend record but crazy stats
+      await client.query(
+        `UPDATE war_outposts SET
+           level = LEAST(level, $1),
+           defense = CASE WHEN level > $1 OR defense > 500 THEN $2 ELSE defense END,
+           max_hp = CASE WHEN level > $1 OR max_hp > 3000 THEN $3 ELSE max_hp END,
+           hp = LEAST(hp, CASE WHEN level > $1 OR max_hp > 3000 THEN $3 ELSE max_hp END),
+           updated_at = NOW()
+         WHERE level > $1 OR defense > 500 OR max_hp > 3000`,
+        [WAR_MAX_LEVEL, WAR_BASE_DEF, WAR_BASE_HP]
+      );
+      // Ensure marker exists even if no spends
+      await client.query(
+        `INSERT INTO amt_ledger (member_id, amount, type, reference)
+         SELECT m.id, 0, 'SYSTEM', 'WAR-SOFT-RESET-V1'
+         FROM members m
+         WHERE NOT EXISTS (SELECT 1 FROM amt_ledger l WHERE l.reference = 'WAR-SOFT-RESET-V1')
+         ORDER BY m.id ASC
+         LIMIT 1`
+      );
+      await client.query("COMMIT");
+      console.log("WAR soft reset + refunds applied:", spends.rows.length, "miners");
+    } catch (e) {
+      try { await client.query("ROLLBACK"); } catch (_) {}
+      console.error("WAR soft reset failed:", e.message || e);
+    } finally {
+      client.release();
+    }
+  } catch (e) {
+    console.error("WAR soft reset outer:", e.message || e);
+  }
+}
+
 const WAR_UPGRADE_COST = 0.5; // soft economy pre-value; raise later on Mainnet value
+const WAR_MAX_LEVEL = 100;
+const WAR_BASE_HP = 100;
+const WAR_BASE_DEF = 10;
+
 const WAR_RAID_COOLDOWN_MS = 3 * 60 * 1000; // 3 min between raids
 const WAR_RAIDS_PER_DAY = 12; // max raids per UTC day
 const WAR_SHIELD_MS = 12 * 60 * 60 * 1000; // 12h protection after being raided
 function warPowerScore(o) {
   return Number(o.defense || 0) + Number(o.level || 1) * 10 + Number(o.hero_level || 1) * 3;
 }
-function warInBracket(a, b, relaxed) {
-  // Wide bands so early player pools still find fights
-  const maxDiff = relaxed ? 5000 : 800;
-  return Math.abs(warPowerScore(a) - warPowerScore(b)) <= maxDiff;
+function warBracketTier(o) {
+  const p = warPowerScore(o);
+  // Clear high vs low bands
+  if (p < 80) return 0;       // starter
+  if (p < 200) return 1;      // low
+  if (p < 450) return 2;      // mid
+  if (p < 900) return 3;      // high
+  if (p < 2000) return 4;     // elite
+  return 5;                   // legend
 }
+function warInBracket(a, b, relaxed) {
+  const ta = warBracketTier(a);
+  const tb = warBracketTier(b);
+  if (!relaxed) return ta === tb;
+  return Math.abs(ta - tb) <= 1; // adjacent tier only when pool is thin
+}
+
 
 
 app.get("/api/war/status", requireAuth, async (req, res) => {
   try {
     await ensureWarTables();
+    // Soft reset disabled — community prefers brackets only
     const outpost = await getOrCreateOutpost(req.member.id);
     const log = await pool.query(
       `SELECT a.*, 
@@ -14899,6 +15006,10 @@ app.post("/api/war/upgrade", requireAuth, async (req, res) => {
     await client.query("BEGIN");
     await client.query(`SELECT id FROM members WHERE id = $1 FOR UPDATE`, [req.member.id]);
     const outpost = await getOrCreateOutpost(req.member.id, client);
+    if (Number(outpost.level) >= WAR_MAX_LEVEL) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Max outpost level is " + WAR_MAX_LEVEL + "." });
+    }
     const cost = WAR_UPGRADE_COST;
     const bal = await getBalance(req.member.id, client);
     if (bal < cost) {
@@ -14942,61 +15053,50 @@ app.get("/api/war/targets", requireAuth, async (req, res) => {
   try {
     await ensureWarTables();
     const me = await getOrCreateOutpost(req.member.id);
+    // Include SHIELDED bases — visible but not raidable
     const rows = await pool.query(
       `SELECT o.member_id, o.hp, o.max_hp, o.defense, o.trophy, o.level,
               COALESCE(o.hero_level,1) AS hero_level, o.last_defend_at, m.username
        FROM war_outposts o
        JOIN members m ON m.id = o.member_id
        WHERE o.member_id <> $1 AND o.hp > 0
-         AND (o.last_defend_at IS NULL OR o.last_defend_at < NOW() - INTERVAL '12 hours')
-       ORDER BY ABS( (o.defense + o.level * 10) - $2 ) ASC, RANDOM()
-       LIMIT 25`,
+       ORDER BY ABS( (o.defense + o.level * 10 + COALESCE(o.hero_level,1)*3) - $2 ) ASC
+       LIMIT 50`,
       [req.member.id, warPowerScore(me)]
     );
 
+    // Same tier first, then adjacent tier if few
     let list = rows.rows.filter((r) => warInBracket(me, r, false));
-    if (list.length < 4) list = rows.rows.filter((r) => warInBracket(me, r, true));
-    // Final fallback: anyone without shield (prefer closer power)
-    if (list.length < 2) list = rows.rows.slice();
-    list = list.slice(0, 8);
+    if (list.length < 5) {
+      const adj = rows.rows.filter((r) => warInBracket(me, r, true));
+      const seen = new Set(list.map((x) => x.member_id));
+      for (const r of adj) {
+        if (!seen.has(r.member_id)) { list.push(r); seen.add(r.member_id); }
+      }
+    }
+    list = list.slice(0, 10);
 
-    // If still empty — include shielded? No. Offer members without outpost.
-    if (list.length === 0) {
+    // Low tier: show brand-new outposts as optional targets
+    if (list.length < 3 && warBracketTier(me) <= 1) {
       const extra = await pool.query(
         `SELECT m.id AS member_id, m.username,
-                100 AS hp, 100 AS max_hp, 10 AS defense, 0 AS trophy, 1 AS level, 1 AS hero_level
+                100 AS hp, 100 AS max_hp, 10 AS defense, 0 AS trophy, 1 AS level, 1 AS hero_level,
+                NULL::timestamptz AS last_defend_at
          FROM members m
          WHERE m.id <> $1
            AND NOT EXISTS (SELECT 1 FROM war_outposts w WHERE w.member_id = m.id)
          ORDER BY RANDOM()
-         LIMIT 5`,
-        [req.member.id]
+         LIMIT $2`,
+        [req.member.id, Math.max(1, 5 - list.length)]
       );
-      list = extra.rows;
-    }
-
-    // Last resort: show closest outposts even if shielded (label shield) so list not empty
-    let soft = false;
-    if (list.length === 0) {
-      soft = true;
-      const any = await pool.query(
-        `SELECT o.member_id, o.hp, o.max_hp, o.defense, o.trophy, o.level,
-                COALESCE(o.hero_level,1) AS hero_level, o.last_defend_at, m.username
-         FROM war_outposts o
-         JOIN members m ON m.id = o.member_id
-         WHERE o.member_id <> $1
-         ORDER BY ABS( (o.defense + o.level * 10) - $2 ) ASC
-         LIMIT 8`,
-        [req.member.id, warPowerScore(me)]
-      );
-      list = any.rows;
+      list = list.concat(extra.rows);
     }
 
     res.json({
       ok: true,
       myPower: warPowerScore(me),
-      bracket: "level+defense",
-      softList: soft,
+      myTier: warBracketTier(me),
+      bracket: "tier-level-defense",
       targets: list.map((r) => {
         let shieldLeft = 0;
         if (r.last_defend_at) {
@@ -15012,6 +15112,7 @@ app.get("/api/war/targets", requireAuth, async (req, res) => {
           trophy: r.trophy,
           level: r.level,
           power: warPowerScore(r),
+          tier: warBracketTier(r),
           shieldSeconds: shieldLeft
         };
       })
@@ -15079,13 +15180,12 @@ app.post("/api/war/raid", requireAuth, async (req, res) => {
       }
     }
     // Level + defense bracket (fair matchmaking)
-    // Soft bracket: block only extreme mismatches (anti-bully)
-    const pDiff = Math.abs(warPowerScore(myO) - warPowerScore(defO));
-    if (pDiff > 8000) {
+    // Bracket: same tier or adjacent only
+    if (!warInBracket(myO, defO, true)) {
       await client.query("ROLLBACK");
       return res.status(400).json({
         ok: false,
-        error: "Target far outside your power range. Pick a closer outpost."
+        error: "Outside your bracket (high/low level split). Pick a ka-bracket target."
       });
     }
 
@@ -15120,7 +15220,7 @@ app.post("/api/war/raid", requireAuth, async (req, res) => {
       defTrophy = -5;
       await client.query(
         `INSERT INTO amt_ledger (member_id, amount, type, reference)
-         VALUES ($1, $2, 'WAR_LOOT', $3)`,
+         VALUES ($1, $2, 'WAR_LOOT','WAR_REFUND', $3)`,
         [req.member.id, loot, makeReference("AMT-WARLOOT")]
       );
     } else {
