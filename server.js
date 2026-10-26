@@ -14773,6 +14773,15 @@ async function getOrCreateOutpost(memberId, client) {
 const WAR_UPGRADE_COST = 0.5; // soft economy pre-value; raise later on Mainnet value
 const WAR_RAID_COOLDOWN_MS = 3 * 60 * 1000; // 3 min between raids
 const WAR_RAIDS_PER_DAY = 12; // max raids per UTC day
+const WAR_SHIELD_MS = 12 * 60 * 60 * 1000; // 12h protection after being raided
+function warPowerScore(o) {
+  return Number(o.defense || 0) + Number(o.level || 1) * 10 + Number(o.hero_level || 1) * 3;
+}
+function warInBracket(a, b, relaxed) {
+  const maxDiff = relaxed ? 220 : 120;
+  return Math.abs(warPowerScore(a) - warPowerScore(b)) <= maxDiff;
+}
+
 
 app.get("/api/war/status", requireAuth, async (req, res) => {
   try {
@@ -14794,6 +14803,11 @@ app.get("/api/war/status", requireAuth, async (req, res) => {
     if (outpost.last_raid_at) {
       const left = WAR_RAID_COOLDOWN_MS - (Date.now() - new Date(outpost.last_raid_at).getTime());
       if (left > 0) nextRaidIn = Math.ceil(left / 1000);
+    }
+    let shieldSeconds = 0;
+    if (outpost.last_defend_at) {
+      const sl = WAR_SHIELD_MS - (Date.now() - new Date(outpost.last_defend_at).getTime());
+      if (sl > 0) shieldSeconds = Math.ceil(sl / 1000);
     }
     const dayStart = new Date();
     dayStart.setUTCHours(0, 0, 0, 0);
@@ -14850,6 +14864,8 @@ app.get("/api/war/status", requireAuth, async (req, res) => {
       },
       upgradeCost: WAR_UPGRADE_COST,
       nextRaidIn,
+      shieldSeconds,
+      shieldHours: 12,
       raidsToday: raidsToday,
       raidsLeft: raidsLeft,
       raidsPerDay: WAR_RAIDS_PER_DAY,
@@ -14924,23 +14940,32 @@ app.post("/api/war/upgrade", requireAuth, async (req, res) => {
 app.get("/api/war/targets", requireAuth, async (req, res) => {
   try {
     await ensureWarTables();
-    await getOrCreateOutpost(req.member.id);
+    const me = await getOrCreateOutpost(req.member.id);
     const rows = await pool.query(
-      `SELECT o.member_id, o.hp, o.max_hp, o.defense, o.trophy, o.level, m.username
+      `SELECT o.member_id, o.hp, o.max_hp, o.defense, o.trophy, o.level,
+              o.hero_level, o.last_defend_at, m.username
        FROM war_outposts o
        JOIN members m ON m.id = o.member_id
        WHERE o.member_id <> $1 AND o.hp > 0
-       ORDER BY ABS(o.trophy - COALESCE((SELECT trophy FROM war_outposts WHERE member_id = $1), 0)) ASC,
-                RANDOM()
-       LIMIT 8`,
+         AND (o.last_defend_at IS NULL OR o.last_defend_at < NOW() - INTERVAL '12 hours')
+       ORDER BY RANDOM()
+       LIMIT 40`,
       [req.member.id]
     );
-    // If few outposts, also allow targeting members without outpost (create on raid)
-    let list = rows.rows;
+    // Strict bracket first (similar level + defense), then relaxed if too few
+    let list = rows.rows.filter((r) => warInBracket(me, r, false));
     if (list.length < 3) {
+      list = rows.rows.filter((r) => warInBracket(me, r, true));
+    }
+    // Sort by closest power
+    list.sort((a, b) => Math.abs(warPowerScore(a) - warPowerScore(me)) - Math.abs(warPowerScore(b) - warPowerScore(me)));
+    list = list.slice(0, 8);
+
+    // New players only: fill with fresh outposts in low bracket
+    if (list.length < 3 && warPowerScore(me) < 80) {
       const extra = await pool.query(
         `SELECT m.id AS member_id, m.username,
-                100 AS hp, 100 AS max_hp, 10 AS defense, 0 AS trophy, 1 AS level
+                100 AS hp, 100 AS max_hp, 10 AS defense, 0 AS trophy, 1 AS level, 1 AS hero_level
          FROM members m
          WHERE m.id <> $1
            AND NOT EXISTS (SELECT 1 FROM war_outposts w WHERE w.member_id = m.id)
@@ -14950,8 +14975,11 @@ app.get("/api/war/targets", requireAuth, async (req, res) => {
       );
       list = list.concat(extra.rows);
     }
+
     res.json({
       ok: true,
+      myPower: warPowerScore(me),
+      bracket: "level+defense",
       targets: list.map((r) => ({
         memberId: r.member_id,
         username: r.username || ("miner#" + r.member_id),
@@ -14959,7 +14987,8 @@ app.get("/api/war/targets", requireAuth, async (req, res) => {
         maxHp: r.max_hp,
         defense: r.defense,
         trophy: r.trophy,
-        level: r.level
+        level: r.level,
+        power: warPowerScore(r)
       }))
     });
   } catch (e) {
@@ -15013,6 +15042,25 @@ app.post("/api/war/raid", requireAuth, async (req, res) => {
       return res.status(404).json({ ok: false, error: "Target not found." });
     }
     const defO = await getOrCreateOutpost(targetId, client);
+    if (defO.last_defend_at) {
+      const shieldLeft = WAR_SHIELD_MS - (Date.now() - new Date(defO.last_defend_at).getTime());
+      if (shieldLeft > 0) {
+        await client.query("ROLLBACK");
+        const hrs = Math.ceil(shieldLeft / 3600000);
+        return res.status(400).json({
+          ok: false,
+          error: "Target has base shield · ~" + hrs + "h left (12h protection after raid)."
+        });
+      }
+    }
+    // Level + defense bracket (fair matchmaking)
+    if (!warInBracket(myO, defO, true)) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({
+        ok: false,
+        error: "Outside your bracket (level + defense too far). Find a closer target."
+      });
+    }
 
     // Actual Archer Hero + skill
     const skillId = String(req.body?.skill || myO.hero_skill || "snipe").toLowerCase();
