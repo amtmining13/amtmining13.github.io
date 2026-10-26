@@ -14211,8 +14211,9 @@ async function bumpMission(memberId, missionId, amount) {
     try {
       await pool.query(`ALTER TABLE daily_goals ADD COLUMN IF NOT EXISTS raid BOOLEAN NOT NULL DEFAULT FALSE`);
       await pool.query(`ALTER TABLE daily_goals ADD COLUMN IF NOT EXISTS alliance BOOLEAN NOT NULL DEFAULT FALSE`);
+      await pool.query(`ALTER TABLE daily_goals ADD COLUMN IF NOT EXISTS dungeon BOOLEAN NOT NULL DEFAULT FALSE`);
     } catch (_) {}
-    const col = { mine: "mine", spin: "spin", care: "care", battle: "battle", raid: "raid", alliance: "alliance" }[String(missionId)];
+    const col = { mine: "mine", spin: "spin", care: "care", battle: "battle", raid: "raid", alliance: "alliance", dungeon: "dungeon" }[String(missionId)];
     if (!col) return;
     const today = utcDateString();
     await pool.query(
@@ -14234,7 +14235,7 @@ app.get("/api/missions/status", requireAuth, async (req, res) => {
     await ensureDailyGoalsTable();
     const today = utcDateString();
     const r = await pool.query(
-      `SELECT mine, spin, care, battle, COALESCE(raid,false) AS raid, COALESCE(alliance,false) AS alliance, bonus_claimed FROM daily_goals
+      `SELECT mine, spin, care, battle, COALESCE(raid,false) AS raid, COALESCE(alliance,false) AS alliance, COALESCE(dungeon,false) AS dungeon, bonus_claimed FROM daily_goals
        WHERE member_id = $1 AND goal_date = $2::date`,
       [req.member.id, today]
     );
@@ -14244,7 +14245,8 @@ app.get("/api/missions/status", requireAuth, async (req, res) => {
       { id: "spin", label: "Spin the wheel once", done: !!row.spin, rewardAmt: 0 },
       { id: "care", label: "Care a pet (or Care All)", done: !!row.care, rewardAmt: 0 },
       { id: "battle", label: "Win 1 pet battle", done: !!row.battle, rewardAmt: 0 },
-      { id: "raid", label: "Win 1 War raid", done: !!row.raid, rewardAmt: 0 },
+      { id: "raid", label: "Raid another War outpost (win)", done: !!row.raid, rewardAmt: 0 },
+      { id: "dungeon", label: "Hunt in Map Dungeon (claim run)", done: !!row.dungeon, rewardAmt: 0 },
       { id: "alliance", label: "Create or join an Alliance", done: !!row.alliance, rewardAmt: 0 }
     ];
     const doneCount = goals.filter(g => g.done).length;
@@ -14299,6 +14301,7 @@ app.post("/api/missions/claim-bonus", requireAuth, async (req, res) => {
     let row = await client.query(
       `SELECT mine, spin, care, battle,
               COALESCE(raid,false) AS raid, COALESCE(alliance,false) AS alliance,
+              COALESCE(dungeon,false) AS dungeon,
               bonus_claimed FROM daily_goals
        WHERE member_id = $1 AND goal_date = $2::date FOR UPDATE`,
       [req.member.id, today]
@@ -14312,10 +14315,10 @@ app.post("/api/missions/claim-bonus", requireAuth, async (req, res) => {
       await client.query("ROLLBACK");
       return res.status(400).json({ ok: false, error: "Daily bonus already claimed." });
     }
-    const done = [g.mine, g.spin, g.care, g.battle, g.raid, g.alliance].filter(Boolean).length;
+    const done = [g.mine, g.spin, g.care, g.battle, g.raid, g.dungeon, g.alliance].filter(Boolean).length;
     if (done < 4) {
       await client.query("ROLLBACK");
-      return res.status(400).json({ ok: false, error: "Need 4/6 missions done (you have " + done + "/6)." });
+      return res.status(400).json({ ok: false, error: "Need 4/7 missions done (you have " + done + "/7)." });
     }
     const amount = 5;
     await client.query(
@@ -14652,6 +14655,7 @@ app.post("/api/dungeon/claim", requireAuth, async (req, res) => {
     const lootText = (Array.isArray(loot) ? loot : [])
       .map((x) => (x.qty || 1) + " " + (x.item || "item"))
       .join(", ");
+    try { await bumpMission(req.member.id, "dungeon", 1); } catch (_) {}
     res.json({
       ok: true,
       loot: loot || [],
