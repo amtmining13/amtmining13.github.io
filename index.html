@@ -1591,24 +1591,6 @@ CLAIM DAILY REWARD
 </div>
 
 
-<!-- ECOSYSTEM PATH -->
-<div class="card" id="ecoPathCard" style="border:1px solid rgba(52,211,153,.3)">
-  <div class="card-title" style="margin:0">🌐 AMT PLAY PATH</div>
-  <div class="muted" style="font-size:11px;margin:6px 0 12px">Mine → Pets → Missions → Map → War · Alliance</div>
-  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px">
-    <button type="button" class="secondary" style="padding:10px 4px;font-size:11px;font-weight:800" onclick="showSection('miningSection')">⛏️<br>Mine</button>
-    <button type="button" class="secondary" style="padding:10px 4px;font-size:11px;font-weight:800" onclick="showSection('marketSection');if(typeof petTab==='function')petTab('owned');">🐶<br>Pets</button>
-    <button type="button" class="secondary" style="padding:10px 4px;font-size:11px;font-weight:800" onclick="document.getElementById('missionsCard')&&document.getElementById('missionsCard').scrollIntoView({behavior:'smooth'})">✅<br>Missions</button>
-    <button type="button" class="secondary" style="padding:10px 4px;font-size:11px;font-weight:800" onclick="showSection('miningSection');setTimeout(function(){var d=document.getElementById('dungeonCard');if(d)d.scrollIntoView({behavior:'smooth'});},200)">🗺️<br>Map</button>
-    <button type="button" class="secondary" style="padding:10px 4px;font-size:11px;font-weight:800" onclick="showSection('warSection')">⚔️<br>War</button>
-  </div>
-</div>
-
-<!-- DAILY MISSIONS -->
-<div class="card" id="missionsCard" style="border:1px solid rgba(96,165,250,.35)">
-  <div class="row">
-    <div>
-      <div class="card-title" style="margin:0">✅ DAILY MISSIONS</div>
       <div class="muted" style="font-size:11px;margin-top:4px">Mine · Raid bases · Dungeon hunt · Alliance · more</div>
     </div>
     <button type="button" class="small-btn" onclick="loadMissions()">Refresh</button>
@@ -1633,37 +1615,6 @@ CLAIM DAILY REWARD
   <div class="muted" id="chestStatusText">Tap to open today's surprise</div>
 </div>
 <button id="chestOpenBtn" class="primary" style="margin-top:12px" onclick="openMysteryChest()">✨ OPEN CHEST</button>
-</div>
-
-<!-- MAP: WAR OUTPOSTS + DUNGEON HUNT -->
-<div class="card" id="dungeonCard" style="border:1px solid rgba(56,189,248,.35)">
-  <div class="card-title">🗺️ MAP</div>
-  <div class="muted" style="font-size:11px;margin-bottom:12px">See War outposts on the map · Hunt dungeon · Daily quests</div>
-
-  <div class="card" style="margin:0 0 12px 0;border:1px solid rgba(251,191,36,.3);background:rgba(251,191,36,.06)">
-    <div class="row">
-      <div class="card-title" style="margin:0;font-size:14px">⚔️ WAR OUTPOSTS</div>
-      <button type="button" class="small-btn" onclick="loadMapOutposts()">Refresh</button>
-    </div>
-    <div class="muted" style="font-size:11px;margin:6px 0 10px">Other miners' bases in your bracket — tap RAID</div>
-    <div id="mapOutpostsList"><div class="empty">Loading bases...</div></div>
-    <button type="button" class="secondary" style="margin-top:10px" onclick="showSection('warSection')">Open full War HQ</button>
-  </div>
-
-  <div class="card" style="margin:0;border:1px solid rgba(52,211,153,.25);background:rgba(16,185,129,.06)">
-    <div class="card-title" style="margin:0;font-size:14px">🐉 DUNGEON HUNT</div>
-    <div class="muted" style="font-size:11px;margin:6px 0 10px">Send a pet to hunt · AFK loot (food, water, energy, gems, AMT)</div>
-    <label class="muted" style="font-size:11px">Pet ID</label>
-    <input id="dungeonPetId" class="input" type="number" placeholder="Owned pet id (from My Pets)">
-    <label class="muted" style="font-size:11px;margin-top:8px">Duration</label>
-    <select id="dungeonDuration" class="input">
-      <option value="1h">1 hour · 0.2 AMT</option>
-      <option value="2h">2 hours · 0.4 AMT</option>
-      <option value="4h">4 hours · 0.7 AMT</option>
-    </select>
-    <button class="primary" style="margin-top:10px" onclick="startDungeon()">🚀 SEND TO HUNT</button>
-    <div id="dungeonRuns" style="margin-top:12px"><div class="muted">No active runs</div></div>
-  </div>
 </div>
 
 <!-- MINING SESSION -->
@@ -5221,7 +5172,7 @@ showToast(
 "AMT mining started."
 );
 
-await loadMiningStatus(); try{ loadMissions(); }catch(e){}; try{ loadMapOutposts(); }catch(e){};
+await loadMiningStatus();
 
 // Show Pi Ad on mining click (bonus still 1x/day on server)
 try{ await showDailyMiningAd(); }catch(e){ console.warn(e); }
