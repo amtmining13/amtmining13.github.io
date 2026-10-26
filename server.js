@@ -14208,7 +14208,11 @@ async function bumpMission(memberId, missionId, amount) {
   try {
     if (!memberId || !missionId) return;
     await ensureDailyGoalsTable();
-    const col = { mine: "mine", spin: "spin", care: "care", battle: "battle" }[String(missionId)];
+    try {
+      await pool.query(`ALTER TABLE daily_goals ADD COLUMN IF NOT EXISTS raid BOOLEAN NOT NULL DEFAULT FALSE`);
+      await pool.query(`ALTER TABLE daily_goals ADD COLUMN IF NOT EXISTS alliance BOOLEAN NOT NULL DEFAULT FALSE`);
+    } catch (_) {}
+    const col = { mine: "mine", spin: "spin", care: "care", battle: "battle", raid: "raid", alliance: "alliance" }[String(missionId)];
     if (!col) return;
     const today = utcDateString();
     await pool.query(
@@ -14230,7 +14234,7 @@ app.get("/api/missions/status", requireAuth, async (req, res) => {
     await ensureDailyGoalsTable();
     const today = utcDateString();
     const r = await pool.query(
-      `SELECT mine, spin, care, battle, bonus_claimed FROM daily_goals
+      `SELECT mine, spin, care, battle, COALESCE(raid,false) AS raid, COALESCE(alliance,false) AS alliance, bonus_claimed FROM daily_goals
        WHERE member_id = $1 AND goal_date = $2::date`,
       [req.member.id, today]
     );
@@ -14239,10 +14243,12 @@ app.get("/api/missions/status", requireAuth, async (req, res) => {
       { id: "mine", label: "Start or claim mining today", done: !!row.mine, rewardAmt: 0 },
       { id: "spin", label: "Spin the wheel once", done: !!row.spin, rewardAmt: 0 },
       { id: "care", label: "Care a pet (or Care All)", done: !!row.care, rewardAmt: 0 },
-      { id: "battle", label: "Win 1 pet battle", done: !!row.battle, rewardAmt: 0 }
+      { id: "battle", label: "Win 1 pet battle", done: !!row.battle, rewardAmt: 0 },
+      { id: "raid", label: "Win 1 War raid", done: !!row.raid, rewardAmt: 0 },
+      { id: "alliance", label: "Create or join an Alliance", done: !!row.alliance, rewardAmt: 0 }
     ];
     const doneCount = goals.filter(g => g.done).length;
-    const need = 3;
+    const need = 4;
     const bonusClaimed = !!row.bonus_claimed;
     const bonusReady = doneCount >= need && !bonusClaimed;
     res.json({
@@ -14279,7 +14285,7 @@ app.post("/api/missions/claim", requireAuth, async (req, res) => {
   // Individual mission claims removed — use all-clear bonus only
   return res.json({
     ok: false,
-    error: "Complete 3 goals then claim the daily bonus below."
+    error: "Complete 4 of 6 missions then claim the daily bonus."
   });
 });
 
@@ -14291,7 +14297,9 @@ app.post("/api/missions/claim-bonus", requireAuth, async (req, res) => {
     await client.query("BEGIN");
     await client.query(`SELECT id FROM members WHERE id = $1 FOR UPDATE`, [req.member.id]);
     let row = await client.query(
-      `SELECT mine, spin, care, battle, bonus_claimed FROM daily_goals
+      `SELECT mine, spin, care, battle,
+              COALESCE(raid,false) AS raid, COALESCE(alliance,false) AS alliance,
+              bonus_claimed FROM daily_goals
        WHERE member_id = $1 AND goal_date = $2::date FOR UPDATE`,
       [req.member.id, today]
     );
@@ -14304,10 +14312,10 @@ app.post("/api/missions/claim-bonus", requireAuth, async (req, res) => {
       await client.query("ROLLBACK");
       return res.status(400).json({ ok: false, error: "Daily bonus already claimed." });
     }
-    const done = [g.mine, g.spin, g.care, g.battle].filter(Boolean).length;
-    if (done < 3) {
+    const done = [g.mine, g.spin, g.care, g.battle, g.raid, g.alliance].filter(Boolean).length;
+    if (done < 4) {
       await client.query("ROLLBACK");
-      return res.status(400).json({ ok: false, error: "Need 3/4 goals done (you have " + done + "/4)." });
+      return res.status(400).json({ ok: false, error: "Need 4/6 missions done (you have " + done + "/6)." });
     }
     const amount = 5;
     await client.query(
@@ -15306,6 +15314,9 @@ app.post("/api/war/raid", requireAuth, async (req, res) => {
     );
 
     await client.query("COMMIT");
+    if (win) {
+      try { await bumpMission(req.member.id, "raid", 1); } catch (_) {}
+    }
     const balance = await getBalance(req.member.id);
     const myAfter = await getOrCreateOutpost(req.member.id);
     res.json({
@@ -15832,6 +15843,7 @@ app.post("/api/alliance/create", requireAuth, async (req, res) => {
       [a.id, req.member.id]
     );
     await client.query("COMMIT");
+    try { await bumpMission(req.member.id, "alliance", 1); } catch (_) {}
     res.json({
       ok: true,
       alliance: alliancePublic(a, { memberCount: 1, leaderUsername: req.member.username }),
@@ -15888,6 +15900,7 @@ app.post("/api/alliance/join", requireAuth, async (req, res) => {
       [allianceId, req.member.id]
     );
     await client.query("COMMIT");
+    try { await bumpMission(req.member.id, "alliance", 1); } catch (_) {}
     res.json({
       ok: true,
       message: "Joined [" + row.tag + "] " + row.name + "!"
