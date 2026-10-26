@@ -2380,7 +2380,7 @@ SELECT 180D
       <div class="card-title" style="margin:0">🎯 RAID TARGETS</div>
       <button type="button" class="small-btn" onclick="loadWarTargets()">Refresh</button>
     </div>
-    <div class="muted" style="font-size:11px;margin:6px 0 10px">Auto battle · 3 min cooldown · up to 12 raids/day · win = AMT + trophies</div>
+    <div class="muted" style="font-size:11px;margin:6px 0 10px">Bracket match (level+def) · 3 min CD · 12 raids/day · 12h shield after raid</div>
     <div id="warTargetsList"><div class="muted">Loading targets...</div></div>
   </div>
 
@@ -4361,15 +4361,21 @@ async function loadWarStatus(){
     if($("warRaidCd")){
       const left = d.raidsLeft != null ? d.raidsLeft : "?";
       const per = d.raidsPerDay != null ? d.raidsPerDay : 12;
+      let shieldTxt = "";
+      if(d.shieldSeconds > 0){
+        const sh = Math.floor(d.shieldSeconds/3600);
+        const sm = Math.floor((d.shieldSeconds%3600)/60);
+        shieldTxt = " · 🛡️ Shield " + sh + "h " + sm + "m";
+      }
       if(d.nextRaidIn > 0){
         const sec = d.nextRaidIn;
         const m = Math.floor(sec/60);
         const s = sec % 60;
-        $("warRaidCd").textContent = "⏳ Cooldown " + m + "m " + s + "s · Raids left today: " + left + "/" + per;
+        $("warRaidCd").textContent = "⏳ Cooldown " + m + "m " + s + "s · Raids left: " + left + "/" + per + shieldTxt;
       } else if (Number(left) <= 0) {
-        $("warRaidCd").textContent = "🛑 Daily raid limit reached (" + per + "). Resets UTC midnight.";
+        $("warRaidCd").textContent = "🛑 Daily raid limit (" + per + "). Resets UTC midnight." + shieldTxt;
       } else {
-        $("warRaidCd").textContent = "✅ Raid ready · " + left + "/" + per + " left today";
+        $("warRaidCd").textContent = "✅ Raid ready · " + left + "/" + per + " left today" + shieldTxt;
       }
     }
     // Trophy board
@@ -4437,7 +4443,7 @@ async function loadWarTargets(){
       return '<div style="padding:12px;margin-bottom:10px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08)">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px">' +
         '<div style="min-width:0"><div style="font-weight:900;font-size:15px">@' + esc(tg.username) + '</div>' +
-        '<div class="muted" style="font-size:11px;margin-top:2px">Lv' + tg.level + ' · Def ' + tg.defense + ' · 🏆' + tg.trophy + '</div></div>' +
+        '<div class="muted" style="font-size:11px;margin-top:2px">Lv' + tg.level + ' · Def ' + tg.defense + ' · PWR ' + (tg.power!=null?tg.power:'—') + ' · 🏆' + tg.trophy + '</div></div>' +
         '<button type="button" class="small-btn" style="background:linear-gradient(135deg,#b45309,#f59e0b);color:#111;font-weight:900;padding:10px 14px" onclick="warRaid(' + tg.memberId + ')">⚔️ RAID</button></div>' +
         '<div style="margin-top:8px;height:6px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden">' +
         '<div style="height:100%;width:' + pct + '%;background:' + (pct>60?"#22c55e":pct>30?"#eab308":"#ef4444") + ';border-radius:999px"></div></div>' +
