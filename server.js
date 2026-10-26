@@ -14861,7 +14861,7 @@ async function warSoftResetAndRefundOnce() {
 }
 
 const WAR_UPGRADE_COST = 0.5; // soft economy pre-value; raise later on Mainnet value
-const WAR_MAX_LEVEL = 100;
+const WAR_MAX_LEVEL = 999999; // no soft cap until token has value
 const WAR_BASE_HP = 100;
 const WAR_BASE_DEF = 10;
 
@@ -15006,10 +15006,6 @@ app.post("/api/war/upgrade", requireAuth, async (req, res) => {
     await client.query("BEGIN");
     await client.query(`SELECT id FROM members WHERE id = $1 FOR UPDATE`, [req.member.id]);
     const outpost = await getOrCreateOutpost(req.member.id, client);
-    if (Number(outpost.level) >= WAR_MAX_LEVEL) {
-      await client.query("ROLLBACK");
-      return res.status(400).json({ ok: false, error: "Max outpost level is " + WAR_MAX_LEVEL + "." });
-    }
     const cost = WAR_UPGRADE_COST;
     const bal = await getBalance(req.member.id, client);
     if (bal < cost) {
