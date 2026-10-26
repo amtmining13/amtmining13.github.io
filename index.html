@@ -1590,6 +1590,35 @@ CLAIM DAILY REWARD
   </div>
 </div>
 
+
+<!-- ECOSYSTEM PATH -->
+<div class="card" id="ecoPathCard" style="border:1px solid rgba(52,211,153,.3)">
+  <div class="card-title" style="margin:0">🌐 AMT PLAY PATH</div>
+  <div class="muted" style="font-size:11px;margin:6px 0 12px">Mine → Pets → Missions → Map → War · Alliance</div>
+  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px">
+    <button type="button" class="secondary" style="padding:10px 4px;font-size:11px;font-weight:800" onclick="showSection('miningSection')">⛏️<br>Mine</button>
+    <button type="button" class="secondary" style="padding:10px 4px;font-size:11px;font-weight:800" onclick="showSection('marketSection');if(typeof petTab==='function')petTab('owned');">🐶<br>Pets</button>
+    <button type="button" class="secondary" style="padding:10px 4px;font-size:11px;font-weight:800" onclick="document.getElementById('missionsCard')&&document.getElementById('missionsCard').scrollIntoView({behavior:'smooth'})">✅<br>Missions</button>
+    <button type="button" class="secondary" style="padding:10px 4px;font-size:11px;font-weight:800" onclick="showSection('miningSection');setTimeout(function(){var d=document.getElementById('dungeonCard');if(d)d.scrollIntoView({behavior:'smooth'});},200)">🗺️<br>Map</button>
+    <button type="button" class="secondary" style="padding:10px 4px;font-size:11px;font-weight:800" onclick="showSection('warSection')">⚔️<br>War</button>
+  </div>
+</div>
+
+<!-- DAILY MISSIONS -->
+<div class="card" id="missionsCard" style="border:1px solid rgba(96,165,250,.35)">
+  <div class="row">
+    <div>
+      <div class="card-title" style="margin:0">✅ DAILY MISSIONS</div>
+      <div class="muted" style="font-size:11px;margin-top:4px">Mine · Spin · Pets · War · Alliance</div>
+    </div>
+    <button type="button" class="small-btn" onclick="loadMissions()">Refresh</button>
+  </div>
+  <div id="missionsList" style="margin-top:12px"><div class="empty">Loading missions...</div></div>
+  <div id="missionsBonusBox" style="margin-top:12px;display:none">
+    <button type="button" class="primary" id="missionsBonusBtn" onclick="claimMissionBonus()">🎁 CLAIM DAILY BONUS</button>
+  </div>
+</div>
+
 <!-- MYSTERY CHEST -->
 <div class="card" id="chestCard" style="border:1px solid rgba(255,214,78,.25)">
 <div class="row" style="align-items:flex-start">
@@ -4811,7 +4840,43 @@ async function openMysteryChest(){
   }
 }
 
-async function loadMissions(){ /* Daily Goals removed */ }
+async function loadMissions(){
+  const box = $("missionsList");
+  if(!box) return;
+  try{
+    const d = await api("/api/missions/status");
+    const goals = d.goals || [];
+    if(!goals.length){
+      box.innerHTML = '<div class="empty">No missions today</div>';
+      return;
+    }
+    box.innerHTML = goals.map(function(g){
+      const done = !!g.done;
+      return '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)">' +
+        '<div style="width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-weight:900;background:' + (done?'rgba(34,197,94,.25)':'rgba(255,255,255,.06)') + ';border:1px solid ' + (done?'rgba(34,197,94,.5)':'rgba(255,255,255,.12)') + '">' + (done?'✓':'○') + '</div>' +
+        '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px">' + esc(g.label||g.id) + '</div></div></div>';
+    }).join("");
+    const bonusBox = $("missionsBonusBox");
+    const bonusBtn = $("missionsBonusBtn");
+    if(bonusBox){
+      if(d.bonusReady){
+        bonusBox.style.display = "block";
+        if(bonusBtn) bonusBtn.textContent = "🎁 CLAIM DAILY BONUS (" + (d.doneCount||0) + "/" + (d.need||4) + ")";
+      } else if(d.bonusClaimed){
+        bonusBox.style.display = "block";
+        if(bonusBtn){ bonusBtn.textContent = "✅ Bonus claimed today"; bonusBtn.disabled = true; }
+      } else {
+        bonusBox.style.display = "block";
+        if(bonusBtn){
+          bonusBtn.disabled = true;
+          bonusBtn.textContent = "Bonus " + (d.doneCount||0) + "/" + (d.need||4) + " missions";
+        }
+      }
+    }
+  }catch(e){
+    box.innerHTML = '<div class="empty">' + esc(e.message||"Failed") + '</div>';
+  }
+}
 async function claimMission(id){
   try{
     const d = await api("/api/missions/claim",{method:"POST",body:JSON.stringify({missionId:id})});
