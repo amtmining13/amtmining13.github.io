@@ -14778,7 +14778,8 @@ function warPowerScore(o) {
   return Number(o.defense || 0) + Number(o.level || 1) * 10 + Number(o.hero_level || 1) * 3;
 }
 function warInBracket(a, b, relaxed) {
-  const maxDiff = relaxed ? 220 : 120;
+  // Wide bands so early player pools still find fights
+  const maxDiff = relaxed ? 5000 : 800;
   return Math.abs(warPowerScore(a) - warPowerScore(b)) <= maxDiff;
 }
 
@@ -14943,26 +14944,24 @@ app.get("/api/war/targets", requireAuth, async (req, res) => {
     const me = await getOrCreateOutpost(req.member.id);
     const rows = await pool.query(
       `SELECT o.member_id, o.hp, o.max_hp, o.defense, o.trophy, o.level,
-              o.hero_level, o.last_defend_at, m.username
+              COALESCE(o.hero_level,1) AS hero_level, o.last_defend_at, m.username
        FROM war_outposts o
        JOIN members m ON m.id = o.member_id
        WHERE o.member_id <> $1 AND o.hp > 0
          AND (o.last_defend_at IS NULL OR o.last_defend_at < NOW() - INTERVAL '12 hours')
-       ORDER BY RANDOM()
-       LIMIT 40`,
-      [req.member.id]
+       ORDER BY ABS( (o.defense + o.level * 10) - $2 ) ASC, RANDOM()
+       LIMIT 25`,
+      [req.member.id, warPowerScore(me)]
     );
-    // Strict bracket first (similar level + defense), then relaxed if too few
+
     let list = rows.rows.filter((r) => warInBracket(me, r, false));
-    if (list.length < 3) {
-      list = rows.rows.filter((r) => warInBracket(me, r, true));
-    }
-    // Sort by closest power
-    list.sort((a, b) => Math.abs(warPowerScore(a) - warPowerScore(me)) - Math.abs(warPowerScore(b) - warPowerScore(me)));
+    if (list.length < 4) list = rows.rows.filter((r) => warInBracket(me, r, true));
+    // Final fallback: anyone without shield (prefer closer power)
+    if (list.length < 2) list = rows.rows.slice();
     list = list.slice(0, 8);
 
-    // New players only: fill with fresh outposts in low bracket
-    if (list.length < 3 && warPowerScore(me) < 80) {
+    // If still empty — include shielded? No. Offer members without outpost.
+    if (list.length === 0) {
       const extra = await pool.query(
         `SELECT m.id AS member_id, m.username,
                 100 AS hp, 100 AS max_hp, 10 AS defense, 0 AS trophy, 1 AS level, 1 AS hero_level
@@ -14970,26 +14969,52 @@ app.get("/api/war/targets", requireAuth, async (req, res) => {
          WHERE m.id <> $1
            AND NOT EXISTS (SELECT 1 FROM war_outposts w WHERE w.member_id = m.id)
          ORDER BY RANDOM()
-         LIMIT $2`,
-        [req.member.id, 5 - list.length]
+         LIMIT 5`,
+        [req.member.id]
       );
-      list = list.concat(extra.rows);
+      list = extra.rows;
+    }
+
+    // Last resort: show closest outposts even if shielded (label shield) so list not empty
+    let soft = false;
+    if (list.length === 0) {
+      soft = true;
+      const any = await pool.query(
+        `SELECT o.member_id, o.hp, o.max_hp, o.defense, o.trophy, o.level,
+                COALESCE(o.hero_level,1) AS hero_level, o.last_defend_at, m.username
+         FROM war_outposts o
+         JOIN members m ON m.id = o.member_id
+         WHERE o.member_id <> $1
+         ORDER BY ABS( (o.defense + o.level * 10) - $2 ) ASC
+         LIMIT 8`,
+        [req.member.id, warPowerScore(me)]
+      );
+      list = any.rows;
     }
 
     res.json({
       ok: true,
       myPower: warPowerScore(me),
       bracket: "level+defense",
-      targets: list.map((r) => ({
-        memberId: r.member_id,
-        username: r.username || ("miner#" + r.member_id),
-        hp: r.hp,
-        maxHp: r.max_hp,
-        defense: r.defense,
-        trophy: r.trophy,
-        level: r.level,
-        power: warPowerScore(r)
-      }))
+      softList: soft,
+      targets: list.map((r) => {
+        let shieldLeft = 0;
+        if (r.last_defend_at) {
+          const sl = WAR_SHIELD_MS - (Date.now() - new Date(r.last_defend_at).getTime());
+          if (sl > 0) shieldLeft = Math.ceil(sl / 1000);
+        }
+        return {
+          memberId: r.member_id,
+          username: r.username || ("miner#" + r.member_id),
+          hp: r.hp,
+          maxHp: r.max_hp,
+          defense: r.defense,
+          trophy: r.trophy,
+          level: r.level,
+          power: warPowerScore(r),
+          shieldSeconds: shieldLeft
+        };
+      })
     });
   } catch (e) {
     console.error("WAR TARGETS:", e);
@@ -15054,11 +15079,13 @@ app.post("/api/war/raid", requireAuth, async (req, res) => {
       }
     }
     // Level + defense bracket (fair matchmaking)
-    if (!warInBracket(myO, defO, true)) {
+    // Soft bracket: block only extreme mismatches (anti-bully)
+    const pDiff = Math.abs(warPowerScore(myO) - warPowerScore(defO));
+    if (pDiff > 8000) {
       await client.query("ROLLBACK");
       return res.status(400).json({
         ok: false,
-        error: "Outside your bracket (level + defense too far). Find a closer target."
+        error: "Target far outside your power range. Pick a closer outpost."
       });
     }
 
