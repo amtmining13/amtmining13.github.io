@@ -15689,3 +15689,369 @@ app.post("/api/war/repair", requireAuth, async (req, res) => {
 }
 
 startServer();
+
+/* =========================================================
+   PHASE 4 — ALLIANCE (create · join · leave · donate · hall)
+========================================================= */
+async function ensureAllianceTables() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS alliances (
+      id BIGSERIAL PRIMARY KEY,
+      name TEXT NOT NULL,
+      tag TEXT NOT NULL,
+      description TEXT NOT NULL DEFAULT '',
+      leader_id BIGINT NOT NULL REFERENCES members(id),
+      hall_level INT NOT NULL DEFAULT 1,
+      gold BIGINT NOT NULL DEFAULT 0,
+      elixir BIGINT NOT NULL DEFAULT 0,
+      max_members INT NOT NULL DEFAULT 15,
+      is_open BOOLEAN NOT NULL DEFAULT TRUE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_alliances_tag_lower ON alliances (LOWER(tag));
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_alliances_name_lower ON alliances (LOWER(name));
+    CREATE TABLE IF NOT EXISTS alliance_members (
+      alliance_id BIGINT NOT NULL REFERENCES alliances(id) ON DELETE CASCADE,
+      member_id BIGINT NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+      role TEXT NOT NULL DEFAULT 'member',
+      donated_gold BIGINT NOT NULL DEFAULT 0,
+      donated_elixir BIGINT NOT NULL DEFAULT 0,
+      joined_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      PRIMARY KEY (member_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_alliance_members_aid ON alliance_members(alliance_id);
+  `);
+}
+
+function alliancePublic(a, extra) {
+  return Object.assign({
+    id: a.id,
+    name: a.name,
+    tag: a.tag,
+    description: a.description || "",
+    hallLevel: a.hall_level,
+    gold: Number(a.gold) || 0,
+    elixir: Number(a.elixir) || 0,
+    maxMembers: a.max_members,
+    isOpen: !!a.is_open,
+    leaderId: a.leader_id,
+    memberCount: a.member_count != null ? Number(a.member_count) : undefined
+  }, extra || {});
+}
+
+app.get("/api/alliance/mine", requireAuth, async (req, res) => {
+  try {
+    await ensureAllianceTables();
+    const am = await pool.query(
+      `SELECT am.*, a.name, a.tag, a.description, a.leader_id, a.hall_level, a.gold, a.elixir,
+              a.max_members, a.is_open,
+              (SELECT COUNT(*)::int FROM alliance_members x WHERE x.alliance_id = a.id) AS member_count,
+              m.username AS leader_username
+       FROM alliance_members am
+       JOIN alliances a ON a.id = am.alliance_id
+       JOIN members m ON m.id = a.leader_id
+       WHERE am.member_id = $1`,
+      [req.member.id]
+    );
+    if (!am.rows.length) {
+      return res.json({ ok: true, alliance: null, role: null });
+    }
+    const row = am.rows[0];
+    const members = await pool.query(
+      `SELECT am.member_id, am.role, am.donated_gold, am.donated_elixir, am.joined_at, m.username
+       FROM alliance_members am
+       JOIN members m ON m.id = am.member_id
+       WHERE am.alliance_id = $1
+       ORDER BY CASE am.role WHEN 'leader' THEN 0 WHEN 'officer' THEN 1 ELSE 2 END, am.joined_at ASC`,
+      [row.alliance_id]
+    );
+    res.json({
+      ok: true,
+      role: row.role,
+      alliance: alliancePublic(row, {
+        leaderUsername: row.leader_username,
+        memberCount: row.member_count
+      }),
+      members: members.rows.map((m) => ({
+        memberId: m.member_id,
+        username: m.username,
+        role: m.role,
+        donatedGold: Number(m.donated_gold) || 0,
+        donatedElixir: Number(m.donated_elixir) || 0
+      }))
+    });
+  } catch (e) {
+    console.error("ALLIANCE MINE:", e);
+    res.status(500).json({ ok: false, error: e.message || "failed" });
+  }
+});
+
+app.get("/api/alliance/list", requireAuth, async (req, res) => {
+  try {
+    await ensureAllianceTables();
+    const q = String(req.query.q || "").trim();
+    const rows = await pool.query(
+      `SELECT a.*,
+              (SELECT COUNT(*)::int FROM alliance_members x WHERE x.alliance_id = a.id) AS member_count,
+              m.username AS leader_username
+       FROM alliances a
+       JOIN members m ON m.id = a.leader_id
+       WHERE a.is_open = TRUE
+         AND ($1 = '' OR a.name ILIKE $2 OR a.tag ILIKE $2)
+       ORDER BY a.hall_level DESC, member_count DESC, a.created_at ASC
+       LIMIT 30`,
+      [q, "%" + q + "%"]
+    );
+    res.json({
+      ok: true,
+      alliances: rows.rows.map((a) => alliancePublic(a, {
+        leaderUsername: a.leader_username,
+        memberCount: a.member_count
+      }))
+    });
+  } catch (e) {
+    console.error("ALLIANCE LIST:", e);
+    res.status(500).json({ ok: false, error: e.message || "failed" });
+  }
+});
+
+app.post("/api/alliance/create", requireAuth, async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await ensureAllianceTables();
+    let name = String(req.body?.name || "").trim().slice(0, 24);
+    let tag = String(req.body?.tag || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 5);
+    const description = String(req.body?.description || "").trim().slice(0, 120);
+    if (name.length < 3) return res.status(400).json({ ok: false, error: "Alliance name min 3 chars." });
+    if (tag.length < 2) return res.status(400).json({ ok: false, error: "Tag 2–5 letters/numbers." });
+
+    await client.query("BEGIN");
+    const existing = await client.query(
+      `SELECT alliance_id FROM alliance_members WHERE member_id = $1`,
+      [req.member.id]
+    );
+    if (existing.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Leave your current alliance before creating one." });
+    }
+    const ins = await client.query(
+      `INSERT INTO alliances (name, tag, description, leader_id)
+       VALUES ($1, $2, $3, $4)
+       RETURNING *`,
+      [name, tag, description, req.member.id]
+    );
+    const a = ins.rows[0];
+    await client.query(
+      `INSERT INTO alliance_members (alliance_id, member_id, role)
+       VALUES ($1, $2, 'leader')`,
+      [a.id, req.member.id]
+    );
+    await client.query("COMMIT");
+    res.json({
+      ok: true,
+      alliance: alliancePublic(a, { memberCount: 1, leaderUsername: req.member.username }),
+      message: "Alliance [" + tag + "] " + name + " created! You are Leader."
+    });
+  } catch (e) {
+    try { await client.query("ROLLBACK"); } catch (_) {}
+    if (String(e.message || "").includes("idx_alliances_tag") || String(e.code) === "23505") {
+      return res.status(400).json({ ok: false, error: "Name or tag already taken." });
+    }
+    console.error("ALLIANCE CREATE:", e);
+    res.status(500).json({ ok: false, error: e.message || "create failed" });
+  } finally {
+    client.release();
+  }
+});
+
+app.post("/api/alliance/join", requireAuth, async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await ensureAllianceTables();
+    const allianceId = Number(req.body?.allianceId);
+    if (!allianceId) return res.status(400).json({ ok: false, error: "Pick an alliance." });
+
+    await client.query("BEGIN");
+    const mine = await client.query(
+      `SELECT alliance_id FROM alliance_members WHERE member_id = $1`,
+      [req.member.id]
+    );
+    if (mine.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Already in an alliance. Leave first." });
+    }
+    const a = await client.query(
+      `SELECT a.*, (SELECT COUNT(*)::int FROM alliance_members x WHERE x.alliance_id = a.id) AS member_count
+       FROM alliances a WHERE a.id = $1 FOR UPDATE`,
+      [allianceId]
+    );
+    if (!a.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ ok: false, error: "Alliance not found." });
+    }
+    const row = a.rows[0];
+    if (!row.is_open) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Alliance is closed to new members." });
+    }
+    if (Number(row.member_count) >= Number(row.max_members)) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Alliance is full." });
+    }
+    await client.query(
+      `INSERT INTO alliance_members (alliance_id, member_id, role) VALUES ($1, $2, 'member')`,
+      [allianceId, req.member.id]
+    );
+    await client.query("COMMIT");
+    res.json({
+      ok: true,
+      message: "Joined [" + row.tag + "] " + row.name + "!"
+    });
+  } catch (e) {
+    try { await client.query("ROLLBACK"); } catch (_) {}
+    console.error("ALLIANCE JOIN:", e);
+    res.status(500).json({ ok: false, error: e.message || "join failed" });
+  } finally {
+    client.release();
+  }
+});
+
+app.post("/api/alliance/leave", requireAuth, async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await ensureAllianceTables();
+    await client.query("BEGIN");
+    const mine = await client.query(
+      `SELECT am.*, a.leader_id, a.name, a.tag
+       FROM alliance_members am
+       JOIN alliances a ON a.id = am.alliance_id
+       WHERE am.member_id = $1 FOR UPDATE`,
+      [req.member.id]
+    );
+    if (!mine.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "You are not in an alliance." });
+    }
+    const row = mine.rows[0];
+    if (row.role === "leader" || Number(row.leader_id) === Number(req.member.id)) {
+      const others = await client.query(
+        `SELECT member_id FROM alliance_members
+         WHERE alliance_id = $1 AND member_id <> $2
+         ORDER BY joined_at ASC LIMIT 1`,
+        [row.alliance_id, req.member.id]
+      );
+      if (others.rows.length) {
+        // transfer leadership
+        await client.query(
+          `UPDATE alliance_members SET role = 'leader' WHERE member_id = $1`,
+          [others.rows[0].member_id]
+        );
+        await client.query(
+          `UPDATE alliances SET leader_id = $1, updated_at = NOW() WHERE id = $2`,
+          [others.rows[0].member_id, row.alliance_id]
+        );
+      } else {
+        // disband
+        await client.query(`DELETE FROM alliances WHERE id = $1`, [row.alliance_id]);
+        await client.query("COMMIT");
+        return res.json({ ok: true, message: "Alliance disbanded (you were the last member)." });
+      }
+    }
+    await client.query(
+      `DELETE FROM alliance_members WHERE member_id = $1`,
+      [req.member.id]
+    );
+    await client.query("COMMIT");
+    res.json({ ok: true, message: "Left alliance [" + row.tag + "]." });
+  } catch (e) {
+    try { await client.query("ROLLBACK"); } catch (_) {}
+    console.error("ALLIANCE LEAVE:", e);
+    res.status(500).json({ ok: false, error: e.message || "leave failed" });
+  } finally {
+    client.release();
+  }
+});
+
+app.post("/api/alliance/donate", requireAuth, async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await ensureAllianceTables();
+    const gold = Math.max(0, Math.floor(Number(req.body?.gold) || 0));
+    const elixir = Math.max(0, Math.floor(Number(req.body?.elixir) || 0));
+    if (gold + elixir <= 0) {
+      return res.status(400).json({ ok: false, error: "Donate some Gold or Elixir." });
+    }
+    await ensureWarTables();
+    await client.query("BEGIN");
+    const am = await client.query(
+      `SELECT * FROM alliance_members WHERE member_id = $1 FOR UPDATE`,
+      [req.member.id]
+    );
+    if (!am.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Join an alliance first." });
+    }
+    const o = await getOrCreateOutpost(req.member.id, client);
+    if (Number(o.gold) < gold || Number(o.elixir) < elixir) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ ok: false, error: "Not enough personal Gold/Elixir." });
+    }
+    await client.query(
+      `UPDATE war_outposts SET gold = gold - $1, elixir = elixir - $2, updated_at = NOW()
+       WHERE member_id = $3`,
+      [gold, elixir, req.member.id]
+    );
+    await client.query(
+      `UPDATE alliances SET gold = gold + $1, elixir = elixir + $2, updated_at = NOW()
+       WHERE id = $3`,
+      [gold, elixir, am.rows[0].alliance_id]
+    );
+    await client.query(
+      `UPDATE alliance_members
+       SET donated_gold = donated_gold + $1, donated_elixir = donated_elixir + $2
+       WHERE member_id = $3`,
+      [gold, elixir, req.member.id]
+    );
+    // Hall level-up every 500 combined resources
+    await client.query(
+      `UPDATE alliances
+       SET hall_level = LEAST(20, 1 + FLOOR((gold + elixir) / 500)::int)
+       WHERE id = $1`,
+      [am.rows[0].alliance_id]
+    );
+    await client.query("COMMIT");
+    res.json({ ok: true, message: "Donated " + gold + "G + " + elixir + "E to Alliance Hall." });
+  } catch (e) {
+    try { await client.query("ROLLBACK"); } catch (_) {}
+    console.error("ALLIANCE DONATE:", e);
+    res.status(500).json({ ok: false, error: e.message || "donate failed" });
+  } finally {
+    client.release();
+  }
+});
+
+app.post("/api/alliance/settings", requireAuth, async (req, res) => {
+  try {
+    await ensureAllianceTables();
+    const am = await pool.query(
+      `SELECT * FROM alliance_members WHERE member_id = $1`,
+      [req.member.id]
+    );
+    if (!am.rows.length || am.rows[0].role !== "leader") {
+      return res.status(403).json({ ok: false, error: "Leaders only." });
+    }
+    const isOpen = req.body?.isOpen;
+    if (typeof isOpen !== "boolean") {
+      return res.status(400).json({ ok: false, error: "isOpen true/false required." });
+    }
+    await pool.query(
+      `UPDATE alliances SET is_open = $1, updated_at = NOW() WHERE id = $2`,
+      [isOpen, am.rows[0].alliance_id]
+    );
+    res.json({ ok: true, message: isOpen ? "Alliance open for join." : "Alliance closed." });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message || "settings failed" });
+  }
+});
+
