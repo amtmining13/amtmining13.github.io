@@ -2269,7 +2269,7 @@ SELECT 180D
 <section id="warSection" class="section">
   <div class="hero">
     <h1>WAR <span>OUTPOST</span></h1>
-    <p>Phase 2 · Gold · Elixir · Archer Hero · Raid</p>
+    <p>Phase 3 · 24/7 War · Fort · Revenge · Streak</p>
   </div>
 
   <div class="card" style="border:1px solid rgba(251,191,36,.35);background:linear-gradient(165deg,rgba(40,22,8,.95),rgba(18,12,28,.98))">
@@ -2307,6 +2307,11 @@ SELECT 180D
       <button type="button" class="secondary" onclick="warRepair()">🔧 REPAIR (+30 HP · 0.2 AMT)</button>
     </div>
     <div class="muted" style="margin-top:10px;font-size:11px;text-align:center" id="warRaidCd">Raid ready</div>
+    <div class="grid" style="grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">
+      <button type="button" class="secondary" id="warShieldOnBtn" onclick="warShield('on')">🛡️ SHIELD ON (12h)</button>
+      <button type="button" class="secondary" id="warShieldOffBtn" onclick="warShield('off')">Shield OFF</button>
+    </div>
+    <div class="muted" style="font-size:10px;margin-top:6px;text-align:center">Optional · 1x per day · for work/sleep · cannot raid while ON</div>
   </div>
 
   <div class="card" style="border:1px solid rgba(52,211,153,.3)">
@@ -2375,12 +2380,49 @@ SELECT 180D
 
   <div id="warRaidResult" class="card" style="display:none;border:1px solid rgba(255,214,78,.4)"></div>
 
+  <div class="card" style="border:1px solid rgba(251,191,36,.3)">
+    <div class="row">
+      <div class="card-title" style="margin:0">🏰 FORT · PHASE 3</div>
+      <div class="muted" style="font-size:11px">🔥 Streak <b id="warStreak">0</b></div>
+    </div>
+    <div class="grid3" style="margin-top:10px;gap:8px">
+      <div class="stat" style="text-align:center">
+        <div style="font-size:22px">🗼</div>
+        <div class="stat-label">WATCH</div>
+        <div class="stat-value" id="fortWatch">0</div>
+        <button type="button" class="small-btn" style="margin-top:6px" onclick="warFort('watch')">Upgrade</button>
+      </div>
+      <div class="stat" style="text-align:center">
+        <div style="font-size:22px">🏛️</div>
+        <div class="stat-label">BARRACKS</div>
+        <div class="stat-value" id="fortBarracks">0</div>
+        <button type="button" class="small-btn" style="margin-top:6px" onclick="warFort('barracks')">Upgrade</button>
+      </div>
+      <div class="stat" style="text-align:center">
+        <div style="font-size:22px">🏦</div>
+        <div class="stat-label">VAULT</div>
+        <div class="stat-value" id="fortVault">0</div>
+        <button type="button" class="small-btn" style="margin-top:6px" onclick="warFort('vault')">Upgrade</button>
+      </div>
+    </div>
+    <div class="muted" style="font-size:10px;margin-top:8px;text-align:center">Watch +Def · Barracks +Army · Vault protects loot · costs Gold/Elixir</div>
+  </div>
+
+  <div class="card" style="border:1px solid rgba(248,113,113,.35)">
+    <div class="row">
+      <div class="card-title" style="margin:0">💀 REVENGE</div>
+      <button type="button" class="small-btn" onclick="loadWarRevenge()">Refresh</button>
+    </div>
+    <div class="muted" style="font-size:11px;margin:6px 0 8px">Who hit your base — hit them back (same bracket)</div>
+    <div id="warRevengeList"><div class="empty">No revenge targets</div></div>
+  </div>
+
   <div class="card">
     <div class="row">
       <div class="card-title" style="margin:0">🎯 RAID TARGETS</div>
       <button type="button" class="small-btn" onclick="loadWarTargets()">Refresh</button>
     </div>
-    <div class="muted" style="font-size:11px;margin:6px 0 10px">Same bracket only (high≠low) · Shield visible · 3 min CD · 12 raids/day</div>
+    <div class="muted" style="font-size:11px;margin:6px 0 10px">24/7 · Optional 12h shield (1x/day) · Bracket · 3 min CD · 12 raids/day</div>
     <div id="warTargetsList"><div class="muted">Loading targets...</div></div>
   </div>
 
@@ -4347,6 +4389,11 @@ async function loadWarStatus(){
     }
     if($("warHeroSkillLabel")) $("warHeroSkillLabel").textContent = (hero.skillIcon||"🎯") + " " + (hero.skillName||"Snipe");
     if(hero.skillId) window._warHeroSkill = hero.skillId;
+    if($("warStreak")) $("warStreak").textContent = o.winStreak != null ? o.winStreak : "0";
+    const fort = o.fort || {};
+    if($("fortWatch")) $("fortWatch").textContent = fort.watch != null ? fort.watch : "0";
+    if($("fortBarracks")) $("fortBarracks").textContent = fort.barracks != null ? fort.barracks : "0";
+    if($("fortVault")) $("fortVault").textContent = fort.vault != null ? fort.vault : "0";
     if($("warHeroUpCost")){
       const hl = Number(hero.level)||1;
       $("warHeroUpCost").textContent = "Upgrade cost: " + (30+hl*15) + " Gold + " + (25+hl*12) + " Elixir · or earn XP from raids";
@@ -4361,6 +4408,8 @@ async function loadWarStatus(){
     if($("warRaidCd")){
       const left = d.raidsLeft != null ? d.raidsLeft : "?";
       const per = d.raidsPerDay != null ? d.raidsPerDay : 12;
+      const streak = (d.outpost && d.outpost.winStreak) ? d.outpost.winStreak : 0;
+      const streakTxt = streak > 0 ? (" · 🔥 Streak " + streak) : "";
       let shieldTxt = "";
       if(d.shieldSeconds > 0){
         const sh = Math.floor(d.shieldSeconds/3600);
@@ -4371,11 +4420,11 @@ async function loadWarStatus(){
         const sec = d.nextRaidIn;
         const m = Math.floor(sec/60);
         const s = sec % 60;
-        $("warRaidCd").textContent = "⏳ Cooldown " + m + "m " + s + "s · Raids left: " + left + "/" + per + shieldTxt;
+        $("warRaidCd").textContent = "⏳ Cooldown " + m + "m " + s + "s · " + left + "/" + per + streakTxt + shieldTxt;
       } else if (Number(left) <= 0) {
-        $("warRaidCd").textContent = "🛑 Daily raid limit (" + per + "). Resets UTC midnight." + shieldTxt;
+        $("warRaidCd").textContent = "🛑 Daily limit " + per + streakTxt + shieldTxt;
       } else {
-        $("warRaidCd").textContent = "✅ Raid ready · " + left + "/" + per + " left today" + shieldTxt;
+        $("warRaidCd").textContent = "✅ Raid ready · " + left + "/" + per + " left" + streakTxt + shieldTxt;
       }
     }
     // Trophy board
@@ -4473,6 +4522,43 @@ async function warRepair(){
     await loadWarStatus();
   }catch(e){ showToast(e.message||"Repair failed", true); }
 }
+async function warShield(action){
+  try{
+    showToast(action === "off" ? "Turning shield off..." : "Activating shield...");
+    const d = await api("/api/war/shield",{method:"POST",body:JSON.stringify({action:action||"on"})});
+    showToast(d.message||"Shield updated");
+    await loadWarStatus();
+  }catch(e){ showToast(e.message||"Shield failed", true); }
+}
+async function warFort(kind){
+  try{
+    showToast("Upgrading fort...");
+    const d = await api("/api/war/fort",{method:"POST",body:JSON.stringify({kind:kind})});
+    showToast(d.message||"Fort upgraded");
+    await loadWarStatus();
+  }catch(e){ showToast(e.message||"Fort failed", true); }
+}
+async function loadWarRevenge(){
+  const box = $("warRevengeList");
+  if(!box) return;
+  try{
+    const d = await api("/api/war/revenge");
+    const list = d.revenge || [];
+    if(!list.length){
+      box.innerHTML = '<div class="empty">No one has hit you yet — or they are outside your bracket.</div>';
+      return;
+    }
+    box.innerHTML = list.map(function(tg){
+      return '<div class="row" style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)">' +
+        '<div style="flex:1;min-width:0">' +
+        '<div style="font-weight:800">@' + esc(tg.username) + '</div>' +
+        '<div class="muted" style="font-size:11px">Lv' + tg.level + ' · Def ' + tg.defense + ' · 🏆' + tg.trophy + '</div></div>' +
+        '<button type="button" class="small-btn" style="background:linear-gradient(135deg,#991b1b,#ef4444);color:#fff;font-weight:900" onclick="warRaid(' + tg.memberId + ')">💀 REVENGE</button></div>';
+    }).join("");
+  }catch(e){
+    box.innerHTML = '<div class="empty">' + esc(e.message||"Failed") + '</div>';
+  }
+}
 async function warHeroUpgrade(){
   try{
     showToast("Upgrading hero...");
@@ -4517,6 +4603,7 @@ function showWarRaidResult(d){
     '<div style="font-size:20px;font-weight:900;margin-top:6px;color:' + (win?"#69f0ae":"#ff8a80") + '">' + (win?"VICTORY":"DEFEAT") + '</div>' +
     '<div class="muted" style="margin-top:6px">vs @' + esc(d.targetUsername||"miner") + '</div>' +
     (d.skillUsed ? ('<div style="margin-top:6px;font-size:12px;font-weight:800;color:#6ee7b7">' + (d.skillIcon||"") + " " + d.skillUsed + " · Hero Lv" + (d.heroLevel||1) + '</div>') : '') +
+    (d.winStreak > 0 ? ('<div style="margin-top:4px;font-size:12px;font-weight:900;color:#fbbf24">🔥 Win streak ' + d.winStreak + '</div>') : '') +
     '<div style="margin-top:12px;display:flex;justify-content:center;gap:18px;flex-wrap:wrap">' +
     '<div><div class="muted" style="font-size:10px">DAMAGE</div><div style="font-weight:900;font-size:18px">' + (d.damage||0) + '</div></div>' +
     '<div><div class="muted" style="font-size:10px">LOOT</div><div style="font-weight:900;font-size:18px;color:#ffd64e">' + (d.lootAmt||0) + ' AMT</div></div>' +
@@ -4538,6 +4625,7 @@ async function warRaid(targetId){
     try{ await refreshWallet(); }catch(e){}
     await loadWarStatus();
     await loadWarTargets();
+    try{ await loadWarRevenge(); }catch(_){}
   }catch(e){ showToast(e.message||"Raid failed", true); await loadWarStatus(); }
 }
 
