@@ -15674,22 +15674,6 @@ app.post("/api/war/repair", requireAuth, async (req, res) => {
 });
 
 
-    app.listen(PORT, "0.0.0.0", () => {
-      console.log("==================================================");
-      console.log("AMT MAINNET BACKEND ONLINE");
-      console.log("Port: " + PORT);
-      console.log("Daily missions + dungeon: ENABLED");
-      console.log("==================================================");
-    });
-
-  } catch (error) {
-    console.error("SERVER START FAILED:", error);
-    process.exit(1);
-  }
-}
-
-startServer();
-
 /* =========================================================
    PHASE 4 — ALLIANCE (create · join · leave · donate · hall)
 ========================================================= */
@@ -16055,3 +16039,18 @@ app.post("/api/alliance/settings", requireAuth, async (req, res) => {
   }
 });
 
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log("==================================================");
+      console.log("AMT MAINNET BACKEND ONLINE");
+      console.log("Port: " + PORT);
+      console.log("Daily missions + dungeon: ENABLED");
+      console.log("==================================================");
+    });
+
+  } catch (error) {
+    console.error("SERVER START FAILED:", error);
+    process.exit(1);
+  }
+}
+
+startServer();
