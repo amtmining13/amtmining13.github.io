@@ -2264,7 +2264,18 @@ SELECT 180D
 <section id="warSection" class="section">
   <div class="hero">
     <h1>WAR <span>OUTPOST</span></h1>
-    <p>Phase 4 · Alliance · Fort · Revenge · Shield</p>
+    <p>Simple PvP base · Raid · Alliance</p>
+  </div>
+
+  <div class="card" style="border:1px solid rgba(167,139,250,.3)">
+    <div class="card-title" style="margin:0">HOW WAR WORKS</div>
+    <div class="muted" style="font-size:12px;line-height:1.55;margin-top:8px">
+      <b style="color:#f5d76e">1. OUTPOST</b> — upgrade defense / repair / optional shield<br>
+      <b style="color:#f5d76e">2. RAID</b> — attack other bases · revenge list below<br>
+      <b style="color:#f5d76e">3. BUILD</b> — troops · hero · fort (watch / barracks / vault)<br>
+      <b style="color:#f5d76e">4. ALLIANCE</b> — create or join a team · donate to hall
+    </div>
+    <div class="muted" style="font-size:11px;margin-top:8px">No Map / Daily Missions here — War tab only.</div>
   </div>
 
   <div class="card" style="border:1px solid rgba(251,191,36,.35);background:linear-gradient(165deg,rgba(40,22,8,.95),rgba(18,12,28,.98))">
@@ -2377,7 +2388,7 @@ SELECT 180D
 
   <div class="card" style="border:1px solid rgba(251,191,36,.3)">
     <div class="row">
-      <div class="card-title" style="margin:0">🏰 FORT</div>
+      <div class="card-title" style="margin:0">🏰 BUILD · FORT</div>
       <div class="muted" style="font-size:11px">🔥 Streak <b id="warStreak">0</b></div>
     </div>
     <div class="grid3" style="margin-top:10px;gap:8px">
@@ -2405,7 +2416,7 @@ SELECT 180D
 
   <div class="card" style="border:1px solid rgba(167,139,250,.4)">
     <div class="row">
-      <div class="card-title" style="margin:0">🏰 ALLIANCE · PHASE 4</div>
+      <div class="card-title" style="margin:0">🤝 ALLIANCE (TEAM)</div>
       <button type="button" class="small-btn" onclick="loadAlliance()">Refresh</button>
     </div>
     <div class="muted" style="font-size:11px;margin:6px 0 10px">Build your alliance first — then others can join. Alliance War later.</div>
@@ -2436,13 +2447,13 @@ SELECT 180D
       <div class="card-title" style="margin:0">💀 REVENGE</div>
       <button type="button" class="small-btn" onclick="loadWarRevenge()">Refresh</button>
     </div>
-    <div class="muted" style="font-size:11px;margin:6px 0 8px">Who hit your base — hit them back (same bracket)</div>
+    <div class="muted" style="font-size:11px;margin:6px 0 8px">Who attacked you — hit back (same bracket only)</div>
     <div id="warRevengeList"><div class="empty">No revenge targets</div></div>
   </div>
 
   <div class="card">
     <div class="row">
-      <div class="card-title" style="margin:0">🎯 RAID TARGETS</div>
+      <div class="card-title" style="margin:0">🎯 RAID · OTHER BASES</div>
       <button type="button" class="small-btn" onclick="loadWarTargets()">Refresh</button>
     </div>
     <div class="muted" style="font-size:11px;margin:6px 0 10px">24/7 · Optional 12h shield (1x/day) · Bracket · 3 min CD · 12 raids/day</div>
