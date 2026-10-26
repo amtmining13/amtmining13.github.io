@@ -2269,7 +2269,7 @@ SELECT 180D
 <section id="warSection" class="section">
   <div class="hero">
     <h1>WAR <span>OUTPOST</span></h1>
-    <p>24/7 War · Fort · Revenge · Streak · Optional Shield</p>
+    <p>Phase 4 · Alliance · Fort · Revenge · Shield</p>
   </div>
 
   <div class="card" style="border:1px solid rgba(251,191,36,.35);background:linear-gradient(165deg,rgba(40,22,8,.95),rgba(18,12,28,.98))">
@@ -2406,6 +2406,34 @@ SELECT 180D
       </div>
     </div>
     <div class="muted" style="font-size:10px;margin-top:8px;text-align:center">Watch +Def · Barracks +Army · Vault protects loot · costs Gold/Elixir</div>
+  </div>
+
+  <div class="card" style="border:1px solid rgba(167,139,250,.4)">
+    <div class="row">
+      <div class="card-title" style="margin:0">🏰 ALLIANCE · PHASE 4</div>
+      <button type="button" class="small-btn" onclick="loadAlliance()">Refresh</button>
+    </div>
+    <div class="muted" style="font-size:11px;margin:6px 0 10px">Build your alliance first — then others can join. Alliance War later.</div>
+
+    <div id="allianceMineBox">
+      <div class="empty">Loading alliance...</div>
+    </div>
+
+    <div id="allianceCreateBox" style="margin-top:12px;display:none">
+      <div class="muted" style="font-size:11px;margin-bottom:8px;font-weight:800">CREATE ALLIANCE</div>
+      <input id="allyName" class="input" placeholder="Alliance name (min 3)" maxlength="24" style="margin-bottom:8px">
+      <input id="allyTag" class="input" placeholder="TAG (2–5 letters)" maxlength="5" style="margin-bottom:8px;text-transform:uppercase">
+      <input id="allyDesc" class="input" placeholder="Short description (optional)" maxlength="120" style="margin-bottom:8px">
+      <button type="button" class="primary" onclick="allianceCreate()">🏰 CREATE ALLIANCE</button>
+    </div>
+
+    <div id="allianceBrowseBox" style="margin-top:14px">
+      <div class="row" style="margin-bottom:8px">
+        <div class="muted" style="font-size:11px;font-weight:800">OPEN ALLIANCES</div>
+        <button type="button" class="small-btn" onclick="allianceList()">Browse</button>
+      </div>
+      <div id="allianceListBox"><div class="empty">Tap Browse to see open alliances</div></div>
+    </div>
   </div>
 
   <div class="card" style="border:1px solid rgba(248,113,113,.35)">
@@ -3186,7 +3214,7 @@ if(id==="referralSection")loadReferral();
 if(id==="circleSection")loadSecurityCircle();
 if(id==="profileSection"){loadProfile();try{refreshDevTreasuryCard();}catch(e){}try{loadPetLeaderboard();}catch(e){}}
 if(id==="stakingSection")loadStaking();
-if(id==="warSection"){loadWarStatus();loadWarTargets();}
+if(id==="warSection"){loadWarStatus();loadWarTargets();try{loadAlliance();}catch(e){}}
 if(id==="miningSection"){loadMiningStatus();loadDailyStatus();loadChestStatus();loadDungeon();try{preloadPiAds()}catch(e){}}
 if(id==="marketSection")petTab(currentPetTab || "shop");
 }
@@ -4537,6 +4565,104 @@ async function warShield(action){
     showToast(d.message||"Shield updated");
     await loadWarStatus();
   }catch(e){ showToast(e.message||"Shield failed", true); }
+}
+async function loadAlliance(){
+  const box = $("allianceMineBox");
+  if(!box) return;
+  try{
+    const d = await api("/api/alliance/mine");
+    if(!d.alliance){
+      box.innerHTML = '<div class="empty">No alliance yet — create one or join below.</div>';
+      if($("allianceCreateBox")) $("allianceCreateBox").style.display = "block";
+      return;
+    }
+    if($("allianceCreateBox")) $("allianceCreateBox").style.display = "none";
+    const a = d.alliance;
+    const members = d.members || [];
+    let memHtml = members.slice(0,12).map(function(m){
+      return '<div class="muted" style="font-size:11px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.05)">@' + esc(m.username) +
+        ' · <b style="color:#c4b5fd">' + esc(m.role) + '</b>' +
+        (m.donatedGold||m.donatedElixir ? (' · ❤️ ' + (m.donatedGold||0) + 'G/' + (m.donatedElixir||0) + 'E') : '') +
+        '</div>';
+    }).join("");
+    box.innerHTML =
+      '<div style="padding:12px;border-radius:14px;background:rgba(139,92,246,.12);border:1px solid rgba(167,139,250,.3)">' +
+      '<div style="font-weight:900;font-size:16px;color:#ddd6fe">[' + esc(a.tag) + '] ' + esc(a.name) + '</div>' +
+      '<div class="muted" style="font-size:11px;margin-top:4px">Hall Lv' + a.hallLevel + ' · ' + (a.memberCount||members.length) + '/' + a.maxMembers +
+      ' · Leader @' + esc(a.leaderUsername||"?") + '</div>' +
+      '<div class="grid" style="grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">' +
+      '<div class="stat"><div class="stat-label">HALL GOLD</div><div class="stat-value" style="color:#fbbf24;font-size:16px">' + a.gold + '</div></div>' +
+      '<div class="stat"><div class="stat-label">HALL ELIXIR</div><div class="stat-value" style="color:#c084fc;font-size:16px">' + a.elixir + '</div></div></div>' +
+      '<div class="muted" style="font-size:10px;margin-top:8px">' + esc(a.description||"") + '</div></div>' +
+      '<div style="margin-top:10px"><div class="muted" style="font-size:11px;font-weight:800;margin-bottom:4px">MEMBERS</div>' + memHtml + '</div>' +
+      '<div class="grid" style="grid-template-columns:1fr 1fr;gap:8px;margin-top:12px">' +
+      '<button type="button" class="secondary" onclick="allianceDonate(50,0)">Donate 50G</button>' +
+      '<button type="button" class="secondary" onclick="allianceDonate(0,50)">Donate 50E</button></div>' +
+      '<button type="button" class="danger" style="margin-top:10px" onclick="allianceLeave()">Leave Alliance</button>';
+  }catch(e){
+    box.innerHTML = '<div class="empty">' + esc(e.message||"Failed") + '</div>';
+  }
+}
+async function allianceCreate(){
+  try{
+    const name = ($("allyName")&&$("allyName").value||"").trim();
+    const tag = ($("allyTag")&&$("allyTag").value||"").trim();
+    const description = ($("allyDesc")&&$("allyDesc").value||"").trim();
+    showToast("Creating alliance...");
+    const d = await api("/api/alliance/create",{method:"POST",body:JSON.stringify({name:name,tag:tag,description:description})});
+    showToast(d.message||"Created!");
+    await loadAlliance();
+    await allianceList();
+  }catch(e){ showToast(e.message||"Create failed", true); }
+}
+async function allianceList(){
+  const box = $("allianceListBox");
+  if(!box) return;
+  try{
+    box.innerHTML = '<div class="muted">Loading...</div>';
+    const d = await api("/api/alliance/list");
+    const list = d.alliances || [];
+    if(!list.length){
+      box.innerHTML = '<div class="empty">No open alliances yet — create the first!</div>';
+      return;
+    }
+    box.innerHTML = list.map(function(a){
+      return '<div style="padding:10px;margin-bottom:8px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid rgba(167,139,250,.2)">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">' +
+        '<div style="min-width:0;flex:1"><div style="font-weight:900">[' + esc(a.tag) + '] ' + esc(a.name) + '</div>' +
+        '<div class="muted" style="font-size:11px">Hall Lv' + a.hallLevel + ' · ' + a.memberCount + '/' + a.maxMembers + ' · @' + esc(a.leaderUsername||"") + '</div></div>' +
+        '<button type="button" class="small-btn" style="flex-shrink:0;background:linear-gradient(135deg,#5b21b6,#a78bfa);color:#fff;font-weight:900" onclick="allianceJoin(' + a.id + ')">JOIN</button></div></div>';
+    }).join("");
+  }catch(e){
+    box.innerHTML = '<div class="empty">' + esc(e.message||"Failed") + '</div>';
+  }
+}
+async function allianceJoin(id){
+  try{
+    showToast("Joining...");
+    const d = await api("/api/alliance/join",{method:"POST",body:JSON.stringify({allianceId:id})});
+    showToast(d.message||"Joined!");
+    await loadAlliance();
+    await allianceList();
+  }catch(e){ showToast(e.message||"Join failed", true); }
+}
+async function allianceLeave(){
+  if(!confirm("Leave this alliance?")) return;
+  try{
+    const d = await api("/api/alliance/leave",{method:"POST",body:"{}"});
+    showToast(d.message||"Left");
+    await loadAlliance();
+    await allianceList();
+  }catch(e){ showToast(e.message||"Leave failed", true); }
+}
+async function allianceDonate(g,e){
+  try{
+    showToast("Donating...");
+    const d = await api("/api/alliance/donate",{method:"POST",body:JSON.stringify({gold:g||0,elixir:e||0})});
+    showToast(d.message||"Donated");
+    await loadAlliance();
+    await loadWarStatus();
+  }catch(e2){ showToast(e2.message||"Donate failed", true); }
 }
 async function warFort(kind){
   try{
