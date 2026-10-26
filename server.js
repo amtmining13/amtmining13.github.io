@@ -14703,6 +14703,12 @@ async function ensureWarTables() {
     ALTER TABLE war_outposts ADD COLUMN IF NOT EXISTS hero_level INT NOT NULL DEFAULT 1;
     ALTER TABLE war_outposts ADD COLUMN IF NOT EXISTS hero_xp INT NOT NULL DEFAULT 0;
     ALTER TABLE war_outposts ADD COLUMN IF NOT EXISTS hero_skill TEXT NOT NULL DEFAULT 'snipe';
+    ALTER TABLE war_outposts ADD COLUMN IF NOT EXISTS win_streak INT NOT NULL DEFAULT 0;
+    ALTER TABLE war_outposts ADD COLUMN IF NOT EXISTS fort_watch INT NOT NULL DEFAULT 0;
+    ALTER TABLE war_outposts ADD COLUMN IF NOT EXISTS fort_barracks INT NOT NULL DEFAULT 0;
+    ALTER TABLE war_outposts ADD COLUMN IF NOT EXISTS fort_vault INT NOT NULL DEFAULT 0;
+    ALTER TABLE war_outposts ADD COLUMN IF NOT EXISTS shield_until TIMESTAMPTZ;
+    ALTER TABLE war_outposts ADD COLUMN IF NOT EXISTS shield_used_day DATE;
   `);
 }
 
@@ -14722,8 +14728,9 @@ function warArmyPower(o) {
   const a = Number(o.archers) || 0;
   const t = Number(o.tanks) || 0;
   const hl = Number(o.hero_level) || 1;
-  // Troops + Archer Hero level (hero is the real DPS core)
-  return w * 4 + a * 5 + t * 6 + hl * 12 + Number(o.level) * 3 + Math.floor(Number(o.defense) / 4);
+  const barracks = Number(o.fort_barracks) || 0;
+  // Troops + Archer Hero + barracks fort
+  return w * 4 + a * 5 + t * 6 + hl * 12 + Number(o.level) * 3 + Math.floor(Number(o.defense) / 4) + barracks * 5;
 }
 
 function warOutpostPublic(o) {
@@ -14753,7 +14760,15 @@ function warOutpostPublic(o) {
       skillDesc: skill.desc,
       skillIcon: skill.icon,
       skills: Object.values(WAR_HERO_SKILLS)
-    }
+    },
+    winStreak: Number(o.win_streak) || 0,
+    fort: {
+      watch: Number(o.fort_watch) || 0,
+      barracks: Number(o.fort_barracks) || 0,
+      vault: Number(o.fort_vault) || 0
+    },
+    shieldActive: warIsShielded(o),
+    shieldSeconds: warShieldSeconds(o)
   };
 }
 
@@ -14867,9 +14882,19 @@ const WAR_BASE_DEF = 10;
 
 const WAR_RAID_COOLDOWN_MS = 3 * 60 * 1000; // 3 min between raids
 const WAR_RAIDS_PER_DAY = 12; // max raids per UTC day
-const WAR_SHIELD_MS = 12 * 60 * 60 * 1000; // 12h protection after being raided
+const WAR_SHIELD_MS = 12 * 60 * 60 * 1000; // manual shield duration 12h
+const WAR_SHIELD_PER_DAY = 1; // how many times can activate per UTC day
+
 function warPowerScore(o) {
   return Number(o.defense || 0) + Number(o.level || 1) * 10 + Number(o.hero_level || 1) * 3;
+}
+function warIsShielded(o) {
+  if (!o || !o.shield_until) return false;
+  return new Date(o.shield_until).getTime() > Date.now();
+}
+function warShieldSeconds(o) {
+  if (!warIsShielded(o)) return 0;
+  return Math.ceil((new Date(o.shield_until).getTime() - Date.now()) / 1000);
 }
 function warBracketTier(o) {
   const p = warPowerScore(o);
@@ -14912,11 +14937,7 @@ app.get("/api/war/status", requireAuth, async (req, res) => {
       const left = WAR_RAID_COOLDOWN_MS - (Date.now() - new Date(outpost.last_raid_at).getTime());
       if (left > 0) nextRaidIn = Math.ceil(left / 1000);
     }
-    let shieldSeconds = 0;
-    if (outpost.last_defend_at) {
-      const sl = WAR_SHIELD_MS - (Date.now() - new Date(outpost.last_defend_at).getTime());
-      if (sl > 0) shieldSeconds = Math.ceil(sl / 1000);
-    }
+    let shieldSeconds = warShieldSeconds(outpost);
     const dayStart = new Date();
     dayStart.setUTCHours(0, 0, 0, 0);
     let raidsToday = 0;
@@ -15093,13 +15114,7 @@ app.get("/api/war/targets", requireAuth, async (req, res) => {
       myPower: warPowerScore(me),
       myTier: warBracketTier(me),
       bracket: "tier-level-defense",
-      targets: list.map((r) => {
-        let shieldLeft = 0;
-        if (r.last_defend_at) {
-          const sl = WAR_SHIELD_MS - (Date.now() - new Date(r.last_defend_at).getTime());
-          if (sl > 0) shieldLeft = Math.ceil(sl / 1000);
-        }
-        return {
+      targets: list.map((r) => ({
           memberId: r.member_id,
           username: r.username || ("miner#" + r.member_id),
           hp: r.hp,
@@ -15109,9 +15124,8 @@ app.get("/api/war/targets", requireAuth, async (req, res) => {
           level: r.level,
           power: warPowerScore(r),
           tier: warBracketTier(r),
-          shieldSeconds: shieldLeft
-        };
-      })
+          shieldSeconds: warShieldSeconds(r)
+        }))
     });
   } catch (e) {
     console.error("WAR TARGETS:", e);
@@ -15164,16 +15178,21 @@ app.post("/api/war/raid", requireAuth, async (req, res) => {
       return res.status(404).json({ ok: false, error: "Target not found." });
     }
     const defO = await getOrCreateOutpost(targetId, client);
-    if (defO.last_defend_at) {
-      const shieldLeft = WAR_SHIELD_MS - (Date.now() - new Date(defO.last_defend_at).getTime());
-      if (shieldLeft > 0) {
-        await client.query("ROLLBACK");
-        const hrs = Math.ceil(shieldLeft / 3600000);
-        return res.status(400).json({
-          ok: false,
-          error: "Target has base shield · ~" + hrs + "h left (12h protection after raid)."
-        });
-      }
+    // Manual shield only (workers can protect base)
+    if (warIsShielded(defO)) {
+      await client.query("ROLLBACK");
+      const hrs = Math.ceil(warShieldSeconds(defO) / 3600);
+      return res.status(400).json({
+        ok: false,
+        error: "Target has manual shield · ~" + hrs + "h left."
+      });
+    }
+    if (warIsShielded(myO)) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({
+        ok: false,
+        error: "You have shield ON — turn it off or wait to expire before raiding."
+      });
     }
     // Level + defense bracket (fair matchmaking)
     // Bracket: same tier or adjacent only
@@ -15192,7 +15211,8 @@ app.post("/api/war/raid", requireAuth, async (req, res) => {
     let defMul = 0.3;
     if (skill.id === "mark") defMul = 0.18; // ignore more defense
     const atkPower = 12 + warArmyPower(myO) + (skill.id === "snipe" ? (8 + heroLv * 2) : 0);
-    const defPower = 8 + Number(defO.defense) + Math.floor(warArmyPower(defO) * 0.25);
+    const watch = Number(defO.fort_watch) || 0;
+    const defPower = 8 + Number(defO.defense) + Math.floor(warArmyPower(defO) * 0.25) + watch * 8;
     let damage = Math.max(5, atkPower - Math.floor(defPower * defMul) + Math.floor(Math.random() * 12) - 3);
     if (skill.id === "snipe") damage += 5 + heroLv;
     damage = Math.min(damage, Number(defO.hp));
@@ -15225,12 +15245,16 @@ app.post("/api/war/raid", requireAuth, async (req, res) => {
       loot = 0;
     }
 
+    const vault = Number(defO.fort_vault) || 0;
+    const stealG = win ? Math.max(0, Math.floor(goldLoot * 0.35) - vault * 5) : 0;
+    const stealE = win ? Math.max(0, Math.floor(elixirLoot * 0.35) - vault * 4) : 0;
     await client.query(
       `UPDATE war_outposts SET hp = $1, trophy = GREATEST(0, trophy + $2),
         gold = GREATEST(0, gold - $3), elixir = GREATEST(0, elixir - $4),
+        win_streak = CASE WHEN $5 THEN 0 ELSE win_streak END,
         last_defend_at = NOW(), updated_at = NOW()
-       WHERE member_id = $5`,
-      [newHp, defTrophy, win ? Math.floor(goldLoot * 0.35) : 0, win ? Math.floor(elixirLoot * 0.35) : 0, targetId]
+       WHERE member_id = $6`,
+      [newHp, defTrophy, stealG, stealE, win, targetId]
     );
     // Hero XP on every raid; more on win
     let hx = Number(myO.hero_xp) || 0;
@@ -15240,13 +15264,23 @@ app.post("/api/war/raid", requireAuth, async (req, res) => {
       hx -= warHeroXpNeeded(hl);
       hl += 1;
     }
+    let streak = Number(myO.win_streak) || 0;
+    streak = win ? (streak + 1) : 0;
+    // Streak loot bonus
+    if (win && streak >= 3) {
+      const mult = Math.min(1.5, 1 + streak * 0.05);
+      goldLoot = Math.floor(goldLoot * mult);
+      elixirLoot = Math.floor(elixirLoot * mult);
+      loot = Math.round(loot * Math.min(1.35, 1 + streak * 0.03) * 100) / 100;
+    }
+    // Vault protects some defender resources already handled; attacker update:
     await client.query(
       `UPDATE war_outposts SET trophy = GREATEST(0, trophy + $1), last_raid_at = NOW(),
         gold = gold + $2, elixir = elixir + $3,
-        hero_xp = $4, hero_level = $5, hero_skill = $6,
+        hero_xp = $4, hero_level = $5, hero_skill = $6, win_streak = $7,
         updated_at = NOW()
-       WHERE member_id = $7`,
-      [atkTrophy, goldLoot, elixirLoot, hx, hl, skill.id, req.member.id]
+       WHERE member_id = $8`,
+      [atkTrophy, goldLoot, elixirLoot, hx, hl, skill.id, streak, req.member.id]
     );
     // slow HP regen for defender if wiped
     if (newHp === 0) {
@@ -15285,6 +15319,7 @@ app.post("/api/war/raid", requireAuth, async (req, res) => {
       skillUsed: skill.name,
       skillIcon: skill.icon,
       heroLevel: hl,
+      winStreak: streak,
       trophyDelta: atkTrophy,
       targetUsername: tgtMem.rows[0].username,
       balance,
@@ -15367,6 +15402,152 @@ app.post("/api/war/hero/skill", requireAuth, async (req, res) => {
   } catch (e) {
     console.error("HERO SKILL:", e);
     res.status(500).json({ ok: false, error: e.message || "skill failed" });
+  }
+});
+
+
+
+app.post("/api/war/shield", requireAuth, async (req, res) => {
+  try {
+    await ensureWarTables();
+    const action = String(req.body?.action || "on").toLowerCase();
+    const o = await getOrCreateOutpost(req.member.id);
+
+    if (action === "off") {
+      if (!warIsShielded(o)) {
+        return res.json({ ok: true, outpost: warOutpostPublic(o), message: "Shield already off." });
+      }
+      const upd = await pool.query(
+        `UPDATE war_outposts SET shield_until = NULL, updated_at = NOW()
+         WHERE member_id = $1 RETURNING *`,
+        [req.member.id]
+      );
+      return res.json({
+        ok: true,
+        outpost: warOutpostPublic(upd.rows[0]),
+        message: "Shield OFF — base is open. You can raid again."
+      });
+    }
+
+    // activate
+    if (warIsShielded(o)) {
+      return res.status(400).json({
+        ok: false,
+        error: "Shield already ON · " + Math.ceil(warShieldSeconds(o) / 3600) + "h left. Or turn OFF early."
+      });
+    }
+    const today = new Date().toISOString().slice(0, 10);
+    const usedDay = o.shield_used_day ? String(o.shield_used_day).slice(0, 10) : null;
+    if (usedDay === today) {
+      return res.status(400).json({
+        ok: false,
+        error: "Manual shield already used today (1x / day). Resets UTC midnight."
+      });
+    }
+    const until = new Date(Date.now() + WAR_SHIELD_MS);
+    const upd = await pool.query(
+      `UPDATE war_outposts
+       SET shield_until = $1, shield_used_day = $2::date, updated_at = NOW()
+       WHERE member_id = $3 RETURNING *`,
+      [until.toISOString(), today, req.member.id]
+    );
+    res.json({
+      ok: true,
+      outpost: warOutpostPublic(upd.rows[0]),
+      message: "🛡️ Shield ON for 12 hours. Base protected. Cannot raid while shielded."
+    });
+  } catch (e) {
+    console.error("WAR SHIELD:", e);
+    res.status(500).json({ ok: false, error: e.message || "shield failed" });
+  }
+});
+
+/* Phase 3 — Fort buildings + Revenge list */
+const WAR_FORT = {
+  watch:    { field: "fort_watch",    gold: 80,  elixir: 40,  max: 20, label: "Watchtower", bonus: "+Def in raids" },
+  barracks: { field: "fort_barracks", gold: 100, elixir: 60,  max: 20, label: "Barracks",   bonus: "+Army power" },
+  vault:    { field: "fort_vault",    gold: 90,  elixir: 70,  max: 15, label: "Vault",      bonus: "Protect loot" }
+};
+
+app.post("/api/war/fort", requireAuth, async (req, res) => {
+  try {
+    await ensureWarTables();
+    const kind = String(req.body?.kind || "").toLowerCase();
+    const conf = WAR_FORT[kind];
+    if (!conf) return res.status(400).json({ ok: false, error: "Build watch, barracks, or vault." });
+    const o = await getOrCreateOutpost(req.member.id);
+    const cur = Number(o[conf.field]) || 0;
+    if (cur >= conf.max) return res.status(400).json({ ok: false, error: conf.label + " max " + conf.max });
+    const needG = conf.gold * (cur + 1);
+    const needE = conf.elixir * (cur + 1);
+    if (Number(o.gold) < needG || Number(o.elixir) < needE) {
+      return res.status(400).json({
+        ok: false,
+        error: "Need " + needG + "G + " + needE + "E for " + conf.label + " Lv" + (cur + 1)
+      });
+    }
+    const upd = await pool.query(
+      `UPDATE war_outposts
+       SET gold = gold - $1, elixir = elixir - $2, ${conf.field} = ${conf.field} + 1, updated_at = NOW()
+       WHERE member_id = $3 RETURNING *`,
+      [needG, needE, req.member.id]
+    );
+    res.json({
+      ok: true,
+      outpost: warOutpostPublic(upd.rows[0]),
+      message: conf.label + " → Lv" + (cur + 1) + " · " + conf.bonus
+    });
+  } catch (e) {
+    console.error("WAR FORT:", e);
+    res.status(500).json({ ok: false, error: e.message || "fort failed" });
+  }
+});
+
+app.get("/api/war/revenge", requireAuth, async (req, res) => {
+  try {
+    await ensureWarTables();
+    const me = await getOrCreateOutpost(req.member.id);
+    const rows = await pool.query(
+      `SELECT DISTINCT ON (a.attacker_id)
+          a.attacker_id AS member_id,
+          m.username,
+          o.hp, o.max_hp, o.defense, o.trophy, o.level,
+          COALESCE(o.hero_level,1) AS hero_level,
+          a.created_at AS last_hit
+       FROM war_attacks a
+       JOIN members m ON m.id = a.attacker_id
+       LEFT JOIN war_outposts o ON o.member_id = a.attacker_id
+       WHERE a.defender_id = $1 AND a.attacker_id <> $1
+       ORDER BY a.attacker_id, a.created_at DESC
+       LIMIT 12`,
+      [req.member.id]
+    );
+    const list = rows.rows.filter((r) => warInBracket(me, {
+      defense: r.defense || 10,
+      level: r.level || 1,
+      hero_level: r.hero_level || 1
+    }, true));
+    res.json({
+      ok: true,
+      revenge: list.map((r) => ({
+        memberId: r.member_id,
+        username: r.username || ("miner#" + r.member_id),
+        hp: r.hp || 100,
+        maxHp: r.max_hp || 100,
+        defense: r.defense || 10,
+        trophy: r.trophy || 0,
+        level: r.level || 1,
+        power: warPowerScore({
+          defense: r.defense || 10,
+          level: r.level || 1,
+          hero_level: r.hero_level || 1
+        }),
+        lastHit: r.last_hit
+      }))
+    });
+  } catch (e) {
+    console.error("WAR REVENGE:", e);
+    res.status(500).json({ ok: false, error: e.message || "revenge failed" });
   }
 });
 
