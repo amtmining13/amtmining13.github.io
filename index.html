@@ -4525,17 +4525,18 @@ async function loadWarTargets(){
       const hp = Number(tg.hp)||0;
       const maxHp = Math.max(1, Number(tg.maxHp)||1);
       const pct = Math.round(hp/maxHp*100);
+      const shielded = tg.shieldSeconds > 0;
       return '<div style="padding:12px;margin-bottom:10px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08)">' +
-        '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px">' +
-        '<div style="min-width:0"><div style="font-weight:900;font-size:15px">@' + esc(tg.username) + '</div>' +
-        '<div class="muted" style="font-size:11px;margin-top:2px">Lv' + tg.level + ' · Def ' + tg.defense + ' · PWR ' + (tg.power!=null?tg.power:'—') + ' · 🏆' + tg.trophy +
-        (tg.shieldSeconds>0 ? (' · 🛡️ ' + Math.ceil(tg.shieldSeconds/3600) + 'h') : '') + '</div></div>' +
-        '<button type="button" class="small-btn" style="flex-shrink:0;background:' + (tg.shieldSeconds>0?'rgba(100,100,120,.4)':'linear-gradient(135deg,#b45309,#f59e0b)') + ';color:' + (tg.shieldSeconds>0?'#aaa':'#111') + ';font-weight:900;padding:10px 14px;opacity:' + (tg.shieldSeconds>0?'0.7':'1') + '" ' +
-        (tg.shieldSeconds>0?'disabled ':'') + 'onclick="warRaid(' + tg.memberId + ')">' +
-        (tg.shieldSeconds>0?'🛡️ SHIELD':'⚔️ RAID') + '</button></div>' +
+        '<div style="font-weight:900;font-size:15px">@' + esc(tg.username||"?") + '</div>' +
+        '<div class="muted" style="font-size:11px;margin-top:4px;line-height:1.45">Lv' + tg.level +
+        ' · Def ' + tg.defense + ' · PWR ' + (tg.power!=null?tg.power:'—') +
+        '<br>🏆 ' + tg.trophy + (shielded ? (' · 🛡️ ' + Math.ceil(tg.shieldSeconds/3600) + 'h') : '') + '</div>' +
         '<div style="margin-top:8px;height:6px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden">' +
         '<div style="height:100%;width:' + pct + '%;background:' + (pct>60?"#22c55e":pct>30?"#eab308":"#ef4444") + ';border-radius:999px"></div></div>' +
-        '<div class="muted" style="font-size:10px;margin-top:4px">HP ' + hp + '/' + maxHp + '</div></div>';
+        '<div class="muted" style="font-size:10px;margin-top:4px">HP ' + hp + '/' + maxHp + '</div>' +
+        '<button type="button" ' + (shielded?'disabled ':'') + 'style="margin-top:10px;width:100%;border:0;padding:12px;border-radius:12px;font-weight:900;color:' +
+        (shielded?'#aaa':'#111') + ';background:' + (shielded?'rgba(100,100,120,.4)':'linear-gradient(135deg,#b45309,#f59e0b)') +
+        '" onclick="warRaid(' + tg.memberId + ')">' + (shielded?'🛡️ SHIELDED':'⚔️ RAID') + '</button></div>';
     }).join("");
   }catch(e){
     box.innerHTML = '<div class="empty">' + (e.message||"Failed") + '</div>';
@@ -4627,11 +4628,12 @@ async function allianceList(){
       return;
     }
     box.innerHTML = list.map(function(a){
-      return '<div style="padding:10px;margin-bottom:8px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid rgba(167,139,250,.2)">' +
-        '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">' +
-        '<div style="min-width:0;flex:1"><div style="font-weight:900">[' + esc(a.tag) + '] ' + esc(a.name) + '</div>' +
-        '<div class="muted" style="font-size:11px">Hall Lv' + a.hallLevel + ' · ' + a.memberCount + '/' + a.maxMembers + ' · @' + esc(a.leaderUsername||"") + '</div></div>' +
-        '<button type="button" class="small-btn" style="flex-shrink:0;background:linear-gradient(135deg,#5b21b6,#a78bfa);color:#fff;font-weight:900" onclick="allianceJoin(' + a.id + ')">JOIN</button></div></div>';
+      return '<div style="display:block;padding:14px;margin:0 0 12px 0;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(167,139,250,.25);overflow:hidden">' +
+        '<div style="display:block;margin:0 0 8px 0;padding:0;font-weight:900;font-size:15px;color:#ddd6fe;word-break:break-word">[' + esc(a.tag) + '] ' + esc(a.name) + '</div>' +
+        '<div class="muted" style="display:block;margin:0 0 4px 0;font-size:12px;line-height:1.5">Hall Lv <b style="color:#fff">' + a.hallLevel + '</b></div>' +
+        '<div class="muted" style="display:block;margin:0 0 4px 0;font-size:12px;line-height:1.5">Members <b style="color:#fff">' + a.memberCount + '/' + a.maxMembers + '</b></div>' +
+        '<div class="muted" style="display:block;margin:0 0 12px 0;font-size:12px;line-height:1.5">Leader @' + esc(a.leaderUsername||"?") + '</div>' +
+        '<button type="button" style="display:block;width:100%;box-sizing:border-box;margin:0;border:0;padding:12px;border-radius:12px;font-weight:900;color:#fff;background:linear-gradient(135deg,#5b21b6,#a78bfa)" onclick="allianceJoin(' + a.id + ')">JOIN ALLIANCE</button></div>';
     }).join("");
   }catch(e){
     box.innerHTML = '<div class="empty">' + esc(e.message||"Failed") + '</div>';
@@ -4683,13 +4685,13 @@ async function loadWarRevenge(){
       return;
     }
     box.innerHTML = list.map(function(tg){
-      return '<div style="padding:12px;margin-bottom:10px;border-radius:14px;background:rgba(239,68,68,.08);border:1px solid rgba(248,113,113,.25)">' +
-        '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">' +
-        '<div style="min-width:0;flex:1">' +
-        '<div style="font-weight:900;font-size:15px">@' + esc(tg.username) + '</div>' +
-        '<div class="muted" style="font-size:11px;margin-top:4px;line-height:1.4">Lv' + tg.level + ' · Def ' + tg.defense +
-        ' · PWR ' + (tg.power!=null?tg.power:'—') + '<br>🏆 ' + tg.trophy + '</div></div>' +
-        '<button type="button" class="small-btn" style="flex-shrink:0;background:linear-gradient(135deg,#991b1b,#ef4444);color:#fff;font-weight:900;padding:10px 12px;white-space:nowrap" onclick="warRaid(' + tg.memberId + ')">💀 REVENGE</button></div></div>';
+      const uname = (tg.username && String(tg.username).trim()) ? String(tg.username).trim() : ("miner#" + tg.memberId);
+      return '<div style="display:block;padding:14px;margin:0 0 12px 0;border-radius:14px;background:rgba(239,68,68,.08);border:1px solid rgba(248,113,113,.25);overflow:hidden">' +
+        '<div style="display:block;margin:0 0 8px 0;font-weight:900;font-size:16px;color:#fecaca;word-break:break-word">@' + esc(uname) + '</div>' +
+        '<div class="muted" style="display:block;margin:0 0 3px 0;font-size:12px">Level <b style="color:#fff">' + tg.level + '</b></div>' +
+        '<div class="muted" style="display:block;margin:0 0 3px 0;font-size:12px">Defense <b style="color:#fff">' + tg.defense + '</b> · Power <b style="color:#fff">' + (tg.power!=null?tg.power:"—") + '</b></div>' +
+        '<div class="muted" style="display:block;margin:0 0 12px 0;font-size:12px">Trophy <b style="color:#ffd64e">' + tg.trophy + '</b></div>' +
+        '<button type="button" style="display:block;width:100%;box-sizing:border-box;margin:0;border:0;padding:12px;border-radius:12px;font-weight:900;color:#fff;background:linear-gradient(135deg,#991b1b,#ef4444)" onclick="warRaid(' + tg.memberId + ')">💀 REVENGE</button></div>';
     }).join("");
   }catch(e){
     box.innerHTML = '<div class="empty">' + esc(e.message||"Failed") + '</div>';
