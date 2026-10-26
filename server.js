@@ -15236,7 +15236,7 @@ app.post("/api/war/raid", requireAuth, async (req, res) => {
       defTrophy = -5;
       await client.query(
         `INSERT INTO amt_ledger (member_id, amount, type, reference)
-         VALUES ($1, $2, 'WAR_LOOT','WAR_REFUND', $3)`,
+         VALUES ($1, $2, 'WAR_LOOT', $3)`,
         [req.member.id, loot, makeReference("AMT-WARLOOT")]
       );
     } else {
