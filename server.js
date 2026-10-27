@@ -14789,7 +14789,9 @@ function warOutpostPublic(o) {
     fort: {
       watch: Number(o.fort_watch) || 0,
       barracks: Number(o.fort_barracks) || 0,
-      vault: Number(o.fort_vault) || 0
+      vault: Number(o.fort_vault) || 0,
+      wall: Number(o.fort_wall) || 0,
+      tower: Number(o.fort_tower) || 0
     },
     shieldActive: warIsShielded(o),
     shieldSeconds: warShieldSeconds(o)
@@ -15510,21 +15512,41 @@ app.post("/api/war/fort", requireAuth, async (req, res) => {
     await pool.query(`ALTER TABLE war_outposts ADD COLUMN IF NOT EXISTS fort_tower INT NOT NULL DEFAULT 0`);
     const kind = String(req.body?.kind || "").toLowerCase();
     const conf = WAR_FORT[kind];
-    if (!conf) return res.status(400).json({ ok: false, error: "Build watch, barracks, or vault." });
-    const o = await getOrCreateOutpost(req.member.id);
-    const cur = Number(o[conf.field]) || 0;
-    if (cur >= conf.max) return res.status(400).json({ ok: false, error: conf.label + " max " + conf.max });
-    const needG = conf.gold * (cur + 1);
-    const needE = conf.elixir * (cur + 1);
-    if (Number(o.gold) < needG || Number(o.elixir) < needE) {
+    if (!conf) return res.status(400).json({ ok: false, error: "Build wall, tower, watch, barracks, or vault." });
+    await getOrCreateOutpost(req.member.id);
+    // Explicit read — avoid missing keys / stale row
+    const lv = await pool.query(
+      `SELECT COALESCE(fort_wall,0)::int AS fort_wall,
+              COALESCE(fort_tower,0)::int AS fort_tower,
+              COALESCE(fort_watch,0)::int AS fort_watch,
+              COALESCE(fort_barracks,0)::int AS fort_barracks,
+              COALESCE(fort_vault,0)::int AS fort_vault,
+              COALESCE(gold,0)::int AS gold,
+              COALESCE(elixir,0)::int AS elixir
+       FROM war_outposts WHERE member_id = $1`,
+      [req.member.id]
+    );
+    if (!lv.rows.length) return res.status(400).json({ ok: false, error: "Outpost not found" });
+    const row = lv.rows[0];
+    let cur = Number(row[conf.field]);
+    if (!Number.isFinite(cur) || cur < 0) cur = 0;
+    if (cur >= conf.max) {
       return res.status(400).json({
         ok: false,
-        error: "Need " + needG + "G + " + needE + "E for " + conf.label + " Lv" + (cur + 1)
+        error: conf.label + " already max (" + cur + "/" + conf.max + ")"
+      });
+    }
+    const needG = conf.gold * (cur + 1);
+    const needE = conf.elixir * (cur + 1);
+    if (Number(row.gold) < needG || Number(row.elixir) < needE) {
+      return res.status(400).json({
+        ok: false,
+        error: "Need " + needG + "G + " + needE + "E for " + conf.label + " Lv" + (cur + 1) + " (you have " + row.gold + "G " + row.elixir + "E)"
       });
     }
     const upd = await pool.query(
       `UPDATE war_outposts
-       SET gold = gold - $1, elixir = elixir - $2, ${conf.field} = ${conf.field} + 1, updated_at = NOW()
+       SET gold = gold - $1, elixir = elixir - $2, ${conf.field} = COALESCE(${conf.field},0) + 1, updated_at = NOW()
        WHERE member_id = $3 RETURNING *`,
       [needG, needE, req.member.id]
     );
