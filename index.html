@@ -2377,10 +2377,22 @@ SELECT 180D
 
   <div class="card" style="border:1px solid rgba(251,191,36,.3)">
     <div class="row">
-      <div class="card-title" style="margin:0">🏰 BUILD · FORT</div>
+      <div class="card-title" style="margin:0">🏰 BUILD · DEFENSES</div>
       <div class="muted" style="font-size:11px">🔥 Streak <b id="warStreak">0</b></div>
     </div>
     <div class="grid3" style="margin-top:10px;gap:8px">
+      <div class="stat" style="text-align:center">
+        <div style="font-size:22px">🧱</div>
+        <div class="stat-label">WALL</div>
+        <div class="stat-value" id="fortWall">0</div>
+        <button type="button" class="small-btn" style="margin-top:6px" onclick="warFort('wall')">Upgrade</button>
+      </div>
+      <div class="stat" style="text-align:center">
+        <div style="font-size:22px">💥</div>
+        <div class="stat-label">TOWER</div>
+        <div class="stat-value" id="fortTower">0</div>
+        <button type="button" class="small-btn" style="margin-top:6px" onclick="warFort('tower')">Upgrade</button>
+      </div>
       <div class="stat" style="text-align:center">
         <div style="font-size:22px">🗼</div>
         <div class="stat-label">WATCH</div>
@@ -2400,7 +2412,7 @@ SELECT 180D
         <button type="button" class="small-btn" style="margin-top:6px" onclick="warFort('vault')">Upgrade</button>
       </div>
     </div>
-    <div class="muted" style="font-size:10px;margin-top:8px;text-align:center">Watch +Def · Barracks +Army · Vault protects loot · costs Gold/Elixir</div>
+    <div class="muted" style="font-size:10px;margin-top:8px;text-align:center">🧱 Wall + 💥 Tower + Watch = stronger DEF · Barracks army · Vault loot · Gold/Elixir</div>
   </div>
 
   <div class="card" style="border:1px solid rgba(167,139,250,.4)">
