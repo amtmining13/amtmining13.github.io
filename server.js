@@ -14729,6 +14729,8 @@ async function ensureWarTables() {
     ALTER TABLE war_outposts ADD COLUMN IF NOT EXISTS fort_watch INT NOT NULL DEFAULT 0;
     ALTER TABLE war_outposts ADD COLUMN IF NOT EXISTS fort_barracks INT NOT NULL DEFAULT 0;
     ALTER TABLE war_outposts ADD COLUMN IF NOT EXISTS fort_vault INT NOT NULL DEFAULT 0;
+    ALTER TABLE war_outposts ADD COLUMN IF NOT EXISTS fort_wall INT NOT NULL DEFAULT 0;
+    ALTER TABLE war_outposts ADD COLUMN IF NOT EXISTS fort_tower INT NOT NULL DEFAULT 0;
     ALTER TABLE war_outposts ADD COLUMN IF NOT EXISTS shield_until TIMESTAMPTZ;
     ALTER TABLE war_outposts ADD COLUMN IF NOT EXISTS shield_used_day DATE;
   `);
@@ -14940,6 +14942,8 @@ function warInBracket(a, b, relaxed) {
 app.get("/api/war/status", requireAuth, async (req, res) => {
   try {
     await ensureWarTables();
+    await pool.query(`ALTER TABLE war_outposts ADD COLUMN IF NOT EXISTS fort_wall INT NOT NULL DEFAULT 0`);
+    await pool.query(`ALTER TABLE war_outposts ADD COLUMN IF NOT EXISTS fort_tower INT NOT NULL DEFAULT 0`);
     // Soft reset disabled — community prefers brackets only
     const outpost = await getOrCreateOutpost(req.member.id);
     const log = await pool.query(
@@ -15501,6 +15505,9 @@ const WAR_FORT = {
 app.post("/api/war/fort", requireAuth, async (req, res) => {
   try {
     await ensureWarTables();
+    // Hard guarantee Wall/Tower columns exist (older deploys)
+    await pool.query(`ALTER TABLE war_outposts ADD COLUMN IF NOT EXISTS fort_wall INT NOT NULL DEFAULT 0`);
+    await pool.query(`ALTER TABLE war_outposts ADD COLUMN IF NOT EXISTS fort_tower INT NOT NULL DEFAULT 0`);
     const kind = String(req.body?.kind || "").toLowerCase();
     const conf = WAR_FORT[kind];
     if (!conf) return res.status(400).json({ ok: false, error: "Build watch, barracks, or vault." });
