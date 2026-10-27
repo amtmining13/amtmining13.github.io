@@ -1590,6 +1590,17 @@ CLAIM DAILY REWARD
   </div>
 </div>
 
+
+      <div class="muted" style="font-size:11px;margin-top:4px">Mine · Raid bases · Dungeon hunt · Alliance · more</div>
+    </div>
+    <button type="button" class="small-btn" onclick="loadMissions()">Refresh</button>
+  </div>
+  <div id="missionsList" style="margin-top:12px"><div class="empty">Loading missions...</div></div>
+  <div id="missionsBonusBox" style="margin-top:12px;display:none">
+    <button type="button" class="primary" id="missionsBonusBtn" onclick="claimMissionBonus()">🎁 CLAIM DAILY BONUS</button>
+  </div>
+</div>
+
 <!-- MYSTERY CHEST -->
 <div class="card" id="chestCard" style="border:1px solid rgba(255,214,78,.25)">
 <div class="row" style="align-items:flex-start">
@@ -1604,22 +1615,6 @@ CLAIM DAILY REWARD
   <div class="muted" id="chestStatusText">Tap to open today's surprise</div>
 </div>
 <button id="chestOpenBtn" class="primary" style="margin-top:12px" onclick="openMysteryChest()">✨ OPEN CHEST</button>
-</div>
-
-<!-- MAP DUNGEON -->
-<div class="card" id="dungeonCard">
-<div class="card-title">🗺️ MAP · DUNGEON</div>
-<div class="muted" style="font-size:11px;margin-bottom:10px">Send a pet to explore · AFK loot (food, water, energy, gems, AMT)</div>
-<label class="muted" style="font-size:11px">Pet ID</label>
-<input id="dungeonPetId" class="input" type="number" placeholder="Owned pet id (from My Pets)">
-<label class="muted" style="font-size:11px;margin-top:8px">Duration</label>
-<select id="dungeonDuration" class="input">
-  <option value="1h">1 hour · 0.2 AMT</option>
-  <option value="2h">2 hours · 0.4 AMT</option>
-  <option value="4h">4 hours · 0.7 AMT</option>
-</select>
-<button class="primary" style="margin-top:10px" onclick="startDungeon()">🚀 SEND TO MAP</button>
-<div id="dungeonRuns" style="margin-top:12px"><div class="muted">No active runs</div></div>
 </div>
 
 <!-- MINING SESSION -->
@@ -2269,7 +2264,18 @@ SELECT 180D
 <section id="warSection" class="section">
   <div class="hero">
     <h1>WAR <span>OUTPOST</span></h1>
-    <p>Phase 4 · Alliance · Fort · Revenge · Shield</p>
+    <p>Simple PvP base · Raid · Alliance</p>
+  </div>
+
+  <div class="card" style="border:1px solid rgba(167,139,250,.3)">
+    <div class="card-title" style="margin:0">HOW WAR WORKS</div>
+    <div class="muted" style="font-size:12px;line-height:1.55;margin-top:8px">
+      <b style="color:#f5d76e">1. BUILD</b> — Wall · Tower · Watch · troops · hero<br>
+      <b style="color:#f5d76e">2. SEARCH</b> — find ka-bracket base · preview · attack<br>
+      <b style="color:#f5d76e">3. REVENGE</b> — see who hit you · hit back<br>
+      <b style="color:#f5d76e">4. ALLIANCE</b> — create / join team · donate
+    </div>
+    <div class="muted" style="font-size:11px;margin-top:8px">No Map / Daily Missions here — War tab only.</div>
   </div>
 
   <div class="card" style="border:1px solid rgba(251,191,36,.35);background:linear-gradient(165deg,rgba(40,22,8,.95),rgba(18,12,28,.98))">
@@ -2382,7 +2388,7 @@ SELECT 180D
 
   <div class="card" style="border:1px solid rgba(251,191,36,.3)">
     <div class="row">
-      <div class="card-title" style="margin:0">🏰 FORT</div>
+      <div class="card-title" style="margin:0">🏰 BUILD · FORT</div>
       <div class="muted" style="font-size:11px">🔥 Streak <b id="warStreak">0</b></div>
     </div>
     <div class="grid3" style="margin-top:10px;gap:8px">
@@ -2410,7 +2416,7 @@ SELECT 180D
 
   <div class="card" style="border:1px solid rgba(167,139,250,.4)">
     <div class="row">
-      <div class="card-title" style="margin:0">🏰 ALLIANCE · PHASE 4</div>
+      <div class="card-title" style="margin:0">🤝 ALLIANCE (TEAM)</div>
       <button type="button" class="small-btn" onclick="loadAlliance()">Refresh</button>
     </div>
     <div class="muted" style="font-size:11px;margin:6px 0 10px">Build your alliance first — then others can join. Alliance War later.</div>
@@ -2441,13 +2447,13 @@ SELECT 180D
       <div class="card-title" style="margin:0">💀 REVENGE</div>
       <button type="button" class="small-btn" onclick="loadWarRevenge()">Refresh</button>
     </div>
-    <div class="muted" style="font-size:11px;margin:6px 0 8px">Who hit your base — hit them back (same bracket)</div>
+    <div class="muted" style="font-size:11px;margin:6px 0 8px">Who hit your base — see attacker · REVENGE (same bracket)</div>
     <div id="warRevengeList"><div class="empty">No revenge targets</div></div>
   </div>
 
   <div class="card">
     <div class="row">
-      <div class="card-title" style="margin:0">🎯 RAID TARGETS</div>
+      <div class="card-title" style="margin:0">🎯 RAID · OTHER BASES</div>
       <button type="button" class="small-btn" onclick="loadWarTargets()">Refresh</button>
     </div>
     <div class="muted" style="font-size:11px;margin:6px 0 10px">24/7 · Optional 12h shield (1x/day) · Bracket · 3 min CD · 12 raids/day</div>
@@ -4422,6 +4428,8 @@ async function loadWarStatus(){
     if($("fortWatch")) $("fortWatch").textContent = fort.watch != null ? fort.watch : "0";
     if($("fortBarracks")) $("fortBarracks").textContent = fort.barracks != null ? fort.barracks : "0";
     if($("fortVault")) $("fortVault").textContent = fort.vault != null ? fort.vault : "0";
+    if($("fortWall")) $("fortWall").textContent = fort.wall != null ? fort.wall : "0";
+    if($("fortTower")) $("fortTower").textContent = fort.tower != null ? fort.tower : "0";
     if($("warHeroUpCost")){
       const hl = Number(hero.level)||1;
       $("warHeroUpCost").textContent = "Upgrade cost: " + (30+hl*15) + " Gold + " + (25+hl*12) + " Elixir · or earn XP from raids";
@@ -4753,6 +4761,45 @@ function showWarRaidResult(d){
     '</div>';
   try{ box.scrollIntoView({behavior:"smooth",block:"nearest"}); }catch(e){}
 }
+let _warSearchTargetId = null;
+async function warSearch(){
+  const box = $("warSearchPreview");
+  if(!box) return;
+  try{
+    box.style.display = "block";
+    box.innerHTML = '<div class="muted">Searching bracket...</div>';
+    const d = await api("/api/war/search",{method:"POST",body:"{}"});
+    if(!d.found || !d.target){
+      _warSearchTargetId = null;
+      box.innerHTML = '<div class="empty">' + esc(d.message||"No base found. Try again.") + '</div>';
+      return;
+    }
+    const tg = d.target;
+    _warSearchTargetId = tg.memberId;
+    const fort = tg.fort || {};
+    const pct = Math.round((Number(tg.hp)||0)/Math.max(1,Number(tg.maxHp)||1)*100);
+    box.innerHTML =
+      '<div style="font-weight:900;font-size:16px;color:#fbbf24">🎯 FOUND BASE</div>' +
+      '<div style="font-weight:900;font-size:18px;margin-top:6px">@' + esc(tg.username||"?") + '</div>' +
+      '<div class="muted" style="font-size:12px;margin-top:6px;line-height:1.5">' +
+      'Lv' + tg.level + ' · Def ' + tg.defense + ' · PWR ' + (tg.power!=null?tg.power:"—") +
+      '<br>🏆 ' + tg.trophy + ' · Army ' + (tg.armyPower||0) + ' · Hero Lv' + (tg.heroLevel||1) +
+      '<br>🧱 Wall ' + (fort.wall||0) + ' · 💥 Tower ' + (fort.tower||0) + ' · 🗼 Watch ' + (fort.watch||0) +
+      '<br>💰 ' + (tg.gold||0) + 'G · 🧪 ' + (tg.elixir||0) + 'E' +
+      '</div>' +
+      '<div style="margin-top:8px;height:8px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden">' +
+      '<div style="height:100%;width:' + pct + '%;background:' + (pct>60?"#22c55e":pct>30?"#eab308":"#ef4444") + '"></div></div>' +
+      '<div class="muted" style="font-size:11px;margin-top:4px">HP ' + tg.hp + '/' + tg.maxHp + '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px">' +
+      '<button type="button" class="secondary" onclick="warSearch()">🔄 NEXT</button>' +
+      '<button type="button" class="primary" onclick="warRaid(' + tg.memberId + ')">⚔️ ATTACK</button>' +
+      '</div>';
+  }catch(e){
+    _warSearchTargetId = null;
+    box.style.display = "block";
+    box.innerHTML = '<div class="empty">' + esc(e.message||"Search failed") + '</div>';
+  }
+}
 async function warRaid(targetId){
   try{
     showToast("⚔️ Deploying raid...");
@@ -4811,7 +4858,74 @@ async function openMysteryChest(){
   }
 }
 
-async function loadMissions(){ /* Daily Goals removed */ }
+async function loadMapOutposts(){
+  const box = $("mapOutpostsList");
+  if(!box) return;
+  try{
+    box.innerHTML = '<div class="muted">Scanning map...</div>';
+    const d = await api("/api/war/targets");
+    const list = d.targets || [];
+    if(!list.length){
+      box.innerHTML = '<div class="empty">No bases in your bracket right now. Try War HQ or come back later.</div>';
+      return;
+    }
+    box.innerHTML = list.map(function(tg){
+      const uname = (tg.username && String(tg.username).trim()) ? String(tg.username).trim() : ("miner#" + tg.memberId);
+      const shielded = tg.shieldSeconds > 0;
+      const hp = Number(tg.hp)||0;
+      const maxHp = Math.max(1, Number(tg.maxHp)||1);
+      const pct = Math.round(hp/maxHp*100);
+      return '<div style="display:block;padding:12px;margin:0 0 10px 0;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(251,191,36,.2);overflow:hidden">' +
+        '<div style="font-weight:900;font-size:14px;margin-bottom:4px">🏕️ @' + esc(uname) + '</div>' +
+        '<div class="muted" style="font-size:11px;line-height:1.45">Lv ' + tg.level + ' · Def ' + tg.defense + ' · 🏆 ' + tg.trophy +
+        (shielded ? ' · 🛡️ Shield' : '') + '</div>' +
+        '<div style="margin-top:6px;height:5px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden">' +
+        '<div style="height:100%;width:' + pct + '%;background:' + (pct>60?'#22c55e':pct>30?'#eab308':'#ef4444') + '"></div></div>' +
+        '<div class="muted" style="font-size:10px;margin:4px 0 8px">HP ' + hp + '/' + maxHp + '</div>' +
+        '<button type="button" ' + (shielded?'disabled ':'') + 'style="display:block;width:100%;border:0;padding:10px;border-radius:12px;font-weight:900;color:' + (shielded?'#aaa':'#111') + ';background:' + (shielded?'rgba(100,100,120,.4)':'linear-gradient(135deg,#b45309,#f59e0b)') + '" onclick="warRaid(' + tg.memberId + ')">' +
+        (shielded?'🛡️ SHIELDED':'⚔️ RAID BASE') + '</button></div>';
+    }).join("");
+  }catch(e){
+    box.innerHTML = '<div class="empty">' + esc(e.message||"Map failed") + '</div>';
+  }
+}
+async function loadMissions(){
+  const box = $("missionsList");
+  if(!box) return;
+  try{
+    const d = await api("/api/missions/status");
+    const goals = d.goals || [];
+    if(!goals.length){
+      box.innerHTML = '<div class="empty">No missions today</div>';
+      return;
+    }
+    box.innerHTML = goals.map(function(g){
+      const done = !!g.done;
+      return '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)">' +
+        '<div style="width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-weight:900;background:' + (done?'rgba(34,197,94,.25)':'rgba(255,255,255,.06)') + ';border:1px solid ' + (done?'rgba(34,197,94,.5)':'rgba(255,255,255,.12)') + '">' + (done?'✓':'○') + '</div>' +
+        '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px">' + esc(g.label||g.id) + '</div></div></div>';
+    }).join("");
+    const bonusBox = $("missionsBonusBox");
+    const bonusBtn = $("missionsBonusBtn");
+    if(bonusBox){
+      if(d.bonusReady){
+        bonusBox.style.display = "block";
+        if(bonusBtn) bonusBtn.textContent = "🎁 CLAIM DAILY BONUS (" + (d.doneCount||0) + "/" + (d.need||4) + ")";
+      } else if(d.bonusClaimed){
+        bonusBox.style.display = "block";
+        if(bonusBtn){ bonusBtn.textContent = "✅ Bonus claimed today"; bonusBtn.disabled = true; }
+      } else {
+        bonusBox.style.display = "block";
+        if(bonusBtn){
+          bonusBtn.disabled = true;
+          bonusBtn.textContent = "Bonus " + (d.doneCount||0) + "/" + (d.need||4) + " missions";
+        }
+      }
+    }
+  }catch(e){
+    box.innerHTML = '<div class="empty">' + esc(e.message||"Failed") + '</div>';
+  }
+}
 async function claimMission(id){
   try{
     const d = await api("/api/missions/claim",{method:"POST",body:JSON.stringify({missionId:id})});
@@ -5110,7 +5224,7 @@ showToast(
 "AMT mining started."
 );
 
-await loadMiningStatus(); try{ loadMissions(); }catch(e){};
+await loadMiningStatus();
 
 // Show Pi Ad on mining click (bonus still 1x/day on server)
 try{ await showDailyMiningAd(); }catch(e){ console.warn(e); }
