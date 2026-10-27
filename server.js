@@ -14239,6 +14239,9 @@ async function bumpMission(memberId, missionId, amount) {
 
 app.get("/api/missions/status", requireAuth, async (req, res) => {
   try {
+    // Daily Goals UI retired — empty response (old clients stay clean)
+    return res.json({ ok: true, goals: [], doneCount: 0, need: 0, bonusReady: false, bonusClaimed: false, retired: true });
+
     await ensureDailyGoalsTable();
     const today = utcDateString();
     const r = await pool.query(
