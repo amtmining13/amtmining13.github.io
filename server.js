@@ -15231,7 +15231,9 @@ app.post("/api/war/raid", requireAuth, async (req, res) => {
     if (skill.id === "mark") defMul = 0.18; // ignore more defense
     const atkPower = 12 + warArmyPower(myO) + (skill.id === "snipe" ? (8 + heroLv * 2) : 0);
     const watch = Number(defO.fort_watch) || 0;
-    const defPower = 8 + Number(defO.defense) + Math.floor(warArmyPower(defO) * 0.25) + watch * 8;
+    const wall = Number(defO.fort_wall) || 0;
+    const tower = Number(defO.fort_tower) || 0;
+    const defPower = 8 + Number(defO.defense) + Math.floor(warArmyPower(defO) * 0.25) + watch * 8 + wall * 6 + tower * 12;
     let damage = Math.max(5, atkPower - Math.floor(defPower * defMul) + Math.floor(Math.random() * 12) - 3);
     if (skill.id === "snipe") damage += 5 + heroLv;
     damage = Math.min(damage, Number(defO.hp));
@@ -15488,7 +15490,9 @@ app.post("/api/war/shield", requireAuth, async (req, res) => {
 const WAR_FORT = {
   watch:    { field: "fort_watch",    gold: 80,  elixir: 40,  max: 20, label: "Watchtower", bonus: "+Def in raids" },
   barracks: { field: "fort_barracks", gold: 100, elixir: 60,  max: 20, label: "Barracks",   bonus: "+Army power" },
-  vault:    { field: "fort_vault",    gold: 90,  elixir: 70,  max: 15, label: "Vault",      bonus: "Protect loot" }
+  vault:    { field: "fort_vault",    gold: 90,  elixir: 70,  max: 15, label: "Vault",      bonus: "Protect loot" },
+  wall:     { field: "fort_wall",     gold: 70,  elixir: 30,  max: 25, label: "Wall",       bonus: "+Def vs raids" },
+  tower:    { field: "fort_tower",    gold: 110, elixir: 55,  max: 20, label: "Cannon Tower", bonus: "Heavy +Def" }
 };
 
 app.post("/api/war/fort", requireAuth, async (req, res) => {
@@ -15522,6 +15526,66 @@ app.post("/api/war/fort", requireAuth, async (req, res) => {
   } catch (e) {
     console.error("WAR FORT:", e);
     res.status(500).json({ ok: false, error: e.message || "fort failed" });
+  }
+});
+
+
+/* CoC-style: SEARCH one opponent in bracket → preview → attack */
+app.post("/api/war/search", requireAuth, async (req, res) => {
+  try {
+    await ensureWarTables();
+    const me = await getOrCreateOutpost(req.member.id);
+    const rows = await pool.query(
+      `SELECT o.*, m.username
+       FROM war_outposts o
+       JOIN members m ON m.id = o.member_id
+       WHERE o.member_id <> $1
+       ORDER BY RANDOM()
+       LIMIT 40`,
+      [req.member.id]
+    );
+    const candidates = [];
+    for (const r of rows.rows) {
+      if (warIsShielded(r)) continue;
+      if (!warInBracket(me, r, true)) continue;
+      candidates.push(r);
+    }
+    if (!candidates.length) {
+      return res.json({
+        ok: true,
+        found: false,
+        message: "No open bases in your bracket right now. Try again or use Scout list."
+      });
+    }
+    const pick = candidates[Math.floor(Math.random() * Math.min(candidates.length, 8))];
+    const power = warPowerScore(pick);
+    res.json({
+      ok: true,
+      found: true,
+      target: {
+        memberId: pick.member_id,
+        username: pick.username || ("miner#" + pick.member_id),
+        hp: pick.hp,
+        maxHp: pick.max_hp,
+        defense: pick.defense,
+        trophy: pick.trophy,
+        level: pick.level,
+        power,
+        armyPower: warArmyPower(pick),
+        fort: {
+          watch: Number(pick.fort_watch) || 0,
+          wall: Number(pick.fort_wall) || 0,
+          tower: Number(pick.fort_tower) || 0,
+          vault: Number(pick.fort_vault) || 0
+        },
+        heroLevel: Number(pick.hero_level) || 1,
+        gold: Number(pick.gold) || 0,
+        elixir: Number(pick.elixir) || 0
+      }
+    });
+  } catch (e) {
+    console.error("WAR SEARCH:", e);
+    res.status(500).json({ ok: false, error: e.message || "search failed" });
   }
 });
 
