@@ -3771,7 +3771,7 @@ app.get("/api/daily/status", requireAuth, async (req, res) => {
     const yesterday = yesterdayUtcString();
 
     const hist = await pool.query(
-      `SELECT claim_date, amount, streak, created_at
+      `SELECT claim_date::text AS claim_date, amount, streak, created_at
        FROM daily_rewards
        WHERE member_id = $1
        ORDER BY claim_date DESC
@@ -3878,32 +3878,38 @@ app.post("/api/daily/claim", requireAuth, async (req, res) => {
       });
     }
 
+    // Streak from last claim date + stored streak (timezone-safe)
     const last = await client.query(
-      `SELECT claim_date, streak FROM daily_rewards
+      `SELECT claim_date::text AS claim_date, streak FROM daily_rewards
        WHERE member_id = $1 ORDER BY claim_date DESC LIMIT 1`,
       [req.member.id]
     );
 
-    // Build streak from actual consecutive claim days (repairs old streak=1 rows)
     const hist = await client.query(
-      `SELECT claim_date FROM daily_rewards
+      `SELECT claim_date::text AS claim_date FROM daily_rewards
        WHERE member_id = $1
        ORDER BY claim_date DESC
        LIMIT 14`,
       [req.member.id]
     );
     const pastDates = hist.rows.map((r) => asYmd(r.claim_date));
-    // After full 7-day cycle, reset to Day 1 (not permanent max reward)
     let streak = 1;
-    if (pastDates.includes(yesterday)) {
-      const prior = streakFromClaimDates(pastDates, yesterday) || 1;
-      if (prior >= DAILY_MAX_STREAK) {
-        streak = 1;
+    if (last.rows.length) {
+      const lastDate = asYmd(last.rows[0].claim_date);
+      const lastStreak = Math.max(1, Number(last.rows[0].streak) || 1);
+      if (lastDate === yesterday || isConsecutiveDay(lastDate, today)) {
+        // Continue streak (or reset after Day 7)
+        if (lastStreak >= DAILY_MAX_STREAK) {
+          streak = 1;
+        } else {
+          streak = Math.min(DAILY_MAX_STREAK, lastStreak + 1);
+        }
+      } else if (pastDates.includes(yesterday)) {
+        const prior = streakFromClaimDates(pastDates, yesterday) || lastStreak || 1;
+        streak = prior >= DAILY_MAX_STREAK ? 1 : Math.min(DAILY_MAX_STREAK, prior + 1);
       } else {
-        streak = Math.min(DAILY_MAX_STREAK, prior + 1);
+        streak = 1; // missed a day
       }
-    } else {
-      streak = 1;
     }
 
     const amount = dailyAmountForStreak(streak);
@@ -7551,30 +7557,31 @@ function yesterdayUtcString() {
   return d.toISOString().slice(0, 10);
 }
 
-/** Normalize PG DATE / Date / string → YYYY-MM-DD (UTC) */
+/** Normalize PG DATE / Date / string → YYYY-MM-DD */
 function asYmd(v) {
   if (v == null || v === "") return null;
   if (typeof v === "string") {
-    // "2026-10-01" or ISO datetime
     const m = v.match(/(\d{4}-\d{2}-\d{2})/);
     if (m) return m[1];
     const d = new Date(v);
-    if (!isNaN(d.getTime())) {
-      return d.toISOString().slice(0, 10);
-    }
-    return v.slice(0, 10);
+    if (!isNaN(d.getTime())) return d.toISOString().slice(0, 10);
+    return String(v).slice(0, 10);
   }
   if (v instanceof Date && !isNaN(v.getTime())) {
-    const y = v.getUTCFullYear();
-    const m = String(v.getUTCMonth() + 1).padStart(2, "0");
-    const day = String(v.getUTCDate()).padStart(2, "0");
-    return y + "-" + m + "-" + day;
+    // PG DATE often arrives as local midnight; use UTC ISO date
+    return v.toISOString().slice(0, 10);
   }
-  try {
-    return asYmd(String(v));
-  } catch (e) {
-    return null;
-  }
+  try { return asYmd(String(v)); } catch (e) { return null; }
+}
+
+/** True if a is exactly 1 calendar day before b (YYYY-MM-DD). */
+function isConsecutiveDay(a, b) {
+  const A = asYmd(a);
+  const B = asYmd(b);
+  if (!A || !B) return false;
+  const d = new Date(B + "T00:00:00.000Z");
+  d.setUTCDate(d.getUTCDate() - 1);
+  return d.toISOString().slice(0, 10) === A;
 }
 
 function dailyAmountForStreak(streak) {
@@ -14208,7 +14215,12 @@ async function bumpMission(memberId, missionId, amount) {
   try {
     if (!memberId || !missionId) return;
     await ensureDailyGoalsTable();
-    const col = { mine: "mine", spin: "spin", care: "care", battle: "battle" }[String(missionId)];
+    try {
+      await pool.query(`ALTER TABLE daily_goals ADD COLUMN IF NOT EXISTS raid BOOLEAN NOT NULL DEFAULT FALSE`);
+      await pool.query(`ALTER TABLE daily_goals ADD COLUMN IF NOT EXISTS alliance BOOLEAN NOT NULL DEFAULT FALSE`);
+      await pool.query(`ALTER TABLE daily_goals ADD COLUMN IF NOT EXISTS dungeon BOOLEAN NOT NULL DEFAULT FALSE`);
+    } catch (_) {}
+    const col = { mine: "mine", spin: "spin", care: "care", battle: "battle", raid: "raid", alliance: "alliance", dungeon: "dungeon" }[String(missionId)];
     if (!col) return;
     const today = utcDateString();
     await pool.query(
@@ -14230,7 +14242,7 @@ app.get("/api/missions/status", requireAuth, async (req, res) => {
     await ensureDailyGoalsTable();
     const today = utcDateString();
     const r = await pool.query(
-      `SELECT mine, spin, care, battle, bonus_claimed FROM daily_goals
+      `SELECT mine, spin, care, battle, COALESCE(raid,false) AS raid, COALESCE(alliance,false) AS alliance, COALESCE(dungeon,false) AS dungeon, bonus_claimed FROM daily_goals
        WHERE member_id = $1 AND goal_date = $2::date`,
       [req.member.id, today]
     );
@@ -14239,10 +14251,13 @@ app.get("/api/missions/status", requireAuth, async (req, res) => {
       { id: "mine", label: "Start or claim mining today", done: !!row.mine, rewardAmt: 0 },
       { id: "spin", label: "Spin the wheel once", done: !!row.spin, rewardAmt: 0 },
       { id: "care", label: "Care a pet (or Care All)", done: !!row.care, rewardAmt: 0 },
-      { id: "battle", label: "Win 1 pet battle", done: !!row.battle, rewardAmt: 0 }
+      { id: "battle", label: "Win 1 pet battle", done: !!row.battle, rewardAmt: 0 },
+      { id: "raid", label: "Raid another War outpost (win)", done: !!row.raid, rewardAmt: 0 },
+      { id: "dungeon", label: "Hunt in Map Dungeon (claim run)", done: !!row.dungeon, rewardAmt: 0 },
+      { id: "alliance", label: "Create or join an Alliance", done: !!row.alliance, rewardAmt: 0 }
     ];
     const doneCount = goals.filter(g => g.done).length;
-    const need = 3;
+    const need = 4;
     const bonusClaimed = !!row.bonus_claimed;
     const bonusReady = doneCount >= need && !bonusClaimed;
     res.json({
@@ -14279,7 +14294,7 @@ app.post("/api/missions/claim", requireAuth, async (req, res) => {
   // Individual mission claims removed — use all-clear bonus only
   return res.json({
     ok: false,
-    error: "Complete 3 goals then claim the daily bonus below."
+    error: "Complete 4 of 6 missions then claim the daily bonus."
   });
 });
 
@@ -14291,7 +14306,10 @@ app.post("/api/missions/claim-bonus", requireAuth, async (req, res) => {
     await client.query("BEGIN");
     await client.query(`SELECT id FROM members WHERE id = $1 FOR UPDATE`, [req.member.id]);
     let row = await client.query(
-      `SELECT mine, spin, care, battle, bonus_claimed FROM daily_goals
+      `SELECT mine, spin, care, battle,
+              COALESCE(raid,false) AS raid, COALESCE(alliance,false) AS alliance,
+              COALESCE(dungeon,false) AS dungeon,
+              bonus_claimed FROM daily_goals
        WHERE member_id = $1 AND goal_date = $2::date FOR UPDATE`,
       [req.member.id, today]
     );
@@ -14304,10 +14322,10 @@ app.post("/api/missions/claim-bonus", requireAuth, async (req, res) => {
       await client.query("ROLLBACK");
       return res.status(400).json({ ok: false, error: "Daily bonus already claimed." });
     }
-    const done = [g.mine, g.spin, g.care, g.battle].filter(Boolean).length;
-    if (done < 3) {
+    const done = [g.mine, g.spin, g.care, g.battle, g.raid, g.dungeon, g.alliance].filter(Boolean).length;
+    if (done < 4) {
       await client.query("ROLLBACK");
-      return res.status(400).json({ ok: false, error: "Need 3/4 goals done (you have " + done + "/4)." });
+      return res.status(400).json({ ok: false, error: "Need 4/7 missions done (you have " + done + "/7)." });
     }
     const amount = 5;
     await client.query(
@@ -14644,6 +14662,7 @@ app.post("/api/dungeon/claim", requireAuth, async (req, res) => {
     const lootText = (Array.isArray(loot) ? loot : [])
       .map((x) => (x.qty || 1) + " " + (x.item || "item"))
       .join(", ");
+    try { await bumpMission(req.member.id, "dungeon", 1); } catch (_) {}
     res.json({
       ok: true,
       loot: loot || [],
@@ -15306,6 +15325,9 @@ app.post("/api/war/raid", requireAuth, async (req, res) => {
     );
 
     await client.query("COMMIT");
+    if (win) {
+      try { await bumpMission(req.member.id, "raid", 1); } catch (_) {}
+    }
     const balance = await getBalance(req.member.id);
     const myAfter = await getOrCreateOutpost(req.member.id);
     res.json({
@@ -15674,22 +15696,6 @@ app.post("/api/war/repair", requireAuth, async (req, res) => {
 });
 
 
-    app.listen(PORT, "0.0.0.0", () => {
-      console.log("==================================================");
-      console.log("AMT MAINNET BACKEND ONLINE");
-      console.log("Port: " + PORT);
-      console.log("Daily missions + dungeon: ENABLED");
-      console.log("==================================================");
-    });
-
-  } catch (error) {
-    console.error("SERVER START FAILED:", error);
-    process.exit(1);
-  }
-}
-
-startServer();
-
 /* =========================================================
    PHASE 4 — ALLIANCE (create · join · leave · donate · hall)
 ========================================================= */
@@ -15848,6 +15854,7 @@ app.post("/api/alliance/create", requireAuth, async (req, res) => {
       [a.id, req.member.id]
     );
     await client.query("COMMIT");
+    try { await bumpMission(req.member.id, "alliance", 1); } catch (_) {}
     res.json({
       ok: true,
       alliance: alliancePublic(a, { memberCount: 1, leaderUsername: req.member.username }),
@@ -15904,6 +15911,7 @@ app.post("/api/alliance/join", requireAuth, async (req, res) => {
       [allianceId, req.member.id]
     );
     await client.query("COMMIT");
+    try { await bumpMission(req.member.id, "alliance", 1); } catch (_) {}
     res.json({
       ok: true,
       message: "Joined [" + row.tag + "] " + row.name + "!"
@@ -16055,3 +16063,18 @@ app.post("/api/alliance/settings", requireAuth, async (req, res) => {
   }
 });
 
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log("==================================================");
+      console.log("AMT MAINNET BACKEND ONLINE");
+      console.log("Port: " + PORT);
+      console.log("Daily missions + dungeon: ENABLED");
+      console.log("==================================================");
+    });
+
+  } catch (error) {
+    console.error("SERVER START FAILED:", error);
+    process.exit(1);
+  }
+}
+
+startServer();
