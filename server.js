@@ -11722,7 +11722,7 @@ app.get("/api/gear/materials", requireAuth, async (req, res) => {
 
 app.post("/api/gear/buy-material", requireAuth, async (req, res) => {
   const materialId = String(req.body?.materialId || "");
-  const qty = Math.max(1, Math.min(50, Number(req.body?.qty) || 1));
+  const qty = Math.max(1, Math.min(100, Number(req.body?.qty) || 1));
   const m = getMaterial(materialId);
   if (!m) return res.status(400).json({ ok: false, error: "Unknown material." });
   const cost = Math.round(m.priceAmt * qty * 100) / 100;
