@@ -8440,12 +8440,22 @@ async function loadMaterialsShop() {
       html += "<div class='muted' style='font-size:10px;margin:8px 0'>Use: My Pet - Upgrade Weapon / Gem sockets</div>";
     }
     html += "<div class='card-title' style='font-size:13px;margin:14px 0 6px'>BUY MATERIALS</div>";
+    html += "<div class='muted' style='font-size:10px;margin:0 0 8px'>Bulk: x1 · x10 · x50 · x100 (one tap)</div>";
     (d.catalog || []).forEach(function(m) {
       var q = have[m.id] || 0;
-      html += "<div class='balance-row' style='flex-wrap:wrap;gap:6px;align-items:center'>";
-      html += "<div style='flex:1;min-width:120px'><b>" + m.name + "</b><div class='muted' style='font-size:10px'>";
-      html += (m.desc || "") + " · Have <b>" + q + "</b></div></div>";
-      html += "<button class='small-btn' style='width:auto' onclick=\"buyMaterial('" + m.id + "')\">" + m.priceAmt + " AMT</button></div>";
+      var p1 = m.priceAmt;
+      var p10 = Math.round(p1 * 10 * 100) / 100;
+      var p50 = Math.round(p1 * 50 * 100) / 100;
+      var p100 = Math.round(p1 * 100 * 100) / 100;
+      html += "<div class='balance-row' style='flex-wrap:wrap;gap:6px;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)'>";
+      html += "<div style='flex:1;min-width:140px'><b>" + m.name + "</b><div class='muted' style='font-size:10px'>";
+      html += (m.desc || "") + " · Have <b>" + q + "</b> · " + p1 + " AMT each</div></div>";
+      html += "<div style='display:flex;flex-wrap:wrap;gap:4px'>";
+      html += "<button class='small-btn' style='width:auto;font-size:10px' onclick=\"buyMaterial('" + m.id + "',1)\">x1</button>";
+      html += "<button class='small-btn' style='width:auto;font-size:10px' onclick=\"buyMaterial('" + m.id + "',10)\">x10 (" + p10 + ")</button>";
+      html += "<button class='small-btn' style='width:auto;font-size:10px' onclick=\"buyMaterial('" + m.id + "',50)\">x50 (" + p50 + ")</button>";
+      html += "<button class='small-btn' style='width:auto;font-size:10px;border-color:rgba(255,213,80,.4)' onclick=\"buyMaterial('" + m.id + "',100)\">x100 (" + p100 + ")</button>";
+      html += "</div></div>";
     });
     box.innerHTML = html;
   } catch (e) {
@@ -8453,17 +8463,16 @@ async function loadMaterialsShop() {
   }
 }
 
-async function buyMaterial(id) {
+async function buyMaterial(id, qty) {
+  qty = Math.max(1, Math.min(100, Number(qty) || 1));
   try {
     const d = await api("/api/gear/buy-material", {
       method: "POST",
-      body: JSON.stringify({ materialId: id, qty: 1 })
+      body: JSON.stringify({ materialId: id, qty: qty })
     });
-    showToast(d.message || "Bought — check Bag");
+    showToast(d.message || ("Bought x" + qty + " — check Bag"));
     await refreshWallet();
     loadMaterialsShop();
-    /* also visible in Bag */
-
   } catch (e) {
     showToast(e.message || "Buy failed", true);
   }
