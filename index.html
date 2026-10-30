@@ -2650,7 +2650,7 @@ SELECT 180D
 <div style="font-size:18px;font-weight:900;color:#ffd54f;margin-bottom:12px" id="modalPrice">0 AMT</div>
 <div class="row" style="gap:8px;margin-top:8px;flex-wrap:wrap">
   <button class="primary" id="buyPetBtn" style="flex:1;min-width:120px;position:relative;z-index:20" onclick="buySelectedPet()">BUY WITH AMT</button>
-  <button class="secondary" id="buyPetPiBtn" style="flex:1;min-width:120px;border:1px solid rgba(255,214,78,.45);position:relative;z-index:20" onclick="buySelectedPetWithPi()">💜 BUY WITH PI</button>
+  <button class="secondary" id="buyPetPiBtn" style="flex:1;min-width:120px;border:1px solid rgba(255,214,78,.45);position:relative;z-index:20" onclick="buySelectedPetWithPi()">💜 BUY WITH TESTNET PI</button>
 </div>
 <div class="muted" style="font-size:10px;margin-top:6px">AMT = in-app ledger · PI = real Pi on blockchain (helps Mainnet payment wallet review)</div>
 </div>
@@ -3288,7 +3288,7 @@ async function loginWithPi(){
 
     setLoginStatus("Server online · Connecting to Pi… approve the popup");
     try{
-      Pi.init({ version:"2.0", sandbox:false });
+      Pi.init({ version:"2.0", sandbox:true });
       piSdkReady = true;
     }catch(eInit){
       try{ Pi.init({ version:"2.0" }); piSdkReady = true; }catch(e2){}
@@ -3386,11 +3386,12 @@ async function loginWithPi(){
 }
 
 /* ========== Pi Ads (Rewarded + Interstitial) ========== */
+/* Pet payments: Testnet Pi only (sandbox:true). Not real Mainnet Pi. */
 function ensurePiInit(){
   if(!window.Pi)return false;
   if(piSdkReady)return true;
   try{
-    Pi.init({version:"2.0",sandbox:false});
+    Pi.init({ version:"2.0", sandbox:true });
     piSdkReady=true;
   }catch(e){
     try{
@@ -7239,7 +7240,7 @@ async function buySelectedPetWithPi() {
   try {
     showToast("Starting PI payment...");
     if (!selectedPet || !selectedPet.id) {
-      showToast("Open a pet first, then tap BUY WITH PI.", true);
+      showToast("Open a pet first, then tap BUY WITH TESTNET PI.", true);
       return;
     }
     if (!accessToken) {
@@ -7359,13 +7360,13 @@ async function buySelectedPetWithPi() {
     await new Promise(function(ok) { setTimeout(ok, 400); });
     if (typeof loadOwnedPets === "function") await loadOwnedPets();
   } catch (e) {
-    console.error("BUY WITH PI error:", e);
+    console.error("BUY WITH TESTNET PI error:", e);
     showToast((e && e.message) || "PI payment failed", true);
   } finally {
     var btn2 = $("buyPetPiBtn");
     if (btn2) {
       btn2.disabled = false;
-      btn2.textContent = "💜 BUY WITH PI";
+      btn2.textContent = "💜 BUY WITH TESTNET PI";
     }
   }
 }
@@ -7522,7 +7523,7 @@ async function loadOwnedPets() {
           <div class="pet-card-sub">${esc(pet.rarity || "Common")} · ⚡${
           pet.energy ?? 100
         } · 😊${pet.happiness ?? 100}${
-          String(pet.origin || "") === "pi_payment"
+          (String(pet.origin || "") === "pi_payment" || String(pet.origin || "") === "pi_testnet_payment")
             ? " · <span style=\"color:#c4b5fd\">💜 PI Mint</span>"
             : ""
         }</div>
@@ -7656,14 +7657,14 @@ function openOwnedModal(id) {
     else if (_lv >= 20) { _sMin = 3; _sMax = 10; }
     else if (_lv >= 10) { _sMin = 1.5; _sMax = 6; }
     else if (_lv >= 5) { _sMin = 1; _sMax = 4; }
-    var _pi = String(pet.origin || "") === "pi_payment";
+    var _pi = (String(pet.origin || "") === "pi_payment" || String(pet.origin || "") === "pi_testnet_payment");
     if (_pi) { _sMin *= 1.25; _sMax *= 1.35; }
-    $("sellPriceGuide").textContent = "Guide ~" + _sMin.toFixed(1) + "–" + _sMax.toFixed(0) + " AMT · Lv" + _lv + (_pi ? " · PI PAID" : "") + " · not a floor";
+    $("sellPriceGuide").textContent = "Guide ~" + _sMin.toFixed(1) + "–" + _sMax.toFixed(0) + " AMT · Lv" + _lv + (_pi ? " · Testnet Pi" : "") + " · not a floor";
   }
   if ($("ownedRepLine") && false) {
     $("ownedRepLine").textContent = badge + " · Rep " + rep + " · W" + wins + "/L" + losses;
   }
-  const mintedPi = String(pet.origin || "") === "pi_payment";
+  const mintedPi = (String(pet.origin || "") === "pi_payment" || String(pet.origin || "") === "pi_testnet_payment");
   const mintEl = $("ownedMintBadge");
   if (mintEl) {
     if (mintedPi) {
@@ -10007,7 +10008,7 @@ async function loadListings() {
           rarity: L.rarity,
           level: L.level
         };
-        const isPiMint = String(L.origin || "") === "pi_payment";
+        const isPiMint = (String(L.origin || "") === "pi_payment" || String(L.origin || "") === "pi_testnet_payment");
         const rep = Number(L.rep) || 0;
         const wins = Number(L.wins) || 0;
         const losses = Number(L.losses) || 0;
@@ -10026,7 +10027,7 @@ async function loadListings() {
         else if (lv >= 5) { suggestMin = 1; suggestMax = 4; }
         if (isPiMint) { suggestMin *= 1.25; suggestMax *= 1.35; }
         const mintLine = isPiMint
-          ? `<div style="margin-top:5px;padding:4px 8px;border-radius:8px;background:rgba(120,80,255,.25);border:1px solid rgba(180,140,255,.5);font-size:11px;font-weight:800;color:#e0d0ff">💜 PI PAID · MAINNET</div>`
+          ? `<div style="margin-top:5px;padding:4px 8px;border-radius:8px;background:rgba(120,80,255,.25);border:1px solid rgba(180,140,255,.5);font-size:11px;font-weight:800;color:#e0d0ff">💜 TESTNET PI PAID</div>`
           : "";
         const levelLine = `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
           <span style="padding:3px 8px;border-radius:999px;background:linear-gradient(90deg,#5b21b6,#7c3aed);font-size:10px;font-weight:900;color:#fff">Lv ${lv}</span>
@@ -10041,7 +10042,7 @@ async function loadListings() {
         return `<div class="pet-card ${elClass}">
         <div class="pet-card-top">
           <span class="pet-card-element">${esc(L.element || "")}</span>
-          <span class="pet-card-badge" style="${isPiMint ? "color:#c4b5fd;border-color:rgba(180,140,255,.6)" : ""}">${isPiMint ? "PI PAID" : "PET"}</span>
+          <span class="pet-card-badge" style="${isPiMint ? "color:#c4b5fd;border-color:rgba(180,140,255,.6)" : ""}">${isPiMint ? "TESTNET" : "PET"}</span>
           ${petArtHtml(pet, 120)}
         </div>
         <div class="pet-card-body">
@@ -10098,7 +10099,7 @@ function viewPublicListing(idx) {
   else if (rep >= 250) repBadge = "Legend";
   else if (rep >= 120) repBadge = "Veteran";
   else if (rep >= 40) repBadge = "Fighter";
-  const isPiMint = String(L.origin || "") === "pi_payment";
+  const isPiMint = (String(L.origin || "") === "pi_payment" || String(L.origin || "") === "pi_testnet_payment");
   const owner = L.seller_username || "?";
 
   let art = "";
