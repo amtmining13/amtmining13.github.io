@@ -192,6 +192,13 @@ const PI_PAYMENT_API_BASE =
   process.env.PI_API_BASE ||
   "https://api.minepi.com";
 
+/* Pet marketplace Pi payments: Testnet/sandbox only (not real Mainnet Pi).
+   Set PI_PAYMENTS_SANDBOX=1 on Render. Use Testnet app API key if approve/complete fails.
+   Frontend Pi.init sandbox:true must match. */
+const PI_PAYMENTS_SANDBOX =
+  String(process.env.PI_PAYMENTS_SANDBOX || "1").toLowerCase() === "1" ||
+  String(process.env.PI_PAYMENTS_SANDBOX || "").toLowerCase() === "true";
+
 const MARKET_TEST_OWNER_PI_UID =
   process.env.MARKET_TEST_OWNER_PI_UID || "";
 
@@ -7241,6 +7248,8 @@ function makeCertificateId(origin) {
   const prefix =
     origin === "pi_payment"
       ? "AMT-MINT"
+      : origin === "pi_testnet_payment"
+        ? "AMT-TNET"
       : origin === "shop"
         ? "AMT-OWN"
         : "AMT-PET";
@@ -12200,7 +12209,8 @@ app.post(
         productId: resolvedProductId,
         amount,
         expectedAmount,
-        paymentApi: PI_PAYMENT_API_BASE
+        paymentApi: PI_PAYMENT_API_BASE,
+        sandbox: PI_PAYMENTS_SANDBOX
       });
 
       const payment =
@@ -12328,7 +12338,9 @@ app.get("/api/pets/owned/:id/certificate", requireAuth, async (req, res) => {
       );
       pet.certificate_id = cert;
     }
-    const mintedWithPi = String(pet.origin || "") === "pi_payment";
+    const originStr = String(pet.origin || "");
+    const mintedWithPi = originStr === "pi_payment" || originStr === "pi_testnet_payment";
+    const isTestnetMint = originStr === "pi_testnet_payment";
     res.json({
       ok: true,
       certificate: {
@@ -12342,14 +12354,18 @@ app.get("/api/pets/owned/:id/certificate", requireAuth, async (req, res) => {
         ownerUsername: pet.owner_username || req.member.username || "Pioneer",
         origin: pet.origin || "shop",
         mintedWithPi,
-        mintLabel: mintedWithPi ? "Minted with PI (Mainnet)" : "App ownership certificate",
+        mintLabel: isTestnetMint
+          ? "Paid with Testnet PI (not Mainnet)"
+          : mintedWithPi
+            ? "Minted with PI (Mainnet)"
+            : "App ownership certificate",
         purchasedAt: pet.purchased_at,
         reputation: {
           rep: Number(pet.rep) || 0,
           wins: Number(pet.wins) || 0,
           losses: Number(pet.losses) || 0
         },
-        network: mintedWithPi ? "Pi Mainnet" : "AMT App Ledger"
+        network: isTestnetMint ? "Pi Testnet" : mintedWithPi ? "Pi Mainnet" : "AMT App Ledger"
       }
     });
   } catch (e) {
@@ -12542,11 +12558,12 @@ app.post(
         await ensurePetTables();
         const pet = getPetById(pParsed.petId);
         if (pet) {
-          const certId = makeCertificateId("pi_payment");
+          const payOrigin = PI_PAYMENTS_SANDBOX ? "pi_testnet_payment" : "pi_payment";
+          const certId = makeCertificateId(payOrigin);
           const ins = await client.query(
             `INSERT INTO owned_pets
               (member_id, pet_id, name, element, rarity, hp, atk, def, spd, ability, image, origin, certificate_id)
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'pi_payment',$12)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
              RETURNING *`,
             [
               req.member.id,
@@ -12560,6 +12577,7 @@ app.post(
               pet.spd,
               pet.ability || "",
               pet.image || "",
+              payOrigin,
               certId
             ]
           );
@@ -12576,7 +12594,8 @@ app.post(
         completed: true,
         paymentId,
         productId: payment.product_id,
-        network: "Pi Mainnet",
+        network: PI_PAYMENTS_SANDBOX ? "Pi Testnet" : "Pi Mainnet",
+        sandbox: PI_PAYMENTS_SANDBOX,
         pet: deliveredPet
       });
 
