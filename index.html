@@ -3392,7 +3392,7 @@ async function loginWithPi(){
     if(typeof Pi.authenticate !== "function"){
       throw new Error("Pi.authenticate missing. Update Pi Browser / open amtmining13.github.io inside Pi.");
     }
-    setLoginStatus("Pi SDK ready · Approve the Pi popup (or wait — may auto-login if already authorized)");
+    setLoginStatus("Pi SDK ready · Approve Share Information / notifications (ALLOW) if shown");
 
     function runAuth(scopes){
       return Promise.race([
@@ -3414,14 +3414,14 @@ async function loginWithPi(){
 
     var authResult = null;
     try{
-      authResult = await runAuth(["username","payments"]);
+      authResult = await runAuth(["username","payments","in_app_notifications"]);
     }catch(e1){
       if(String(e1 && e1.message) === "TIMEOUT"){
         throw new Error("Login timed out. Approve the Pi popup, then try again.");
       }
       setLoginStatus("Retry login (username)…");
       try{
-        authResult = await runAuth(["username"]);
+        authResult = await runAuth(["username","in_app_notifications"]);
       }catch(e2){
         if(String(e2 && e2.message) === "TIMEOUT"){
           throw new Error("Login timed out. Use Pi Browser · domain amtmining13.github.io · approve popup.");
