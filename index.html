@@ -2107,6 +2107,35 @@ Pi UID: —
 </div>
 </div>
 
+
+<div class="card" id="amtBadgeCard">
+<div class="card-title">🪪 AMT UNIQUE BADGE ID</div>
+<p class="muted" style="font-size:12px;margin-bottom:10px">
+One member · one serial · QR verify. Claim badge → <b>+20,000 AMT</b> special airdrop (one-time). No badge = no special airdrop.
+</p>
+<div id="badgeStatusBox" class="muted" style="font-size:12px;margin-bottom:10px">Loading badge…</div>
+<div id="badgeDisplay" style="display:none;text-align:center;margin:12px 0">
+  <div style="display:inline-block;padding:14px 16px;border-radius:16px;background:linear-gradient(145deg,#1a1030,#2a1850);border:2px solid rgba(255,214,78,.45);max-width:100%">
+    <div style="font-size:11px;letter-spacing:2px;color:#ffd64e;font-weight:800;margin-bottom:6px">AMT PIONEER BADGE</div>
+    <div id="badgeAvatarWrap" style="width:88px;height:88px;border-radius:50%;overflow:hidden;margin:0 auto 8px;border:2px solid rgba(180,140,255,.6);background:#12081c">
+      <div id="badgeAvatarInner" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:36px">👤</div>
+    </div>
+    <div id="badgeUsername" style="font-weight:800;font-size:15px;margin-bottom:4px">—</div>
+    <div id="badgeSerial" style="font-family:monospace;font-size:13px;color:#c4b5fd;font-weight:700;margin-bottom:8px">—</div>
+    <img id="badgeQr" alt="Badge QR" style="width:140px;height:140px;border-radius:10px;background:#fff;margin:0 auto;display:block"/>
+    <div class="muted" style="font-size:10px;margin-top:6px">Scan to verify authenticity</div>
+  </div>
+</div>
+<button class="primary" id="claimBadgeBtn" style="width:100%;margin-top:6px" onclick="claimAmtBadge()">🪪 CLAIM BADGE + 20K AIRDROP</button>
+<button class="secondary" id="refreshBadgeBtn" style="width:100%;margin-top:8px" onclick="loadAmtBadge()">🔄 REFRESH BADGE</button>
+<div style="margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,.08)">
+  <div class="muted" style="font-size:11px;margin-bottom:6px">Verify any serial</div>
+  <input id="verifyBadgeInput" class="input" placeholder="AMT-PIONEER-000001" style="margin-bottom:8px"/>
+  <button class="secondary" style="width:100%" onclick="verifyAmtBadgeInput()">🔍 VERIFY BADGE</button>
+  <div id="verifyBadgeResult" class="muted" style="font-size:12px;margin-top:8px"></div>
+</div>
+</div>
+
 <div class="card">
 <div class="card-title">🏆 PET LEADERBOARD</div>
 <p class="muted" style="font-size:12px;margin-bottom:10px">Top pets by level &amp; stars · community flex</p>
@@ -2982,6 +3011,23 @@ Open Coixa to swap and add liquidity for on-chain AMT pairs. In-app mining AMT i
 
 </main>
 
+
+<div id="badgeClaimModal" style="display:none;position:fixed;inset:0;z-index:10050;background:rgba(0,0,0,.88);padding:20px;overflow:auto">
+  <div class="card" style="max-width:400px;margin:50px auto;text-align:center;position:relative">
+    <div class="card-title" style="margin-bottom:8px">🪪 AMT PIONEER BADGE</div>
+    <p class="muted" style="font-size:13px;line-height:1.45;margin-bottom:10px">
+      Claim your <b>unique Badge ID</b> and unlock the<br>
+      <b style="color:#ffd64e">+20,000 AMT</b> special badge airdrop.
+    </p>
+    <p class="muted" style="font-size:11px;margin-bottom:14px">No badge = no special airdrop. Normal app access still OK.</p>
+    <div id="badgeClaimModalStatus" class="muted" style="font-size:12px;margin-bottom:12px"></div>
+    <div id="badgeClaimModalSerial" style="font-family:monospace;font-size:14px;color:#c4b5fd;font-weight:700;margin-bottom:14px;min-height:20px"></div>
+    <button class="primary" id="badgeClaimModalBtn" style="width:100%;margin-bottom:8px" onclick="claimBadgeFromLoginStep()">🪪 CLAIM BADGE + 20K AIRDROP</button>
+    <button class="secondary" style="width:100%" onclick="skipBadgeClaimStep()">Skip for now</button>
+    <p class="muted" style="font-size:10px;margin-top:12px">You can claim later in Profile</p>
+  </div>
+</div>
+
 <nav id="bottomNav" class="nav hidden">
 
 <div class="nav-grid" style="grid-template-columns:repeat(4,1fr)">
@@ -3229,7 +3275,7 @@ if(id==="airdropSection"){loadAirdrop();try{loadSpinStatus()}catch(e){}}
 if(id==="referralSection")loadReferral();
   if(id==="walletSection"){ try{ refreshPaymentQr(); }catch(e){} }
 if(id==="circleSection")loadSecurityCircle();
-if(id==="profileSection"){loadProfile();try{refreshDevTreasuryCard();}catch(e){}try{loadPetLeaderboard();}catch(e){}}
+if(id==="profileSection"){loadProfile();try{refreshDevTreasuryCard();}catch(e){}try{loadAmtBadge();}catch(e){}try{loadPetLeaderboard();}catch(e){}try{checkBadgeVerifyQuery();}catch(e){}}
 if(id==="stakingSection")loadStaking();
 if(id==="warSection"){loadWarStatus();loadWarTargets();try{loadAlliance();}catch(e){}}
 if(id==="miningSection"){loadMiningStatus();loadDailyStatus();loadChestStatus();loadDungeon();try{preloadPiAds()}catch(e){}}
@@ -3248,6 +3294,49 @@ function setLoginStatus(msg, isError){
   el.style.borderColor = isError ? "rgba(255,80,100,.55)" : "rgba(180,100,255,.35)";
   el.style.color = isError ? "#ffb0b8" : "#e8d8ff";
 }
+
+
+async function restoreSession(){
+  try{
+    var tok = null;
+    try{ tok = localStorage.getItem("amt_pi_access_token"); }catch(e){}
+    if(!tok || String(tok).length < 10){
+      // stay on login
+      try{
+        if($("loginSection")) $("loginSection").classList.add("active");
+        if($("bottomNav")) $("bottomNav").classList.add("hidden");
+      }catch(e2){}
+      return;
+    }
+    accessToken = String(tok).trim();
+    var u = "";
+    var uid = "";
+    try{ u = localStorage.getItem("amt_pi_username") || ""; }catch(e){}
+    try{ uid = localStorage.getItem("amt_pi_uid") || ""; }catch(e){}
+    currentUser = { username: u, uid: uid };
+    try{
+      await api("/api/auth/verify");
+      enterApp();
+      try{ showToast("Welcome back, " + (u || "Pioneer")); }catch(e3){}
+    }catch(err){
+      console.warn("restoreSession failed", err);
+      accessToken = null;
+      currentUser = null;
+      try{
+        localStorage.removeItem("amt_pi_access_token");
+        localStorage.removeItem("amt_pi_username");
+        localStorage.removeItem("amt_pi_uid");
+      }catch(e4){}
+      try{
+        if($("loginSection")) $("loginSection").classList.add("active");
+        if($("bottomNav")) $("bottomNav").classList.add("hidden");
+      }catch(e5){}
+    }
+  }catch(e){
+    console.warn("restoreSession", e);
+  }
+}
+
 
 async function loginWithPi(){
   hideEcosystemLoading();
@@ -3286,13 +3375,24 @@ async function loginWithPi(){
       throw new Error("Server sleeping (free Render). Open Render dashboard once OR wait 60s and retry. Paid plan = always on.");
     }
 
-    setLoginStatus("Server online · Connecting to Pi… approve the popup");
+    setLoginStatus("Server online · Opening Pi login…");
+    // Mainnet app → sandbox:false (SDK auth). Payments remain disabled in app.
+    piSdkReady = false;
     try{
-      Pi.init({ version:"2.0", sandbox:true });
+      Pi.init({ version:"2.0", sandbox:false });
       piSdkReady = true;
     }catch(eInit){
-      try{ Pi.init({ version:"2.0" }); piSdkReady = true; }catch(e2){}
+      try{
+        Pi.init({ version:"2.0" });
+        piSdkReady = true;
+      }catch(e2){
+        throw new Error("Pi SDK init failed. Open in Pi Browser only.");
+      }
     }
+    if(typeof Pi.authenticate !== "function"){
+      throw new Error("Pi.authenticate missing. Update Pi Browser / open amtmining13.github.io inside Pi.");
+    }
+    setLoginStatus("Pi SDK ready · Approve the Pi popup (or wait — may auto-login if already authorized)");
 
     function runAuth(scopes){
       return Promise.race([
@@ -3307,7 +3407,7 @@ async function loginWithPi(){
           }
         }),
         new Promise(function(_, rej){
-          setTimeout(function(){ rej(new Error("TIMEOUT")); }, 45000);
+          setTimeout(function(){ rej(new Error("TIMEOUT")); }, 60000);
         })
       ]);
     }
@@ -3367,6 +3467,11 @@ async function loginWithPi(){
     hideEcosystemLoading();
     enterApp();
     showToast("Welcome, " + (currentUser.username || "Pioneer") + "!");
+
+    // Badge claim step after login
+    setTimeout(function(){
+      try{ showBadgeClaimStep(); }catch(e){}
+    }, 500);
 
     // Background tasks — never block login UI
     setTimeout(function(){
@@ -3653,18 +3758,15 @@ function logoutPi(showMessage=true){
 
 accessToken=null;
 currentUser=null;
+piSdkReady=false;
 
-localStorage.removeItem(
-"amt_pi_access_token"
-);
+try{
+localStorage.removeItem("amt_pi_access_token");
+localStorage.removeItem("amt_pi_username");
+localStorage.removeItem("amt_pi_uid");
+sessionStorage.setItem("amt_force_login_ui","1");
+}catch(e){}
 
-localStorage.removeItem(
-"amt_pi_username"
-);
-
-localStorage.removeItem(
-"amt_pi_uid"
-);
 
 // Virtual card signature + session UI (privacy on logout)
 try{ localStorage.removeItem("amt_card_signature"); }catch(e){}
@@ -6246,6 +6348,178 @@ console.log(error);
    PROFILE
 ============================================================ */
 
+
+
+/* ===== Badge claim step after login ===== */
+function showBadgeClaimStep(){
+  var m = $("badgeClaimModal");
+  if(!m) return;
+  m.style.display = "block";
+  var st = $("badgeClaimModalStatus");
+  if(st) st.textContent = "Checking your badge…";
+  var ser = $("badgeClaimModalSerial");
+  if(ser) ser.textContent = "";
+  var btn = $("badgeClaimModalBtn");
+  if(btn){ btn.disabled = false; btn.textContent = "🪪 CLAIM MY BADGE"; }
+  // if already claimed, show serial and close option
+  loadAmtBadgeForLoginStep();
+}
+
+function hideBadgeClaimStep(){
+  var m = $("badgeClaimModal");
+  if(m) m.style.display = "none";
+}
+
+function skipBadgeClaimStep(){
+  hideBadgeClaimStep();
+  try{ showToast("You can claim your badge anytime in Profile"); }catch(e){}
+}
+
+async function loadAmtBadgeForLoginStep(){
+  var st = $("badgeClaimModalStatus");
+  var ser = $("badgeClaimModalSerial");
+  var btn = $("badgeClaimModalBtn");
+  try{
+    var data = await api("/api/badge/mine");
+    if(data && data.claimed && data.badge && data.badge.badgeSerial){
+      if(st) st.textContent = "You already have a badge";
+      if(ser) ser.textContent = data.badge.badgeSerial;
+      if(btn){ btn.disabled = true; btn.textContent = "✅ BADGE CLAIMED"; }
+      setTimeout(function(){ hideBadgeClaimStep(); }, 1200);
+      try{ loadAmtBadge(); }catch(e){}
+      return;
+    }
+    if(st) st.textContent = "No badge yet — claim your unique ID";
+    if(ser) ser.textContent = "";
+    if(btn){ btn.disabled = false; btn.textContent = "🪪 CLAIM MY BADGE"; }
+  }catch(e){
+    if(st) st.textContent = "Claim when ready (or skip)";
+  }
+}
+
+async function claimBadgeFromLoginStep(){
+  var st = $("badgeClaimModalStatus");
+  var ser = $("badgeClaimModalSerial");
+  var btn = $("badgeClaimModalBtn");
+  if(btn){ btn.disabled = true; btn.textContent = "Claiming…"; }
+  try{
+    var data = await api("/api/badge/claim", { method: "POST", body: "{}" });
+    if(data && data.ok && data.badge){
+      if(st) st.textContent = data.already ? "Already claimed" : "Badge claimed!";
+      if(ser) ser.textContent = data.badge.badgeSerial || "";
+      showToast(data.badge.message || ("Badge: " + (data.badge.badgeSerial || "")));
+      if(btn){ btn.disabled = true; btn.textContent = "✅ BADGE CLAIMED"; }
+      try{ loadAmtBadge(); }catch(e){}
+      setTimeout(function(){ hideBadgeClaimStep(); }, 1400);
+    }else{
+      if(st) st.textContent = (data && data.error) || "Claim failed";
+      if(btn){ btn.disabled = false; btn.textContent = "🪪 CLAIM MY BADGE"; }
+    }
+  }catch(e){
+    if(st) st.textContent = e.message || "Claim failed";
+    if(btn){ btn.disabled = false; btn.textContent = "🪪 CLAIM MY BADGE"; }
+  }
+}
+
+
+/* ===== AMT UNIQUE BADGE ID ===== */
+async function loadAmtBadge(){
+  var box = $("badgeStatusBox");
+  var disp = $("badgeDisplay");
+  var claimBtn = $("claimBadgeBtn");
+  if(box) box.textContent = "Loading badge…";
+  try{
+    var data = await api("/api/badge/mine");
+    if(!data || !data.claimed || !data.badge){
+      if(box) box.textContent = "No badge yet — claim your unique AMT Pioneer ID.";
+      if(disp) disp.style.display = "none";
+      if(claimBtn){ claimBtn.disabled = false; claimBtn.textContent = "🪪 CLAIM MY BADGE"; }
+      return;
+    }
+    var b = data.badge;
+    if(box) box.textContent = "Status: " + (b.status || "active").toUpperCase();
+    if(disp) disp.style.display = "";
+    if($("badgeUsername")) $("badgeUsername").textContent = b.username || currentUser?.username || "Pioneer";
+    if($("badgeSerial")) $("badgeSerial").textContent = b.badgeSerial || "—";
+    var inner = $("badgeAvatarInner");
+    if(inner){
+      var pic = b.profileImage || window._profileImageUrl || "";
+      if(pic && String(pic).length > 20){
+        inner.innerHTML = '<img src="'+pic.replace(/"/g,"")+'" alt="pic" style="width:100%;height:100%;object-fit:cover"/>';
+      }else{
+        inner.textContent = "👤";
+      }
+    }
+    var qr = $("badgeQr");
+    if(qr && b.badgeSerial){
+      var verifyUrl = (window.location.origin || "") + (window.location.pathname || "/") + "?verifyBadge=" + encodeURIComponent(b.badgeSerial);
+      var enc = encodeURIComponent(verifyUrl);
+      qr.src = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=8&ecc=M&data=" + enc;
+      qr.onerror = function(){
+        qr.src = "https://quickchart.io/qr?size=200&text=" + enc;
+      };
+    }
+    if(claimBtn){ claimBtn.disabled = true; claimBtn.textContent = "✅ BADGE CLAIMED"; }
+  }catch(e){
+    if(box) box.textContent = "Login required to view badge.";
+    if(disp) disp.style.display = "none";
+    console.log("loadAmtBadge", e);
+  }
+}
+
+async function claimAmtBadge(){
+  var claimBtn = $("claimBadgeBtn");
+  if(claimBtn){ claimBtn.disabled = true; claimBtn.textContent = "Claiming…"; }
+  try{
+    var data = await api("/api/badge/claim", { method: "POST", body: "{}" });
+    if(data && data.ok){
+      showToast(data.badge && data.badge.message ? data.badge.message : (data.already ? "Badge already claimed" : "Badge claimed!"));
+      await loadAmtBadge();
+    }else{
+      showToast((data && data.error) || "Claim failed", true);
+      if(claimBtn){ claimBtn.disabled = false; claimBtn.textContent = "🪪 CLAIM MY BADGE"; }
+    }
+  }catch(e){
+    showToast(e.message || "Claim failed", true);
+    if(claimBtn){ claimBtn.disabled = false; claimBtn.textContent = "🪪 CLAIM MY BADGE"; }
+  }
+}
+
+async function verifyAmtBadgeInput(){
+  var inp = $("verifyBadgeInput");
+  var out = $("verifyBadgeResult");
+  var serial = (inp && inp.value ? inp.value : "").trim().toUpperCase();
+  if(!serial){
+    if(out) out.textContent = "Enter a serial like AMT-PIONEER-000001";
+    return;
+  }
+  if(out) out.textContent = "Checking…";
+  try{
+    var data = await api("/api/badge/verify/" + encodeURIComponent(serial));
+    if(!data){ if(out) out.textContent = "No response"; return; }
+    if(data.valid){
+      if(out) out.innerHTML = "✅ <b>VALID</b> · " + (data.username||"") + " · " + (data.badgeSerial||serial) + " · " + (data.status||"");
+    }else{
+      if(out) out.textContent = "❌ " + (data.message || data.status || "Not valid");
+    }
+  }catch(e){
+    if(out) out.textContent = "Verify error: " + (e.message || e);
+  }
+}
+
+function checkBadgeVerifyQuery(){
+  try{
+    var q = new URLSearchParams(window.location.search || "");
+    var s = q.get("verifyBadge");
+    if(!s) return;
+    var inp = $("verifyBadgeInput");
+    if(inp) inp.value = s;
+    // open profile section if possible
+    try{ showSection("profileSection"); }catch(e){}
+    setTimeout(function(){ verifyAmtBadgeInput(); }, 400);
+  }catch(e){}
+}
+
 async function loadProfile(){
 
 try{
@@ -6282,6 +6556,7 @@ data.kyc??
 "UNVERIFIED";
 
 try{ refreshDevTreasuryCard(); }catch(e){}
+try{ loadAmtBadge(); }catch(e){}
 
 renderAvatar(
 data.profileImage??
