@@ -2992,48 +2992,47 @@ SELECT 180D
 
 
 <section id="tetrisSection" class="section">
-  <div class="hero" style="margin-bottom:12px">
-    <h1>AMT <span>TETRIS</span></h1>
-    <p>Solo practice · daily AMT · 1v1 Coming Soon</p>
-  </div>
+  <div style="max-width:360px;margin:0 auto;padding-bottom:8px">
+    <div style="text-align:center;margin-bottom:8px">
+      <div style="font-size:16px;font-weight:800;color:#ffd64e">🎮 AMT TETRIS</div>
+      <div class="muted" style="font-size:10px">Solo · daily AMT · 1v1 soon</div>
+    </div>
 
-  <!-- GAME BOARD (separate) -->
-  <div class="card" style="padding:14px 12px 16px;background:linear-gradient(180deg,#140a22 0%,#0a0614 100%);border:1px solid rgba(170,79,255,.35)">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding:0 4px">
-      <div style="font-size:11px;line-height:1.45">
-        <div><span class="muted">Score</span> <b id="tetrisScore" style="color:#ffd64e">0</b></div>
-        <div><span class="muted">Lines</span> <b id="tetrisLines">0</b> · <span class="muted">Lv</span> <b id="tetrisLevel">1</b></div>
+    <!-- BOARD + HUD -->
+    <div style="position:relative;margin:0 auto 8px;width:220px">
+      <div style="position:absolute;left:0;right:0;top:6px;z-index:2;display:flex;justify-content:space-between;padding:0 8px;pointer-events:none;font-size:11px;font-weight:700;text-shadow:0 1px 3px #000">
+        <span>S <b id="tetrisScore" style="color:#ffd64e">0</b></span>
+        <span id="tetrisStatus" style="color:#c4b5fd">Ready</span>
+        <span>L <b id="tetrisLines">0</b> · Lv <b id="tetrisLevel">1</b></span>
       </div>
-      <div id="tetrisStatus" style="font-size:11px;color:#c4b5fd;font-weight:700">Ready</div>
+      <canvas id="tetrisCanvas" width="220" height="440" style="display:block;width:220px;height:440px;background:#05030c;border:3px solid #7c3aed;border-radius:16px;box-shadow:0 0 20px rgba(124,58,237,.4);touch-action:none"></canvas>
     </div>
-    <div style="display:flex;justify-content:center">
-      <canvas id="tetrisCanvas" width="200" height="400" style="width:200px;height:400px;background:#05030c;border:3px solid rgba(255,214,78,.35);border-radius:14px;box-shadow:0 0 24px rgba(170,79,255,.25);touch-action:none"></canvas>
-    </div>
-  </div>
 
-  <!-- CONTROLS (separate card) -->
-  <div class="card" style="margin-top:10px">
-    <div class="card-title" style="font-size:13px;margin-bottom:10px">🎛 CONTROLS</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
-      <button class="primary" style="padding:14px 8px;font-size:14px;border-radius:14px" onclick="tetrisStart()">▶ START</button>
-      <button class="secondary" style="padding:14px 8px;font-size:14px;border-radius:14px" onclick="tetrisPause()">⏸ PAUSE</button>
+    <!-- COMPACT CONTROLS -->
+    <div style="background:rgba(20,10,40,.95);border:1px solid rgba(170,79,255,.3);border-radius:16px;padding:10px;margin:0 auto">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px">
+        <button type="button" onclick="tetrisStart()" style="padding:12px;border:0;border-radius:12px;font-weight:800;font-size:13px;color:#111;background:linear-gradient(90deg,#fbbf24,#a855f7)">▶ START</button>
+        <button type="button" onclick="tetrisPause()" style="padding:12px;border:0;border-radius:12px;font-weight:800;font-size:13px;color:#fff;background:#2a1a44">⏸ PAUSE</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:6px">
+        <button type="button" onclick="tetrisMove(-1)" style="padding:14px 0;border:0;border-radius:12px;font-size:18px;color:#fff;background:#2a1a44">◀</button>
+        <button type="button" onclick="tetrisSoftDrop()" style="padding:14px 0;border:0;border-radius:12px;font-size:18px;color:#fff;background:#2a1a44">▼</button>
+        <button type="button" onclick="tetrisMove(1)" style="padding:14px 0;border:0;border-radius:12px;font-size:18px;color:#fff;background:#2a1a44">▶</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        <button type="button" onclick="tetrisRotate()" style="padding:12px;border:0;border-radius:12px;font-weight:700;font-size:12px;color:#fff;background:#2a1a44">⟳ ROTATE</button>
+        <button type="button" onclick="tetrisHardDrop()" style="padding:12px;border:0;border-radius:12px;font-weight:700;font-size:12px;color:#fff;background:#2a1a44">⬇ DROP</button>
+      </div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
-      <button class="secondary" style="padding:16px 8px;font-size:18px;border-radius:14px" onclick="tetrisMove(-1)">◀</button>
-      <button class="secondary" style="padding:16px 8px;font-size:18px;border-radius:14px" onclick="tetrisSoftDrop()">▼</button>
-      <button class="secondary" style="padding:16px 8px;font-size:18px;border-radius:14px" onclick="tetrisMove(1)">▶</button>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-      <button class="secondary" style="padding:14px 8px;border-radius:14px" onclick="tetrisRotate()">⟳ ROTATE</button>
-      <button class="secondary" style="padding:14px 8px;border-radius:14px" onclick="tetrisHardDrop()">⬇ HARD DROP</button>
-    </div>
-  </div>
 
-  <!-- LEADERBOARD (separate) -->
-  <div class="card" style="margin-top:10px">
-    <div class="card-title">🏆 LEADERBOARD</div>
-    <div id="tetrisLeaderboard" class="muted" style="font-size:12px">Login & play to load…</div>
-    <button class="secondary" style="width:100%;margin-top:8px" onclick="loadTetrisLeaderboard()">🔄 REFRESH</button>
+    <!-- LEADERBOARD collapsed-ish -->
+    <div class="card" style="margin-top:10px;padding:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <b style="font-size:13px;color:#ffd64e">🏆 TOP SCORES</b>
+        <button type="button" class="secondary" style="padding:6px 10px;font-size:11px" onclick="loadTetrisLeaderboard()">Refresh</button>
+      </div>
+      <div id="tetrisLeaderboard" class="muted" style="font-size:11px">Play a game to appear here</div>
+    </div>
   </div>
 </section>
 
@@ -6478,7 +6477,7 @@ async function claimBadgeFromLoginStep(){
 var _tx=null;
 function tetrisEnsureInit(){
   if(_tx) return;
-  var COLS=10, ROWS=20, SIZE=20;
+  var COLS=10, ROWS=20, SIZE=22;
   var canvas=$("tetrisCanvas");
   if(!canvas) return;
   var ctx=canvas.getContext("2d");
