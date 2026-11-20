@@ -141,6 +141,14 @@ const DEV_LEDGER_ADDRESSES = String(
   .map(s => s.trim().toUpperCase())
   .filter(Boolean);
 const DEV_TREASURY_REF = "AMT-DEV-TREASURY-5M";
+const DEV_TREASURY_REF_2 = "AMT-DEV-TREASURY-5M-2";
+const DEV_TREASURY_REF_3 = "AMT-DEV-TREASURY-10M-FUN";
+const DEV_TREASURY_AMT_3 = Number(process.env.DEV_TREASURY_AMT_3 || "10000000");
+
+/* Badge holders only — one-time special airdrop (in-app AMT) */
+const BADGE_AIRDROP_AMT = Number(process.env.BADGE_AIRDROP_AMT || "20000");
+const BADGE_AIRDROP_REF = "AMT-BADGE-AIRDROP-20K";
+
 
 /* Airdrop claim window (shared campaign). Default: 30 days from campaign start.
    Override with env: AIRDROP_CAMPAIGN_START, AIRDROP_WINDOW_HOURS */
@@ -195,6 +203,11 @@ const PI_PAYMENT_API_BASE =
 /* Pet marketplace Pi payments: Testnet/sandbox only (not real Mainnet Pi).
    Set PI_PAYMENTS_SANDBOX=1 on Render. Use Testnet app API key if approve/complete fails.
    Frontend Pi.init sandbox:true must match. */
+/* Block all Pi marketplace payments (Mainnet + Testnet) until app wallet approved */
+const PI_PAYMENTS_DISABLED =
+  String(process.env.PI_PAYMENTS_DISABLED || "1").toLowerCase() === "1" ||
+  String(process.env.PI_PAYMENTS_DISABLED || "").toLowerCase() === "true";
+
 const PI_PAYMENTS_SANDBOX =
   String(process.env.PI_PAYMENTS_SANDBOX || "1").toLowerCase() === "1" ||
   String(process.env.PI_PAYMENTS_SANDBOX || "").toLowerCase() === "true";
@@ -907,33 +920,43 @@ async function ensureDevTreasury(member, piUser, ledgerWallet) {
     return false;
   }
 
-  const exists = await pool.query(
-    `SELECT id FROM amt_ledger
-     WHERE member_id = $1 AND reference = $2
-     LIMIT 1`,
-    [member.id, DEV_TREASURY_REF]
-  );
-  if (exists.rows.length) {
-    console.log(
-      "DEV TREASURY already credited for member",
-      member.id
+  // Batches: 5M, 5M-2, then 10M community-fun (dev only)
+  const batches = [
+    { ref: DEV_TREASURY_REF, amount: DEV_TREASURY_AMT },
+    { ref: DEV_TREASURY_REF_2, amount: DEV_TREASURY_AMT },
+    { ref: DEV_TREASURY_REF_3, amount: DEV_TREASURY_AMT_3 }
+  ];
+  for (const b of batches) {
+    if (!b.amount || b.amount <= 0) continue;
+    const exists = await pool.query(
+      `SELECT id FROM amt_ledger
+       WHERE member_id = $1 AND reference = $2
+       LIMIT 1`,
+      [member.id, b.ref]
     );
-    return false;
+    if (exists.rows.length) continue;
+
+    await pool.query(
+      `INSERT INTO amt_ledger (member_id, amount, type, reference)
+       VALUES ($1, $2, 'DEV_TREASURY', $3)`,
+      [member.id, b.amount, b.ref]
+    );
+    console.log(
+      "DEV TREASURY credited:",
+      b.amount,
+      "AMT → member",
+      member.id,
+      b.ref,
+      ledgerAddr || uname || uid
+    );
+    return true;
   }
 
-  await pool.query(
-    `INSERT INTO amt_ledger (member_id, amount, type, reference)
-     VALUES ($1, $2, 'DEV_TREASURY', $3)`,
-    [member.id, DEV_TREASURY_AMT, DEV_TREASURY_REF]
-  );
   console.log(
-    "DEV TREASURY credited:",
-    DEV_TREASURY_AMT,
-    "AMT → member",
-    member.id,
-    ledgerAddr || uname || uid
+    "DEV TREASURY already fully credited for member",
+    member.id
   );
-  return true;
+  return false;
 }
 
 async function requireAuth(
@@ -5788,6 +5811,8 @@ function petTitle(level, stars, rarity) {
 
 function rarityFromLevel(level) {
   const lv = Math.max(1, Number(level) || 1);
+  if (lv >= 250) return "Transcendent";
+  if (lv >= 200) return "Celestial";
   if (lv >= 100) return "Ascendant";
   if (lv >= 50) return "Mythic";
   if (lv >= 40) return "Legendary";
@@ -5805,7 +5830,9 @@ const PET_LEVEL_MILESTONES = [
   { level: 20, amount: 5, key: "LV20" },
   { level: 50, amount: 15, key: "LV50" },
   { level: 100, amount: 25, key: "LV100" },
-  { level: 150, amount: 50, key: "LV150" }
+  { level: 150, amount: 50, key: "LV150" },
+  { level: 200, amount: 75, key: "LV200" },
+  { level: 300, amount: 150, key: "LV300" }
 ];
 
 async function creditPetLevelMilestones(db, memberId, ownedId, newLevel) {
@@ -5840,11 +5867,11 @@ async function applyLevelAndRarity(client, ownedId, memberId) {
   const oldLevel = Number(level) || 1;
   level = oldLevel;
   exp = Number(exp) || 0;
-  // Multi level-up if lots of exp (max Lv 150)
+  // Multi level-up if lots of exp (max Lv 300)
   // Cost scales: pre-99 = level*50, post-99 = level*80 (slower endgame)
-  const MAX_PET_LEVEL = 150;
+  const MAX_PET_LEVEL = 300;
   while (level < MAX_PET_LEVEL) {
-    const need = level < 99 ? level * 50 : level * 80;
+    const need = level < 99 ? level * 50 : (level < 200 ? level * 80 : level * 120);
     if (exp < need) break;
     exp -= need;
     level += 1;
@@ -12143,6 +12170,13 @@ app.post(
   "/api/market/payment/approve",
   requireAuth,
   async (req, res) => {
+      if (typeof PI_PAYMENTS_DISABLED !== "undefined" && PI_PAYMENTS_DISABLED) {
+        return res.status(403).json({
+          ok: false,
+          error: "Pi payment temporarily disabled until Mainnet app wallet is approved. Use in-app AMT."
+        });
+      }
+
     try {
       const paymentId =
         String(
@@ -12382,6 +12416,13 @@ app.post(
   "/api/market/payment/complete",
   requireAuth,
   async (req, res) => {
+      if (typeof PI_PAYMENTS_DISABLED !== "undefined" && PI_PAYMENTS_DISABLED) {
+        return res.status(403).json({
+          ok: false,
+          error: "Pi payment temporarily disabled until Mainnet app wallet is approved. Use in-app AMT."
+        });
+      }
+
     const client =
       await pool.connect();
 
@@ -13826,8 +13867,8 @@ app.post(
         ledger:
           (req.wallet && req.wallet.wallet_address) || null,
         message: ok
-          ? "Developer treasury credited."
-          : "No new credit (already claimed or username/ledger/uid not in env match)."
+          ? "Developer treasury +"+DEV_TREASURY_AMT+" AMT credited (use for special rewards)."
+          : "No new credit (already claimed both batches or username/ledger/uid not in env match)."
       });
     } catch (err) {
       console.error("CLAIM TREASURY:", err);
@@ -16177,6 +16218,350 @@ app.post("/api/alliance/settings", requireAuth, async (req, res) => {
     res.status(500).json({ ok: false, error: e.message || "settings failed" });
   }
 });
+
+
+
+async function creditBadgeAirdrop(memberId, client) {
+  const db = client || pool;
+  if (!memberId || BADGE_AIRDROP_AMT <= 0) return { credited: false, reason: "disabled" };
+  const hasBadge = await db.query(
+    `SELECT id FROM member_badges WHERE member_id = $1 AND status = 'active' LIMIT 1`,
+    [memberId]
+  );
+  if (!hasBadge.rows.length) {
+    return { credited: false, reason: "no_badge" };
+  }
+  const exists = await db.query(
+    `SELECT id FROM amt_ledger WHERE member_id = $1 AND reference = $2 LIMIT 1`,
+    [memberId, BADGE_AIRDROP_REF]
+  );
+  if (exists.rows.length) {
+    return { credited: false, reason: "already", amount: BADGE_AIRDROP_AMT };
+  }
+  await db.query(
+    `INSERT INTO amt_ledger (member_id, amount, type, reference)
+     VALUES ($1, $2, 'BADGE_AIRDROP', $3)`,
+    [memberId, BADGE_AIRDROP_AMT, BADGE_AIRDROP_REF]
+  );
+  return { credited: true, amount: BADGE_AIRDROP_AMT };
+}
+
+/* =========================================================
+   AMT UNIQUE BADGE ID SYSTEM
+   Claim · serial AMT-PIONEER-000001 · verify
+========================================================= */
+async function ensureBadgeTables() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS member_badges (
+      id BIGSERIAL PRIMARY KEY,
+      member_id BIGINT NOT NULL UNIQUE REFERENCES members(id) ON DELETE CASCADE,
+      badge_serial TEXT NOT NULL UNIQUE,
+      status TEXT NOT NULL DEFAULT 'active',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_member_badges_serial ON member_badges(badge_serial);
+  `);
+}
+
+async function nextBadgeSerial(client) {
+  const db = client || pool;
+  const r = await db.query(
+    `SELECT COUNT(*)::int AS c FROM member_badges`
+  );
+  const n = (Number(r.rows[0]?.c) || 0) + 1;
+  return "AMT-PIONEER-" + String(n).padStart(6, "0");
+}
+
+function badgePublic(row, extra) {
+  return Object.assign({
+    ok: true,
+    badgeSerial: row.badge_serial,
+    status: row.status || "active",
+    memberId: row.member_id,
+    createdAt: row.created_at
+  }, extra || {});
+}
+
+app.get("/api/badge/mine", requireAuth, async (req, res) => {
+  try {
+    await ensureBadgeTables();
+    const r = await pool.query(
+      `SELECT b.*, m.username, m.profile_image
+       FROM member_badges b
+       JOIN members m ON m.id = b.member_id
+       WHERE b.member_id = $1
+       LIMIT 1`,
+      [req.member.id]
+    );
+    if (!r.rows.length) {
+      return res.json({
+        ok: true,
+        claimed: false,
+        badge: null,
+        message: "No badge yet. Claim your unique AMT Pioneer badge."
+      });
+    }
+    const row = r.rows[0];
+    let badgeAirdropClaimed = false;
+    try {
+      const ar = await pool.query(
+        `SELECT id FROM amt_ledger WHERE member_id = $1 AND reference = $2 LIMIT 1`,
+        [req.member.id, BADGE_AIRDROP_REF]
+      );
+      badgeAirdropClaimed = ar.rows.length > 0;
+    } catch (_) {}
+    return res.json({
+      ok: true,
+      claimed: true,
+      badgeAirdropClaimed,
+      badgeAirdropAmount: BADGE_AIRDROP_AMT,
+      badge: badgePublic(row, {
+        username: row.username || req.member.username,
+        profileImage: row.profile_image || null
+      })
+    });
+  } catch (e) {
+    console.error("BADGE MINE:", e);
+    res.status(500).json({ ok: false, error: e.message || "failed" });
+  }
+});
+
+app.post("/api/badge/claim", requireAuth, async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await ensureBadgeTables();
+    await client.query("BEGIN");
+    const existing = await client.query(
+      `SELECT * FROM member_badges WHERE member_id = $1 FOR UPDATE`,
+      [req.member.id]
+    );
+    if (existing.rows.length) {
+      await client.query("COMMIT");
+      const row = existing.rows[0];
+      let airdrop = { credited: false };
+      try {
+        airdrop = await creditBadgeAirdrop(req.member.id);
+      } catch (ae) {
+        console.error("BADGE AIRDROP:", ae);
+      }
+      const airMsg = airdrop.credited
+        ? (" Badge airdrop +" + BADGE_AIRDROP_AMT + " AMT credited!")
+        : (airdrop.reason === "already" ? " Badge airdrop already claimed." : "");
+      return res.json({
+        ok: true,
+        claimed: true,
+        already: true,
+        badgeAirdrop: airdrop,
+        badge: badgePublic(row, {
+          username: req.member.username,
+          message: "You already have a badge." + airMsg
+        })
+      });
+    }
+    // allocate unique serial (retry on rare collision)
+    let serial = null;
+    let row = null;
+    for (let attempt = 0; attempt < 8; attempt++) {
+      serial = await nextBadgeSerial(client);
+      try {
+        const ins = await client.query(
+          `INSERT INTO member_badges (member_id, badge_serial, status)
+           VALUES ($1, $2, 'active')
+           RETURNING *`,
+          [req.member.id, serial]
+        );
+        row = ins.rows[0];
+        break;
+      } catch (err) {
+        if (String(err.code) === "23505") continue;
+        throw err;
+      }
+    }
+    if (!row) {
+      await client.query("ROLLBACK");
+      return res.status(500).json({ ok: false, error: "Could not allocate badge serial." });
+    }
+    await client.query("COMMIT");
+    let airdrop = { credited: false };
+    try {
+      airdrop = await creditBadgeAirdrop(req.member.id);
+    } catch (ae) {
+      console.error("BADGE AIRDROP:", ae);
+    }
+    const airMsg = airdrop.credited
+      ? (" +" + BADGE_AIRDROP_AMT + " AMT badge airdrop!")
+      : "";
+    return res.json({
+      ok: true,
+      claimed: true,
+      already: false,
+      badgeAirdrop: airdrop,
+      badge: badgePublic(row, {
+        username: req.member.username,
+        message: "Badge claimed! Your unique ID is " + row.badge_serial + airMsg
+      })
+    });
+  } catch (e) {
+    try { await client.query("ROLLBACK"); } catch (_) {}
+    console.error("BADGE CLAIM:", e);
+    res.status(500).json({ ok: false, error: e.message || "claim failed" });
+  } finally {
+    client.release();
+  }
+});
+
+/** Public verify — no auth (QR target) */
+app.get("/api/badge/verify/:serial", async (req, res) => {
+  try {
+    await ensureBadgeTables();
+    const serial = String(req.params.serial || "").trim().toUpperCase();
+    if (!serial || serial.length < 8) {
+      return res.status(400).json({ ok: false, valid: false, error: "Invalid serial." });
+    }
+    const r = await pool.query(
+      `SELECT b.badge_serial, b.status, b.created_at, m.username
+       FROM member_badges b
+       JOIN members m ON m.id = b.member_id
+       WHERE UPPER(b.badge_serial) = $1
+       LIMIT 1`,
+      [serial]
+    );
+    if (!r.rows.length) {
+      return res.json({
+        ok: true,
+        valid: false,
+        status: "not_found",
+        message: "Badge serial not found in AMT registry."
+      });
+    }
+    const row = r.rows[0];
+    const active = String(row.status) === "active";
+    return res.json({
+      ok: true,
+      valid: active,
+      status: row.status,
+      badgeSerial: row.badge_serial,
+      username: row.username || "Pioneer",
+      createdAt: row.created_at,
+      message: active
+        ? "Valid AMT Pioneer badge."
+        : "Badge exists but status is " + row.status + "."
+    });
+  } catch (e) {
+    console.error("BADGE VERIFY:", e);
+    res.status(500).json({ ok: false, valid: false, error: e.message || "verify failed" });
+  }
+});
+
+
+
+/* =========================================================
+   AMT BATTLE TETRIS — Phase 1: Solo + daily AMT + leaderboard
+========================================================= */
+async function ensureTetrisTables() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS tetris_scores (
+      id BIGSERIAL PRIMARY KEY,
+      member_id BIGINT NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+      score INT NOT NULL DEFAULT 0,
+      lines_cleared INT NOT NULL DEFAULT 0,
+      level_reached INT NOT NULL DEFAULT 1,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_tetris_scores_member ON tetris_scores(member_id);
+    CREATE INDEX IF NOT EXISTS idx_tetris_scores_score ON tetris_scores(score DESC);
+  `);
+}
+
+const TETRIS_DAILY_REF_PREFIX = "AMT-TETRIS-DAILY-";
+const TETRIS_MAX_DAILY_AMT = Number(process.env.TETRIS_MAX_DAILY_AMT || "25");
+
+function tetrisRewardFromScore(score) {
+  const s = Math.max(0, Number(score) || 0);
+  if (s >= 50000) return TETRIS_MAX_DAILY_AMT;
+  if (s >= 20000) return Math.min(TETRIS_MAX_DAILY_AMT, 15);
+  if (s >= 10000) return 10;
+  if (s >= 5000) return 5;
+  if (s >= 1000) return 2;
+  if (s >= 100) return 1;
+  return 0;
+}
+
+app.post("/api/tetris/score", requireAuth, async (req, res) => {
+  try {
+    await ensureTetrisTables();
+    const score = Math.max(0, Math.min(9999999, Math.floor(Number(req.body?.score) || 0)));
+    const lines = Math.max(0, Math.min(99999, Math.floor(Number(req.body?.lines) || 0)));
+    const levelReached = Math.max(1, Math.min(99, Math.floor(Number(req.body?.level) || 1)));
+    await pool.query(
+      `INSERT INTO tetris_scores (member_id, score, lines_cleared, level_reached)
+       VALUES ($1, $2, $3, $4)`,
+      [req.member.id, score, lines, levelReached]
+    );
+    const dayKey = new Date().toISOString().slice(0, 10);
+    const ref = TETRIS_DAILY_REF_PREFIX + dayKey;
+    const exists = await pool.query(
+      `SELECT id FROM amt_ledger WHERE member_id = $1 AND reference = $2 LIMIT 1`,
+      [req.member.id, ref]
+    );
+    let credited = 0;
+    const reward = tetrisRewardFromScore(score);
+    if (!exists.rows.length && reward > 0) {
+      await pool.query(
+        `INSERT INTO amt_ledger (member_id, amount, type, reference)
+         VALUES ($1, $2, 'TETRIS_DAILY', $3)`,
+        [req.member.id, reward, ref]
+      );
+      credited = reward;
+    }
+    const bal = await getBalance(req.member.id);
+    res.json({
+      ok: true,
+      score,
+      lines,
+      level: levelReached,
+      rewardCredited: credited,
+      dailyAlreadyClaimed: exists.rows.length > 0,
+      balance: bal,
+      message: credited > 0
+        ? ("+" + credited + " AMT Tetris daily reward!")
+        : (exists.rows.length ? "Score saved · daily AMT already claimed today" : "Score saved")
+    });
+  } catch (e) {
+    console.error("TETRIS SCORE:", e);
+    res.status(500).json({ ok: false, error: e.message || "score failed" });
+  }
+});
+
+app.get("/api/tetris/leaderboard", requireAuth, async (req, res) => {
+  try {
+    await ensureTetrisTables();
+    const r = await pool.query(
+      `SELECT s.member_id, MAX(s.score) AS score, MAX(s.lines_cleared) AS lines_cleared,
+              MAX(s.level_reached) AS level_reached, m.username
+       FROM tetris_scores s
+       JOIN members m ON m.id = s.member_id
+       GROUP BY s.member_id, m.username
+       ORDER BY score DESC
+       LIMIT 20`
+    );
+    res.json({
+      ok: true,
+      leaders: (r.rows || []).map((x, i) => ({
+        rank: i + 1,
+        username: x.username || "Pioneer",
+        score: Number(x.score) || 0,
+        lines: Number(x.lines_cleared) || 0,
+        level: Number(x.level_reached) || 1
+      }))
+    });
+  } catch (e) {
+    console.error("TETRIS LB:", e);
+    res.status(500).json({ ok: false, error: e.message || "leaderboard failed" });
+  }
+});
+
 
     app.listen(PORT, "0.0.0.0", () => {
       console.log("==================================================");
