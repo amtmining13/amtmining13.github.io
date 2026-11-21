@@ -1053,6 +1053,7 @@ async function initializeDatabase() {
     ALTER TABLE members
       ADD COLUMN IF NOT EXISTS
       profile_image TEXT;
+    ALTER TABLE members ADD COLUMN IF NOT EXISTS amt_avatar BOOLEAN NOT NULL DEFAULT false;
 
     ALTER TABLE members
       ADD COLUMN IF NOT EXISTS
@@ -1679,26 +1680,24 @@ app.post(
           });
       }
 
+      await ensureAmtAvatarColumn();
+      const asFrame = !!(req.body?.amtFrame || req.body?.amt_avatar || req.body?.isAmtFrame);
       await pool.query(
         `
         UPDATE members
         SET
           profile_image = $1,
+          amt_avatar = CASE WHEN $3 THEN true ELSE amt_avatar END,
           updated_at = NOW()
         WHERE id = $2
         `,
-        [
-          image,
-          req.member.id
-        ]
+        [image, req.member.id, asFrame]
       );
 
       res.json({
         ok: true,
-
-        profileImage:
-          image,
-
+        profileImage: image,
+        amtAvatar: asFrame,
         saved: true
       });
 
@@ -16250,6 +16249,13 @@ async function creditBadgeAirdrop(memberId, client) {
    AMT UNIQUE BADGE ID SYSTEM
    Claim · serial AMT-PIONEER-000001 · verify
 ========================================================= */
+
+async function ensureAmtAvatarColumn() {
+  try {
+    await pool.query(`ALTER TABLE members ADD COLUMN IF NOT EXISTS amt_avatar BOOLEAN NOT NULL DEFAULT false`);
+  } catch (e) {}
+}
+
 async function ensureBadgeTables() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS member_badges (
@@ -16327,26 +16333,53 @@ app.get("/api/badge/mine", requireAuth, async (req, res) => {
   }
 });
 
-app.post("/api/badge/claim", requireAuth, async (req, res) => {
-  const client = await pool.connect();
+
+app.post("/api/profile/amt-frame", requireAuth, async (req, res) => {
   try {
-    await ensureBadgeTables();
-    // Require AMT profile avatar (uploaded profile image) before issuing serial
+    await ensureAmtAvatarColumn();
     const mem = await pool.query(
       `SELECT profile_image FROM members WHERE id = $1 LIMIT 1`,
       [req.member.id]
     );
     const pic = String((mem.rows[0] && mem.rows[0].profile_image) || "").trim();
-    const hasAvatar =
+    if (!pic || pic.length < 20) {
+      return res.status(400).json({
+        ok: false,
+        error: "Upload a profile image first (your AMT frame avatar), then confirm."
+      });
+    }
+    await pool.query(
+      `UPDATE members SET amt_avatar = true, updated_at = NOW() WHERE id = $1`,
+      [req.member.id]
+    );
+    res.json({ ok: true, amtAvatar: true, profileImage: pic, message: "AMT Frame Avatar confirmed." });
+  } catch (e) {
+    console.error("AMT FRAME:", e);
+    res.status(500).json({ ok: false, error: e.message || "failed" });
+  }
+});
+
+app.post("/api/badge/claim", requireAuth, async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await ensureBadgeTables();
+    // Require confirmed AMT FRAME avatar (not plain photo)
+    await ensureAmtAvatarColumn();
+    const mem = await pool.query(
+      `SELECT profile_image, COALESCE(amt_avatar, false) AS amt_avatar FROM members WHERE id = $1 LIMIT 1`,
+      [req.member.id]
+    );
+    const pic = String((mem.rows[0] && mem.rows[0].profile_image) || "").trim();
+    const isAmtFrame = !!(mem.rows[0] && mem.rows[0].amt_avatar);
+    const hasPic =
       pic.length > 20 &&
       (pic.indexOf("data:image") === 0 ||
         pic.indexOf("http://") === 0 ||
-        pic.indexOf("https://") === 0 ||
-        pic.indexOf("/") === 0);
-    if (!hasAvatar) {
+        pic.indexOf("https://") === 0);
+    if (!hasPic || !isAmtFrame) {
       return res.status(400).json({
         ok: false,
-        error: "AMT avatar required. Upload your profile photo (AMT avatar) in Profile first, then claim your badge ID."
+        error: "AMT Frame Avatar required. Upload your AMT frame avatar in Profile, tap SET AS AMT FRAME AVATAR, then claim badge."
       });
     }
     await client.query("BEGIN");
