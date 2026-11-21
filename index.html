@@ -2111,7 +2111,7 @@ Pi UID: —
 <div class="card" id="amtBadgeCard">
 <div class="card-title">🪪 AMT UNIQUE BADGE ID</div>
 <p class="muted" style="font-size:12px;margin-bottom:10px">
-Requires <b>AMT profile avatar</b> (upload photo in Profile). Then claim → unique serial + <b>+20,000 AMT</b>. No avatar = no badge ID.
+Requires <b>AMT Frame Avatar only</b>: upload your framed AMT avatar → tap <b>SET AS AMT FRAME AVATAR</b> → then claim serial + 20K. Plain photos not allowed.
 </p>
 <div id="badgeStatusBox" class="muted" style="font-size:12px;margin-bottom:10px">Loading badge…</div>
 <div id="badgeDisplay" style="display:none;text-align:center;margin:12px 0">
@@ -2126,6 +2126,7 @@ Requires <b>AMT profile avatar</b> (upload photo in Profile). Then claim → uni
     <div class="muted" style="font-size:10px;margin-top:6px">Scan to verify authenticity</div>
   </div>
 </div>
+<button class="secondary" id="setAmtFrameBtn" style="width:100%;margin-top:8px" onclick="setAmtFrameAvatar()">🖼️ SET AS AMT FRAME AVATAR</button>
 <button class="primary" id="claimBadgeBtn" style="width:100%;margin-top:6px" onclick="claimAmtBadge()">🪪 CLAIM BADGE + 20K AIRDROP</button>
 <button class="secondary" id="refreshBadgeBtn" style="width:100%;margin-top:8px" onclick="loadAmtBadge()">🔄 REFRESH BADGE</button>
 <div style="margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,.08)">
@@ -2992,44 +2993,43 @@ SELECT 180D
 
 
 <section id="tetrisSection" class="section" style="padding-bottom:0">
-  <!-- Fixed play layout: board on top, controls docked above bottom nav -->
-  <div id="tetrisPlayShell" style="display:flex;flex-direction:column;align-items:center;min-height:calc(100vh - 140px);padding:6px 8px 0">
-    <div style="text-align:center;margin-bottom:4px;flex-shrink:0;position:relative;width:100%;max-width:320px">
+  <div id="tetrisPlayShell" style="display:flex;flex-direction:column;align-items:center;padding:4px 8px 0;box-sizing:border-box">
+    <div style="text-align:center;margin-bottom:2px;flex-shrink:0;position:relative;width:100%;max-width:300px">
       <button type="button" id="tetrisExitBtn" onclick="showSection('miningSection')" style="position:absolute;left:0;top:0;padding:6px 10px;border:0;border-radius:10px;font-size:11px;font-weight:700;color:#fff;background:#2a1a44">← EXIT</button>
-      <div style="font-size:15px;font-weight:800;color:#ffd64e">🎮 AMT TETRIS</div>
-      <div class="muted" style="font-size:10px">Solo · daily AMT · 1v1 soon</div>
+      <div style="font-size:14px;font-weight:800;color:#ffd64e">🎮 AMT TETRIS</div>
+      <div class="muted" style="font-size:9px">Solo · daily AMT · 1v1 soon</div>
     </div>
 
-    <div style="position:relative;flex:1;display:flex;align-items:center;justify-content:center;width:100%;max-width:280px">
-      <div style="position:absolute;left:8px;right:8px;top:8px;z-index:2;display:flex;justify-content:space-between;font-size:11px;font-weight:800;text-shadow:0 1px 4px #000;pointer-events:none">
+    <div style="position:relative;width:200px;margin:0 auto 6px">
+      <div style="position:absolute;left:6px;right:6px;top:6px;z-index:2;display:flex;justify-content:space-between;font-size:10px;font-weight:800;text-shadow:0 1px 4px #000;pointer-events:none">
         <span>S <b id="tetrisScore" style="color:#ffd64e">0</b></span>
         <span id="tetrisStatus" style="color:#c4b5fd">Ready</span>
-        <span>L <b id="tetrisLines">0</b> · Lv <b id="tetrisLevel">1</b></span>
+        <span>L <b id="tetrisLines">0</b>·Lv <b id="tetrisLevel">1</b></span>
       </div>
-      <canvas id="tetrisCanvas" width="240" height="480" style="display:block;width:min(240px,72vw);height:auto;aspect-ratio:1/2;background:#05030c;border:3px solid #7c3aed;border-radius:18px;box-shadow:0 0 28px rgba(124,58,237,.45);touch-action:none"></canvas>
+      <canvas id="tetrisCanvas" width="200" height="400" style="display:block;width:200px;height:400px;background:#05030c;border:3px solid #7c3aed;border-radius:16px;box-shadow:0 0 22px rgba(124,58,237,.4);touch-action:none"></canvas>
     </div>
 
-    <!-- CONTROLS — always under the board, tight, above bottom nav -->
-    <div id="tetrisControlsDock" style="flex-shrink:0;width:100%;max-width:320px;margin:8px auto 12px;padding:8px;background:rgba(12,6,24,.96);border:1px solid rgba(170,79,255,.4);border-radius:18px;box-shadow:0 -4px 20px rgba(0,0,0,.35)">
+    <!-- CONTROLS raised / always visible -->
+    <div id="tetrisControlsDock" style="width:100%;max-width:300px;margin:0 auto 6px;padding:10px 8px 14px;background:rgba(12,6,24,.98);border:1px solid rgba(170,79,255,.45);border-radius:16px;position:relative;z-index:5">
       <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:6px;margin-bottom:6px">
-        <button type="button" onclick="tetrisStart()" style="padding:11px 6px;border:0;border-radius:12px;font-weight:800;font-size:13px;color:#111;background:linear-gradient(90deg,#fbbf24,#a855f7)">▶ START</button>
-        <button type="button" onclick="tetrisPause()" style="padding:11px 6px;border:0;border-radius:12px;font-weight:800;font-size:12px;color:#fff;background:#2a1a44">⏸ PAUSE</button>
+        <button type="button" onclick="tetrisStart()" style="padding:12px 6px;border:0;border-radius:12px;font-weight:800;font-size:13px;color:#111;background:linear-gradient(90deg,#fbbf24,#a855f7)">▶ START</button>
+        <button type="button" onclick="tetrisPause()" style="padding:12px 6px;border:0;border-radius:12px;font-weight:800;font-size:12px;color:#fff;background:#2a1a44">⏸ PAUSE</button>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:5px">
-        <button type="button" onclick="tetrisMove(-1)" style="padding:12px 0;border:0;border-radius:11px;font-size:16px;color:#fff;background:#2a1a44">◀</button>
-        <button type="button" onclick="tetrisRotate()" style="padding:12px 0;border:0;border-radius:11px;font-size:15px;color:#fff;background:#3b1d66">⟳</button>
-        <button type="button" onclick="tetrisSoftDrop()" style="padding:12px 0;border:0;border-radius:11px;font-size:16px;color:#fff;background:#2a1a44">▼</button>
-        <button type="button" onclick="tetrisHardDrop()" style="padding:12px 0;border:0;border-radius:11px;font-size:14px;color:#fff;background:#3b1d66">⬇</button>
-        <button type="button" onclick="tetrisMove(1)" style="padding:12px 0;border:0;border-radius:11px;font-size:16px;color:#fff;background:#2a1a44">▶</button>
+        <button type="button" onclick="tetrisMove(-1)" style="padding:13px 0;border:0;border-radius:11px;font-size:16px;color:#fff;background:#2a1a44">◀</button>
+        <button type="button" onclick="tetrisRotate()" style="padding:13px 0;border:0;border-radius:11px;font-size:15px;color:#fff;background:#3b1d66">⟳</button>
+        <button type="button" onclick="tetrisSoftDrop()" style="padding:13px 0;border:0;border-radius:11px;font-size:16px;color:#fff;background:#2a1a44">▼</button>
+        <button type="button" onclick="tetrisHardDrop()" style="padding:13px 0;border:0;border-radius:11px;font-size:14px;color:#fff;background:#3b1d66">⬇</button>
+        <button type="button" onclick="tetrisMove(1)" style="padding:13px 0;border:0;border-radius:11px;font-size:16px;color:#fff;background:#2a1a44">▶</button>
       </div>
     </div>
 
-    <div style="width:100%;max-width:320px;margin:0 auto 8px;padding:8px 10px;background:rgba(20,10,40,.7);border-radius:12px;flex-shrink:0">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-        <b style="font-size:11px;color:#ffd64e">🏆 TOP</b>
-        <button type="button" onclick="loadTetrisLeaderboard()" style="padding:4px 8px;border:0;border-radius:8px;font-size:10px;color:#fff;background:#2a1a44">Refresh</button>
+    <div style="width:100%;max-width:300px;margin:0 auto 4px;padding:6px 8px;background:rgba(20,10,40,.75);border-radius:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
+        <b style="font-size:10px;color:#ffd64e">🏆 TOP</b>
+        <button type="button" onclick="loadTetrisLeaderboard()" style="padding:3px 8px;border:0;border-radius:8px;font-size:10px;color:#fff;background:#2a1a44">Refresh</button>
       </div>
-      <div id="tetrisLeaderboard" class="muted" style="font-size:10px;max-height:72px;overflow:auto">Play to rank</div>
+      <div id="tetrisLeaderboard" class="muted" style="font-size:10px;max-height:52px;overflow:auto">Play to rank</div>
     </div>
   </div>
 </section>
@@ -6487,7 +6487,7 @@ async function claimBadgeFromLoginStep(){
 var _tx=null;
 function tetrisEnsureInit(){
   if(_tx) return;
-  var COLS=10, ROWS=20, SIZE=24;
+  var COLS=10, ROWS=20, SIZE=20;
   var canvas=$("tetrisCanvas");
   if(!canvas) return;
   var ctx=canvas.getContext("2d");
@@ -6707,6 +6707,21 @@ async function loadAmtBadge(){
   }
 }
 
+async function setAmtFrameAvatar(){
+  try{
+    showToast("Confirming AMT Frame Avatar...");
+    var data = await api("/api/profile/amt-frame", { method: "POST", body: "{}" });
+    if(data && data.ok){
+      window._amtAvatar = true;
+      showToast(data.message || "AMT Frame Avatar set!");
+      try{ loadAmtBadge(); }catch(e){}
+    } else {
+      showToast((data && data.error) || "Failed", true);
+    }
+  }catch(e){
+    showToast((e && e.message) || "Failed", true);
+  }
+}
 async function claimAmtBadge(){
   var claimBtn = $("claimBadgeBtn");
   if(claimBtn){ claimBtn.disabled = true; claimBtn.textContent = "Claiming…"; }
