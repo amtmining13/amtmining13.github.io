@@ -2881,12 +2881,14 @@ app.get(
           FROM amt_ledger
           WHERE member_id = $1
             AND type IN (
-              'LUCKY_SPIN','DAILY','DAILY_REWARD','AIRDROP',
+              'LUCKY_SPIN','DAILY','DAILY_REWARD','AIRDROP','BADGE_AIRDROP',
               'MINING','MINING_CLAIM','AD_BONUS','REFERRAL',
               'PET_PURCHASE','PET_BUY_LISTING','PET_SALE','EGG_BUY','EGG_SALE','ESCROW_HOLD','ESCROW_RELEASE',
               'PET_CARE','PET_RESCUE','PET_STAR','PET_TRAIN','PET_BREED','PET_BOSS','PET_TRADE',
+              'PET_LEVEL_MILESTONE',
               'GEAR_BUY','GEM_BUY','CORE_BUY','WEAPON_BUY',
-              'MYSTERY_CHEST','DAILY_GOAL_BONUS','DUNGEON_LOOT','MISSION','MISSION_BONUS','STAKING_PAYOUT','STAKING_EARLY_WITHDRAW'
+              'MYSTERY_CHEST','DAILY_GOAL_BONUS','DUNGEON_LOOT','MISSION','MISSION_BONUS','STAKING_PAYOUT','STAKING_EARLY_WITHDRAW',
+              'TETRIS_DAILY','DEV_TREASURY'
             )
           ORDER BY created_at DESC
           LIMIT 80
@@ -2939,6 +2941,10 @@ app.get(
           else if (typ === "STAKING_PAYOUT") label = "STAKING PAYOUT";
           else if (typ === "STAKING_EARLY_WITHDRAW") label = "STAKING EARLY WITHDRAW";
           else if (typ === "AIRDROP") label = "AIRDROP";
+          else if (typ === "BADGE_AIRDROP") label = "BADGE AIRDROP 20K";
+          else if (typ === "TETRIS_DAILY") label = "TETRIS DAILY";
+          else if (typ === "DEV_TREASURY") label = "DEV TREASURY";
+          else if (typ === "PET_LEVEL_MILESTONE") label = "PET LEVEL BONUS";
           else if (typ === "AD_BONUS") label = "AD BONUS";
           else if (typ === "REFERRAL") label = "REFERRAL";
           else if (typ === "MINING" || typ === "MINING_CLAIM") label = "MINING";
