@@ -16331,6 +16331,24 @@ app.post("/api/badge/claim", requireAuth, async (req, res) => {
   const client = await pool.connect();
   try {
     await ensureBadgeTables();
+    // Require AMT profile avatar (uploaded profile image) before issuing serial
+    const mem = await pool.query(
+      `SELECT profile_image FROM members WHERE id = $1 LIMIT 1`,
+      [req.member.id]
+    );
+    const pic = String((mem.rows[0] && mem.rows[0].profile_image) || "").trim();
+    const hasAvatar =
+      pic.length > 20 &&
+      (pic.indexOf("data:image") === 0 ||
+        pic.indexOf("http://") === 0 ||
+        pic.indexOf("https://") === 0 ||
+        pic.indexOf("/") === 0);
+    if (!hasAvatar) {
+      return res.status(400).json({
+        ok: false,
+        error: "AMT avatar required. Upload your profile photo (AMT avatar) in Profile first, then claim your badge ID."
+      });
+    }
     await client.query("BEGIN");
     const existing = await client.query(
       `SELECT * FROM member_badges WHERE member_id = $1 FOR UPDATE`,
