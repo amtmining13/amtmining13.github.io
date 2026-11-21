@@ -2111,7 +2111,7 @@ Pi UID: —
 <div class="card" id="amtBadgeCard">
 <div class="card-title">🪪 AMT UNIQUE BADGE ID</div>
 <p class="muted" style="font-size:12px;margin-bottom:10px">
-One member · one serial · QR verify. Claim badge → <b>+20,000 AMT</b> special airdrop (one-time). No badge = no special airdrop.
+Requires <b>AMT profile avatar</b> (upload photo in Profile). Then claim → unique serial + <b>+20,000 AMT</b>. No avatar = no badge ID.
 </p>
 <div id="badgeStatusBox" class="muted" style="font-size:12px;margin-bottom:10px">Loading badge…</div>
 <div id="badgeDisplay" style="display:none;text-align:center;margin:12px 0">
@@ -2994,7 +2994,8 @@ SELECT 180D
 <section id="tetrisSection" class="section" style="padding-bottom:0">
   <!-- Fixed play layout: board on top, controls docked above bottom nav -->
   <div id="tetrisPlayShell" style="display:flex;flex-direction:column;align-items:center;min-height:calc(100vh - 140px);padding:6px 8px 0">
-    <div style="text-align:center;margin-bottom:4px;flex-shrink:0">
+    <div style="text-align:center;margin-bottom:4px;flex-shrink:0;position:relative;width:100%;max-width:320px">
+      <button type="button" id="tetrisExitBtn" onclick="showSection('miningSection')" style="position:absolute;left:0;top:0;padding:6px 10px;border:0;border-radius:10px;font-size:11px;font-weight:700;color:#fff;background:#2a1a44">← EXIT</button>
       <div style="font-size:15px;font-weight:800;color:#ffd64e">🎮 AMT TETRIS</div>
       <div class="muted" style="font-size:10px">Solo · daily AMT · 1v1 soon</div>
     </div>
@@ -3324,8 +3325,19 @@ if(id==="circleSection")loadSecurityCircle();
 if(id==="profileSection"){loadProfile();try{refreshDevTreasuryCard();}catch(e){}try{loadAmtBadge();}catch(e){}try{loadPetLeaderboard();}catch(e){}try{checkBadgeVerifyQuery();}catch(e){}}
 if(id==="stakingSection")loadStaking();
 if(id==="warSection"){loadWarStatus();loadWarTargets();try{loadAlliance();}catch(e){}}
-if(id==="tetrisSection"){try{tetrisEnsureInit();loadTetrisLeaderboard();document.body.style.overflow="hidden";}catch(e){}}
-else { try{ if(document.body.style.overflow==="hidden") document.body.style.overflow=""; }catch(e2){} }
+if(id==="tetrisSection"){
+  try{tetrisEnsureInit();loadTetrisLeaderboard();document.body.style.overflow="hidden";}catch(e){}
+  try{ if($("bottomNav")) $("bottomNav").classList.add("hidden"); }catch(e3){}
+  try{ if($("tetrisExitBtn")) $("tetrisExitBtn").style.display="block"; }catch(e4){}
+} else {
+  try{ if(document.body.style.overflow==="hidden") document.body.style.overflow=""; }catch(e2){}
+  try{
+    if($("loginSection") && !$("loginSection").classList.contains("active")){
+      if($("bottomNav")) $("bottomNav").classList.remove("hidden");
+    }
+  }catch(e5){}
+  try{ if($("tetrisExitBtn")) $("tetrisExitBtn").style.display="none"; }catch(e6){}
+}
 if(id==="miningSection"){loadMiningStatus();loadDailyStatus();loadChestStatus();loadDungeon();try{preloadPiAds()}catch(e){}}
 if(id==="marketSection")petTab(currentPetTab || "shop");
 }
