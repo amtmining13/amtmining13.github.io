@@ -3062,7 +3062,7 @@ Open Coixa to swap and add liquidity for on-chain AMT pairs. In-app mining AMT i
       Claim your <b>unique Badge ID</b> and unlock the<br>
       <b style="color:#ffd64e">+20,000 AMT</b> special badge airdrop.
     </p>
-    <p class="muted" style="font-size:11px;margin-bottom:14px">No badge = no special airdrop. Normal app access still OK.</p>
+    <p class="muted" style="font-size:11px;margin-bottom:14px">No AMT Badge = no airdrop. Set AMT Frame Avatar → Claim Badge → then airdrop.</p>
     <div id="badgeClaimModalStatus" class="muted" style="font-size:12px;margin-bottom:12px"></div>
     <div id="badgeClaimModalSerial" style="font-family:monospace;font-size:14px;color:#c4b5fd;font-weight:700;margin-bottom:14px;min-height:20px"></div>
     <button class="primary" id="badgeClaimModalBtn" style="width:100%;margin-bottom:8px" onclick="claimBadgeFromLoginStep()">🪪 CLAIM BADGE + 20K AIRDROP</button>
@@ -5524,23 +5524,26 @@ async function doLuckySpin(){
 
 
 async function loadAirdrop(){
-// UI removed (spin-only page); keep for API compatibility
 if(!$("airdropStatus") && !$("airdropBtn")) return;
 try{
   const data = await api("/api/airdrop/status");
-  const claimed = !!(data.claimed || data.alreadyClaimed);
-  const expired = !!(data.expired || data.windowClosed);
-  const canClaim = data.canClaim !== false && !claimed && !expired;
-  if(claimed){
+  if(data.claimed){
     if($("airdropStatus")) $("airdropStatus").textContent="CLAIMED";
     if($("airdropBtn")){ $("airdropBtn").disabled=true; $("airdropBtn").textContent="✅ AIRDROP CLAIMED"; }
-  }else if(expired || !canClaim){
+  }else if(data.expired){
     if($("airdropStatus")) $("airdropStatus").textContent="EXPIRED";
     if($("airdropBtn")){ $("airdropBtn").disabled=true; $("airdropBtn").textContent="⏰ WINDOW CLOSED"; }
+  }else if(data.requiresBadge && data.hasBadge===false){
+    if($("airdropStatus")) $("airdropStatus").textContent="BADGE REQUIRED";
+    if($("airdropBtn")){ $("airdropBtn").disabled=true; $("airdropBtn").textContent="🪪 CLAIM BADGE FIRST"; }
   }else{
     if($("airdropStatus")) $("airdropStatus").textContent="AVAILABLE";
     if($("airdropBtn")){ $("airdropBtn").disabled=false; $("airdropBtn").textContent="🎁 CLAIM AIRDROP"; }
   }
+}catch(error){
+  console.log("Airdrop status:", error);
+  if($("airdropStatus")) $("airdropStatus").textContent="ERROR";
+}
 }catch(error){
   console.log("Airdrop status:", error);
   if($("airdropStatus")) $("airdropStatus").textContent="ERROR";
