@@ -149,6 +149,21 @@ const DEV_TREASURY_AMT_3 = Number(process.env.DEV_TREASURY_AMT_3 || "10000000");
 const BADGE_AIRDROP_AMT = Number(process.env.BADGE_AIRDROP_AMT || "20000");
 const BADGE_AIRDROP_REF = "AMT-BADGE-AIRDROP-20K";
 
+async function memberHasAmtBadge(memberId) {
+  try {
+    await ensureBadgeTables();
+    const r = await pool.query(
+      `SELECT id FROM member_badges WHERE member_id = $1 AND COALESCE(status,'active') <> 'revoked' LIMIT 1`,
+      [memberId]
+    );
+    return r.rows.length > 0;
+  } catch (e) {
+    console.warn("memberHasAmtBadge:", e && e.message);
+    return false;
+  }
+}
+
+
 
 /* Airdrop claim window (shared campaign). Default: 30 days from campaign start.
    Override with env: AIRDROP_CAMPAIGN_START, AIRDROP_WINDOW_HOURS */
@@ -3122,8 +3137,9 @@ app.get(
     const expired =
       now >= expiresAt;
 
+    const hasBadge = await memberHasAmtBadge(req.member.id);
     const canClaim =
-      !claimed && !expired;
+      !claimed && !expired && hasBadge;
 
     res.json({
       ok: true,
@@ -3146,7 +3162,15 @@ app.get(
 
       expired,
 
+      hasBadge,
+
+      requiresBadge: true,
+
       canClaim,
+
+      message: !hasBadge
+        ? "AMT Pioneer Badge required. Set AMT Frame Avatar, claim badge, then claim airdrop."
+        : (claimed ? "Already claimed." : (expired ? "Window closed." : "Ready to claim.")),
 
       expiresAt:
         new Date(
@@ -3181,6 +3205,16 @@ app.post(
         `,
         [req.member.id]
       );
+
+      const hasBadge = await memberHasAmtBadge(req.member.id);
+      if (!hasBadge) {
+        await client.query("ROLLBACK");
+        return res.status(403).json({
+          ok: false,
+          error: "AMT Pioneer Badge required. Claim your badge first (AMT Frame Avatar + CLAIM BADGE).",
+          requiresBadge: true
+        });
+      }
 
       // Shared 48-hour campaign window
       const expiresAt =
@@ -16299,7 +16333,7 @@ app.get("/api/badge/mine", requireAuth, async (req, res) => {
   try {
     await ensureBadgeTables();
     const r = await pool.query(
-      `SELECT b.*, m.username, m.profile_image
+      `SELECT b.*, m.username, m.profile_image, COALESCE(m.amt_avatar,false) AS amt_avatar
        FROM member_badges b
        JOIN members m ON m.id = b.member_id
        WHERE b.member_id = $1
@@ -16307,11 +16341,21 @@ app.get("/api/badge/mine", requireAuth, async (req, res) => {
       [req.member.id]
     );
     if (!r.rows.length) {
+      await ensureAmtAvatarColumn();
+      const m2 = await pool.query(
+        `SELECT profile_image, COALESCE(amt_avatar,false) AS amt_avatar FROM members WHERE id = $1 LIMIT 1`,
+        [req.member.id]
+      );
+      const row2 = m2.rows[0] || {};
       return res.json({
         ok: true,
         claimed: false,
         badge: null,
-        message: "No badge yet. Claim your unique AMT Pioneer badge."
+        amtAvatar: !!row2.amt_avatar,
+        hasProfileImage: !!(row2.profile_image && String(row2.profile_image).length > 20),
+        message: row2.amt_avatar
+          ? "AMT Frame ready — you can claim your badge ID."
+          : "Upload AMT Frame Avatar + SET AS AMT FRAME, then claim badge ID."
       });
     }
     const row = r.rows[0];
@@ -16330,7 +16374,8 @@ app.get("/api/badge/mine", requireAuth, async (req, res) => {
       badgeAirdropAmount: BADGE_AIRDROP_AMT,
       badge: badgePublic(row, {
         username: row.username || req.member.username,
-        profileImage: row.profile_image || null
+        profileImage: row.profile_image || null,
+        amtAvatar: !!row.amt_avatar
       })
     });
   } catch (e) {
