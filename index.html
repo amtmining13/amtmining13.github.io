@@ -1502,7 +1502,7 @@ onclick="loginWithPi()"
 PI MAINNET • BUILDING FUTURE VALUE
 </div>
 
-<div id="loginStatusBar" class="login-status-bar" style="display:none;margin-top:12px;padding:12px 14px;border-radius:14px;border:1px solid rgba(180,100,255,.35);background:rgba(30,16,48,.9);color:#e8d8ff;font-size:12px;font-weight:700;text-align:center;line-height:1.4"></div>
+<div id="loginStatusBar" class="login-status-bar" style="display:block;margin-top:12px;padding:12px 14px;border-radius:14px;border:1px solid rgba(180,100,255,.35);background:rgba(30,16,48,.9);color:#e8d8ff;font-size:12px;font-weight:700;text-align:center;line-height:1.4">Tap LOGIN WITH PI · Pi Browser only</div>
 
 <div class="login-notice">
 
@@ -3159,11 +3159,15 @@ const API_BASE="https://amtmining13githubio-production.up.railway.app";
       fetch(API_BASE+"/api/health",{cache:"no-store"}).then(function(r){
         return r.json().catch(function(){return {};});
       }).then(function(d){
-        var el=document.getElementById("loginStatus");
-        if(el && d && d.ok){ el.textContent="Server online · Login with Pi"; el.style.color="#7dffb3"; }
+        if(d && d.ok && typeof setLoginStatus==="function"){
+          setLoginStatus("Server online · tap LOGIN WITH PI");
+        } else if(d && d.ok){
+          var el=document.getElementById("loginStatusBar");
+          if(el){ el.style.display="block"; el.textContent="Server online · tap LOGIN WITH PI"; el.style.color="#7dffb3"; }
+        }
       }).catch(function(){
-        var el=document.getElementById("loginStatus");
-        if(el){ el.textContent="Server offline — retry in 15s"; el.style.color="#ff8a8a"; }
+        var el=document.getElementById("loginStatusBar");
+        if(el){ el.style.display="block"; el.textContent="Server offline — retry in 15s"; el.style.color="#ff8a8a"; }
       });
     }catch(e){}
   }
@@ -3416,16 +3420,19 @@ async function restoreSession(){
 
 
 async function loginWithPi(){
+  // bound to window below
   hideEcosystemLoading();
   try{
+    try{ setLoginStatus("Starting login…"); }catch(e0){}
+    try{ showToast("Starting Pi login…"); }catch(e0b){}
     if(!window.Pi){
       setLoginStatus("Loading Pi SDK…");
-      for(var i=0;i<15 && !window.Pi;i++){
-        await new Promise(function(r){ setTimeout(r,200); });
+      for(var i=0;i<20 && !window.Pi;i++){
+        await new Promise(function(r){ setTimeout(r,250); });
       }
     }
     if(!window.Pi){
-      throw new Error("Open inside Pi Browser only (not Chrome / Facebook).");
+      throw new Error("Pi SDK missing. Open amtmining13.github.io INSIDE Pi Browser only (not Chrome).");
     }
 
     setLoginStatus("Checking server…");
@@ -3565,6 +3572,21 @@ async function loginWithPi(){
     showToast(m, true);
   }
 }
+
+
+try{ window.loginWithPi = loginWithPi; }catch(eBind){}
+document.addEventListener("DOMContentLoaded", function(){
+  try{
+    var btn = document.querySelector(".login-pi-button");
+    if(btn && !btn._amtBound){
+      btn._amtBound = true;
+      btn.addEventListener("click", function(ev){
+        try{ ev.preventDefault(); }catch(e){}
+        try{ loginWithPi(); }catch(e2){ try{ showToast(String(e2&&e2.message||e2), true); }catch(e3){} }
+      });
+    }
+  }catch(e){}
+});
 
 /* ========== Pi Ads (Rewarded + Interstitial) ========== */
 /* Pet payments: Testnet Pi only (sandbox:true). Not real Mainnet Pi. */
