@@ -3151,6 +3151,27 @@ Open Coixa to swap and add liquidity for on-chain AMT pairs. In-app mining AMT i
 
 const API_BASE="https://amtmining13githubio-production.up.railway.app";
 
+/* AMT_SERVER_PRECHECK */
+(function(){
+  function run(){
+    try{
+      if(typeof API_BASE==="undefined"||!API_BASE) return;
+      fetch(API_BASE+"/api/health",{cache:"no-store"}).then(function(r){
+        return r.json().catch(function(){return {};});
+      }).then(function(d){
+        var el=document.getElementById("loginStatus");
+        if(el && d && d.ok){ el.textContent="Server online · Login with Pi"; el.style.color="#7dffb3"; }
+      }).catch(function(){
+        var el=document.getElementById("loginStatus");
+        if(el){ el.textContent="Server offline — retry in 15s"; el.style.color="#ff8a8a"; }
+      });
+    }catch(e){}
+  }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", run);
+  else run();
+})();
+
+
 let accessToken=null;
 let currentUser=null;
 let piSdkReady=false;
@@ -3257,7 +3278,7 @@ for(let attempt=0; attempt<maxTry; attempt++){
     // Retry only transient / wake failures
     if((st===502||st===503||st===504||st===520||st===521||st===522) && attempt < maxTry-1){
       if(typeof setLoginStatus === "function"){
-        setLoginStatus("Server waking up… try "+(attempt+2)+"/"+maxTry+" (free Render ~30–60s)");
+        setLoginStatus("Server retry… try "+(attempt+2)+"/"+maxTry);
       }
       await new Promise(function(r){ setTimeout(r, 2500*(attempt+1)); });
       continue;
@@ -3409,14 +3430,13 @@ async function loginWithPi(){
 
     setLoginStatus("Checking server…");
     var root = null;
-    // Try paths that exist on old AND new deploys (/api/health is older; /api/ping is new)
-    var wakePaths = ["/api/ping", "/", "/api/health", "/health"];
-    for(var a=0;a<8;a++){
+    var wakePaths = ["/api/health", "/", "/api/ping"];
+    for(var a=0;a<4;a++){
       try{
-        setLoginStatus("Waking free Render… ("+(a+1)+"/8 · up to 60s)");
+        setLoginStatus("Connecting… ("+(a+1)+"/4)");
         var path = wakePaths[a % wakePaths.length];
         var ctrl = typeof AbortController!=="undefined" ? new AbortController() : null;
-        var to = ctrl ? setTimeout(function(){ try{ ctrl.abort(); }catch(e){} }, 25000) : null;
+        var to = ctrl ? setTimeout(function(){ try{ ctrl.abort(); }catch(e){} }, 15000) : null;
         var res = await fetch(API_BASE+path, { cache:"no-store", signal: ctrl?ctrl.signal:undefined });
         if(to) clearTimeout(to);
         if(!res.ok) throw new Error("HTTP "+res.status);
@@ -3424,11 +3444,11 @@ async function loginWithPi(){
         if(!root) root = { ok:true };
         break;
       }catch(eTry){
-        await new Promise(function(r){ setTimeout(r, 3000); });
+        await new Promise(function(r){ setTimeout(r, 1500); });
       }
     }
     if(!root){
-      throw new Error("Server warming up. Wait 20s and retry Login. (Railway + Neon)");
+      throw new Error("Cannot reach API. Open only in Pi Browser · wait 15s · retry. API: Railway");
     }
 
     setLoginStatus("Server online · Opening Pi login…");
@@ -3509,7 +3529,7 @@ async function loginWithPi(){
       }catch(verErr){
         var msg = (verErr && verErr.message) || (userErr && userErr.message) || "Auth failed";
         accessToken = null;
-        throw new Error(msg + " · Check Mainnet PI_API_KEY on Render.");
+        throw new Error(msg + " · Check PI_API_KEY on Railway Variables.");
       }
     }
 
