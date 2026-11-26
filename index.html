@@ -3368,12 +3368,16 @@ if(id==="marketSection")petTab(currentPetTab || "shop");
 ============================================================ */
 
 function setLoginStatus(msg, isError){
-  var el=$("loginStatusBar");
+  var el = document.getElementById("loginStatusBar") || ($ && $("loginStatusBar"));
   if(!el) return;
-  el.style.display = msg ? "block" : "none";
+  el.style.display = "block";
+  el.style.visibility = "visible";
+  el.style.opacity = "1";
+  el.style.zIndex = "9999";
   el.textContent = msg || "";
   el.style.borderColor = isError ? "rgba(255,80,100,.55)" : "rgba(180,100,255,.35)";
   el.style.color = isError ? "#ffb0b8" : "#e8d8ff";
+  el.style.background = isError ? "rgba(60,10,20,.95)" : "rgba(30,16,48,.95)";
 }
 
 
@@ -3475,7 +3479,8 @@ async function loginWithPi(){
     if(typeof Pi.authenticate !== "function"){
       throw new Error("Pi.authenticate missing. Update Pi Browser / open amtmining13.github.io inside Pi.");
     }
-    setLoginStatus("Pi SDK ready · Approve Share Information / notifications (ALLOW) if shown");
+    setLoginStatus("Pi SDK ready · Approve ALLOW on the Pi popup");
+    try{ showToast("Approve the Pi popup (ALLOW)"); }catch(e){}
 
     function runAuth(scopes){
       return Promise.race([
@@ -3497,19 +3502,30 @@ async function loginWithPi(){
 
     var authResult = null;
     try{
+      setLoginStatus("Pi popup… tap ALLOW");
       authResult = await runAuth(["username","payments","in_app_notifications"]);
     }catch(e1){
       if(String(e1 && e1.message) === "TIMEOUT"){
-        throw new Error("Login timed out. Approve the Pi popup, then try again.");
+        throw new Error("Timed out — tap ALLOW on Pi popup, then Login again.");
       }
-      setLoginStatus("Retry login (username)…");
+      setLoginStatus("Retry scopes…");
       try{
         authResult = await runAuth(["username","in_app_notifications"]);
       }catch(e2){
         if(String(e2 && e2.message) === "TIMEOUT"){
-          throw new Error("Login timed out. Use Pi Browser · domain amtmining13.github.io · approve popup.");
+          throw new Error("Timed out — Pi Browser · amtmining13.github.io · ALLOW popup.");
         }
-        throw e2;
+        setLoginStatus("Retry Pi.init…");
+        try{
+          Pi.init({ version:"2.0", sandbox:false });
+        }catch(e3){
+          try{ Pi.init({ version:"2.0" }); }catch(e4){}
+        }
+        try{
+          authResult = await runAuth(["username"]);
+        }catch(e5){
+          throw new Error((e5 && e5.message) || (e2 && e2.message) || "Pi auth failed");
+        }
       }
     }
 
@@ -3567,9 +3583,10 @@ async function loginWithPi(){
     hideEcosystemLoading();
     accessToken = accessToken || null;
     var m = (error && error.message) || "Pi login failed.";
-    setLoginStatus(m, true);
+    try{ setLoginStatus(m, true); }catch(e){}
     console.error("loginWithPi", error);
-    showToast(m, true);
+    try{ showToast(m, true); }catch(e){}
+    try{ alert("AMT Login: " + m); }catch(e){}
   }
 }
 
