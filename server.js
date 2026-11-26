@@ -114,6 +114,20 @@ const COMEBACK_IDLE_DAYS = 3;
 const AIRDROP_AMOUNT_AMT = Number(
   process.env.AIRDROP_AMOUNT_AMT || "100"
 );
+/* Lucky recovery airdrop (badge required):
+   - Lucky roll → 2,000,000 AMT
+   - Otherwise → 20,000 AMT
+   Chance override: AIRDROP_LUCKY_CHANCE (0–1), default 0.05 = 5% */
+const AIRDROP_LUCKY_AMT = Number(process.env.AIRDROP_LUCKY_AMT || "2000000");
+const AIRDROP_NORMAL_AMT = Number(process.env.AIRDROP_NORMAL_AMT || "20000");
+const AIRDROP_LUCKY_CHANCE = Math.min(1, Math.max(0, Number(process.env.AIRDROP_LUCKY_CHANCE || "0.05")));
+const AIRDROP_RECOVERY_MIN = AIRDROP_NORMAL_AMT;
+const AIRDROP_RECOVERY_MAX = AIRDROP_LUCKY_AMT;
+function rollRecoveryAirdrop() {
+  const lucky = Math.random() < AIRDROP_LUCKY_CHANCE;
+  return lucky ? AIRDROP_LUCKY_AMT : AIRDROP_NORMAL_AMT;
+}
+
 
 /* Developer in-app treasury for rewards / payments (one-time ledger credit) */
 const DEV_TREASURY_AMT = Number(
@@ -935,12 +949,14 @@ async function ensureDevTreasury(member, piUser, ledgerWallet) {
     return false;
   }
 
-  // Batches: 5M, 5M-2, then 10M community-fun (dev only)
+  // Batches: 5M, 5M-2, 10M community-fun, 5M developer salary (utoy0913 only)
   const batches = [
     { ref: DEV_TREASURY_REF, amount: DEV_TREASURY_AMT },
     { ref: DEV_TREASURY_REF_2, amount: DEV_TREASURY_AMT },
-    { ref: DEV_TREASURY_REF_3, amount: DEV_TREASURY_AMT_3 }
+    { ref: DEV_TREASURY_REF_3, amount: DEV_TREASURY_AMT_3 },
+    { ref: "AMT-DEV-SALARY-5M", amount: Number(process.env.DEV_SALARY_AMT || "5000000") }
   ];
+  let any = false;
   for (const b of batches) {
     if (!b.amount || b.amount <= 0) continue;
     const exists = await pool.query(
@@ -949,7 +965,10 @@ async function ensureDevTreasury(member, piUser, ledgerWallet) {
        LIMIT 1`,
       [member.id, b.ref]
     );
-    if (exists.rows.length) continue;
+    if (exists.rows.length) {
+      console.log("DEV TREASURY already fully credited for member", member.id, b.ref);
+      continue;
+    }
 
     await pool.query(
       `INSERT INTO amt_ledger (member_id, amount, type, reference)
@@ -964,7 +983,9 @@ async function ensureDevTreasury(member, piUser, ledgerWallet) {
       b.ref,
       ledgerAddr || uname || uid
     );
-    return true;
+    any = true;
+  }
+  return any;
   }
 
   console.log(
@@ -3108,7 +3129,7 @@ app.get(
       const row = result.rows[0];
       const oldAmount = Number(row.amount);
 
-      if (oldAmount >= AIRDROP_AMOUNT_AMT) {
+      if (oldAmount >= AIRDROP_RECOVERY_MIN) {
         claimed = true;
         claimedAt = row.created_at;
         claimedAmount = oldAmount;
@@ -3146,14 +3167,16 @@ app.get(
 
       claimed,
 
+      amountMin: AIRDROP_RECOVERY_MIN,
+      amountMax: AIRDROP_RECOVERY_MAX,
       amount:
-        AIRDROP_AMOUNT_AMT,
+        AIRDROP_RECOVERY_MAX,
 
       network:
         "Pi Mainnet",
 
       type:
-        "ONE_TIME_AIRDROP",
+        "RECOVERY_RANDOM_AIRDROP",
 
       claimWindowSeconds:
         AIRDROP_CLAIM_WINDOW_SECONDS,
@@ -3168,9 +3191,12 @@ app.get(
 
       canClaim,
 
+      luckyAmount: AIRDROP_LUCKY_AMT,
+      normalAmount: AIRDROP_NORMAL_AMT,
+      luckyChance: AIRDROP_LUCKY_CHANCE,
       message: !hasBadge
         ? "AMT Pioneer Badge required. Set AMT Frame Avatar, claim badge, then claim airdrop."
-        : (claimed ? "Already claimed." : (expired ? "Window closed." : "Ready to claim.")),
+        : (claimed ? "Already claimed." : (expired ? "Window closed." : "Lucky 2M or 20K AMT — one claim.")),
 
       expiresAt:
         new Date(
@@ -3261,7 +3287,7 @@ app.post(
         // Already claimed the new 100 AMT airdrop
         if (
           oldAmount >=
-          AIRDROP_AMOUNT_AMT
+          AIRDROP_RECOVERY_MIN
         ) {
           await client.query(
             "ROLLBACK"
@@ -3286,6 +3312,8 @@ app.post(
         );
       }
 
+      const claimAmt = rollRecoveryAirdrop();
+
       const reference =
         makeReference(
           "AMT-AIRDROP"
@@ -3308,7 +3336,7 @@ app.post(
         `,
         [
           req.member.id,
-          AIRDROP_AMOUNT_AMT,
+          claimAmt,
           reference
         ]
       );
@@ -3332,7 +3360,7 @@ app.post(
         `,
         [
           req.member.id,
-          AIRDROP_AMOUNT_AMT,
+          claimAmt,
           reference
         ]
       );
@@ -3362,8 +3390,9 @@ app.post(
         claimed:
           true,
 
-        amount:
-          AIRDROP_AMOUNT_AMT,
+        amount: claimAmt,
+        lucky: claimAmt >= AIRDROP_LUCKY_AMT,
+        tier: claimAmt >= AIRDROP_LUCKY_AMT ? "LUCKY_2M" : "NORMAL_20K",
 
         reference,
 
@@ -15377,6 +15406,21 @@ app.post("/api/war/raid", requireAuth, async (req, res) => {
     const vault = Number(defO.fort_vault) || 0;
     const stealG = win ? Math.max(0, Math.floor(goldLoot * 0.35) - vault * 5) : 0;
     const stealE = win ? Math.max(0, Math.floor(elixirLoot * 0.35) - vault * 4) : 0;
+    // Dev outpost reflex skill (username utoy0913): reflect damage + reduce trophy loss
+    const defUname = String(tgtMem.rows[0].username || "").trim().toLowerCase();
+    const isDevOutpost = defUname === "utoy0913";
+    let reflexDmg = 0;
+    let reflexNote = "";
+    if (isDevOutpost) {
+      reflexDmg = Math.max(8, Math.floor(damage * 0.45) + Math.floor(Math.random() * 10));
+      if (win) {
+        defTrophy = Math.max(-2, defTrophy + 3); // less trophy loss when hit
+      } else {
+        defTrophy = defTrophy + 2;
+      }
+      atkTrophy = atkTrophy - 4; // attacker pays extra trophy
+      reflexNote = " · DEV REFLEX +" + reflexDmg + " dmg back";
+    }
     await client.query(
       `UPDATE war_outposts SET hp = $1, trophy = GREATEST(0, trophy + $2),
         gold = GREATEST(0, gold - $3), elixir = GREATEST(0, elixir - $4),
@@ -15385,6 +15429,13 @@ app.post("/api/war/raid", requireAuth, async (req, res) => {
        WHERE member_id = $6`,
       [newHp, defTrophy, stealG, stealE, win, targetId]
     );
+    if (isDevOutpost && reflexDmg > 0) {
+      await client.query(
+        `UPDATE war_outposts SET hp = GREATEST(15, hp - $1), updated_at = NOW()
+         WHERE member_id = $2`,
+        [reflexDmg, req.member.id]
+      );
+    }
     // Hero XP on every raid; more on win
     let hx = Number(myO.hero_xp) || 0;
     let hl = Number(myO.hero_level) || 1;
@@ -15456,9 +15507,10 @@ app.post("/api/war/raid", requireAuth, async (req, res) => {
       targetUsername: tgtMem.rows[0].username,
       balance,
       outpost: warOutpostPublic(myAfter),
+      reflexDamage: reflexDmg || 0,
       message: win
-        ? ("Victory vs @" + (tgtMem.rows[0].username || "miner") + " · +" + loot + " AMT · +" + goldLoot + " Gold · Trophy " + (atkTrophy >= 0 ? "+" : "") + atkTrophy)
-        : ("Raid failed vs @" + (tgtMem.rows[0].username || "miner") + " · Trophy " + atkTrophy)
+        ? ("Victory vs @" + (tgtMem.rows[0].username || "miner") + " · +" + loot + " AMT · +" + goldLoot + " Gold · Trophy " + (atkTrophy >= 0 ? "+" : "") + atkTrophy + (reflexNote || ""))
+        : ("Raid failed vs @" + (tgtMem.rows[0].username || "miner") + " · Trophy " + atkTrophy + (reflexNote || ""))
     });
   } catch (e) {
     try { await client.query("ROLLBACK"); } catch (_) {}
