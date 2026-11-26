@@ -3428,7 +3428,7 @@ async function loginWithPi(){
       }
     }
     if(!root){
-      throw new Error("Server unreachable. Wait 30s and retry, or check Railway service is Online.");
+      throw new Error("Server warming up. Wait 20s and retry Login. (Railway + Neon)");
     }
 
     setLoginStatus("Server online · Opening Pi login…");
@@ -5553,7 +5553,7 @@ try{
 async function claimAirdrop(){
 try{
   const data = await api("/api/airdrop/claim",{ method:"POST", body:JSON.stringify({}) });
-  showToast("Airdrop claimed: "+fmt(data.amount??data.reward??0)+" AMT");
+  showToast((data.lucky||data.tier==="LUCKY_2M")?("🍀 LUCKY 2M AIRDROP! +"+fmt(data.amount??0)+" AMT"):("Airdrop +"+fmt(data.amount??data.reward??0)+" AMT"));
   await loadAirdrop();
   await refreshWallet();
 }catch(error){
