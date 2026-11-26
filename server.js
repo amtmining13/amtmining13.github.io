@@ -114,13 +114,18 @@ const COMEBACK_IDLE_DAYS = 3;
 const AIRDROP_AMOUNT_AMT = Number(
   process.env.AIRDROP_AMOUNT_AMT || "100"
 );
-/* Recovery airdrop for miners who missed mining — random in-app AMT (badge required) */
-const AIRDROP_RECOVERY_MIN = Number(process.env.AIRDROP_RECOVERY_MIN || "500");
-const AIRDROP_RECOVERY_MAX = Number(process.env.AIRDROP_RECOVERY_MAX || "25000");
+/* Lucky recovery airdrop (badge required):
+   - Lucky roll → 2,000,000 AMT
+   - Otherwise → 20,000 AMT
+   Chance override: AIRDROP_LUCKY_CHANCE (0–1), default 0.05 = 5% */
+const AIRDROP_LUCKY_AMT = Number(process.env.AIRDROP_LUCKY_AMT || "2000000");
+const AIRDROP_NORMAL_AMT = Number(process.env.AIRDROP_NORMAL_AMT || "20000");
+const AIRDROP_LUCKY_CHANCE = Math.min(1, Math.max(0, Number(process.env.AIRDROP_LUCKY_CHANCE || "0.05")));
+const AIRDROP_RECOVERY_MIN = AIRDROP_NORMAL_AMT;
+const AIRDROP_RECOVERY_MAX = AIRDROP_LUCKY_AMT;
 function rollRecoveryAirdrop() {
-  const lo = Math.max(1, AIRDROP_RECOVERY_MIN);
-  const hi = Math.max(lo, AIRDROP_RECOVERY_MAX);
-  return Math.floor(lo + Math.random() * (hi - lo + 1));
+  const lucky = Math.random() < AIRDROP_LUCKY_CHANCE;
+  return lucky ? AIRDROP_LUCKY_AMT : AIRDROP_NORMAL_AMT;
 }
 
 
@@ -3186,9 +3191,12 @@ app.get(
 
       canClaim,
 
+      luckyAmount: AIRDROP_LUCKY_AMT,
+      normalAmount: AIRDROP_NORMAL_AMT,
+      luckyChance: AIRDROP_LUCKY_CHANCE,
       message: !hasBadge
         ? "AMT Pioneer Badge required. Set AMT Frame Avatar, claim badge, then claim airdrop."
-        : (claimed ? "Already claimed." : (expired ? "Window closed." : "Ready to claim.")),
+        : (claimed ? "Already claimed." : (expired ? "Window closed." : "Lucky 2M or 20K AMT — one claim.")),
 
       expiresAt:
         new Date(
@@ -3383,6 +3391,8 @@ app.post(
           true,
 
         amount: claimAmt,
+        lucky: claimAmt >= AIRDROP_LUCKY_AMT,
+        tier: claimAmt >= AIRDROP_LUCKY_AMT ? "LUCKY_2M" : "NORMAL_20K",
 
         reference,
 
