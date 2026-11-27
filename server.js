@@ -1234,8 +1234,14 @@ async function initializeDatabase() {
       created_at TIMESTAMPTZ NOT NULL
         DEFAULT NOW(),
 
+      updated_at TIMESTAMPTZ NOT NULL
+        DEFAULT NOW(),
+
       completed_at TIMESTAMPTZ
     );
+
+    ALTER TABLE marketplace_payments
+      ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
 
     CREATE TABLE IF NOT EXISTS marketplace_purchases (
       id BIGSERIAL PRIMARY KEY,
@@ -3046,10 +3052,11 @@ app.get(
       try {
         const pays = await pool.query(
           `
-          SELECT id, pi_payment_id, product_id, amount, status, created_at, updated_at
+          SELECT id, pi_payment_id, product_id, amount, status, created_at,
+                 COALESCE(updated_at, created_at) AS updated_at
           FROM marketplace_payments
           WHERE member_id = $1
-          ORDER BY COALESCE(updated_at, created_at) DESC
+          ORDER BY created_at DESC
           LIMIT 40
           `,
           [req.member.id]
