@@ -1897,19 +1897,7 @@ Unlink Pi Wallet
 </section>
 
 <section id="airdropSection" class="section">
-<div class="card" style="margin-top:0;margin-bottom:12px">
-  <div class="card-title">🍀 LUCKY AIRDROP</div>
-  <p class="muted" style="font-size:12px;margin:0 0 10px;line-height:1.45">
-    One-time claim · <b>AMT Pioneer Badge required</b><br>
-    Lucky (~5%): <b style="color:#ffd64e">2,000,000 AMT</b> · Otherwise: <b>20,000 AMT</b>
-  </p>
-  <div class="grid" style="margin-bottom:10px">
-    <div class="stat"><div class="stat-label">Status</div><div id="airdropStatus" class="stat-value" style="font-size:14px">-</div></div>
-    <div class="stat"><div class="stat-label">Amount</div><div id="airdropAmountHint" class="stat-value" style="font-size:13px">2M / 20K</div></div>
-  </div>
-  <button id="airdropBtn" class="primary" style="width:100%" onclick="claimAirdrop()">🎁 CLAIM AIRDROP</button>
-  <p class="muted" style="font-size:11px;margin:8px 0 0;text-align:center">No badge → Claim AMT Frame + Badge first (Profile / Badge step)</p>
-</div>
+<!-- Airdrop claim UI removed — more space for spin. Backend claim still available if needed. -->
 <div class="card" style="margin-top:0">
 <div class="spin-wrap">
   <div class="spin-title-glow">SPIN IT</div>
@@ -3108,7 +3096,7 @@ Open Coixa to swap and add liquidity for on-chain AMT pairs. In-app mining AMT i
 <div class="nav-grid" style="margin-top:4px">
 
 <button class="nav-btn" data-section="airdropSection" onclick="showSection('airdropSection',this)">
-<span class="icon">🎁</span>Airdrop
+<span class="icon">🎡</span>Spin
 </button>
 
 <button class="nav-btn" data-section="referralSection" onclick="showSection('referralSection',this)">
@@ -5609,15 +5597,8 @@ try{
     if($("airdropBtn")){ $("airdropBtn").disabled=true; $("airdropBtn").textContent="🪪 CLAIM BADGE FIRST"; }
   }else{
     if($("airdropStatus")) $("airdropStatus").textContent="AVAILABLE";
-    if($("airdropBtn")){ $("airdropBtn").disabled=false; $("airdropBtn").textContent="🎁 CLAIM LUCKY AIRDROP"; }
+    if($("airdropBtn")){ $("airdropBtn").disabled=false; $("airdropBtn").textContent="🎁 CLAIM AIRDROP"; }
   }
-  try{
-    var ah=$("airdropAmountHint");
-    if(ah){
-      if(data.claimed && data.claimedAmount!=null) ah.textContent=fmt(data.claimedAmount);
-      else ah.textContent="2M / 20K";
-    }
-  }catch(eH){}
 }catch(error){
   console.log("Airdrop status:", error);
   if($("airdropStatus")) $("airdropStatus").textContent="ERROR";
