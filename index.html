@@ -1897,7 +1897,19 @@ Unlink Pi Wallet
 </section>
 
 <section id="airdropSection" class="section">
-<!-- Airdrop claim UI removed — more space for spin. Backend claim still available if needed. -->
+<div class="card" style="margin-top:0;margin-bottom:12px">
+  <div class="card-title">🍀 LUCKY AIRDROP <span style="font-size:11px;opacity:.85">(1× only)</span></div>
+  <p class="muted" style="font-size:12px;margin:0 0 10px;line-height:1.45">
+    <b>One-time only</b> · Badge required · Spin below stays daily<br>
+    Lucky (~5%): <b style="color:#ffd64e">2,000,000 AMT</b> · Else: <b>20,000 AMT</b>
+  </p>
+  <div class="grid" style="margin-bottom:10px">
+    <div class="stat"><div class="stat-label">Status</div><div id="airdropStatus" class="stat-value" style="font-size:14px">-</div></div>
+    <div class="stat"><div class="stat-label">Amount</div><div id="airdropAmountHint" class="stat-value" style="font-size:13px">2M / 20K</div></div>
+  </div>
+  <button id="airdropBtn" class="primary" style="width:100%" onclick="claimAirdrop()">🎁 CLAIM AIRDROP</button>
+  <p class="muted" style="font-size:11px;margin:8px 0 0;text-align:center">Need AMT TOKEN frame avatar + Pioneer Badge (Profile)</p>
+</div>
 <div class="card" style="margin-top:0">
 <div class="spin-wrap">
   <div class="spin-title-glow">SPIN IT</div>
@@ -5592,13 +5604,23 @@ try{
   }else if(data.expired){
     if($("airdropStatus")) $("airdropStatus").textContent="EXPIRED";
     if($("airdropBtn")){ $("airdropBtn").disabled=true; $("airdropBtn").textContent="⏰ WINDOW CLOSED"; }
+  }else if(data.requiresAmtFrame && data.hasFrame===false){
+    if($("airdropStatus")) $("airdropStatus").textContent="AMT FRAME REQUIRED";
+    if($("airdropBtn")){ $("airdropBtn").disabled=true; $("airdropBtn").textContent="🖼 SET AMT FRAME FIRST"; }
   }else if(data.requiresBadge && data.hasBadge===false){
     if($("airdropStatus")) $("airdropStatus").textContent="BADGE REQUIRED";
     if($("airdropBtn")){ $("airdropBtn").disabled=true; $("airdropBtn").textContent="🪪 CLAIM BADGE FIRST"; }
   }else{
     if($("airdropStatus")) $("airdropStatus").textContent="AVAILABLE";
-    if($("airdropBtn")){ $("airdropBtn").disabled=false; $("airdropBtn").textContent="🎁 CLAIM AIRDROP"; }
+    if($("airdropBtn")){ $("airdropBtn").disabled=false; $("airdropBtn").textContent="🎁 CLAIM LUCKY AIRDROP"; }
   }
+  try{
+    var ah=$("airdropAmountHint");
+    if(ah){
+      if(data.claimed && data.claimedAmount!=null) ah.textContent=fmt(data.claimedAmount);
+      else ah.textContent="2M / 20K";
+    }
+  }catch(eH){}
 }catch(error){
   console.log("Airdrop status:", error);
   if($("airdropStatus")) $("airdropStatus").textContent="ERROR";
