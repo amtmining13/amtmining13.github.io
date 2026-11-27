@@ -177,6 +177,22 @@ async function memberHasAmtBadge(memberId) {
   }
 }
 
+/** Lucky airdrop: must have AMT Frame Avatar + active Pioneer badge */
+async function memberEligibleForLuckyAirdrop(memberId) {
+  try {
+    const m = await pool.query(
+      `SELECT COALESCE(amt_avatar, false) AS amt_avatar FROM members WHERE id = $1 LIMIT 1`,
+      [memberId]
+    );
+    if (!m.rows.length || !m.rows[0].amt_avatar) return { ok: false, hasFrame: false, hasBadge: false };
+    const hasBadge = await memberHasAmtBadge(memberId);
+    return { ok: !!hasBadge, hasFrame: true, hasBadge: !!hasBadge };
+  } catch (e) {
+    console.warn("memberEligibleForLuckyAirdrop:", e && e.message);
+    return { ok: false, hasFrame: false, hasBadge: false };
+  }
+}
+
 
 
 /* Airdrop claim window (shared campaign).
@@ -986,13 +1002,6 @@ async function ensureDevTreasury(member, piUser, ledgerWallet) {
     any = true;
   }
   return any;
-  }
-
-  console.log(
-    "DEV TREASURY already fully credited for member",
-    member.id
-  );
-  return false;
 }
 
 async function requireAuth(
@@ -1225,8 +1234,14 @@ async function initializeDatabase() {
       created_at TIMESTAMPTZ NOT NULL
         DEFAULT NOW(),
 
+      updated_at TIMESTAMPTZ NOT NULL
+        DEFAULT NOW(),
+
       completed_at TIMESTAMPTZ
     );
+
+    ALTER TABLE marketplace_payments
+      ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
 
     CREATE TABLE IF NOT EXISTS marketplace_purchases (
       id BIGSERIAL PRIMARY KEY,
@@ -3037,10 +3052,11 @@ app.get(
       try {
         const pays = await pool.query(
           `
-          SELECT id, pi_payment_id, product_id, amount, status, created_at, updated_at
+          SELECT id, pi_payment_id, product_id, amount, status, created_at,
+                 COALESCE(updated_at, created_at) AS updated_at
           FROM marketplace_payments
           WHERE member_id = $1
-          ORDER BY COALESCE(updated_at, created_at) DESC
+          ORDER BY created_at DESC
           LIMIT 40
           `,
           [req.member.id]
@@ -3158,9 +3174,11 @@ app.get(
     const expired =
       now >= expiresAt;
 
-    const hasBadge = await memberHasAmtBadge(req.member.id);
+    const elig = await memberEligibleForLuckyAirdrop(req.member.id);
+    const hasBadge = elig.hasBadge;
+    const hasFrame = elig.hasFrame;
     const canClaim =
-      !claimed && !expired && hasBadge;
+      !claimed && !expired && elig.ok;
 
     res.json({
       ok: true,
@@ -3186,17 +3204,20 @@ app.get(
       expired,
 
       hasBadge,
-
+      hasFrame,
       requiresBadge: true,
+      requiresAmtFrame: true,
 
       canClaim,
 
       luckyAmount: AIRDROP_LUCKY_AMT,
       normalAmount: AIRDROP_NORMAL_AMT,
       luckyChance: AIRDROP_LUCKY_CHANCE,
-      message: !hasBadge
-        ? "AMT Pioneer Badge required. Set AMT Frame Avatar, claim badge, then claim airdrop."
-        : (claimed ? "Already claimed." : (expired ? "Window closed." : "Lucky 2M or 20K AMT — one claim.")),
+      message: !hasFrame
+        ? "Set AMT Frame Avatar first (Profile → SET AS AMT FRAME AVATAR), then claim badge."
+        : (!hasBadge
+          ? "Claim your AMT Pioneer Badge after setting the frame avatar."
+          : (claimed ? "Already claimed." : (expired ? "Window closed." : "Lucky 2M or 20K AMT — one claim."))),
 
       expiresAt:
         new Date(
@@ -3232,12 +3253,20 @@ app.post(
         [req.member.id]
       );
 
-      const hasBadge = await memberHasAmtBadge(req.member.id);
-      if (!hasBadge) {
+      const elig = await memberEligibleForLuckyAirdrop(req.member.id);
+      if (!elig.hasFrame) {
         await client.query("ROLLBACK");
         return res.status(403).json({
           ok: false,
-          error: "AMT Pioneer Badge required. Claim your badge first (AMT Frame Avatar + CLAIM BADGE).",
+          error: "AMT Frame Avatar required. Profile → SET AS AMT FRAME AVATAR (AMT TOKEN frame).",
+          requiresAmtFrame: true
+        });
+      }
+      if (!elig.hasBadge) {
+        await client.query("ROLLBACK");
+        return res.status(403).json({
+          ok: false,
+          error: "AMT Pioneer Badge required. Claim badge after setting AMT Frame Avatar.",
           requiresBadge: true
         });
       }
