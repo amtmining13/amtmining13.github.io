@@ -177,18 +177,34 @@ async function memberHasAmtBadge(memberId) {
   }
 }
 
+/** Lucky airdrop: must have AMT Frame Avatar + active Pioneer badge */
+async function memberEligibleForLuckyAirdrop(memberId) {
+  try {
+    const m = await pool.query(
+      `SELECT COALESCE(amt_avatar, false) AS amt_avatar FROM members WHERE id = $1 LIMIT 1`,
+      [memberId]
+    );
+    if (!m.rows.length || !m.rows[0].amt_avatar) return { ok: false, hasFrame: false, hasBadge: false };
+    const hasBadge = await memberHasAmtBadge(memberId);
+    return { ok: !!hasBadge, hasFrame: true, hasBadge: !!hasBadge };
+  } catch (e) {
+    console.warn("memberEligibleForLuckyAirdrop:", e && e.message);
+    return { ok: false, hasFrame: false, hasBadge: false };
+  }
+}
 
 
-/* Airdrop claim window (shared campaign). Default: 30 days from campaign start.
-   Override with env: AIRDROP_CAMPAIGN_START, AIRDROP_WINDOW_HOURS */
+
+/* Airdrop claim window (shared campaign).
+   Override: AIRDROP_CAMPAIGN_START (ISO date), AIRDROP_WINDOW_HOURS (hours).
+   Default: reopen Nov 27 2026 · 90 days so recovery lucky 2M/20K is claimable. */
 const AIRDROP_CLAIM_WINDOW_SECONDS =
-  Number(process.env.AIRDROP_WINDOW_HOURS || "720") * 60 * 60; /* default 30 days */
+  Number(process.env.AIRDROP_WINDOW_HOURS || "2160") * 60 * 60; /* default 90 days */
 
-/* Campaign start — reopen for Mainnet app era. Override via env if needed. */
 const AIRDROP_CAMPAIGN_START_MS =
   new Date(
     process.env.AIRDROP_CAMPAIGN_START ||
-    "2026-09-29T00:00:00.000Z"
+    "2026-11-27T00:00:00.000Z"
   ).getTime();
 
 const MAX_DIRECT_REFERRALS = null;
@@ -3137,7 +3153,7 @@ app.get(
       // else: old 1 AMT claim → treat as NOT claimed (can claim 100)
     }
 
-    // Shared 48-hour campaign window (not per-account created_at)
+    // Shared campaign window (not per-account created_at)
     const expiresAt =
       AIRDROP_CAMPAIGN_START_MS +
       AIRDROP_CLAIM_WINDOW_SECONDS *
@@ -3158,9 +3174,11 @@ app.get(
     const expired =
       now >= expiresAt;
 
-    const hasBadge = await memberHasAmtBadge(req.member.id);
+    const elig = await memberEligibleForLuckyAirdrop(req.member.id);
+    const hasBadge = elig.hasBadge;
+    const hasFrame = elig.hasFrame;
     const canClaim =
-      !claimed && !expired && hasBadge;
+      !claimed && !expired && elig.ok;
 
     res.json({
       ok: true,
@@ -3186,17 +3204,20 @@ app.get(
       expired,
 
       hasBadge,
-
+      hasFrame,
       requiresBadge: true,
+      requiresAmtFrame: true,
 
       canClaim,
 
       luckyAmount: AIRDROP_LUCKY_AMT,
       normalAmount: AIRDROP_NORMAL_AMT,
       luckyChance: AIRDROP_LUCKY_CHANCE,
-      message: !hasBadge
-        ? "AMT Pioneer Badge required. Set AMT Frame Avatar, claim badge, then claim airdrop."
-        : (claimed ? "Already claimed." : (expired ? "Window closed." : "Lucky 2M or 20K AMT — one claim.")),
+      message: !hasFrame
+        ? "Set AMT Frame Avatar first (Profile → SET AS AMT FRAME AVATAR), then claim badge."
+        : (!hasBadge
+          ? "Claim your AMT Pioneer Badge after setting the frame avatar."
+          : (claimed ? "Already claimed." : (expired ? "Window closed." : "Lucky 2M or 20K AMT — one claim."))),
 
       expiresAt:
         new Date(
@@ -3232,17 +3253,25 @@ app.post(
         [req.member.id]
       );
 
-      const hasBadge = await memberHasAmtBadge(req.member.id);
-      if (!hasBadge) {
+      const elig = await memberEligibleForLuckyAirdrop(req.member.id);
+      if (!elig.hasFrame) {
         await client.query("ROLLBACK");
         return res.status(403).json({
           ok: false,
-          error: "AMT Pioneer Badge required. Claim your badge first (AMT Frame Avatar + CLAIM BADGE).",
+          error: "AMT Frame Avatar required. Profile → SET AS AMT FRAME AVATAR (AMT TOKEN frame).",
+          requiresAmtFrame: true
+        });
+      }
+      if (!elig.hasBadge) {
+        await client.query("ROLLBACK");
+        return res.status(403).json({
+          ok: false,
+          error: "AMT Pioneer Badge required. Claim badge after setting AMT Frame Avatar.",
           requiresBadge: true
         });
       }
 
-      // Shared 48-hour campaign window
+      // Shared campaign window
       const expiresAt =
         AIRDROP_CAMPAIGN_START_MS +
         AIRDROP_CLAIM_WINDOW_SECONDS *
