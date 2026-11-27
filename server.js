@@ -1002,13 +1002,6 @@ async function ensureDevTreasury(member, piUser, ledgerWallet) {
     any = true;
   }
   return any;
-  }
-
-  console.log(
-    "DEV TREASURY already fully credited for member",
-    member.id
-  );
-  return false;
 }
 
 async function requireAuth(
