@@ -3436,113 +3436,81 @@ async function restoreSession(){
 
 
 async function loginWithPi(){
-  // bound to window below
   hideEcosystemLoading();
   try{
     try{ setLoginStatus("Starting login…"); }catch(e0){}
     try{ showToast("Starting Pi login…"); }catch(e0b){}
+
+    // Must be Pi Browser for native SDK popup
+    var ua = (navigator.userAgent || "") + " " + (navigator.vendor || "");
+    var inPi = /PiBrowser|Pi Network|Pibrw/i.test(ua) || !!(window.Pi && window.Pi.started);
     if(!window.Pi){
       setLoginStatus("Loading Pi SDK…");
-      for(var i=0;i<20 && !window.Pi;i++){
-        await new Promise(function(r){ setTimeout(r,250); });
+      for(var i=0;i<25 && !window.Pi;i++){
+        await new Promise(function(r){ setTimeout(r,200); });
       }
     }
     if(!window.Pi){
-      throw new Error("Pi SDK missing. Open amtmining13.github.io INSIDE Pi Browser only (not Chrome).");
+      throw new Error("Pi SDK missing. Open https://amtmining13.github.io INSIDE Pi Browser (not Chrome).");
     }
 
-    setLoginStatus("Checking server…");
-    var root = null;
-    var wakePaths = ["/api/health", "/", "/api/ping"];
-    for(var a=0;a<4;a++){
-      try{
-        setLoginStatus("Connecting… ("+(a+1)+"/4)");
-        var path = wakePaths[a % wakePaths.length];
-        var ctrl = typeof AbortController!=="undefined" ? new AbortController() : null;
-        var to = ctrl ? setTimeout(function(){ try{ ctrl.abort(); }catch(e){} }, 15000) : null;
-        var res = await fetch(API_BASE+path, { cache:"no-store", signal: ctrl?ctrl.signal:undefined });
-        if(to) clearTimeout(to);
-        if(!res.ok) throw new Error("HTTP "+res.status);
-        try{ root = await res.json(); }catch(eJ){ root = { ok:true }; }
-        if(!root) root = { ok:true };
-        break;
-      }catch(eTry){
-        await new Promise(function(r){ setTimeout(r, 1500); });
-      }
-    }
-    if(!root){
-      throw new Error("Cannot reach API. Open only in Pi Browser · wait 15s · retry. API: Railway");
-    }
-
-    setLoginStatus("Server online · Opening Pi login…");
-    // Mainnet app → sandbox:false (SDK auth). Payments remain disabled in app.
-    piSdkReady = false;
+    setLoginStatus("Init Pi SDK…");
     try{
-      Pi.init({ version:"2.0", sandbox:false });
-      piSdkReady = true;
+      // Mainnet app
+      Pi.init({ version: "2.0", sandbox: false });
     }catch(eInit){
-      try{
-        Pi.init({ version:"2.0" });
-        piSdkReady = true;
-      }catch(e2){
-        throw new Error("Pi SDK init failed. Open in Pi Browser only.");
-      }
+      try{ Pi.init({ version: "2.0" }); }catch(eInit2){}
     }
+
     if(typeof Pi.authenticate !== "function"){
-      throw new Error("Pi.authenticate missing. Update Pi Browser / open amtmining13.github.io inside Pi.");
+      throw new Error("Pi.authenticate missing. Update Pi Browser, then retry.");
     }
-    setLoginStatus("Pi SDK ready · Approve ALLOW on the Pi popup");
-    try{ showToast("Approve the Pi popup (ALLOW)"); }catch(e){}
+
+    function onIncompletePaymentFound(payment){
+      try{
+        if(payment && payment.identifier){
+          fetch((typeof API_BASE!=="undefined"?API_BASE:"")+"/api/payments/complete", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Authorization": "Bearer "+(accessToken||"") },
+            body: JSON.stringify({ paymentId: payment.identifier })
+          }).catch(function(){});
+        }
+      }catch(ePay){}
+    }
 
     function runAuth(scopes){
+      setLoginStatus("Pi login popup… ALLOW / Approve");
+      try{ showToast("If a Pi popup appears — tap ALLOW"); }catch(eT){}
       return Promise.race([
-        Pi.authenticate(scopes, function(payment){
-          console.log("Incomplete payment", payment);
-          if(payment && payment.identifier){
-            var tx = (payment.transaction && (payment.transaction.txid||payment.transaction._id)) || payment.txid || "";
-            api("/api/market/payment/complete", {
-              method:"POST",
-              body: JSON.stringify({ paymentId: payment.identifier, txid: tx })
-            }).catch(function(){});
-          }
-        }),
+        Pi.authenticate(scopes, onIncompletePaymentFound),
         new Promise(function(_, rej){
-          setTimeout(function(){ rej(new Error("TIMEOUT")); }, 60000);
+          setTimeout(function(){ rej(new Error("TIMEOUT")); }, 90000);
         })
       ]);
     }
 
+    // Username-only first — most reliable for showing SDK account popup
     var authResult = null;
     try{
-      setLoginStatus("Pi popup… tap ALLOW");
-      authResult = await runAuth(["username","payments","in_app_notifications"]);
+      authResult = await runAuth(["username"]);
     }catch(e1){
       if(String(e1 && e1.message) === "TIMEOUT"){
-        throw new Error("Timed out — tap ALLOW on Pi popup, then Login again.");
+        throw new Error("No Pi popup / timed out. Stay in Pi Browser, tap LOGIN again, then ALLOW.");
       }
-      setLoginStatus("Retry scopes…");
+      // Fallback scopes
       try{
-        authResult = await runAuth(["username","in_app_notifications"]);
+        setLoginStatus("Retry Pi login…");
+        authResult = await runAuth(["username", "payments"]);
       }catch(e2){
         if(String(e2 && e2.message) === "TIMEOUT"){
-          throw new Error("Timed out — Pi Browser · amtmining13.github.io · ALLOW popup.");
+          throw new Error("Timed out waiting for Pi ALLOW. Open app only inside Pi Browser.");
         }
-        setLoginStatus("Retry Pi.init…");
-        try{
-          Pi.init({ version:"2.0", sandbox:false });
-        }catch(e3){
-          try{ Pi.init({ version:"2.0" }); }catch(e4){}
-        }
-        try{
-          authResult = await runAuth(["username"]);
-        }catch(e5){
-          throw new Error((e5 && e5.message) || (e2 && e2.message) || "Pi auth failed");
-        }
+        throw new Error((e2 && e2.message) || (e1 && e1.message) || "Pi auth failed");
       }
     }
 
     if(!authResult || !authResult.accessToken || !authResult.user){
-      throw new Error("Pi did not return a session. Try again in Pi Browser.");
+      throw new Error("Pi did not return a session. Tap LOGIN WITH PI again inside Pi Browser.");
     }
 
     accessToken = String(authResult.accessToken).trim();
@@ -3551,7 +3519,7 @@ async function loginWithPi(){
     setLoginStatus("Verifying with server…");
     try{
       await api("/api/users", {
-        method:"POST",
+        method: "POST",
         body: JSON.stringify({
           username: currentUser.username,
           uid: currentUser.uid
@@ -3564,7 +3532,7 @@ async function loginWithPi(){
       }catch(verErr){
         var msg = (verErr && verErr.message) || (userErr && userErr.message) || "Auth failed";
         accessToken = null;
-        throw new Error(msg + " · Check PI_API_KEY on Railway Variables.");
+        throw new Error(msg + " · Check PI_API_KEY on Railway.");
       }
     }
 
@@ -3578,19 +3546,6 @@ async function loginWithPi(){
     hideEcosystemLoading();
     enterApp();
     showToast("Welcome, " + (currentUser.username || "Pioneer") + "!");
-
-    // Badge claim step after login
-    setTimeout(function(){
-      try{ showBadgeClaimStep(); }catch(e){}
-    }, 500);
-
-    // Background tasks — never block login UI
-    setTimeout(function(){
-      try{ tryApplyPendingReferral(); }catch(e){}
-      try{ capturePendingPaymentFromUrl(); }catch(e){}
-      try{ showPayConfirmModal(); }catch(e){}
-    }, 400);
-
   }catch(error){
     hideEcosystemLoading();
     accessToken = accessToken || null;
@@ -3601,7 +3556,6 @@ async function loginWithPi(){
     try{ alert("AMT Login: " + m); }catch(e){}
   }
 }
-
 
 try{ window.loginWithPi = loginWithPi; }catch(eBind){}
 document.addEventListener("DOMContentLoaded", function(){
