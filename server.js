@@ -315,16 +315,39 @@ const pool = new Pool({
   ssl: DATABASE_URL
     ? { rejectUnauthorized: false }
     : undefined,
-  // Free Render + free Postgres: keep pool small, fail fast, recycle idle
-  max: 5,
+  // Neon free + Railway: small pool, longer connect wait (cold start)
+  max: 3,
   min: 0,
-  idleTimeoutMillis: 20000,
-  connectionTimeoutMillis: 12000,
-  allowExitOnIdle: true
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 30000,
+  allowExitOnIdle: false
 });
 
 pool.on("error", (err) => {
+  // Idle client errors must NOT kill the process
   console.error("PG POOL ERROR:", err && err.message ? err.message : err);
+});
+
+function isTransientDbError(err) {
+  const m = String((err && err.message) || err || "").toLowerCase();
+  return (
+    m.includes("timeout") ||
+    m.includes("terminat") ||
+    m.includes("econnreset") ||
+    m.includes("econnrefused") ||
+    m.includes("connection") ||
+    m.includes("too many clients") ||
+    m.includes("remaining connection slots")
+  );
+}
+
+// Never crash the whole Railway service on a single DB blip
+process.on("unhandledRejection", (reason) => {
+  console.error("unhandledRejection:", reason && reason.message ? reason.message : reason);
+});
+process.on("uncaughtException", (err) => {
+  console.error("uncaughtException:", err && err.message ? err.message : err);
+  // Do not process.exit — keep API up for other miners
 });
 
 // Soft keep-alive so free DB / pool doesn't stay dead after idle (best-effort)
@@ -1861,56 +1884,47 @@ async function getStakingSummary(
   memberId,
   db = pool
 ) {
-  const result =
-    await db.query(
-      `
-      SELECT
-
-        COALESCE(
-          SUM(
-            CASE
-              WHEN status = 'ACTIVE'
-              THEN principal
-              ELSE 0
-            END
-          ),
-          0
-        )::NUMERIC(30,8)
-        AS staked_principal,
-
-        COALESCE(
-          SUM(
-            CASE
-              WHEN status = 'ACTIVE'
-              THEN reward_amount
-              ELSE 0
-            END
-          ),
-          0
-        )::NUMERIC(30,8)
-        AS pending_rewards
-
-      FROM amt_stakes
-
-      WHERE member_id = $1
-      `,
-      [memberId]
-    );
-
-  const row =
-    result.rows[0];
-
-  return {
-    stakedPrincipal:
-      Number(
-        row?.staked_principal || 0
-      ),
-
-    pendingRewards:
-      Number(
-        row?.pending_rewards || 0
-      )
-  };
+  try {
+    const result =
+      await db.query(
+        `
+        SELECT
+          COALESCE(
+            SUM(
+              CASE
+                WHEN status = 'ACTIVE'
+                THEN principal
+                ELSE 0
+              END
+            ),
+            0
+          )::NUMERIC(30,8)
+          AS staked_principal,
+          COALESCE(
+            SUM(
+              CASE
+                WHEN status = 'ACTIVE'
+                THEN reward_amount
+                ELSE 0
+              END
+            ),
+            0
+          )::NUMERIC(30,8)
+          AS pending_rewards
+        FROM amt_stakes
+        WHERE member_id = $1
+        `,
+        [memberId]
+      );
+    const row = result.rows[0];
+    return {
+      stakedPrincipal: Number(row?.staked_principal || 0),
+      pendingRewards: Number(row?.pending_rewards || 0)
+    };
+  } catch (e) {
+    console.warn("getStakingSummary:", e && e.message ? e.message : e);
+    return { stakedPrincipal: 0, pendingRewards: 0 };
+  }
 }
 
 /* =========================================================
@@ -1921,6 +1935,7 @@ app.get(
   "/api/wallet",
   requireAuth,
   async (req, res) => {
+  try {
     const balance =
       await getBalance(
         req.member.id
@@ -2007,8 +2022,11 @@ app.get(
         req.piUser.username ||
         null
     });
+  } catch (e) {
+    console.error("WALLET:", e && e.message ? e.message : e);
+    res.status(500).json({ ok: false, error: "Unable to load wallet. Retry in a moment." });
   }
-);
+});
 
 /* =========================================================
 LINK PI WALLET (own address only — never shared with others)
@@ -16343,26 +16361,34 @@ app.post("/api/alliance/settings", requireAuth, async (req, res) => {
 async function creditBadgeAirdrop(memberId, client) {
   const db = client || pool;
   if (!memberId || BADGE_AIRDROP_AMT <= 0) return { credited: false, reason: "disabled" };
-  const hasBadge = await db.query(
-    `SELECT id FROM member_badges WHERE member_id = $1 AND status = 'active' LIMIT 1`,
-    [memberId]
-  );
-  if (!hasBadge.rows.length) {
-    return { credited: false, reason: "no_badge" };
+  try {
+    const hasBadge = await db.query(
+      `SELECT id FROM member_badges WHERE member_id = $1 AND COALESCE(status,'active') = 'active' LIMIT 1`,
+      [memberId]
+    );
+    if (!hasBadge.rows.length) {
+      return { credited: false, reason: "no_badge" };
+    }
+    // Per-member reference (global unique on reference column)
+    const ref = BADGE_AIRDROP_REF + ":" + String(memberId);
+    const exists = await db.query(
+      `SELECT id FROM amt_ledger WHERE member_id = $1 AND (reference = $2 OR reference = $3) LIMIT 1`,
+      [memberId, ref, BADGE_AIRDROP_REF]
+    );
+    if (exists.rows.length) {
+      return { credited: false, reason: "already", amount: BADGE_AIRDROP_AMT };
+    }
+    await db.query(
+      `INSERT INTO amt_ledger (member_id, amount, type, reference)
+       VALUES ($1, $2, 'BADGE_AIRDROP', $3)
+       ON CONFLICT (reference) DO NOTHING`,
+      [memberId, BADGE_AIRDROP_AMT, ref]
+    );
+    return { credited: true, amount: BADGE_AIRDROP_AMT };
+  } catch (e) {
+    console.error("BADGE AIRDROP:", e && e.message ? e.message : e);
+    return { credited: false, reason: "error" };
   }
-  const exists = await db.query(
-    `SELECT id FROM amt_ledger WHERE member_id = $1 AND reference = $2 LIMIT 1`,
-    [memberId, BADGE_AIRDROP_REF]
-  );
-  if (exists.rows.length) {
-    return { credited: false, reason: "already", amount: BADGE_AIRDROP_AMT };
-  }
-  await db.query(
-    `INSERT INTO amt_ledger (member_id, amount, type, reference)
-     VALUES ($1, $2, 'BADGE_AIRDROP', $3)`,
-    [memberId, BADGE_AIRDROP_AMT, BADGE_AIRDROP_REF]
-  );
-  return { credited: true, amount: BADGE_AIRDROP_AMT };
 }
 
 /* =========================================================
@@ -16690,12 +16716,17 @@ app.post("/api/tetris/score", requireAuth, async (req, res) => {
     let credited = 0;
     const reward = tetrisRewardFromScore(score);
     if (!exists.rows.length && reward > 0) {
-      await pool.query(
-        `INSERT INTO amt_ledger (member_id, amount, type, reference)
-         VALUES ($1, $2, 'TETRIS_DAILY', $3)`,
-        [req.member.id, reward, ref]
-      );
-      credited = reward;
+      try {
+        await pool.query(
+          `INSERT INTO amt_ledger (member_id, amount, type, reference)
+           VALUES ($1, $2, 'TETRIS_DAILY', $3)
+           ON CONFLICT (reference) DO NOTHING`,
+          [req.member.id, reward, ref]
+        );
+        credited = reward;
+      } catch (te) {
+        console.warn("TETRIS credit:", te && te.message);
+      }
     }
     const bal = await getBalance(req.member.id);
     res.json({
